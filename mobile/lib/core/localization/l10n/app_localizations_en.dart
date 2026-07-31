@@ -1,0 +1,2592 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for English (`en`).
+class AppLocalizationsEn extends AppLocalizations {
+  AppLocalizationsEn([String locale = 'en']) : super(locale);
+
+  @override
+  String get appTitle => 'INFINITY';
+
+  @override
+  String get companyName => 'Total-Com Solutions';
+
+  @override
+  String get splashLoading => 'Initializing...';
+
+  @override
+  String get login => 'Login';
+
+  @override
+  String get loginTitle => 'Sign in';
+
+  @override
+  String get loginSubtitle => 'Access your field service workspace';
+
+  @override
+  String get email => 'Email';
+
+  @override
+  String get password => 'Password';
+
+  @override
+  String get rememberMe => 'Remember me';
+
+  @override
+  String get showPassword => 'Show password';
+
+  @override
+  String get hidePassword => 'Hide password';
+
+  @override
+  String get signIn => 'Sign in';
+
+  @override
+  String get signingIn => 'Signing in...';
+
+  @override
+  String get emailRequired => 'Email is required.';
+
+  @override
+  String get emailInvalid => 'Enter a valid email address.';
+
+  @override
+  String get passwordRequired => 'Password is required.';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 8 characters.';
+
+  @override
+  String get dashboard => 'Dashboard';
+
+  @override
+  String get welcomeBack => 'Welcome back';
+
+  @override
+  String get roleLabel => 'Role';
+
+  @override
+  String get companyLabel => 'Company';
+
+  @override
+  String get departmentLabel => 'Department';
+
+  @override
+  String get quickActions => 'Quick actions';
+
+  @override
+  String get attendance => 'Attendance';
+
+  @override
+  String get overtime => 'Overtime';
+
+  @override
+  String get workOrders => 'Work Orders';
+
+  @override
+  String get assets => 'Assets';
+
+  @override
+  String get notifications => 'Notifications';
+
+  @override
+  String get profile => 'Profile';
+
+  @override
+  String get logout => 'Logout';
+
+  @override
+  String get settings => 'Settings';
+
+  @override
+  String get comingSoon => 'Coming soon';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get errorGeneric => 'Something went wrong. Please try again.';
+
+  @override
+  String get sessionExpired =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get workOrderCreate => 'Create';
+
+  @override
+  String get workOrderEdit => 'Edit work order';
+
+  @override
+  String get workOrderDetails => 'Work order details';
+
+  @override
+  String get workOrderSearchHint => 'Search job, customer, or location';
+
+  @override
+  String get workOrderFilterAll => 'All';
+
+  @override
+  String get workOrderEmpty => 'No work orders found';
+
+  @override
+  String get workOrderLoadFailed => 'Failed to load work orders';
+
+  @override
+  String get workOrderJobTitle => 'Job title';
+
+  @override
+  String get workOrderCustomer => 'Customer';
+
+  @override
+  String get workOrderLocation => 'Location';
+
+  @override
+  String get workOrderDescription => 'Problem description';
+
+  @override
+  String get workOrderNotes => 'Notes';
+
+  @override
+  String get workOrderPriority => 'Priority';
+
+  @override
+  String get workOrderScheduledDate => 'Scheduled date';
+
+  @override
+  String get workOrderTechnician => 'Technician';
+
+  @override
+  String get workOrderAttachments => 'Attachments';
+
+  @override
+  String get workOrderSave => 'Save';
+
+  @override
+  String get workOrderAccept => 'Accept';
+
+  @override
+  String get workOrderReject => 'Reject';
+
+  @override
+  String get workOrderStart => 'Start work';
+
+  @override
+  String get workOrderComplete => 'Complete';
+
+  @override
+  String get workOrderCancel => 'Cancel order';
+
+  @override
+  String get workOrderDelete => 'Delete';
+
+  @override
+  String get workOrderAssign => 'Assign technician';
+
+  @override
+  String get workOrderUnassigned => 'Unassigned';
+
+  @override
+  String get workOrderSelectTechnician => 'Select technician';
+
+  @override
+  String get workOrderAddPhoto => 'Add photo';
+
+  @override
+  String get inventory => 'Inventory';
+
+  @override
+  String get inventoryManage => 'Manage';
+
+  @override
+  String get inventoryLoading => 'Loading inventory...';
+
+  @override
+  String get inventoryLoadFailed => 'Failed to load inventory';
+
+  @override
+  String get inventoryTotalParts => 'Total Parts';
+
+  @override
+  String get inventoryLowStock => 'Low Stock';
+
+  @override
+  String get inventoryOutOfStock => 'Out of Stock';
+
+  @override
+  String get inventoryInStock => 'In Stock';
+
+  @override
+  String get inventoryWarehouses => 'Warehouses';
+
+  @override
+  String get inventorySpareParts => 'Spare Parts';
+
+  @override
+  String get inventoryStockHistory => 'Stock History';
+
+  @override
+  String get inventoryRecentMovements => 'Recent Movements';
+
+  @override
+  String get inventoryMovementsEmpty => 'No stock movements yet';
+
+  @override
+  String get inventoryWarehousesEmpty => 'No warehouses found';
+
+  @override
+  String get inventoryPartsEmpty => 'No spare parts found';
+
+  @override
+  String get inventoryCreateWarehouse => 'Add warehouse';
+
+  @override
+  String get inventoryEditWarehouse => 'Edit warehouse';
+
+  @override
+  String get inventoryCreatePart => 'Add spare part';
+
+  @override
+  String get inventoryEditPart => 'Edit spare part';
+
+  @override
+  String get inventoryPartDetails => 'Part details';
+
+  @override
+  String get inventorySearchWarehouses => 'Search warehouses';
+
+  @override
+  String get inventorySearchParts => 'Search parts, numbers, or barcodes';
+
+  @override
+  String get inventorySearchMovements => 'Search reason, notes, or user';
+
+  @override
+  String get inventoryFilterAll => 'All';
+
+  @override
+  String get inventoryName => 'Name';
+
+  @override
+  String get inventoryCode => 'Code';
+
+  @override
+  String get inventoryAddress => 'Address';
+
+  @override
+  String get inventoryDescription => 'Description';
+
+  @override
+  String get inventoryActive => 'Active';
+
+  @override
+  String get inventoryInactive => 'Inactive';
+
+  @override
+  String get inventoryPartNumber => 'Part number';
+
+  @override
+  String get inventoryCategory => 'Category';
+
+  @override
+  String get inventoryUnit => 'Unit';
+
+  @override
+  String get inventoryCurrentQuantity => 'Current quantity';
+
+  @override
+  String get inventoryMinimumQuantity => 'Minimum quantity';
+
+  @override
+  String get inventoryAvailableQuantity => 'Available quantity';
+
+  @override
+  String get inventoryBarcode => 'Barcode / QR';
+
+  @override
+  String get inventoryImage => 'Image';
+
+  @override
+  String get inventoryAddPhoto => 'Add photo';
+
+  @override
+  String get inventoryRemovePhoto => 'Remove photo';
+
+  @override
+  String get inventoryStockIn => 'Stock In';
+
+  @override
+  String get inventoryStockOut => 'Stock Out';
+
+  @override
+  String get inventoryTransfer => 'Transfer';
+
+  @override
+  String get inventoryAdjustment => 'Adjustment';
+
+  @override
+  String get inventoryQuantity => 'Quantity';
+
+  @override
+  String get inventoryReason => 'Reason';
+
+  @override
+  String get inventoryNotes => 'Notes';
+
+  @override
+  String get inventoryWarehouse => 'Warehouse';
+
+  @override
+  String get inventoryFromWarehouse => 'From warehouse';
+
+  @override
+  String get inventoryToWarehouse => 'To warehouse';
+
+  @override
+  String get inventoryDirection => 'Direction';
+
+  @override
+  String get inventoryIncrease => 'Increase';
+
+  @override
+  String get inventoryDecrease => 'Decrease';
+
+  @override
+  String get inventoryNoWarehouses =>
+      'Create a warehouse before managing stock';
+
+  @override
+  String get inventoryNeedTwoWarehouses =>
+      'Transfer requires at least two warehouses';
+
+  @override
+  String get inventoryCancel => 'Cancel';
+
+  @override
+  String get inventorySave => 'Save';
+
+  @override
+  String get inventoryRequired => 'This field is required';
+
+  @override
+  String get assetsLoading => 'Loading assets...';
+
+  @override
+  String get assetsLoadFailed => 'Failed to load assets';
+
+  @override
+  String get assetsTotal => 'Total Assets';
+
+  @override
+  String get assetsList => 'Assets list';
+
+  @override
+  String get assetsCategories => 'Categories';
+
+  @override
+  String get assetsHistory => 'Asset history';
+
+  @override
+  String get assetsCreate => 'Add asset';
+
+  @override
+  String get assetsEdit => 'Edit asset';
+
+  @override
+  String get assetsDetails => 'Asset details';
+
+  @override
+  String get assetsEmpty => 'No assets found';
+
+  @override
+  String get assetsCategoriesEmpty => 'No categories found';
+
+  @override
+  String get assetsHistoryEmpty => 'No history events yet';
+
+  @override
+  String get assetsCreateCategory => 'Add category';
+
+  @override
+  String get assetsEditCategory => 'Edit category';
+
+  @override
+  String get assetsSearchCategories => 'Search categories';
+
+  @override
+  String get assetsSearchHint => 'Search number, name, serial, or barcode';
+
+  @override
+  String get assetsSearchHistory => 'Search history title or notes';
+
+  @override
+  String get assetsFilterAll => 'All';
+
+  @override
+  String get assetsStatusActive => 'Active';
+
+  @override
+  String get assetsStatusMaintenance => 'Maintenance';
+
+  @override
+  String get assetsStatusOffline => 'Offline';
+
+  @override
+  String get assetsStatusRetired => 'Retired';
+
+  @override
+  String get assetsWarrantyExpiringSoon => 'Warranty expiring soon';
+
+  @override
+  String get assetsName => 'Name';
+
+  @override
+  String get assetsCode => 'Code';
+
+  @override
+  String get assetsIcon => 'Icon';
+
+  @override
+  String get assetsDescription => 'Description';
+
+  @override
+  String get assetsActive => 'Active';
+
+  @override
+  String get assetsInactive => 'Inactive';
+
+  @override
+  String get assetsNumber => 'Asset number';
+
+  @override
+  String get assetsCategory => 'Category';
+
+  @override
+  String get assetsStatus => 'Status';
+
+  @override
+  String get assetsSerialNumber => 'Serial number';
+
+  @override
+  String get assetsManufacturer => 'Manufacturer';
+
+  @override
+  String get assetsModel => 'Model';
+
+  @override
+  String get assetsCustomer => 'Customer';
+
+  @override
+  String get assetsInstallationDate => 'Installation date';
+
+  @override
+  String get assetsWarrantyExpiry => 'Warranty expiry';
+
+  @override
+  String get assetsLocation => 'Location';
+
+  @override
+  String get assetsNoLocation => 'No location set';
+
+  @override
+  String get assetsBranch => 'Branch';
+
+  @override
+  String get assetsRegion => 'Region';
+
+  @override
+  String get assetsCity => 'City';
+
+  @override
+  String get assetsLatitude => 'Latitude';
+
+  @override
+  String get assetsLongitude => 'Longitude';
+
+  @override
+  String get assetsQrCode => 'QR code';
+
+  @override
+  String get assetsBarcode => 'Barcode';
+
+  @override
+  String get assetsNotes => 'Notes';
+
+  @override
+  String get assetsTitle => 'Title';
+
+  @override
+  String get assetsAddPhoto => 'Add photo';
+
+  @override
+  String get assetsRemovePhoto => 'Remove photo';
+
+  @override
+  String get assetsAddHistory => 'Add history';
+
+  @override
+  String get assetsHistoryType => 'History type';
+
+  @override
+  String get assetsHistoryInstallation => 'Installation';
+
+  @override
+  String get assetsHistoryMaintenance => 'Maintenance';
+
+  @override
+  String get assetsHistoryRepair => 'Repair';
+
+  @override
+  String get assetsHistoryInspection => 'Inspection';
+
+  @override
+  String get assetsHistoryStatusChange => 'Status change';
+
+  @override
+  String get assetsHistoryCreated => 'Created';
+
+  @override
+  String get assetsHistoryUpdated => 'Updated';
+
+  @override
+  String get assetsViewFullHistory => 'View full history';
+
+  @override
+  String get assetsScanQr => 'Scan QR';
+
+  @override
+  String get assetsCancel => 'Cancel';
+
+  @override
+  String get assetsSave => 'Save';
+
+  @override
+  String get assetsRequired => 'This field is required';
+
+  @override
+  String get pmTitle => 'Preventive Maintenance';
+
+  @override
+  String get pmLoading => 'Loading preventive maintenance...';
+
+  @override
+  String get pmLoadFailed => 'Failed to load preventive maintenance';
+
+  @override
+  String get pmPlans => 'Plans';
+
+  @override
+  String get pmSchedules => 'Schedules';
+
+  @override
+  String get pmHistory => 'History';
+
+  @override
+  String get pmChecklist => 'Checklist';
+
+  @override
+  String get pmChecklistBuilder => 'Checklist Builder';
+
+  @override
+  String get pmPlanDetails => 'Plan Details';
+
+  @override
+  String get pmCreatePlan => 'Create plan';
+
+  @override
+  String get pmEditPlan => 'Edit plan';
+
+  @override
+  String get pmDeletePlan => 'Delete plan';
+
+  @override
+  String get pmDeletePlanConfirm =>
+      'Are you sure you want to delete this maintenance plan?';
+
+  @override
+  String get pmPlansEmpty => 'No maintenance plans found';
+
+  @override
+  String get pmSchedulesEmpty => 'No schedules found';
+
+  @override
+  String get pmHistoryEmpty => 'No maintenance history yet';
+
+  @override
+  String get pmChecklistEmpty => 'No checklist items yet';
+
+  @override
+  String get pmSearchPlansHint => 'Search plans';
+
+  @override
+  String get pmSearchSchedulesHint => 'Search schedules';
+
+  @override
+  String get pmFilterAll => 'All';
+
+  @override
+  String get pmUpcoming => 'Upcoming';
+
+  @override
+  String get pmOverdue => 'Overdue';
+
+  @override
+  String get pmCompleted => 'Completed';
+
+  @override
+  String get pmCancelled => 'Cancelled';
+
+  @override
+  String get pmActivePlans => 'Active plans';
+
+  @override
+  String get pmRecentSchedules => 'Recent schedules';
+
+  @override
+  String get pmName => 'Name';
+
+  @override
+  String get pmCode => 'Code';
+
+  @override
+  String get pmDescription => 'Description';
+
+  @override
+  String get pmFrequency => 'Frequency';
+
+  @override
+  String get pmTrigger => 'Trigger';
+
+  @override
+  String get pmNextDueDate => 'Next due date';
+
+  @override
+  String get pmPriority => 'Priority';
+
+  @override
+  String get pmStatus => 'Status';
+
+  @override
+  String get pmEstimatedDuration => 'Estimated duration (minutes)';
+
+  @override
+  String get pmAssignedTeam => 'Assigned team';
+
+  @override
+  String get pmAssignedTechnician => 'Assigned technician';
+
+  @override
+  String get pmLinkedAsset => 'Linked asset';
+
+  @override
+  String get pmMeterThreshold => 'Meter threshold';
+
+  @override
+  String get pmCurrentMeterReading => 'Current meter reading';
+
+  @override
+  String get pmScheduledDate => 'Scheduled date';
+
+  @override
+  String get pmNotes => 'Notes';
+
+  @override
+  String get pmNone => 'None';
+
+  @override
+  String get pmCancel => 'Cancel';
+
+  @override
+  String get pmSave => 'Save';
+
+  @override
+  String get pmRequired => 'This field is required';
+
+  @override
+  String get pmStatusActive => 'Active';
+
+  @override
+  String get pmStatusInactive => 'Inactive';
+
+  @override
+  String get pmPriorityLow => 'Low';
+
+  @override
+  String get pmPriorityMedium => 'Medium';
+
+  @override
+  String get pmPriorityHigh => 'High';
+
+  @override
+  String get pmPriorityCritical => 'Critical';
+
+  @override
+  String get pmFrequencyDaily => 'Daily';
+
+  @override
+  String get pmFrequencyWeekly => 'Weekly';
+
+  @override
+  String get pmFrequencyMonthly => 'Monthly';
+
+  @override
+  String get pmFrequencyQuarterly => 'Quarterly';
+
+  @override
+  String get pmFrequencySemiAnnual => 'Semi Annual';
+
+  @override
+  String get pmFrequencyAnnual => 'Annual';
+
+  @override
+  String get pmTriggerTimeBased => 'Time Based';
+
+  @override
+  String get pmTriggerMeterBased => 'Meter Based';
+
+  @override
+  String get pmScheduleScheduled => 'Scheduled';
+
+  @override
+  String get pmScheduleOverdue => 'Overdue';
+
+  @override
+  String get pmScheduleCompleted => 'Completed';
+
+  @override
+  String get pmScheduleCancelled => 'Cancelled';
+
+  @override
+  String get pmGenerateSchedules => 'Generate schedules';
+
+  @override
+  String pmSchedulesGenerated(int count) {
+    return '$count schedules generated';
+  }
+
+  @override
+  String pmMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String get pmAddChecklistItem => 'Add item';
+
+  @override
+  String get pmEditChecklistItem => 'Edit item';
+
+  @override
+  String get pmChecklistItemTitle => 'Inspection item';
+
+  @override
+  String get pmChecklistItemDescription => 'Description';
+
+  @override
+  String get pmRequiresPassFail => 'Pass / Fail';
+
+  @override
+  String get pmRequiresNotes => 'Notes';
+
+  @override
+  String get pmPhotoRequired => 'Photo required';
+
+  @override
+  String get pmCompleteSchedule => 'Complete';
+
+  @override
+  String get pmCancelSchedule => 'Cancel schedule';
+
+  @override
+  String get reportsTitle => 'Service Reports';
+
+  @override
+  String get reportsLoading => 'Loading service reports...';
+
+  @override
+  String get reportsLoadFailed => 'Failed to load service reports';
+
+  @override
+  String get reportsEmpty => 'No service reports yet';
+
+  @override
+  String get reportsList => 'Reports';
+
+  @override
+  String get reportsTotal => 'Total reports';
+
+  @override
+  String get reportsSignatures => 'Signatures';
+
+  @override
+  String get reportsCaptureSignature => 'Customer signature';
+
+  @override
+  String get reportsGenerate => 'Generate report';
+
+  @override
+  String get reportsPreview => 'Report preview';
+
+  @override
+  String get reportsDetails => 'Report details';
+
+  @override
+  String get reportsDownload => 'Download report';
+
+  @override
+  String get reportsSearchHint => 'Search reports';
+
+  @override
+  String get reportsFilterAll => 'All';
+
+  @override
+  String get reportsStatusDraft => 'Draft';
+
+  @override
+  String get reportsStatusGenerated => 'Generated';
+
+  @override
+  String get reportsStatusDownloaded => 'Downloaded';
+
+  @override
+  String get reportsWorkOrderInfo => 'Work order information';
+
+  @override
+  String get reportsAssetInfo => 'Asset information';
+
+  @override
+  String get reportsTechnician => 'Technician';
+
+  @override
+  String get reportsJobNumber => 'Job number';
+
+  @override
+  String get reportsJobTitle => 'Job title';
+
+  @override
+  String get reportsCustomerName => 'Customer name';
+
+  @override
+  String get reportsCustomerPosition => 'Customer position';
+
+  @override
+  String get reportsCustomerAddress => 'Customer address';
+
+  @override
+  String get reportsAssetNumber => 'Asset number';
+
+  @override
+  String get reportsAssetName => 'Asset name';
+
+  @override
+  String get reportsSerialNumber => 'Serial number';
+
+  @override
+  String get reportsTechnicianName => 'Technician name';
+
+  @override
+  String get reportsStartTime => 'Start time';
+
+  @override
+  String get reportsEndTime => 'End time';
+
+  @override
+  String get reportsTotalDuration => 'Total duration (minutes)';
+
+  @override
+  String get reportsTechnicianNotes => 'Technician notes';
+
+  @override
+  String get reportsCustomerNotes => 'Customer notes';
+
+  @override
+  String get reportsCustomerSignature => 'Customer signature';
+
+  @override
+  String get reportsBeforePhotos => 'Before photos';
+
+  @override
+  String get reportsProgressPhotos => 'Progress photos';
+
+  @override
+  String get reportsAfterPhotos => 'After photos';
+
+  @override
+  String get reportsQrCode => 'Report QR code';
+
+  @override
+  String get reportsNotes => 'Notes';
+
+  @override
+  String get reportsWorkOrderNumberOptional => 'Work order number (optional)';
+
+  @override
+  String get reportsSignHere => 'Sign here';
+
+  @override
+  String get reportsClearSignature => 'Clear';
+
+  @override
+  String get reportsSaveSignature => 'Save signature';
+
+  @override
+  String get reportsSignatureRequired => 'Please provide a signature';
+
+  @override
+  String get reportsSignatureSaved => 'Signature saved';
+
+  @override
+  String get reportsSignatureUnavailable => 'Signature unavailable';
+
+  @override
+  String get reportsGeneratedSuccess => 'Service report generated';
+
+  @override
+  String get reportsNone => 'None';
+
+  @override
+  String get reportsRequired => 'This field is required';
+
+  @override
+  String reportsMinutes(int count) {
+    return '$count min';
+  }
+
+  @override
+  String reportsDownloaded(String fileName) {
+    return 'Downloaded $fileName';
+  }
+
+  @override
+  String get usersTitle => 'User Management';
+
+  @override
+  String get usersLoading => 'Loading users...';
+
+  @override
+  String get usersLoadFailed => 'Failed to load users';
+
+  @override
+  String get usersEmpty => 'No users found';
+
+  @override
+  String get usersList => 'Users';
+
+  @override
+  String get usersTotal => 'Total users';
+
+  @override
+  String get usersCreate => 'Create user';
+
+  @override
+  String get usersEdit => 'Edit user';
+
+  @override
+  String get usersDetails => 'User details';
+
+  @override
+  String get usersDelete => 'Delete user';
+
+  @override
+  String get usersDeleteConfirm => 'Are you sure you want to delete this user?';
+
+  @override
+  String get usersSearchHint => 'Search users';
+
+  @override
+  String get usersFilterAll => 'All';
+
+  @override
+  String get usersStatusActive => 'Active';
+
+  @override
+  String get usersStatusDisabled => 'Disabled';
+
+  @override
+  String get usersStatusLocked => 'Locked';
+
+  @override
+  String get usersStatus => 'Status';
+
+  @override
+  String get usersFirstName => 'First name';
+
+  @override
+  String get usersLastName => 'Last name';
+
+  @override
+  String get usersUsername => 'Username';
+
+  @override
+  String get usersEmail => 'Email';
+
+  @override
+  String get usersPhone => 'Phone number';
+
+  @override
+  String get usersJobTitle => 'Job title';
+
+  @override
+  String get usersEmployeeId => 'Employee ID';
+
+  @override
+  String get usersPassword => 'Password';
+
+  @override
+  String get usersRole => 'Role';
+
+  @override
+  String get usersDepartment => 'Department';
+
+  @override
+  String get usersBranch => 'Branch';
+
+  @override
+  String get usersLastLogin => 'Last login';
+
+  @override
+  String get usersLastActive => 'Last active';
+
+  @override
+  String get usersCreatedBy => 'Created by';
+
+  @override
+  String get usersUpdatedBy => 'Updated by';
+
+  @override
+  String get usersActivity => 'Recent activity';
+
+  @override
+  String get usersEnable => 'Enable';
+
+  @override
+  String get usersDisable => 'Disable';
+
+  @override
+  String get usersLock => 'Lock';
+
+  @override
+  String get usersChangePassword => 'Change password';
+
+  @override
+  String get usersResetPassword => 'Reset password';
+
+  @override
+  String get usersCurrentPassword => 'Current password';
+
+  @override
+  String get usersNewPassword => 'New password';
+
+  @override
+  String get usersConfirmPassword => 'Confirm password';
+
+  @override
+  String get usersPasswordMin => 'Password must be at least 8 characters';
+
+  @override
+  String get usersPasswordMismatch => 'Passwords do not match';
+
+  @override
+  String get usersPasswordChanged => 'Password changed successfully';
+
+  @override
+  String get usersPasswordResetSuccess => 'Password reset successfully';
+
+  @override
+  String get usersOrgRefsRequired =>
+      'Selected department must include region and city';
+
+  @override
+  String get usersCancel => 'Cancel';
+
+  @override
+  String get usersSave => 'Save';
+
+  @override
+  String get usersRequired => 'This field is required';
+
+  @override
+  String get rolesTitle => 'Roles & Permissions';
+
+  @override
+  String get rolesLoading => 'Loading roles...';
+
+  @override
+  String get rolesLoadFailed => 'Failed to load roles';
+
+  @override
+  String get rolesEmpty => 'No roles found';
+
+  @override
+  String get rolesList => 'Roles';
+
+  @override
+  String get rolesTotal => 'Total roles';
+
+  @override
+  String get rolesActive => 'Active roles';
+
+  @override
+  String get rolesSystem => 'System roles';
+
+  @override
+  String get rolesCustom => 'Custom roles';
+
+  @override
+  String get rolesCreate => 'Create role';
+
+  @override
+  String get rolesEdit => 'Edit role';
+
+  @override
+  String get rolesDetails => 'Role details';
+
+  @override
+  String get rolesDelete => 'Delete role';
+
+  @override
+  String get rolesDeleteConfirm => 'Are you sure you want to delete this role?';
+
+  @override
+  String get rolesDeleted => 'Role deleted';
+
+  @override
+  String get rolesCreated => 'Role created';
+
+  @override
+  String get rolesUpdated => 'Role updated';
+
+  @override
+  String get rolesCloned => 'Role cloned';
+
+  @override
+  String get rolesClone => 'Clone role';
+
+  @override
+  String get rolesActivate => 'Activate';
+
+  @override
+  String get rolesDeactivate => 'Deactivate';
+
+  @override
+  String get rolesAssignUsers => 'Assign users';
+
+  @override
+  String get rolesAssign => 'Assign';
+
+  @override
+  String get rolesAssigned => 'Users assigned successfully';
+
+  @override
+  String get rolesSearchHint => 'Search roles';
+
+  @override
+  String get rolesSearchUsersHint => 'Search users';
+
+  @override
+  String get rolesSearchPermissions => 'Search permissions';
+
+  @override
+  String get rolesName => 'Role name';
+
+  @override
+  String get rolesNameRequired => 'Role name is required';
+
+  @override
+  String get rolesDescription => 'Description';
+
+  @override
+  String get rolesColor => 'Color';
+
+  @override
+  String get rolesPermissions => 'Permissions';
+
+  @override
+  String get rolesNoPermissions => 'No permissions selected';
+
+  @override
+  String get rolesSave => 'Save role';
+
+  @override
+  String get rolesCancel => 'Cancel';
+
+  @override
+  String get rolesSystemBadge => 'System';
+
+  @override
+  String get rolesStatusActive => 'Active';
+
+  @override
+  String get rolesStatusInactive => 'Inactive';
+
+  @override
+  String get rolesAssignedUsersTitle => 'Assigned users';
+
+  @override
+  String get rolesNoAssignedUsers => 'No users assigned to this role';
+
+  @override
+  String get rolesNoUsersFound => 'No users found';
+
+  @override
+  String rolesAssignedUsers(int count) {
+    return '$count users';
+  }
+
+  @override
+  String rolesPermissionCount(int count) {
+    return '$count permissions';
+  }
+
+  @override
+  String rolesSelectedPermissions(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get dashboardLoading => 'Loading dashboard...';
+
+  @override
+  String get dashboardOverview => 'Operations overview';
+
+  @override
+  String get dashboardTodayAttendance => 'Today\'s attendance';
+
+  @override
+  String get dashboardTodayWorkOrders => 'Today\'s work orders';
+
+  @override
+  String get dashboardUpcomingPm => 'Upcoming PM';
+
+  @override
+  String get dashboardLowStock => 'Low stock alerts';
+
+  @override
+  String get dashboardRecentNotifications => 'Recent notifications';
+
+  @override
+  String get dashboardNoNotifications => 'No recent notifications';
+
+  @override
+  String get dashboardQuickActions => 'Quick actions';
+
+  @override
+  String get dashboardPeriodToday => 'Today';
+
+  @override
+  String get dashboardPeriodWeek => 'Week';
+
+  @override
+  String get dashboardPeriodMonth => 'Month';
+
+  @override
+  String get dashboardPeriodYear => 'Year';
+
+  @override
+  String get dashboardPeriodCustom => 'Custom';
+
+  @override
+  String get dashboardSectionKpis => 'Key metrics';
+
+  @override
+  String get dashboardSectionAttendance => 'Attendance';
+
+  @override
+  String get dashboardSectionOvertime => 'Overtime';
+
+  @override
+  String get dashboardSectionWorkOrders => 'Work orders';
+
+  @override
+  String get dashboardSectionPm => 'Preventive maintenance';
+
+  @override
+  String get dashboardSectionInventory => 'Inventory';
+
+  @override
+  String get dashboardSectionAssets => 'Assets';
+
+  @override
+  String get dashboardSectionLiveActivity => 'Live activity';
+
+  @override
+  String get dashboardSectionCharts => 'Trends';
+
+  @override
+  String get dashboardSectionTeamOverview => 'Team overview';
+
+  @override
+  String get dashboardSectionTeamAttendance => 'Team attendance';
+
+  @override
+  String get dashboardSectionTeamOvertime => 'Team overtime';
+
+  @override
+  String get dashboardSectionTeamWorkOrders => 'Team work orders';
+
+  @override
+  String get dashboardSectionTeamPm => 'Team PM';
+
+  @override
+  String get dashboardSectionTeamInventory => 'Team inventory alerts';
+
+  @override
+  String get dashboardSectionTeamActivity => 'Team activity';
+
+  @override
+  String get dashboardSectionTeamPerformance => 'Team performance';
+
+  @override
+  String get dashboardSectionLocation => 'Location';
+
+  @override
+  String get dashboardSectionPerformance => 'Performance';
+
+  @override
+  String get dashboardKpiTotalEmployees => 'Total employees';
+
+  @override
+  String get dashboardKpiActiveEmployees => 'Active employees';
+
+  @override
+  String get dashboardKpiCurrentlyWorking => 'Currently working';
+
+  @override
+  String get dashboardKpiOnOvertime => 'On overtime';
+
+  @override
+  String get dashboardKpiOnTravelOt => 'On travel OT';
+
+  @override
+  String get dashboardKpiTotalWorkingHours => 'Total working hours';
+
+  @override
+  String get dashboardKpiAverageWorkingHours => 'Average working hours';
+
+  @override
+  String get dashboardKpiAttendanceRate => 'Attendance rate';
+
+  @override
+  String get dashboardKpiOtHours => 'Overtime hours';
+
+  @override
+  String get dashboardKpiTravelOtHours => 'Travel OT hours';
+
+  @override
+  String get dashboardKpiAvgOtPerEmployee => 'Avg OT per employee';
+
+  @override
+  String get dashboardKpiWoTotal => 'Total work orders';
+
+  @override
+  String get dashboardKpiWoPending => 'Pending';
+
+  @override
+  String get dashboardKpiWoAssigned => 'Assigned';
+
+  @override
+  String get dashboardKpiWoInProgress => 'In progress';
+
+  @override
+  String get dashboardKpiWoCompleted => 'Completed';
+
+  @override
+  String get dashboardKpiWoCancelled => 'Cancelled';
+
+  @override
+  String get dashboardKpiPmDue => 'Due';
+
+  @override
+  String get dashboardKpiPmOverdue => 'Overdue';
+
+  @override
+  String get dashboardKpiPmCompleted => 'Completed';
+
+  @override
+  String get dashboardKpiPmAssigned => 'Assigned tasks';
+
+  @override
+  String get dashboardKpiOutOfStock => 'Out of stock';
+
+  @override
+  String get dashboardKpiAssetsTotal => 'Total assets';
+
+  @override
+  String get dashboardKpiAssetsActive => 'Active';
+
+  @override
+  String get dashboardKpiAssetsMaintenance => 'Under maintenance';
+
+  @override
+  String get dashboardKpiAssetsRetired => 'Retired';
+
+  @override
+  String get dashboardKpiTeamSize => 'Team size';
+
+  @override
+  String get dashboardKpiMembersPresent => 'Members present';
+
+  @override
+  String get dashboardKpiCompletionRate => 'Completion rate';
+
+  @override
+  String get dashboardKpiTodayWorkingHours => 'Today\'s working hours';
+
+  @override
+  String get dashboardKpiMonthlyWorkingHours => 'Period working hours';
+
+  @override
+  String get dashboardKpiMonthlyOtHours => 'Period OT hours';
+
+  @override
+  String get dashboardKpiMonthlyTravelOt => 'Period travel OT';
+
+  @override
+  String get dashboardKpiCompletedJobs => 'Completed jobs';
+
+  @override
+  String get dashboardKpiAvgCompletionHours => 'Avg completion hours';
+
+  @override
+  String get dashboardNoLiveActivity => 'No recent activity';
+
+  @override
+  String get dashboardSystemActor => 'System';
+
+  @override
+  String get dashboardLocationUnknown => 'Location unavailable';
+
+  @override
+  String dashboardLastSync(String date) {
+    return 'Last sync: $date';
+  }
+
+  @override
+  String dashboardHoursValue(String value) {
+    return '$value h';
+  }
+
+  @override
+  String dashboardPercentValue(String value) {
+    return '$value%';
+  }
+
+  @override
+  String get dashboardChartAttendance => 'Attendance trend';
+
+  @override
+  String get dashboardChartOvertime => 'Overtime trend';
+
+  @override
+  String get dashboardChartWorkOrders => 'Work orders trend';
+
+  @override
+  String get dashboardChartPm => 'PM trend';
+
+  @override
+  String get dashboardChartEmpty => 'No chart data';
+
+  @override
+  String get dashboardViewAll => 'View all';
+
+  @override
+  String dashboardChartWindowDays(int days) {
+    return '${days}d';
+  }
+
+  @override
+  String get dashboardTrends => 'Trends';
+
+  @override
+  String get dashboardWorkforce => 'Workforce';
+
+  @override
+  String get dashboardOperations => 'Operations';
+
+  @override
+  String get dashboardResources => 'Resources';
+
+  @override
+  String get dashboardKeyMetrics => 'Key metrics';
+
+  @override
+  String get settingsSearchHint => 'Search settings';
+
+  @override
+  String get settingsEmptySearch => 'No settings match your search';
+
+  @override
+  String get settingsSectionAccount => 'Account';
+
+  @override
+  String get settingsSectionOrganization => 'Organization';
+
+  @override
+  String get settingsSectionAdministration => 'Administration';
+
+  @override
+  String get settingsSectionSystem => 'System';
+
+  @override
+  String get settingsSectionAbout => 'About';
+
+  @override
+  String get settingsMyProfile => 'My profile';
+
+  @override
+  String get settingsChangePassword => 'Change password';
+
+  @override
+  String get settingsLanguage => 'Language';
+
+  @override
+  String get settingsLanguageEnglish => 'English';
+
+  @override
+  String get settingsLanguageArabic => 'Arabic';
+
+  @override
+  String get settingsTheme => 'Theme';
+
+  @override
+  String get settingsThemeSystem => 'System default';
+
+  @override
+  String get settingsThemeLight => 'Light';
+
+  @override
+  String get settingsThemeDark => 'Dark';
+
+  @override
+  String get settingsNotificationPreferences => 'Notification preferences';
+
+  @override
+  String get settingsPushNotifications => 'Push notifications';
+
+  @override
+  String get settingsEmailNotifications => 'Email notifications';
+
+  @override
+  String get settingsCompanyInformation => 'Company information';
+
+  @override
+  String get settingsCompanyLogo => 'Company logo';
+
+  @override
+  String get settingsCompanyName => 'Company name';
+
+  @override
+  String get settingsContactEmail => 'Contact email';
+
+  @override
+  String get settingsContactPhone => 'Contact phone';
+
+  @override
+  String get settingsAddress => 'Address';
+
+  @override
+  String get settingsAddressLine1 => 'Address line 1';
+
+  @override
+  String get settingsAddressLine2 => 'Address line 2';
+
+  @override
+  String get settingsCity => 'City';
+
+  @override
+  String get settingsGovernorate => 'Governorate';
+
+  @override
+  String get settingsCountry => 'Country';
+
+  @override
+  String get settingsPostalCode => 'Postal code';
+
+  @override
+  String get settingsWorkingHours => 'Working hours';
+
+  @override
+  String get settingsWorkingHoursStart => 'Start time';
+
+  @override
+  String get settingsWorkingHoursEnd => 'End time';
+
+  @override
+  String get settingsTimezone => 'Time zone';
+
+  @override
+  String get settingsBackupRestore => 'Backup & restore';
+
+  @override
+  String get settingsCacheManagement => 'Cache management';
+
+  @override
+  String get settingsSystemStatus => 'System status';
+
+  @override
+  String get settingsApiStatus => 'API status';
+
+  @override
+  String get settingsDatabaseStatus => 'Database status';
+
+  @override
+  String get settingsStorageUsage => 'Storage usage';
+
+  @override
+  String get settingsApiVersion => 'API version';
+
+  @override
+  String get settingsBackendVersion => 'Backend version';
+
+  @override
+  String get settingsAppVersion => 'App version';
+
+  @override
+  String get settingsUptime => 'Uptime';
+
+  @override
+  String get settingsPrivacyPolicy => 'Privacy policy';
+
+  @override
+  String get settingsTermsOfService => 'Terms of service';
+
+  @override
+  String get settingsOpenSourceLicenses => 'Open source licenses';
+
+  @override
+  String get settingsPrivacyBody =>
+      'INFINITY processes field service data to support operations for Total-Com Solutions. Personal data is used only for authentication, attendance, and work execution.';
+
+  @override
+  String get settingsTermsBody =>
+      'Use of INFINITY is limited to authorized personnel. Unauthorized access, data misuse, or redistribution of company information is prohibited.';
+
+  @override
+  String get settingsUiOnly => 'UI only in this release';
+
+  @override
+  String get settingsComingSoonAction =>
+      'This action will be available in a future release';
+
+  @override
+  String get settingsCacheCleared => 'Local cache acknowledged';
+
+  @override
+  String get settingsLoading => 'Loading settings...';
+
+  @override
+  String get settingsLoadFailed => 'Failed to load settings';
+
+  @override
+  String get settingsSaved => 'Settings saved';
+
+  @override
+  String get settingsLogoUpdated => 'Company logo updated';
+
+  @override
+  String get settingsSave => 'Save settings';
+
+  @override
+  String get livePhotoRequired => 'A live photo is required.';
+
+  @override
+  String get deviceTimeIncorrect => 'Device time appears to be incorrect.';
+
+  @override
+  String get gpsAccuracyTooLow =>
+      'Location accuracy is too low. Move to an open area and try again.';
+
+  @override
+  String get attendanceUpdated => 'Attendance updated successfully.';
+
+  @override
+  String get attendanceLoading => 'Loading attendance...';
+
+  @override
+  String get attendanceHistoryLoading => 'Loading history...';
+
+  @override
+  String get attendanceHistoryEmpty => 'No attendance history yet';
+
+  @override
+  String get attendanceTimeline => 'Timeline';
+
+  @override
+  String get attendanceHistoryTooltip => 'History';
+
+  @override
+  String get overtimeEnded =>
+      'Overtime ended. Eligible overtime calculated automatically.';
+
+  @override
+  String get normalOvertimeStarted => 'Normal overtime started.';
+
+  @override
+  String get travelOvertimeStarted => 'Travel overtime started.';
+
+  @override
+  String get overtimeLoading => 'Loading overtime...';
+
+  @override
+  String get overtimeLoadFailed => 'Unable to load overtime.';
+
+  @override
+  String get overtimeMyTooltip => 'My Overtime';
+
+  @override
+  String get overtimeManageTooltip => 'Manage Overtime';
+
+  @override
+  String get attendanceClockIn => 'Clock In';
+
+  @override
+  String get attendanceClockOut => 'Clock Out';
+
+  @override
+  String get attendanceStartBreak => 'Start Break';
+
+  @override
+  String get attendanceEndBreak => 'End Break';
+
+  @override
+  String get attendanceShiftCompleted =>
+      'You have completed your shift for today.';
+
+  @override
+  String get attendanceTodayStatus => 'Today\'s Status';
+
+  @override
+  String get attendanceWorkingHours => 'Working hours';
+
+  @override
+  String get attendanceBreaks => 'Breaks';
+
+  @override
+  String get attendanceTimelineEmpty =>
+      'No attendance activity recorded yet today.';
+
+  @override
+  String get attendanceEventClockedIn => 'Clocked in';
+
+  @override
+  String get attendanceEventClockedOut => 'Clocked out';
+
+  @override
+  String get attendanceEventBreakStarted => 'Break started';
+
+  @override
+  String get attendanceEventBreakEnded => 'Break ended';
+
+  @override
+  String get attendanceSyncedOffline => 'Synced from offline record';
+
+  @override
+  String get attendanceHistoryTitle => 'Attendance History';
+
+  @override
+  String get attendanceStatusNotStarted => 'Not started';
+
+  @override
+  String get attendanceStatusWorking => 'Working';
+
+  @override
+  String get attendanceStatusOnBreak => 'On break';
+
+  @override
+  String get attendanceStatusClockedOut => 'Clocked out';
+
+  @override
+  String get overtimeStartTitle => 'Start overtime';
+
+  @override
+  String get overtimeStartHint =>
+      'Official hours are 09:00 AM – 05:00 PM. Time outside that window is calculated automatically.';
+
+  @override
+  String get overtimeStartNormal => 'Start Normal Overtime';
+
+  @override
+  String get overtimeStartTravel => 'Start Travel Overtime';
+
+  @override
+  String get overtimeEnd => 'End Overtime';
+
+  @override
+  String get overtimeStatusLabel => 'Status';
+
+  @override
+  String get overtimeStartTime => 'Start time';
+
+  @override
+  String get overtimeLocation => 'Location';
+
+  @override
+  String get overtimeRunningTimer => 'Running timer';
+
+  @override
+  String get overtimeLastSessionSummary => 'Last session summary';
+
+  @override
+  String get overtimeEligible => 'Eligible overtime';
+
+  @override
+  String get overtimeTypeNormal => 'Normal Overtime';
+
+  @override
+  String get overtimeTypeTravel => 'Travel Overtime';
+
+  @override
+  String get offlineMode => 'Offline Mode';
+
+  @override
+  String get loadingGeneric => 'Loading...';
+
+  @override
+  String get confirm => 'Confirm';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get yes => 'Yes';
+
+  @override
+  String get no => 'No';
+
+  @override
+  String get labelType => 'Type';
+
+  @override
+  String get labelName => 'Name';
+
+  @override
+  String get labelStart => 'Start';
+
+  @override
+  String get labelEnd => 'End';
+
+  @override
+  String get labelCreated => 'Created';
+
+  @override
+  String get filterPending => 'Pending';
+
+  @override
+  String get filterApproved => 'Approved';
+
+  @override
+  String get filterRejected => 'Rejected';
+
+  @override
+  String get approve => 'Approve';
+
+  @override
+  String get deviceRegistrationFailed =>
+      'Device registration failed. Restart the app.';
+
+  @override
+  String get firstSignInRequiresInternet =>
+      'Internet is required for the first sign-in.';
+
+  @override
+  String get attendanceOfflineCachedData =>
+      'Offline mode — showing cached attendance data.';
+
+  @override
+  String attendancePendingSync(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count attendance records pending sync.',
+      one: '1 attendance record pending sync.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String attendancePendingOfflineRecords(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pending offline records',
+      one: '1 pending offline record',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get profileLoading => 'Loading profile...';
+
+  @override
+  String get profilePhone => 'Phone';
+
+  @override
+  String get profilePosition => 'Position';
+
+  @override
+  String get profileNoPermissions => 'No permissions assigned';
+
+  @override
+  String get orgTitle => 'Organization';
+
+  @override
+  String get orgCompanies => 'Companies';
+
+  @override
+  String get orgCompaniesSubtitle => 'Tenant company profile';
+
+  @override
+  String get orgSearchCompanies => 'Search companies';
+
+  @override
+  String get orgBranches => 'Branches';
+
+  @override
+  String get orgBranchesSubtitle => 'Branch locations';
+
+  @override
+  String get orgSearchBranches => 'Search branches';
+
+  @override
+  String get orgDepartments => 'Departments';
+
+  @override
+  String get orgDepartmentsSubtitle => 'Department structure';
+
+  @override
+  String get orgSearchDepartments => 'Search departments';
+
+  @override
+  String get orgTeams => 'Teams';
+
+  @override
+  String get orgTeamsSubtitle => 'Operational teams';
+
+  @override
+  String get orgSearchTeams => 'Search teams';
+
+  @override
+  String get orgPositions => 'Positions';
+
+  @override
+  String get orgPositionsSubtitle => 'Job positions';
+
+  @override
+  String get orgSearchPositions => 'Search positions';
+
+  @override
+  String get orgUserDirectory => 'User Directory';
+
+  @override
+  String get orgUserDirectorySubtitle => 'Employees and roles';
+
+  @override
+  String get orgSearchUsers => 'Search users';
+
+  @override
+  String get orgSearch => 'Search';
+
+  @override
+  String get orgEmpty => 'No records found';
+
+  @override
+  String get orgNoCachedData => 'No cached data yet.';
+
+  @override
+  String get usersRoleAdmin => 'Admin';
+
+  @override
+  String get usersRoleSupervisor => 'Supervisor';
+
+  @override
+  String get usersRoleTechnician => 'Technician';
+
+  @override
+  String get usersRoleHr => 'HR';
+
+  @override
+  String get rolesNotLoaded => 'Role not loaded';
+
+  @override
+  String get rolesSelectAtLeastOneUser => 'Select at least one user';
+
+  @override
+  String get overtimeMyHistory => 'My Overtime';
+
+  @override
+  String get overtimeManagement => 'Overtime Management';
+
+  @override
+  String get overtimeDetails => 'Overtime Details';
+
+  @override
+  String get overtimeDetailsLoading => 'Loading details...';
+
+  @override
+  String get overtimeDetailsLoadFailed => 'Unable to load overtime details.';
+
+  @override
+  String get overtimeHistoryLoadFailed => 'Unable to load overtime history.';
+
+  @override
+  String get overtimeHistoryEmpty => 'No overtime history yet.';
+
+  @override
+  String get overtimeAdminEmpty => 'No overtime sessions found.';
+
+  @override
+  String get overtimeSearchTechnician => 'Search technician name or email';
+
+  @override
+  String get overtimeTechnicianInfo => 'Technician Information';
+
+  @override
+  String get overtimeSessionInfo => 'Session Information';
+
+  @override
+  String get overtimeEndTime => 'End time';
+
+  @override
+  String get overtimeTotalDuration => 'Total duration';
+
+  @override
+  String get overtimeWorkingDuration => 'Working duration';
+
+  @override
+  String get overtimeRejectionReason => 'Rejection reason';
+
+  @override
+  String overtimeRejectionReasonLine(String reason) {
+    return 'Rejection reason: $reason';
+  }
+
+  @override
+  String get overtimeApprovedBy => 'Approved by';
+
+  @override
+  String get overtimeApprovedAt => 'Approved at';
+
+  @override
+  String get overtimeRejectedBy => 'Rejected by';
+
+  @override
+  String get overtimeRejectedAt => 'Rejected at';
+
+  @override
+  String get overtimeImages => 'Images';
+
+  @override
+  String get overtimeStartPhoto => 'Start photo';
+
+  @override
+  String get overtimeEndPhoto => 'End photo';
+
+  @override
+  String get overtimeDeviceInfo => 'Device Information';
+
+  @override
+  String get overtimeStartDevice => 'Start device';
+
+  @override
+  String get overtimeEndDevice => 'End device';
+
+  @override
+  String get overtimeNoPhotoAvailable => 'No photo available';
+
+  @override
+  String get overtimeRejectDialogTitle => 'Reject Overtime';
+
+  @override
+  String get overtimeRejectReasonHint => 'Optional rejection reason';
+
+  @override
+  String get overtimeApprovedMessage => 'Overtime approved.';
+
+  @override
+  String get overtimeRejectedMessage => 'Overtime rejected.';
+
+  @override
+  String overtimeDurationLine(String duration) {
+    return 'Duration: $duration';
+  }
+
+  @override
+  String get overtimeStatusRunning => 'Running';
+
+  @override
+  String get overtimeStatusPendingReview => 'Pending review';
+
+  @override
+  String get overtimeStatusApproved => 'Approved';
+
+  @override
+  String get overtimeStatusRejected => 'Rejected';
+
+  @override
+  String get overtimeStatusCancelled => 'Cancelled';
+
+  @override
+  String get overtimeStartLocation => 'Start Location';
+
+  @override
+  String get overtimeEndLocation => 'End Location';
+
+  @override
+  String get overtimeRoute => 'Route';
+
+  @override
+  String get overtimeStartAddress => 'Start Address';
+
+  @override
+  String get overtimeEndAddress => 'End Address';
+
+  @override
+  String get overtimeMapLoadFailed => 'Unable to load map tiles';
+
+  @override
+  String get overtimeMapCheckConnection =>
+      'Check your connection and try again.';
+
+  @override
+  String get overtimeOpenInGoogleMaps => 'Open in Google Maps';
+
+  @override
+  String get overtimeUnableOpenGoogleMaps => 'Unable to open Google Maps.';
+
+  @override
+  String get workOrderSaved => 'Saved';
+
+  @override
+  String get workOrderJobTitleRequired => 'Job title is required';
+
+  @override
+  String get workOrderJobTitleMaxLength =>
+      'Job title must be at most 200 characters';
+
+  @override
+  String get workOrderUpdated => 'Work order updated';
+
+  @override
+  String get workOrderCreated => 'Work order created';
+
+  @override
+  String get workOrderNoPermission =>
+      'You do not have permission to manage work orders.';
+
+  @override
+  String get workOrderOverview => 'Overview';
+
+  @override
+  String get workOrderOverviewSubtitle => 'Customer, location, and job details';
+
+  @override
+  String get workOrderViewOnMap => 'View on map';
+
+  @override
+  String get workOrderCouldNotOpenMaps => 'Could not open maps';
+
+  @override
+  String get workOrderWorkDescription => 'Work description';
+
+  @override
+  String get workOrderInternalNotes => 'Internal notes';
+
+  @override
+  String get workOrderDocument => 'Document';
+
+  @override
+  String get workOrderBeforeWork => 'Before work';
+
+  @override
+  String get workOrderBeforeWorkSubtitleEdit =>
+      'Capture site photos and optional notes';
+
+  @override
+  String get workOrderBeforeWorkSubtitleView => 'Before-work evidence';
+
+  @override
+  String get workOrderBeforePhotos => 'Before photos';
+
+  @override
+  String get workOrderSavedBeforeNotes => 'Saved before notes';
+
+  @override
+  String get workOrderBeforeNotes => 'Before notes';
+
+  @override
+  String get workOrderBeforeNotesHint => 'Optional notes before starting work';
+
+  @override
+  String get workOrderInProgress => 'In progress';
+
+  @override
+  String get workOrderInProgressSubtitle => 'Progress photos and field notes';
+
+  @override
+  String get workOrderProgressPhotos => 'Progress photos';
+
+  @override
+  String get workOrderProgressNotes => 'Progress notes';
+
+  @override
+  String get workOrderNoProgressNotes => 'No progress notes yet';
+
+  @override
+  String get workOrderAddProgressNote => 'Add progress note';
+
+  @override
+  String get workOrderProgressNoteHint => 'What progress was made?';
+
+  @override
+  String get workOrderCompleteWork => 'Complete work';
+
+  @override
+  String get workOrderCompleteWorkSubtitleEdit =>
+      'At least one after photo is required';
+
+  @override
+  String get workOrderCompleteWorkSubtitleView => 'Completion evidence';
+
+  @override
+  String get workOrderCompletionNotes => 'Completion notes';
+
+  @override
+  String get workOrderCompletionNotesHint => 'Optional notes when completing';
+
+  @override
+  String get workOrderCompletionNotesOptional => 'Completion notes (optional)';
+
+  @override
+  String get workOrderAfterPhotos => 'After photos';
+
+  @override
+  String get workOrderAfterPhotoRequired =>
+      'Add at least one after photo before completing.';
+
+  @override
+  String get workOrderAfterPhotoRequiredSnackbar =>
+      'Add at least one after photo before completing';
+
+  @override
+  String get workOrderCapturedLocations => 'Captured locations';
+
+  @override
+  String get workOrderCapturedLocationsSubtitle =>
+      'GPS checkpoints from the field';
+
+  @override
+  String get workOrderLocationStarted => 'Started';
+
+  @override
+  String get workOrderLocationCompleted => 'Completed';
+
+  @override
+  String get workOrderOpenMap => 'Open map';
+
+  @override
+  String get workOrderSaveNotes => 'Save notes';
+
+  @override
+  String get workOrderTakePhoto => 'Take photo';
+
+  @override
+  String get workOrderChooseFromGallery => 'Choose from gallery';
+
+  @override
+  String workOrderHideNote(String title) {
+    return 'Hide $title';
+  }
+
+  @override
+  String get workOrderTimeline => 'Timeline';
+
+  @override
+  String get workOrderTimelineSubtitle => 'Read-only activity history';
+
+  @override
+  String get workOrderTimelineEmpty =>
+      'Activity will appear as the work order progresses.';
+
+  @override
+  String get workOrderSystem => 'System';
+
+  @override
+  String get workOrderNoPhotosYet => 'No photos yet';
+
+  @override
+  String get workOrderDeleteConfirm =>
+      'Are you sure you want to delete this work order?';
+
+  @override
+  String get workOrderRejectionReason => 'Rejection reason';
+
+  @override
+  String get workOrderReasonOptional => 'Reason (optional)';
+
+  @override
+  String get workOrderNoTechnicians => 'No technicians available';
+
+  @override
+  String get workOrderAccepted => 'Work order accepted';
+
+  @override
+  String get workOrderRejected => 'Work order rejected';
+
+  @override
+  String get workOrderStarted => 'Work started';
+
+  @override
+  String get workOrderCompletedMessage => 'Work order completed';
+
+  @override
+  String get workOrderCancelledMessage => 'Work order cancelled';
+
+  @override
+  String get workOrderTechnicianAssigned => 'Technician assigned';
+
+  @override
+  String get workOrderDeleted => 'Work order deleted';
+
+  @override
+  String get workOrderBeforeWorkSaved => 'Before-work details saved';
+
+  @override
+  String get workOrderProgressNoteAdded => 'Progress note added';
+
+  @override
+  String get workOrderProgressPhotoUploaded => 'Progress photo uploaded';
+
+  @override
+  String get workOrderAfterPhotoUploaded => 'After photo uploaded';
+
+  @override
+  String get workOrderPhotoRemoved => 'Photo removed';
+
+  @override
+  String get workOrderStatusPending => 'Pending';
+
+  @override
+  String get workOrderStatusAssigned => 'Assigned';
+
+  @override
+  String get workOrderStatusAccepted => 'Accepted';
+
+  @override
+  String get workOrderStatusRejected => 'Rejected';
+
+  @override
+  String get workOrderStatusInProgress => 'In Progress';
+
+  @override
+  String get workOrderStatusCompleted => 'Completed';
+
+  @override
+  String get workOrderStatusCancelled => 'Cancelled';
+
+  @override
+  String get workOrderPriorityLow => 'Low';
+
+  @override
+  String get workOrderPriorityMedium => 'Medium';
+
+  @override
+  String get workOrderPriorityHigh => 'High';
+
+  @override
+  String get workOrderPriorityCritical => 'Critical';
+
+  @override
+  String get workOrderTimelineCreated => 'Created';
+
+  @override
+  String get workOrderTimelineAssigned => 'Assigned';
+
+  @override
+  String get workOrderTimelineAccepted => 'Accepted';
+
+  @override
+  String get workOrderTimelineRejected => 'Rejected';
+
+  @override
+  String get workOrderTimelineStarted => 'Started';
+
+  @override
+  String get workOrderTimelineCompleted => 'Completed';
+
+  @override
+  String get workOrderTimelineCancelled => 'Cancelled';
+
+  @override
+  String get errorInvalidCredentials => 'Invalid email or password.';
+
+  @override
+  String get errorForbidden =>
+      'You do not have permission to perform this action.';
+
+  @override
+  String get errorServer => 'Server error. Please try again later.';
+
+  @override
+  String get errorRequestTimeout => 'Request timed out. Please try again.';
+
+  @override
+  String get errorUnableToReachServer => 'Unable to reach the server.';
+
+  @override
+  String get errorNoInternet =>
+      'No internet connection. Please check your network.';
+
+  @override
+  String get errorRequestFailed => 'Request failed';
+
+  @override
+  String get attendanceAlreadyClockedIn => 'You have already clocked in today.';
+
+  @override
+  String get attendanceMustClockInBeforeOut =>
+      'You must clock in before clocking out.';
+
+  @override
+  String get attendanceEndBreakBeforeOut =>
+      'End your current break before clocking out.';
+
+  @override
+  String get attendanceAlreadyClockedOut =>
+      'You have already clocked out today.';
+
+  @override
+  String get attendanceMustClockInBeforeBreak =>
+      'You must clock in before starting a break.';
+
+  @override
+  String get attendanceBreakAlreadyInProgress =>
+      'A break is already in progress.';
+
+  @override
+  String get attendanceNoActiveBreak => 'There is no active break to end.';
+
+  @override
+  String attendanceGpsAccuracyExceeded(String accuracy, String threshold) {
+    return 'Location accuracy (${accuracy}m) exceeds the allowed threshold (${threshold}m). Move to an open area and try again.';
+  }
+
+  @override
+  String get attendanceWebOfflinePhotoRequired =>
+      'Photo attendance requires an internet connection on web. Please reconnect and try again.';
+
+  @override
+  String get locationServicesDisabled =>
+      'Location services are disabled. Enable GPS to continue.';
+
+  @override
+  String get locationPermissionRequired =>
+      'Location permission is required to clock in or out.';
+
+  @override
+  String get locationPermissionDeniedForever =>
+      'Location permission is permanently denied. Enable it from device settings.';
+
+  @override
+  String get locationTimeout =>
+      'Could not determine your location in time. Try again.';
+
+  @override
+  String get cameraUnavailable =>
+      'Camera is unavailable. A live photo is required.';
+
+  @override
+  String get authNoActiveSession => 'No active session.';
+
+  @override
+  String get authOfflineRestoreProfile =>
+      'Offline Mode. Connect once to restore your profile.';
+
+  @override
+  String get overtimeNoRunningSession =>
+      'No running overtime session found to end.';
+
+  @override
+  String get assetsQrScannerNotReady =>
+      'QR scanning will be available in a future release.';
+
+  @override
+  String get orgStatusActive => 'Active';
+
+  @override
+  String get orgStatusInactive => 'Inactive';
+
+  @override
+  String get errorInvalidEmail => 'Invalid email or password.';
+
+  @override
+  String get errorInvalidPassword => 'Invalid password.';
+
+  @override
+  String get errorUserDisabled =>
+      'This account is disabled. Contact your administrator.';
+
+  @override
+  String get errorClockSkew =>
+      'Device time appears to be incorrect. Sync your clock and try again.';
+
+  @override
+  String get errorGpsRequired => 'Location is required to continue.';
+
+  @override
+  String get errorLivePhotoRequired => 'A live photo is required.';
+
+  @override
+  String get errorWorkOrderNotFound => 'Work order not found.';
+
+  @override
+  String get errorNotFound => 'The requested item was not found.';
+
+  @override
+  String get errorUnauthorized =>
+      'Your session has expired. Please sign in again.';
+
+  @override
+  String get errorValidation => 'Please check your input and try again.';
+
+  @override
+  String get errorGpsAccuracyTooLow =>
+      'Location accuracy is too low. Move to an open area and try again.';
+
+  @override
+  String get errorDeviceRequired => 'Device identification is required.';
+
+  @override
+  String get errorClientRequestRequired => 'Request identifier is required.';
+
+  @override
+  String get errorInvalidTimestamp => 'Invalid date or time.';
+
+  @override
+  String get errorConflict => 'This action conflicts with the current state.';
+
+  @override
+  String get errorUserNotFound => 'User not found.';
+
+  @override
+  String get errorOvertimeNotFound => 'Overtime session not found.';
+
+  @override
+  String get errorTitleRequired => 'Title is required.';
+
+  @override
+  String get errorInvalidPriority => 'Invalid priority value.';
+
+  @override
+  String get errorInvalidDate => 'Invalid date value.';
+
+  @override
+  String get errorInvalidStatus => 'Invalid status value.';
+
+  @override
+  String get errorAvatarRequired => 'Avatar image is required.';
+
+  @override
+  String get errorUploadFailed => 'Upload failed. Please try again.';
+}

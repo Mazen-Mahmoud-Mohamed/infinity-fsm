@@ -1,0 +1,155 @@
+import 'dart:async';
+
+import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/services/connectivity_service.dart';
+import 'package:mobile/core/services/gps_address_sync_service.dart';
+import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
+import 'package:mobile/features/overtime/domain/usecases/sync_pending_overtime_usecase.dart';
+
+enum OvertimeSyncStatus { idle, syncing, success, failure }
+
+class OvertimeSyncState extends Equatable {
+  const OvertimeSyncState({
+    this.status = OvertimeSyncStatus.idle,
+    this.pendingCount = 0,
+    this.isOnline = true,
+    this.message,
+  });
+
+  final OvertimeSyncStatus status;
+  final int pendingCount;
+  final bool isOnline;
+  final String? message;
+
+  OvertimeSyncState copyWith({
+    OvertimeSyncStatus? status,
+    int? pendingCount,
+    bool? isOnline,
+    String? message,
+    bool clearMessage = false,
+  }) {
+    return OvertimeSyncState(
+      status: status ?? this.status,
+      pendingCount: pendingCount ?? this.pendingCount,
+      isOnline: isOnline ?? this.isOnline,
+      message: clearMessage ? null : message ?? this.message,
+    );
+  }
+
+  @override
+  List<Object?> get props => [status, pendingCount, isOnline, message];
+}
+
+class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
+  OvertimeSyncCubit({
+    required SyncPendingOvertimeUseCase syncUseCase,
+    required OvertimeRepository repository,
+    required ConnectivityService connectivity,
+    required GpsAddressSyncService gpsAddressSync,
+  })  : _syncUseCase = syncUseCase,
+        _repository = repository,
+        _connectivity = connectivity,
+        _gpsAddressSync = gpsAddressSync,
+        super(const OvertimeSyncState()) {
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen((isOnline) {
+      emit(state.copyWith(isOnline: isOnline));
+      if (isOnline) {
+        unawaited(syncNow());
+      }
+    });
+
+    _retryTimer = Timer.periodic(
+      const Duration(seconds: 45),
+      (_) => syncNow(),
+    );
+
+    unawaited(refreshPendingCount());
+  }
+
+  final SyncPendingOvertimeUseCase _syncUseCase;
+  final OvertimeRepository _repository;
+  final ConnectivityService _connectivity;
+  final GpsAddressSyncService _gpsAddressSync;
+  StreamSubscription<bool>? _connectivitySubscription;
+  Timer? _retryTimer;
+  bool _isSyncing = false;
+
+  Future<void> refreshPendingCount() async {
+    final pending = await _repository.getPendingActions();
+    if (isClosed) {
+      return;
+    }
+    emit(state.copyWith(pendingCount: pending.length));
+  }
+
+  Future<void> syncNow() async {
+    if (_isSyncing || isClosed) {
+      return;
+    }
+
+    if (!await _connectivity.isConnected) {
+      emit(state.copyWith(isOnline: false));
+      return;
+    }
+
+    final pendingBefore = await _repository.getPendingActions();
+    if (pendingBefore.isEmpty) {
+      unawaited(_gpsAddressSync.processQueue());
+      if (!isClosed) {
+        emit(
+          state.copyWith(
+            status: OvertimeSyncStatus.idle,
+            pendingCount: 0,
+            isOnline: true,
+          ),
+        );
+      }
+      return;
+    }
+
+    _isSyncing = true;
+    emit(state.copyWith(status: OvertimeSyncStatus.syncing, isOnline: true));
+
+    final result = await _syncUseCase();
+    unawaited(_gpsAddressSync.processQueue());
+    if (isClosed) {
+      return;
+    }
+
+    switch (result) {
+      case Success():
+        final pending = await _repository.getPendingActions();
+        emit(
+          state.copyWith(
+            status: OvertimeSyncStatus.success,
+            pendingCount: pending.length,
+            clearMessage: true,
+          ),
+        );
+      case Failure(message: final message, code: final code):
+        final offline = code == 'OFFLINE' ||
+            code == 'TIMEOUT' ||
+            code == 'NETWORK_ERROR';
+        emit(
+          state.copyWith(
+            status: OvertimeSyncStatus.failure,
+            clearMessage: offline,
+            message: offline ? null : message,
+            isOnline: !offline,
+          ),
+        );
+    }
+
+    _isSyncing = false;
+  }
+
+  @override
+  Future<void> close() {
+    unawaited(_connectivitySubscription?.cancel());
+    _retryTimer?.cancel();
+    return super.close();
+  }
+}

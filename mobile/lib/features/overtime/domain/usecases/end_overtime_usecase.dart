@@ -1,0 +1,26 @@
+import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
+import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
+
+class EndOvertimeUseCase {
+  const EndOvertimeUseCase(this._repository);
+
+  final OvertimeRepository _repository;
+
+  Future<Result<OvertimeSession>> call({
+    required String sessionId,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+  }) {
+    return _repository.endSession(
+      sessionId: sessionId,
+      gps: gps,
+      photoBytes: photoBytes,
+      deviceId: deviceId,
+      address: address,
+    );
+  }
+}

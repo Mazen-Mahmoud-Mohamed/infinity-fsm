@@ -1,0 +1,168 @@
+# =========================
+# Dependencies
+# =========================
+node_modules/
+**/node_modules/
+
+# =========================
+# Environment & Secrets
+# =========================
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+**/credentials.json
+service-account*.json
+**/service-account*.json
+secrets/
+**/secrets/
+
+# =========================
+# Flutter / Dart
+# =========================
+.dart_tool/
+**/.dart_tool/
+.packages
+.pub-cache/
+.pub/
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.flutter-plugins
+.flutter-plugins-dependencies
+**/flutter_*.log
+
+# Flutter build outputs
+build/
+**/build/
+mobile/build/
+.android/
+.ios/
+
+# Generated Dart (keep hand-written sources only)
+*.g.dart
+*.freezed.dart
+*.config.dart
+*.mocks.dart
+
+# Symbolication / obfuscation
+app.*.symbols
+app.*.map.json
+
+# =========================
+# Android
+# =========================
+**/android/**/gradle-wrapper.jar
+**/android/.gradle/
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.jks
+*.keystore
+**/android/app/debug/
+**/android/app/profile/
+**/android/app/release/
+
+# =========================
+# iOS / macOS
+# =========================
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+**/macos/Flutter/ephemeral/
+**/ios/Flutter/ephemeral/
+**/macos/Pods/
+
+# =========================
+# Node.js / Backend
+# =========================
+dist/
+**/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+backend/uploads/
+backend/tmp/
+backend/temp/
+backend/logs/
+**/coverage/
+**/.nyc_output/
+
+# =========================
+# IDE / Editors
+# =========================
+.idea/
+**/.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+*.swp
+*.swo
+*~
+
+# =========================
+# OS
+# =========================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# =========================
+# Logs & temp
+# =========================
+*.log
+logs/
+tmp/
+temp/
+*.tmp
+*.temp
+*.cache
+.cache/
+
+# =========================
+# Docker / Infra local data
+# =========================
+infra/data/
+**/docker-data/
+
+# =========================
+# Local / personal
+# =========================
+*.local
+*.local.*
+.cursor/
+canvases/
+**/.cursor/
+
+# Nested accidental copies (never commit)
+mobile/backend/
+mobile/mobile/
+mobile/build/
+mobile/.dart_tool/
+mobile/.idea/

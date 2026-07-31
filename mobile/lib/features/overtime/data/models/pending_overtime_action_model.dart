@@ -1,0 +1,106 @@
+import 'dart:convert';
+
+import 'package:mobile/features/attendance/data/mappers/attendance_json_helpers.dart';
+import 'package:mobile/features/attendance/data/models/gps_snapshot_model.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
+import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
+
+class PendingOvertimeActionModel extends PendingOvertimeAction {
+  const PendingOvertimeActionModel({
+    required super.id,
+    required super.type,
+    required super.gps,
+    required super.photoBytes,
+    required super.deviceId,
+    required super.clientRequestId,
+    required super.createdAt,
+    super.overtimeType,
+    super.sessionId,
+    super.address,
+    super.startedAt,
+    super.endedAt,
+    super.durationSeconds,
+    super.retryCount,
+    super.lastError,
+  });
+
+  factory PendingOvertimeActionModel.fromEntity(PendingOvertimeAction entity) {
+    return PendingOvertimeActionModel(
+      id: entity.id,
+      type: entity.type,
+      overtimeType: entity.overtimeType,
+      sessionId: entity.sessionId,
+      gps: entity.gps,
+      photoBytes: entity.photoBytes,
+      deviceId: entity.deviceId,
+      clientRequestId: entity.clientRequestId,
+      address: entity.address,
+      startedAt: entity.startedAt,
+      endedAt: entity.endedAt,
+      durationSeconds: entity.durationSeconds,
+      createdAt: entity.createdAt,
+      retryCount: entity.retryCount,
+      lastError: entity.lastError,
+    );
+  }
+
+  factory PendingOvertimeActionModel.fromJson(Map<String, dynamic> json) {
+    final photoBase64 = requireString(json, 'photoBase64');
+    final overtimeTypeRaw = optionalString(json, 'overtimeType');
+
+    return PendingOvertimeActionModel(
+      id: requireString(json, 'id'),
+      type: requireString(json, 'type') == 'END'
+          ? PendingOvertimeActionType.end
+          : PendingOvertimeActionType.start,
+      overtimeType: overtimeTypeRaw == null
+          ? null
+          : OvertimeType.fromApi(overtimeTypeRaw),
+      sessionId: optionalString(json, 'sessionId'),
+      gps: GpsSnapshotModel.fromJson(json['gps'] as Map<String, dynamic>),
+      photoBytes: base64Decode(photoBase64),
+      deviceId: requireString(json, 'deviceId'),
+      clientRequestId: requireString(json, 'clientRequestId'),
+      address: optionalString(json, 'address'),
+      startedAt: parseDateTime(json['startedAt']),
+      endedAt: parseDateTime(json['endedAt']),
+      durationSeconds: _readNullableInt(json['durationSeconds']),
+      createdAt: requireDateTime(json, 'createdAt'),
+      retryCount: readInt(json, 'retryCount'),
+      lastError: optionalString(json, 'lastError'),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'type': type == PendingOvertimeActionType.end ? 'END' : 'START',
+      'overtimeType': overtimeType?.apiValue,
+      'sessionId': sessionId,
+      'gps': GpsSnapshotModel.fromEntity(gps).toJson(),
+      'photoBase64': base64Encode(photoBytes),
+      'deviceId': deviceId,
+      'clientRequestId': clientRequestId,
+      'address': address,
+      'startedAt': startedAt?.toIso8601String(),
+      'endedAt': endedAt?.toIso8601String(),
+      'durationSeconds': durationSeconds,
+      'createdAt': createdAt.toIso8601String(),
+      'retryCount': retryCount,
+      'lastError': lastError,
+    };
+  }
+
+  static int? _readNullableInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString());
+  }
+}
