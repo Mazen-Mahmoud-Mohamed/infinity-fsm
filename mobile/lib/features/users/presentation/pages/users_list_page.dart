@@ -5,6 +5,7 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -183,17 +184,10 @@ class _UsersListPageState extends State<UsersListPage> {
                         final user = state.items[index];
                         return Card(
                           child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: user.avatarUrl != null
-                                  ? NetworkImage(user.avatarUrl!)
-                                  : null,
-                              child: user.avatarUrl == null
-                                  ? Text(
-                                      user.fullName.isNotEmpty
-                                          ? user.fullName[0].toUpperCase()
-                                          : '?',
-                                    )
-                                  : null,
+                            leading: AppNetworkAvatar(
+                              imageUrl: user.avatarUrl,
+                              radius: 20,
+                              fallbackLabel: user.fullName,
                             ),
                             title: Text(user.fullName),
                             subtitle: Column(

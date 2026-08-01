@@ -1,10 +1,9 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/duration_formatter.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/features/service_reports/domain/entities/service_report_entities.dart';
 import 'package:mobile/features/service_reports/presentation/widgets/report_status_badge.dart';
 
@@ -29,11 +28,10 @@ class ServiceReportPreviewCard extends StatelessWidget {
             if (logoUrl != null && logoUrl.isNotEmpty)
               Align(
                 alignment: Alignment.centerLeft,
-                child: CachedNetworkImage(
+                child: AppCachedNetworkImage(
                   imageUrl: logoUrl,
                   height: 48,
                   fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) => const SizedBox.shrink(),
                 ),
               )
             else
@@ -118,12 +116,10 @@ class ServiceReportPreviewCard extends StatelessWidget {
               if (report.customerSignature.signatureImageUrl != null)
                 Padding(
                   padding: const EdgeInsets.only(top: AppSpacing.sm),
-                  child: CachedNetworkImage(
+                  child: AppCachedNetworkImage(
                     imageUrl: report.customerSignature.signatureImageUrl!,
                     height: 100,
                     fit: BoxFit.contain,
-                    errorWidget: (_, __, ___) =>
-                        Text(l10n.reportsSignatureUnavailable),
                   ),
                 ),
             ]),
@@ -187,15 +183,11 @@ class ServiceReportPreviewCard extends StatelessWidget {
           itemBuilder: (context, index) {
             return ClipRRect(
               borderRadius: BorderRadius.circular(8),
-              child: CachedNetworkImage(
+              child: AppCachedNetworkImage(
                 imageUrl: photos[index].url,
                 width: 88,
                 height: 88,
                 fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => ColoredBox(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Icon(Icons.broken_image_outlined),
-                ),
               ),
             );
           },

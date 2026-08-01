@@ -18,6 +18,7 @@ export function uploadSelfieBuffer(buffer, { userId, action }) {
         folder: `attendance/${action}`,
         public_id: `${userId}_${Date.now()}`,
         resource_type: 'image',
+        format: 'jpg',
         overwrite: false,
       },
       (error, result) => {

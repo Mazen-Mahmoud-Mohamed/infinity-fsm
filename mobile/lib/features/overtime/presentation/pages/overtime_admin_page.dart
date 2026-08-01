@@ -4,12 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
+import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
@@ -70,7 +74,9 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.overtimeManagement)),
-      body: Column(
+      body: AppPageFrame(
+        maxWidth: AppBreakpoints.contentWideMax,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -195,29 +201,13 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
                         onRefresh: () => context
                             .read<OvertimeAdminCubit>()
                             .loadFirstPage(),
-                        child: ListView.separated(
+                        child: AppResponsiveCardList(
                           controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: AppScrollPadding.resolve(
-                            context,
-                            base: const EdgeInsets.all(AppSpacing.lg),
-                            chrome: AppBottomChrome.system,
-                          ),
-                          itemCount: state.items.length +
-                              (state.status == OvertimeAdminStatus.loadingMore
-                                  ? 1
-                                  : 0),
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: AppSpacing.md),
+                          chrome: AppBottomChrome.system,
+                          itemCount: state.items.length,
+                          loadingMore:
+                              state.status == OvertimeAdminStatus.loadingMore,
                           itemBuilder: (context, index) {
-                            if (index >= state.items.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(AppSpacing.md),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
                             final session = state.items[index];
                             return _AdminSessionCard(
                               session: session,
@@ -237,6 +227,7 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -281,84 +272,72 @@ class _AdminSessionCard extends StatelessWidget {
     final technician = session.technician;
     final theme = Theme.of(context);
 
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        technician?.displayName ?? l10n.workOrderTechnician,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    OvertimeStatusBadge(status: session.status),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Text(
-                  technician?.email ?? '-',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+    return AppListCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  technician?.displayName ?? l10n.workOrderTechnician,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.md,
-                  runSpacing: AppSpacing.xs,
-                  children: [
-                    _MetaChip(
-                      icon: Icons.category_outlined,
-                      label: overtimeTypeLabel(l10n, session.type),
-                    ),
-                    _MetaChip(
-                      icon: Icons.timer_outlined,
-                      label: OvertimeFormatters.durationFromMinutes(
-                        session.totalDurationMinutes ??
-                            session.eligibleOvertimeMinutes,
-                        l10n,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.md),
-                _InfoLine(
-                  label: l10n.labelStart,
-                  value: dateFormat.format(session.startAt.toLocal()),
-                ),
-                _InfoLine(
-                  label: l10n.labelEnd,
-                  value: session.endAt == null
-                      ? '-'
-                      : dateFormat.format(session.endAt!.toLocal()),
-                ),
-                _InfoLine(
-                  label: l10n.labelCreated,
-                  value: session.createdAt == null
-                      ? '-'
-                      : dateFormat.format(session.createdAt!.toLocal()),
-                ),
-              ],
+              ),
+              OvertimeStatusBadge(status: session.status),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            technician?.email ?? '-',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.md,
+            runSpacing: AppSpacing.xs,
+            children: [
+              _MetaChip(
+                icon: Icons.category_outlined,
+                label: overtimeTypeLabel(l10n, session.type),
+              ),
+              _MetaChip(
+                icon: Icons.timer_outlined,
+                label: OvertimeFormatters.durationFromMinutes(
+                  session.totalDurationMinutes ??
+                      session.eligibleOvertimeMinutes,
+                  l10n,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _InfoLine(
+            label: l10n.labelStart,
+            value: dateFormat.format(session.startAt.toLocal()),
+          ),
+          _InfoLine(
+            label: l10n.labelEnd,
+            value: session.endAt == null
+                ? '-'
+                : dateFormat.format(session.endAt!.toLocal()),
+          ),
+          _InfoLine(
+            label: l10n.labelCreated,
+            value: session.createdAt == null
+                ? '-'
+                : dateFormat.format(session.createdAt!.toLocal()),
+          ),
+        ],
       ),
     );
   }

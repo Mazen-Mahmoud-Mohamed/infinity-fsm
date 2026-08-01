@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/cache/session_query_cache.dart';
 import 'package:mobile/core/utils/result.dart';
@@ -126,7 +127,14 @@ class ExecutiveDashboardCubit extends Cubit<ExecutiveDashboardState> {
   Future<void> load() async {
     final cacheKey = _cacheKey();
     final cached = _sessionQueryCache.get<RoleDashboardSummary>(cacheKey);
-    final hasData = state.hasLoadedOnce || cached != null || state.summary != null;
+    final hasData =
+        state.hasLoadedOnce || cached != null || state.summary != null;
+
+    debugPrint(
+      'DashboardCubit.load start key=$cacheKey '
+      'hasData=$hasData cached=${cached != null} '
+      'period=${state.period.name}',
+    );
 
     if (cached != null && !state.hasLoadedOnce) {
       emit(
@@ -156,50 +164,71 @@ class ExecutiveDashboardCubit extends Cubit<ExecutiveDashboardState> {
       );
     }
 
-    final result = await _getDashboardSummary(
-      period: state.period,
-      from: state.customFrom,
-      to: state.customTo,
-    );
+    try {
+      debugPrint('DashboardCubit.load API request…');
+      final result = await _getDashboardSummary(
+        period: state.period,
+        from: state.customFrom,
+        to: state.customTo,
+      );
 
-    switch (result) {
-      case Success<RoleDashboardSummary>(data: final data):
-        _sessionQueryCache.set(cacheKey, data);
-        emit(
-          ExecutiveDashboardState(
-            status: ExecutiveDashboardStatus.success,
-            summary: data,
-            period: state.period,
-            customFrom: state.customFrom,
-            customTo: state.customTo,
-            isRefreshing: false,
-            hasLoadedOnce: true,
-          ),
-        );
-      case Failure(:final message):
-        if (state.summary != null || cached != null) {
-          emit(
-            state.copyWith(
-              status: ExecutiveDashboardStatus.success,
-              summary: state.summary ?? cached,
-              isRefreshing: false,
-              message: message,
-              hasLoadedOnce: true,
-            ),
+      switch (result) {
+        case Success<RoleDashboardSummary>(data: final data):
+          debugPrint(
+            'DashboardCubit.load API success viewRole=${data.viewRole}',
           );
-        } else {
+          _sessionQueryCache.set(cacheKey, data);
           emit(
             ExecutiveDashboardState(
-              status: ExecutiveDashboardStatus.failure,
+              status: ExecutiveDashboardStatus.success,
+              summary: data,
               period: state.period,
               customFrom: state.customFrom,
               customTo: state.customTo,
-              message: message,
               isRefreshing: false,
               hasLoadedOnce: true,
             ),
           );
-        }
+        case Failure(:final message):
+          debugPrint('DashboardCubit.load API failure message=$message');
+          if (state.summary != null || cached != null) {
+            emit(
+              state.copyWith(
+                status: ExecutiveDashboardStatus.success,
+                summary: state.summary ?? cached,
+                isRefreshing: false,
+                message: message,
+                hasLoadedOnce: true,
+              ),
+            );
+          } else {
+            emit(
+              ExecutiveDashboardState(
+                status: ExecutiveDashboardStatus.failure,
+                period: state.period,
+                customFrom: state.customFrom,
+                customTo: state.customTo,
+                message: message,
+                isRefreshing: false,
+                hasLoadedOnce: true,
+              ),
+            );
+          }
+      }
+    } catch (e, st) {
+      debugPrint('DashboardCubit.load exception: $e\n$st');
+      emit(
+        ExecutiveDashboardState(
+          status: ExecutiveDashboardStatus.failure,
+          period: state.period,
+          customFrom: state.customFrom,
+          customTo: state.customTo,
+          message: e.toString(),
+          isRefreshing: false,
+          hasLoadedOnce: true,
+          summary: state.summary ?? cached,
+        ),
+      );
     }
   }
 }

@@ -18,6 +18,7 @@ export function uploadSignatureImageBuffer(buffer, { companyId }) {
         folder: `service-reports/${companyId}/signatures`,
         public_id: `sig_${Date.now()}`,
         resource_type: 'image',
+        format: 'jpg',
         overwrite: false,
       },
       (error, result) => {

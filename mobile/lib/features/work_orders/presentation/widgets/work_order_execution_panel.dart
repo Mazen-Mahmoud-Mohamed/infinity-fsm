@@ -13,6 +13,18 @@ import 'package:mobile/features/work_orders/presentation/widgets/work_order_phot
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_section_card.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_text_prompt.dart';
 
+/// Which portion of the execution panel to render (desktop split layouts).
+enum WorkOrderExecutionColumn {
+  /// Full single-column layout (phone / default).
+  all,
+
+  /// Desktop main column: overview + stage sections (each once, with photos).
+  main,
+
+  /// Desktop sidebar: attachments + captured locations only.
+  sidebar,
+}
+
 class WorkOrderExecutionPanel extends StatelessWidget {
   const WorkOrderExecutionPanel({
     super.key,
@@ -21,6 +33,7 @@ class WorkOrderExecutionPanel extends StatelessWidget {
     required this.canExecute,
     this.completionNotesDraft = '',
     this.onCompletionNotesChanged,
+    this.column = WorkOrderExecutionColumn.all,
   });
 
   final WorkOrder workOrder;
@@ -28,6 +41,7 @@ class WorkOrderExecutionPanel extends StatelessWidget {
   final bool canExecute;
   final String completionNotesDraft;
   final ValueChanged<String>? onCompletionNotesChanged;
+  final WorkOrderExecutionColumn column;
 
   bool get _isAccepted => workOrder.status == WorkOrderStatus.accepted;
   bool get _isInProgress => workOrder.status == WorkOrderStatus.inProgress;
@@ -37,13 +51,32 @@ class WorkOrderExecutionPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (column == WorkOrderExecutionColumn.sidebar) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _AttachmentsSection(workOrder: workOrder),
+          if (workOrder.startedLocation != null ||
+              workOrder.completedLocation != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            _CapturedLocationsSection(workOrder: workOrder),
+          ],
+        ],
+      );
+    }
+
     final showBefore = _isAccepted || _isInProgress || _isCompleted;
     final showDuringOrComplete = _isInProgress || _isCompleted;
+    final includeOverviewAttachments = column == WorkOrderExecutionColumn.all;
+    final includeLocations = column == WorkOrderExecutionColumn.all;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _OverviewSection(workOrder: workOrder),
+        _OverviewSection(
+          workOrder: workOrder,
+          includeAttachments: includeOverviewAttachments,
+        ),
         if (showBefore) ...[
           const SizedBox(height: AppSpacing.sm),
           _BeforeWorkSection(
@@ -68,8 +101,9 @@ class WorkOrderExecutionPanel extends StatelessWidget {
             onCompletionNotesChanged: onCompletionNotesChanged,
           ),
         ],
-        if (workOrder.startedLocation != null ||
-            workOrder.completedLocation != null) ...[
+        if (includeLocations &&
+            (workOrder.startedLocation != null ||
+                workOrder.completedLocation != null)) ...[
           const SizedBox(height: AppSpacing.sm),
           _CapturedLocationsSection(workOrder: workOrder),
         ],
@@ -79,9 +113,13 @@ class WorkOrderExecutionPanel extends StatelessWidget {
 }
 
 class _OverviewSection extends StatelessWidget {
-  const _OverviewSection({required this.workOrder});
+  const _OverviewSection({
+    required this.workOrder,
+    this.includeAttachments = true,
+  });
 
   final WorkOrder workOrder;
+  final bool includeAttachments;
 
   @override
   Widget build(BuildContext context) {
@@ -146,11 +184,15 @@ class _OverviewSection extends StatelessWidget {
               value: workOrder.description!,
             ),
           ],
-          if (workOrder.notes != null && workOrder.notes!.trim().isNotEmpty) ...[
+          if (workOrder.notes != null &&
+              workOrder.notes!.trim().isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
-            _LabeledBody(label: l10n.workOrderInternalNotes, value: workOrder.notes!),
+            _LabeledBody(
+              label: l10n.workOrderInternalNotes,
+              value: workOrder.notes!,
+            ),
           ],
-          if (imageAttachments.isNotEmpty) ...[
+          if (includeAttachments && imageAttachments.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             WorkOrderPhotoGallery(
               title: l10n.workOrderAttachments,
@@ -158,8 +200,70 @@ class _OverviewSection extends StatelessWidget {
               photos: imageAttachments,
             ),
           ],
-          if (fileAttachments.isNotEmpty) ...[
+          if (includeAttachments && fileAttachments.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),
+            ...fileAttachments.map(
+              (item) => ListTile(
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                leading: const Icon(Icons.attach_file),
+                title: Text(
+                  item.fileName ?? l10n.workOrderDocument,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AttachmentsSection extends StatelessWidget {
+  const _AttachmentsSection({required this.workOrder});
+
+  final WorkOrder workOrder;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final imageAttachments =
+        workOrder.attachments.where((a) => a.isImage).toList();
+    final fileAttachments =
+        workOrder.attachments.where((a) => !a.isImage).toList();
+
+    if (imageAttachments.isEmpty && fileAttachments.isEmpty) {
+      return WorkOrderSectionCard(
+        icon: Icons.attach_file_outlined,
+        title: l10n.workOrderAttachments,
+        initiallyExpanded: true,
+        child: Text(
+          l10n.valueNotSet,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+      );
+    }
+
+    return WorkOrderSectionCard(
+      icon: Icons.attach_file_outlined,
+      title: l10n.workOrderAttachments,
+      initiallyExpanded: true,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (imageAttachments.isNotEmpty)
+            WorkOrderPhotoGallery(
+              title: l10n.workOrderAttachments,
+              heroPrefix: 'wo-attach-side',
+              photos: imageAttachments,
+            ),
+          if (fileAttachments.isNotEmpty) ...[
+            if (imageAttachments.isNotEmpty)
+              const SizedBox(height: AppSpacing.sm),
             ...fileAttachments.map(
               (item) => ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -193,6 +297,9 @@ class _BeforeWorkSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final hasNotes = workOrder.beforeNotes != null &&
+        workOrder.beforeNotes!.trim().isNotEmpty;
+
     return WorkOrderSectionCard(
       icon: Icons.photo_camera_front_outlined,
       title: l10n.workOrderBeforeWork,
@@ -222,17 +329,15 @@ class _BeforeWorkSection extends StatelessWidget {
                     )
                 : null,
           ),
-          const SizedBox(height: AppSpacing.md),
-          if (workOrder.beforeNotes != null &&
-              workOrder.beforeNotes!.trim().isNotEmpty)
+          if (hasNotes) ...[
+            const SizedBox(height: AppSpacing.md),
             _SavedNoteBlock(
               label: l10n.workOrderSavedBeforeNotes,
               text: workOrder.beforeNotes!,
             ),
+          ],
           if (canEdit) ...[
-            if (workOrder.beforeNotes != null &&
-                workOrder.beforeNotes!.trim().isNotEmpty)
-              const SizedBox(height: AppSpacing.sm),
+            const SizedBox(height: AppSpacing.sm),
             _ExpandableNoteField(
               key: ValueKey('before-notes-${workOrder.beforeNotes}'),
               title: l10n.workOrderBeforeNotes,
@@ -240,9 +345,10 @@ class _BeforeWorkSection extends StatelessWidget {
               initialText: workOrder.beforeNotes ?? '',
               isSaving: state.action == WorkOrderAction.beforeWork,
               enabled: !state.isBusy,
-              onSave: (text) => context.read<WorkOrderDetailCubit>().saveBeforeWork(
-                    beforeNotes: text.isEmpty ? null : text,
-                  ),
+              onSave: (text) =>
+                  context.read<WorkOrderDetailCubit>().saveBeforeWork(
+                        beforeNotes: text.isEmpty ? null : text,
+                      ),
             ),
           ],
         ],
@@ -326,7 +432,9 @@ class _InProgressSection extends StatelessWidget {
           if (canEdit) ...[
             const SizedBox(height: AppSpacing.xs),
             _ExpandableNoteField(
-              key: ValueKey('progress-notes-${workOrder.progressNotes.length}'),
+              key: ValueKey(
+                'progress-notes-${workOrder.progressNotes.length}',
+              ),
               title: l10n.workOrderAddProgressNote,
               hint: l10n.workOrderProgressNoteHint,
               initialText: '',

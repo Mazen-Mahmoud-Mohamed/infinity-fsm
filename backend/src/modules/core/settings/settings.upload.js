@@ -18,6 +18,7 @@ export function uploadCompanyLogoBuffer(buffer, { companyId }) {
         folder: `companies/${companyId}/logo`,
         public_id: `logo_${Date.now()}`,
         resource_type: 'image',
+        format: 'jpg',
         overwrite: true,
       },
       (error, result) => {

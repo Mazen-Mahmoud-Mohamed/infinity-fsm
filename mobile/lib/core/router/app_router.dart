@@ -104,6 +104,9 @@ GoRouter createAppRouter({
         builder: (context, state, navigationShell) {
           return MainNavigationShell(navigationShell: navigationShell);
         },
+        // Branch indexes must match MainNavigationShell rail destinations:
+        // 0 Dashboard, 1 Attendance, 2 Work Orders, 3 Overtime, 4 Profile,
+        // 5 Inventory, 6 Assets, 7 PM, 8 Reports, 9 Users, 10 Roles, 11 Settings
         branches: [
           StatefulShellBranch(
             routes: [
@@ -118,16 +121,51 @@ GoRouter createAppRouter({
               GoRoute(
                 path: RoutePaths.attendance,
                 builder: (context, state) => const AttendanceDashboardPage(),
+                routes: [
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) =>
+                        const AttendanceHistoryPage(),
+                  ),
+                  GoRoute(
+                    path: 'admin',
+                    builder: (context, state) => const AttendanceAdminPage(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => AttendanceAdminDetailPage(
+                          attendanceId: state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
-          // Branch indexes must match MainNavigationShell destinations:
-          // 0 Dashboard, 1 Attendance, 2 Work Orders, 3 Overtime, 4 Profile
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: RoutePaths.workOrders,
                 builder: (context, state) => const WorkOrdersPage(),
+                routes: [
+                  GoRoute(
+                    path: 'form',
+                    builder: (context, state) => const WorkOrderFormPage(),
+                  ),
+                  GoRoute(
+                    path: 'form/:id',
+                    builder: (context, state) => WorkOrderFormPage(
+                      workOrderId: state.pathParameters['id'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => WorkOrderDetailPage(
+                      workOrderId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -136,6 +174,24 @@ GoRouter createAppRouter({
               GoRoute(
                 path: RoutePaths.overtime,
                 builder: (context, state) => const OvertimePage(),
+                routes: [
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) => const OvertimeHistoryPage(),
+                  ),
+                  GoRoute(
+                    path: 'admin',
+                    builder: (context, state) => const OvertimeAdminPage(),
+                    routes: [
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => OvertimeAdminDetailPage(
+                          sessionId: state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -147,279 +203,297 @@ GoRouter createAppRouter({
               ),
             ],
           ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.inventory,
+                builder: (context, state) => const InventoryDashboardPage(),
+                routes: [
+                  GoRoute(
+                    path: 'warehouses',
+                    builder: (context, state) => const WarehousesPage(),
+                  ),
+                  GoRoute(
+                    path: 'stock-history',
+                    builder: (context, state) => const StockHistoryPage(),
+                  ),
+                  GoRoute(
+                    path: 'parts',
+                    builder: (context, state) => const SparePartsPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'form',
+                        builder: (context, state) =>
+                            const SparePartFormPage(),
+                      ),
+                      GoRoute(
+                        path: 'form/:id',
+                        builder: (context, state) => SparePartFormPage(
+                          partId: state.pathParameters['id'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => SparePartDetailPage(
+                          partId: state.pathParameters['id']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.assets,
+                builder: (context, state) => const AssetsPage(),
+                routes: [
+                  GoRoute(
+                    path: 'list',
+                    builder: (context, state) {
+                      final extra = state.extra;
+                      AssetStatus? initialStatus;
+                      if (extra is AssetStatus) {
+                        initialStatus = extra;
+                      }
+                      return AssetsListPage(initialStatus: initialStatus);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'categories',
+                    builder: (context, state) =>
+                        const AssetCategoriesPage(),
+                  ),
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) => const AssetHistoryPage(),
+                  ),
+                  GoRoute(
+                    path: 'form',
+                    builder: (context, state) => const AssetFormPage(),
+                  ),
+                  GoRoute(
+                    path: 'form/:id',
+                    builder: (context, state) => AssetFormPage(
+                      assetId: state.pathParameters['id'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'detail/:id',
+                    builder: (context, state) => AssetDetailPage(
+                      assetId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.pm,
+                builder: (context, state) => const PmDashboardPage(),
+                routes: [
+                  GoRoute(
+                    path: 'plans',
+                    builder: (context, state) => const PmPlansPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'form',
+                        builder: (context, state) => const PmPlanFormPage(),
+                      ),
+                      GoRoute(
+                        path: 'form/:id',
+                        builder: (context, state) => PmPlanFormPage(
+                          planId: state.pathParameters['id'],
+                        ),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        builder: (context, state) => PmPlanDetailPage(
+                          planId: state.pathParameters['id']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'checklist',
+                            builder: (context, state) =>
+                                PmChecklistBuilderPage(
+                              planId: state.pathParameters['id']!,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'schedules',
+                    builder: (context, state) => const PmSchedulesPage(),
+                  ),
+                  GoRoute(
+                    path: 'history',
+                    builder: (context, state) => const PmHistoryPage(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.reports,
+                builder: (context, state) =>
+                    const ServiceReportsDashboardPage(),
+                routes: [
+                  GoRoute(
+                    path: 'list',
+                    builder: (context, state) =>
+                        const ServiceReportsListPage(),
+                  ),
+                  GoRoute(
+                    path: 'signature',
+                    builder: (context, state) =>
+                        const CustomerSignaturePage(),
+                  ),
+                  GoRoute(
+                    path: 'generate',
+                    builder: (context, state) =>
+                        const ServiceReportGeneratePage(),
+                  ),
+                  GoRoute(
+                    path: 'detail/:id',
+                    builder: (context, state) => ServiceReportDetailPage(
+                      reportId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.users,
+                builder: (context, state) => const UsersDashboardPage(),
+                routes: [
+                  GoRoute(
+                    path: 'list',
+                    builder: (context, state) {
+                      final extra = state.extra;
+                      ManagedUserStatus? initialStatus;
+                      if (extra is ManagedUserStatus) {
+                        initialStatus = extra;
+                      }
+                      return UsersListPage(initialStatus: initialStatus);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'form',
+                    builder: (context, state) => const UserFormPage(),
+                  ),
+                  GoRoute(
+                    path: 'form/:id',
+                    builder: (context, state) => UserFormPage(
+                      userId: state.pathParameters['id'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'detail/:id',
+                    builder: (context, state) => UserDetailPage(
+                      userId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'change-password',
+                    builder: (context, state) =>
+                        const ChangePasswordPage(),
+                  ),
+                  GoRoute(
+                    path: 'reset-password/:id',
+                    builder: (context, state) => ResetPasswordPage(
+                      userId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.roles,
+                builder: (context, state) => const RolesDashboardPage(),
+                routes: [
+                  GoRoute(
+                    path: 'list',
+                    builder: (context, state) => const RolesListPage(),
+                  ),
+                  GoRoute(
+                    path: 'form',
+                    builder: (context, state) => const RoleFormPage(),
+                  ),
+                  GoRoute(
+                    path: 'form/:id',
+                    builder: (context, state) => RoleFormPage(
+                      roleId: state.pathParameters['id'],
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'detail/:id',
+                    builder: (context, state) => RoleDetailPage(
+                      roleId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: RoutePaths.settings,
+                builder: (context, state) => const SettingsPage(),
+                routes: [
+                  GoRoute(
+                    path: 'company',
+                    builder: (context, state) =>
+                        const OrganizationSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'system',
+                    builder: (context, state) =>
+                        const SystemSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'language',
+                    builder: (context, state) =>
+                        const LanguageSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'theme',
+                    builder: (context, state) =>
+                        const ThemeSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (context, state) =>
+                        const NotificationPreferencesPage(),
+                  ),
+                  GoRoute(
+                    path: 'about',
+                    builder: (context, state) =>
+                        const AboutSettingsPage(),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
-      ),
-      GoRoute(
-        path: RoutePaths.assets,
-        builder: (context, state) => const AssetsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.assetsList,
-        builder: (context, state) {
-          final extra = state.extra;
-          AssetStatus? initialStatus;
-          if (extra is AssetStatus) {
-            initialStatus = extra;
-          }
-          return AssetsListPage(initialStatus: initialStatus);
-        },
-      ),
-      GoRoute(
-        path: RoutePaths.assetsCategories,
-        builder: (context, state) => const AssetCategoriesPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.assetsForm,
-        builder: (context, state) => const AssetFormPage(),
-      ),
-      GoRoute(
-        path: '/assets/form/:id',
-        builder: (context, state) => AssetFormPage(
-          assetId: state.pathParameters['id'],
-        ),
-      ),
-      GoRoute(
-        path: '/assets/detail/:id',
-        builder: (context, state) => AssetDetailPage(
-          assetId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.assetsHistory,
-        builder: (context, state) => const AssetHistoryPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.pm,
-        builder: (context, state) => const PmDashboardPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.pmPlans,
-        builder: (context, state) => const PmPlansPage(),
-      ),
-      GoRoute(
-        path: '/pm/plans/:id',
-        builder: (context, state) => PmPlanDetailPage(
-          planId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.pmPlanForm,
-        builder: (context, state) => const PmPlanFormPage(),
-      ),
-      GoRoute(
-        path: '/pm/plans/form/:id',
-        builder: (context, state) => PmPlanFormPage(
-          planId: state.pathParameters['id'],
-        ),
-      ),
-      GoRoute(
-        path: '/pm/plans/:id/checklist',
-        builder: (context, state) => PmChecklistBuilderPage(
-          planId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.pmSchedules,
-        builder: (context, state) => const PmSchedulesPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.pmHistory,
-        builder: (context, state) => const PmHistoryPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.reports,
-        builder: (context, state) => const ServiceReportsDashboardPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.reportsList,
-        builder: (context, state) => const ServiceReportsListPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.reportsSignature,
-        builder: (context, state) => const CustomerSignaturePage(),
-      ),
-      GoRoute(
-        path: RoutePaths.reportsGenerate,
-        builder: (context, state) => const ServiceReportGeneratePage(),
-      ),
-      GoRoute(
-        path: '/reports/detail/:id',
-        builder: (context, state) => ServiceReportDetailPage(
-          reportId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.users,
-        builder: (context, state) => const UsersDashboardPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.usersList,
-        builder: (context, state) {
-          final extra = state.extra;
-          ManagedUserStatus? initialStatus;
-          if (extra is ManagedUserStatus) {
-            initialStatus = extra;
-          }
-          return UsersListPage(initialStatus: initialStatus);
-        },
-      ),
-      GoRoute(
-        path: RoutePaths.usersForm,
-        builder: (context, state) => const UserFormPage(),
-      ),
-      GoRoute(
-        path: '/users/form/:id',
-        builder: (context, state) => UserFormPage(
-          userId: state.pathParameters['id'],
-        ),
-      ),
-      GoRoute(
-        path: '/users/detail/:id',
-        builder: (context, state) => UserDetailPage(
-          userId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.usersChangePassword,
-        builder: (context, state) => const ChangePasswordPage(),
-      ),
-      GoRoute(
-        path: '/users/reset-password/:id',
-        builder: (context, state) => ResetPasswordPage(
-          userId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.roles,
-        builder: (context, state) => const RolesDashboardPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.rolesList,
-        builder: (context, state) => const RolesListPage(),
-      ),
-      GoRoute(
-        path: '/roles/detail/:id',
-        builder: (context, state) => RoleDetailPage(
-          roleId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.rolesForm,
-        builder: (context, state) => const RoleFormPage(),
-      ),
-      GoRoute(
-        path: '/roles/form/:id',
-        builder: (context, state) => RoleFormPage(
-          roleId: state.pathParameters['id'],
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.inventory,
-        builder: (context, state) => const InventoryDashboardPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.inventoryWarehouses,
-        builder: (context, state) => const WarehousesPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.inventoryParts,
-        builder: (context, state) => const SparePartsPage(),
-      ),
-      GoRoute(
-        path: '/inventory/parts/:id',
-        builder: (context, state) => SparePartDetailPage(
-          partId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.inventoryPartForm,
-        builder: (context, state) => const SparePartFormPage(),
-      ),
-      GoRoute(
-        path: '/inventory/parts/form/:id',
-        builder: (context, state) => SparePartFormPage(
-          partId: state.pathParameters['id'],
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.inventoryStockHistory,
-        builder: (context, state) => const StockHistoryPage(),
       ),
       GoRoute(
         path: RoutePaths.notifications,
         builder: (context, state) => const NotificationsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.settings,
-        builder: (context, state) => const SettingsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.settingsCompany,
-        builder: (context, state) => const OrganizationSettingsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.settingsSystem,
-        builder: (context, state) => const SystemSettingsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.settingsLanguage,
-        builder: (context, state) => const LanguageSettingsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.settingsTheme,
-        builder: (context, state) => const ThemeSettingsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.settingsNotifications,
-        builder: (context, state) => const NotificationPreferencesPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.settingsAbout,
-        builder: (context, state) => const AboutSettingsPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.attendanceHistory,
-        builder: (context, state) => const AttendanceHistoryPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.attendanceAdmin,
-        builder: (context, state) => const AttendanceAdminPage(),
-      ),
-      GoRoute(
-        path: '/attendance/admin/:id',
-        builder: (context, state) => AttendanceAdminDetailPage(
-          attendanceId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.overtimeHistory,
-        builder: (context, state) => const OvertimeHistoryPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.overtimeAdmin,
-        builder: (context, state) => const OvertimeAdminPage(),
-      ),
-      GoRoute(
-        path: '/overtime/admin/:id',
-        builder: (context, state) => OvertimeAdminDetailPage(
-          sessionId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
-        path: RoutePaths.workOrderForm,
-        builder: (context, state) => const WorkOrderFormPage(),
-      ),
-      GoRoute(
-        path: '/work-orders/form/:id',
-        builder: (context, state) => WorkOrderFormPage(
-          workOrderId: state.pathParameters['id'],
-        ),
-      ),
-      GoRoute(
-        path: '/work-orders/:id',
-        builder: (context, state) => WorkOrderDetailPage(
-          workOrderId: state.pathParameters['id']!,
-        ),
       ),
     ],
   );

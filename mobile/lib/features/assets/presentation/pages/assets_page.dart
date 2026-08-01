@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_action_card.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/presentation/cubit/assets_dashboard_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -52,7 +56,9 @@ class _AssetsDashboardView extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final isPhone = width < 600;
+    final isPhone = AppBreakpoints.isPhone(width);
+    final isDesktop = AppBreakpoints.isDesktop(width);
+    final compactStats = isPhone || isDesktop;
     final canCreate = context.select(
       (AuthCubit cubit) =>
           cubit.state.user?.permissionChecker.canCreateAssets() == true,
@@ -97,7 +103,6 @@ class _AssetsDashboardView extends StatelessWidget {
           }
 
           final dashboard = state.dashboard;
-          final cols = isPhone ? 2 : 3;
 
           return Column(
             children: [
@@ -106,110 +111,136 @@ class _AssetsDashboardView extends StatelessWidget {
                 child: RefreshIndicator(
                   onRefresh: () =>
                       context.read<AssetsDashboardCubit>().load(),
-                  child: ListView(
-                    padding: AppScrollPadding.resolve(
-                      context,
-                      base: EdgeInsets.all(
-                        isPhone ? AppSpacing.md : AppSpacing.lg,
+                  child: AppPageFrame(
+                    maxWidth: AppBreakpoints.contentWideMax,
+                    child: ListView(
+                      padding: AppScrollPadding.resolve(
+                        context,
+                        base: EdgeInsets.all(
+                          isPhone ? AppSpacing.md : AppSpacing.lg,
+                        ),
+                        chrome: AppBottomChrome.system,
                       ),
-                      chrome: AppBottomChrome.system,
-                    ),
-                    children: [
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final itemWidth = (constraints.maxWidth -
-                                  (AppSpacing.md * (cols - 1))) /
-                              cols;
-                          return Wrap(
-                            spacing: AppSpacing.md,
-                            runSpacing: AppSpacing.md,
-                            children: [
-                              _stat(
-                                itemWidth,
-                                isPhone,
-                                l10n.assetsTotal,
-                                '${dashboard?.totalAssets ?? 0}',
-                                Icons.precision_manufacturing_outlined,
-                                () => context.push(RoutePaths.assetsList),
-                              ),
-                              _stat(
-                                itemWidth,
-                                isPhone,
-                                l10n.assetsStatusActive,
-                                '${dashboard?.active ?? 0}',
-                                Icons.check_circle_outline,
-                                () => context.push(
-                                  RoutePaths.assetsList,
-                                  extra: AssetStatus.active.apiValue,
-                                ),
-                              ),
-                              _stat(
-                                itemWidth,
-                                isPhone,
-                                l10n.assetsStatusMaintenance,
-                                '${dashboard?.underMaintenance ?? 0}',
-                                Icons.build_outlined,
-                                () => context.push(
-                                  RoutePaths.assetsList,
-                                  extra: AssetStatus.maintenance.apiValue,
-                                ),
-                              ),
-                              _stat(
-                                itemWidth,
-                                isPhone,
-                                l10n.assetsStatusRetired,
-                                '${dashboard?.retired ?? 0}',
-                                Icons.archive_outlined,
-                                () => context.push(
-                                  RoutePaths.assetsList,
-                                  extra: AssetStatus.retired.apiValue,
-                                ),
-                              ),
-                              _stat(
-                                itemWidth,
-                                isPhone,
-                                l10n.assetsWarrantyExpiringSoon,
-                                '${dashboard?.warrantyExpiringSoon ?? 0}',
-                                Icons.event_busy_outlined,
-                                () => context.push(RoutePaths.assetsList),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: () =>
-                                context.push(RoutePaths.assetsList),
-                            icon: const Icon(Icons.list_alt),
-                            label: Text(l10n.assetsList),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: () =>
-                                context.push(RoutePaths.assetsCategories),
-                            icon: const Icon(Icons.category_outlined),
-                            label: Text(l10n.assetsCategories),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: () =>
-                                context.push(RoutePaths.assetsHistory),
-                            icon: const Icon(Icons.history),
-                            label: Text(l10n.assetsHistory),
-                          ),
-                          if (canCreate)
-                            FilledButton.icon(
-                              onPressed: () =>
-                                  context.push(RoutePaths.assetsForm),
-                              icon: const Icon(Icons.add),
-                              label: Text(l10n.assetsCreate),
+                      children: [
+                        AppDesktopStatGrid(
+                          phoneColumns: 2,
+                          tabletColumns: 3,
+                          desktopColumns: 5,
+                          children: [
+                            _statCard(
+                              compactStats,
+                              l10n.assetsTotal,
+                              '${dashboard?.totalAssets ?? 0}',
+                              Icons.precision_manufacturing_outlined,
+                              () => context.push(RoutePaths.assetsList),
                             ),
-                        ],
-                      ),
-                    ],
+                            _statCard(
+                              compactStats,
+                              l10n.assetsStatusActive,
+                              '${dashboard?.active ?? 0}',
+                              Icons.check_circle_outline,
+                              () => context.push(
+                                RoutePaths.assetsList,
+                                extra: AssetStatus.active.apiValue,
+                              ),
+                            ),
+                            _statCard(
+                              compactStats,
+                              l10n.assetsStatusMaintenance,
+                              '${dashboard?.underMaintenance ?? 0}',
+                              Icons.build_outlined,
+                              () => context.push(
+                                RoutePaths.assetsList,
+                                extra: AssetStatus.maintenance.apiValue,
+                              ),
+                            ),
+                            _statCard(
+                              compactStats,
+                              l10n.assetsStatusRetired,
+                              '${dashboard?.retired ?? 0}',
+                              Icons.archive_outlined,
+                              () => context.push(
+                                RoutePaths.assetsList,
+                                extra: AssetStatus.retired.apiValue,
+                              ),
+                            ),
+                            _statCard(
+                              compactStats,
+                              l10n.assetsWarrantyExpiringSoon,
+                              '${dashboard?.warrantyExpiringSoon ?? 0}',
+                              Icons.event_busy_outlined,
+                              () => context.push(RoutePaths.assetsList),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                        if (isDesktop)
+                          AppDesktopStatGrid(
+                            phoneColumns: 1,
+                            tabletColumns: 2,
+                            desktopColumns: 4,
+                            children: [
+                              AppDesktopActionCard(
+                                title: l10n.assetsList,
+                                icon: Icons.list_alt,
+                                onTap: () =>
+                                    context.push(RoutePaths.assetsList),
+                              ),
+                              AppDesktopActionCard(
+                                title: l10n.assetsCategories,
+                                icon: Icons.category_outlined,
+                                onTap: () =>
+                                    context.push(RoutePaths.assetsCategories),
+                              ),
+                              AppDesktopActionCard(
+                                title: l10n.assetsHistory,
+                                icon: Icons.history,
+                                onTap: () =>
+                                    context.push(RoutePaths.assetsHistory),
+                              ),
+                              if (canCreate)
+                                AppDesktopActionCard(
+                                  title: l10n.assetsCreate,
+                                  icon: Icons.add,
+                                  onTap: () =>
+                                      context.push(RoutePaths.assetsForm),
+                                ),
+                            ],
+                          )
+                        else
+                          Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
+                            children: [
+                              FilledButton.tonalIcon(
+                                onPressed: () =>
+                                    context.push(RoutePaths.assetsList),
+                                icon: const Icon(Icons.list_alt),
+                                label: Text(l10n.assetsList),
+                              ),
+                              FilledButton.tonalIcon(
+                                onPressed: () =>
+                                    context.push(RoutePaths.assetsCategories),
+                                icon: const Icon(Icons.category_outlined),
+                                label: Text(l10n.assetsCategories),
+                              ),
+                              FilledButton.tonalIcon(
+                                onPressed: () =>
+                                    context.push(RoutePaths.assetsHistory),
+                                icon: const Icon(Icons.history),
+                                label: Text(l10n.assetsHistory),
+                              ),
+                              if (canCreate)
+                                FilledButton.icon(
+                                  onPressed: () =>
+                                      context.push(RoutePaths.assetsForm),
+                                  icon: const Icon(Icons.add),
+                                  label: Text(l10n.assetsCreate),
+                                ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -220,23 +251,19 @@ class _AssetsDashboardView extends StatelessWidget {
     );
   }
 
-  Widget _stat(
-    double width,
+  Widget _statCard(
     bool compact,
     String title,
     String subtitle,
     IconData icon,
     VoidCallback onTap,
   ) {
-    return SizedBox(
-      width: width,
-      child: DashboardQuickCard(
-        title: title,
-        subtitle: subtitle,
-        icon: icon,
-        compact: compact,
-        onTap: onTap,
-      ),
+    return DashboardQuickCard(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      compact: compact,
+      onTap: onTap,
     );
   }
 }

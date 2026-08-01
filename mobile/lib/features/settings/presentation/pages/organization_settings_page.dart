@@ -6,6 +6,7 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -14,7 +15,9 @@ import 'package:mobile/features/settings/domain/entities/settings_entities.dart'
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
 
 class OrganizationSettingsPage extends StatefulWidget {
-  const OrganizationSettingsPage({super.key});
+  const OrganizationSettingsPage({super.key, this.embedded = false});
+
+  final bool embedded;
 
   @override
   State<OrganizationSettingsPage> createState() =>
@@ -152,211 +155,222 @@ class _OrganizationSettingsPageState extends State<OrganizationSettingsPage> {
 
     return BlocProvider.value(
       value: _cubit,
-      child: Scaffold(
-        appBar: AppBar(title: Text(l10n.settingsCompanyInformation)),
-        body: BlocConsumer<OrganizationSettingsCubit, OrganizationSettingsState>(
-          listener: (context, state) {
-            if (state.settings != null) {
-              _hydrate(state.settings!);
-              setState(() {});
-            }
-          },
-          builder: (context, state) {
-            if (state.status == OrganizationSettingsStatus.loading &&
-                state.settings == null) {
-              return AppLoader(message: l10n.settingsLoading);
-            }
-            if (state.status == OrganizationSettingsStatus.failure &&
-                state.settings == null) {
-              return Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(state.message ?? l10n.settingsLoadFailed),
-                    FilledButton(
-                      onPressed: _cubit.load,
-                      child: Text(l10n.retry),
-                    ),
-                  ],
-                ),
-              );
-            }
+      child: widget.embedded
+          ? _buildBody(l10n, canManage)
+          : Scaffold(
+              appBar: AppBar(title: Text(l10n.settingsCompanyInformation)),
+              body: _buildBody(l10n, canManage),
+            ),
+    );
+  }
 
-            final saving = state.status == OrganizationSettingsStatus.saving;
-            final logoUrl = state.settings?.logoUrl;
-
-            return Column(
+  Widget _buildBody(AppLocalizations l10n, bool canManage) {
+    return BlocConsumer<OrganizationSettingsCubit, OrganizationSettingsState>(
+      listener: (context, state) {
+        if (state.settings != null) {
+          _hydrate(state.settings!);
+          setState(() {});
+        }
+      },
+      builder: (context, state) {
+        if (state.status == OrganizationSettingsStatus.loading &&
+            state.settings == null) {
+          return AppLoader(message: l10n.settingsLoading);
+        }
+        if (state.status == OrganizationSettingsStatus.failure &&
+            state.settings == null) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                AppRefreshBar(visible: state.isRefreshing),
-                if (saving) const LinearProgressIndicator(),
-                Expanded(
-                  child: Form(
-                    key: _formKey,
-                    child: AppBottomSafeListView(
-                      basePadding: const EdgeInsets.all(AppSpacing.md),
-                      chrome: AppBottomChrome.system,
-                      children: [
-                        Center(
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundImage: logoUrl != null
-                                    ? NetworkImage(logoUrl)
-                                    : null,
-                                child: logoUrl == null
-                                    ? const Icon(Icons.business, size: 36)
-                                    : null,
-                              ),
-                              if (canManage)
-                                TextButton.icon(
-                                  onPressed:
-                                      saving ? null : () => _pickLogo(l10n),
-                                  icon: const Icon(Icons.upload),
-                                  label: Text(l10n.settingsCompanyLogo),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextFormField(
-                          controller: _name,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsCompanyName,
-                            border: const OutlineInputBorder(),
-                          ),
-                          validator: (v) => v == null || v.trim().isEmpty
-                              ? l10n.usersRequired
-                              : null,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextFormField(
-                          controller: _email,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsContactEmail,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        TextFormField(
-                          controller: _phone,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsContactPhone,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          l10n.settingsAddress,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _line1,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsAddressLine1,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _line2,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsAddressLine2,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _city,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsCity,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _governorate,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsGovernorate,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _country,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsCountry,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _postal,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsPostalCode,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          l10n.settingsWorkingHours,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _start,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsWorkingHoursStart,
-                            border: const OutlineInputBorder(),
-                            hintText: '09:00',
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _end,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsWorkingHoursEnd,
-                            border: const OutlineInputBorder(),
-                            hintText: '17:00',
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.sm),
-                        TextFormField(
-                          controller: _timezone,
-                          enabled: canManage && !saving,
-                          decoration: InputDecoration(
-                            labelText: l10n.settingsTimezone,
-                            border: const OutlineInputBorder(),
-                          ),
-                        ),
-                        if (canManage) ...[
-                          const SizedBox(height: AppSpacing.lg),
-                          FilledButton(
-                            onPressed: saving ? null : () => _save(l10n),
-                            child: Text(l10n.settingsSave),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
+                Text(state.message ?? l10n.settingsLoadFailed),
+                FilledButton(
+                  onPressed: _cubit.load,
+                  child: Text(l10n.retry),
                 ),
               ],
-            );
-          },
-        ),
-      ),
+            ),
+          );
+        }
+
+        final saving = state.status == OrganizationSettingsStatus.saving;
+        final logoUrl = state.settings?.logoUrl;
+
+        return Column(
+          children: [
+            AppRefreshBar(visible: state.isRefreshing),
+            if (saving) const LinearProgressIndicator(),
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: AppBottomSafeListView(
+                  basePadding: const EdgeInsets.all(AppSpacing.md),
+                  chrome: AppBottomChrome.system,
+                  children: [
+                    Center(
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            child: logoUrl != null
+                                ? ClipOval(
+                                    child: AppCachedNetworkImage(
+                                      imageUrl: logoUrl,
+                                      width: 80,
+                                      height: 80,
+                                      memCacheWidth: 160,
+                                      memCacheHeight: 160,
+                                      errorIcon: Icons.business,
+                                    ),
+                                  )
+                                : const Icon(Icons.business, size: 36),
+                          ),
+                          if (canManage)
+                            TextButton.icon(
+                              onPressed: saving ? null : () => _pickLogo(l10n),
+                              icon: const Icon(Icons.upload),
+                              label: Text(l10n.settingsCompanyLogo),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextFormField(
+                      controller: _name,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsCompanyName,
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (v) => v == null || v.trim().isEmpty
+                          ? l10n.usersRequired
+                          : null,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextFormField(
+                      controller: _email,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsContactEmail,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    TextFormField(
+                      controller: _phone,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsContactPhone,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      l10n.settingsAddress,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _line1,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsAddressLine1,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _line2,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsAddressLine2,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _city,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsCity,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _governorate,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsGovernorate,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _country,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsCountry,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _postal,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsPostalCode,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.lg),
+                    Text(
+                      l10n.settingsWorkingHours,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _start,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsWorkingHoursStart,
+                        border: const OutlineInputBorder(),
+                        hintText: '09:00',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _end,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsWorkingHoursEnd,
+                        border: const OutlineInputBorder(),
+                        hintText: '17:00',
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    TextFormField(
+                      controller: _timezone,
+                      enabled: canManage && !saving,
+                      decoration: InputDecoration(
+                        labelText: l10n.settingsTimezone,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                    if (canManage) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      FilledButton(
+                        onPressed: saving ? null : () => _save(l10n),
+                        child: Text(l10n.settingsSave),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

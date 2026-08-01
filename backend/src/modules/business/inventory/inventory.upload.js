@@ -21,6 +21,7 @@ export function uploadSparePartImageBuffer(buffer, { companyId, partNumber }) {
         folder: `inventory/spare-parts/${companyId}`,
         public_id: `${safePart}_${Date.now()}`,
         resource_type: 'image',
+        format: 'jpg',
         overwrite: false,
       },
       (error, result) => {

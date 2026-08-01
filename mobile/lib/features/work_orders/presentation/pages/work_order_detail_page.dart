@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
@@ -11,6 +12,7 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
 import 'package:mobile/features/auth/domain/services/permission_checker.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/organization/domain/entities/user_summary.dart';
@@ -56,7 +58,8 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
     final currentUserId = user?.id;
     final dateFormat = AppFormatters.mediumDateTime(context);
     final width = MediaQuery.sizeOf(context).width;
-    final maxWidth = width >= 900 ? 880.0 : double.infinity;
+    final isDesktop = AppBreakpoints.isDesktop(width);
+    final maxWidth = isDesktop ? 1200.0 : double.infinity;
     final horizontalPad = width >= 700 ? AppSpacing.xl : AppSpacing.md;
 
     return BlocConsumer<WorkOrderDetailCubit, WorkOrderDetailState>(
@@ -199,33 +202,91 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                   ? AppBottomChrome.stickyActions
                                   : AppBottomChrome.system,
                             ),
-                            children: [
-                              _HeaderSection(
-                                workOrder: workOrder,
-                                dateFormat: dateFormat,
-                                unassignedLabel: l10n.workOrderUnassigned,
-                              ),
-                              const SizedBox(height: AppSpacing.md),
-                              WorkOrderExecutionPanel(
-                                workOrder: workOrder,
-                                state: state,
-                                canExecute: canExecute,
-                                completionNotesDraft: _completionNotesDraft,
-                                onCompletionNotesChanged: (value) {
-                                  _completionNotesDraft = value;
-                                },
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              WorkOrderSectionCard(
-                                icon: Icons.timeline,
-                                title: l10n.workOrderTimeline,
-                                subtitle: l10n.workOrderTimelineSubtitle,
-                                initiallyExpanded: true,
-                                child: WorkOrderTimelineSection(
-                                  events: workOrder.timeline,
-                                ),
-                              ),
-                            ],
+                            children: isDesktop
+                                ? [
+                                    AppDesktopSplitView(
+                                      startFlex: 7,
+                                      endFlex: 3,
+                                      start: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          _HeaderSection(
+                                            workOrder: workOrder,
+                                            dateFormat: dateFormat,
+                                            unassignedLabel:
+                                                l10n.workOrderUnassigned,
+                                          ),
+                                          const SizedBox(height: AppSpacing.md),
+                                          WorkOrderExecutionPanel(
+                                            workOrder: workOrder,
+                                            state: state,
+                                            canExecute: canExecute,
+                                            completionNotesDraft:
+                                                _completionNotesDraft,
+                                            onCompletionNotesChanged: (value) {
+                                              _completionNotesDraft = value;
+                                            },
+                                            column:
+                                                WorkOrderExecutionColumn.main,
+                                          ),
+                                        ],
+                                      ),
+                                      end: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.stretch,
+                                        children: [
+                                          WorkOrderExecutionPanel(
+                                            workOrder: workOrder,
+                                            state: state,
+                                            canExecute: canExecute,
+                                            column: WorkOrderExecutionColumn
+                                                .sidebar,
+                                          ),
+                                          const SizedBox(height: AppSpacing.sm),
+                                          WorkOrderSectionCard(
+                                            icon: Icons.timeline,
+                                            title: l10n.workOrderTimeline,
+                                            subtitle:
+                                                l10n.workOrderTimelineSubtitle,
+                                            initiallyExpanded: true,
+                                            child: WorkOrderTimelineSection(
+                                              events: workOrder.timeline,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ]
+                                : [
+                                    _HeaderSection(
+                                      workOrder: workOrder,
+                                      dateFormat: dateFormat,
+                                      unassignedLabel:
+                                          l10n.workOrderUnassigned,
+                                    ),
+                                    const SizedBox(height: AppSpacing.md),
+                                    WorkOrderExecutionPanel(
+                                      workOrder: workOrder,
+                                      state: state,
+                                      canExecute: canExecute,
+                                      completionNotesDraft:
+                                          _completionNotesDraft,
+                                      onCompletionNotesChanged: (value) {
+                                        _completionNotesDraft = value;
+                                      },
+                                    ),
+                                    const SizedBox(height: AppSpacing.sm),
+                                    WorkOrderSectionCard(
+                                      icon: Icons.timeline,
+                                      title: l10n.workOrderTimeline,
+                                      subtitle: l10n.workOrderTimelineSubtitle,
+                                      initiallyExpanded: true,
+                                      child: WorkOrderTimelineSection(
+                                        events: workOrder.timeline,
+                                      ),
+                                    ),
+                                  ],
                           ),
                         ),
                       ),

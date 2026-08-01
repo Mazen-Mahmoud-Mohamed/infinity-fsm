@@ -3,17 +3,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/config/app_config.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/branding/infinity_brand.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/features/organization/presentation/cubit/profile_cubit.dart';
-import 'package:mobile/core/widgets/offline_banner.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -35,6 +39,8 @@ class _ProfileView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final pagePad = AppBreakpoints.pagePadding(width);
 
     return Scaffold(
       appBar: AppBar(
@@ -42,7 +48,7 @@ class _ProfileView extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: l10n.settings,
-            onPressed: () => context.push(RoutePaths.settings),
+            onPressed: () => context.go(RoutePaths.settings),
             icon: const Icon(Icons.settings_outlined),
           ),
         ],
@@ -56,6 +62,10 @@ class _ProfileView extends StatelessWidget {
             return AppLoader(message: l10n.profileLoading);
           }
 
+          final roles = user?.roles ?? const <String>[];
+          final permissions = user?.permissions ?? const <String>[];
+          final groups = _groupPermissions(permissions);
+
           return Column(
             children: [
               AppRefreshBar(visible: state.isRefreshing),
@@ -65,152 +75,217 @@ class _ProfileView extends StatelessWidget {
                         user,
                         forceRefresh: true,
                       ),
-                  child: ListView(
-                    padding: AppScrollPadding.resolve(
-                      context,
-                      base: EdgeInsets.all(
-                        MediaQuery.sizeOf(context).width < 600
-                            ? AppSpacing.md
-                            : AppSpacing.lg,
+                  child: AppPageFrame(
+                    maxWidth: AppBreakpoints.contentMax,
+                    child: ListView(
+                      padding: AppScrollPadding.resolve(
+                        context,
+                        base: EdgeInsets.all(pagePad),
+                        chrome: AppBottomChrome.system,
                       ),
-                      chrome: AppBottomChrome.system,
-                    ),
-                    children: [
-                      Center(
-                        child: CircleAvatar(
-                          radius: 42,
-                          backgroundImage: user?.profilePhotoUrl != null
-                              ? NetworkImage(user!.profilePhotoUrl!)
-                              : null,
-                          child: user?.profilePhotoUrl == null
-                              ? Text(
-                                  _initials(
-                                    user?.fullName ?? user?.email ?? '?',
-                                  ),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineSmall,
-                                )
-                              : null,
+                      children: [
+                        _ProfileHeaderCard(
+                          isDesktop: AppBreakpoints.isDesktop(width),
+                          imageUrl: user?.profilePhotoUrl,
+                          name: user?.fullName ?? l10n.profile,
+                          email: user?.email ?? '-',
+                          role: user?.primaryRole ?? '-',
+                          fallbackLabel:
+                              user?.fullName ?? user?.email ?? '?',
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Center(
-                        child: Text(
-                          user?.fullName ?? l10n.profile,
-                          style: Theme.of(context).textTheme.headlineSmall,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      _ProfileRow(
-                        label: l10n.email,
-                        value: user?.email ?? '-',
-                      ),
-                      _ProfileRow(
-                        label: l10n.profilePhone,
-                        value: user?.phone ?? '-',
-                      ),
-                      _ProfileRow(
-                        label: l10n.roleLabel,
-                        value: user?.primaryRole ?? '-',
-                      ),
-                      _ProfileRow(
-                        label: l10n.companyLabel,
-                        value: org?.company?.name ?? '-',
-                      ),
-                      const SizedBox(height: AppSpacing.xl),
-                      const Center(
-                        child: InfinityBrandImageView.logo(height: 94),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      Center(
-                        child: Text(
-                          AppConfig.appName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
+                        const SizedBox(height: AppSpacing.lg),
+                        AppListCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _ProfileRow(
+                                label: l10n.email,
+                                value: user?.email ?? '-',
                               ),
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          AppConfig.companyName,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
+                              _ProfileRow(
+                                label: l10n.profilePhone,
+                                value: user?.phone ?? '-',
                               ),
+                              _ProfileRow(
+                                label: l10n.roleLabel,
+                                value: user?.primaryRole ?? '-',
+                              ),
+                              _ProfileRow(
+                                label: l10n.companyLabel,
+                                value: org?.company?.name ?? '-',
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: AppSpacing.lg),
-                      Text(
-                        l10n.rolesPermissions,
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      if (user?.permissions.isEmpty ?? true)
+                        const SizedBox(height: AppSpacing.lg),
                         Text(
-                          l10n.profileNoPermissions,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onSurfaceVariant,
-                              ),
-                        )
-                      else
-                        Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
-                          children: user!.permissions
-                              .map(
-                                (permission) => Chip(
-                                  label: Text(permission),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              )
-                              .toList(),
+                          l10n.rolesPermissions,
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                      if (state.message != null &&
-                          !isUserFacingNetworkNoise(state.message)) ...[
                         const SizedBox(height: AppSpacing.md),
-                        Text(
-                          localizeAppMessage(l10n, state.message),
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
+                        if (roles.isNotEmpty) ...[
+                          Wrap(
+                            spacing: AppSpacing.sm,
+                            runSpacing: AppSpacing.sm,
+                            children: roles
+                                .map(
+                                  (role) => Chip(
+                                    avatar: const Icon(Icons.badge_outlined, size: 16),
+                                    label: Text(role),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                )
+                                .toList(),
+                          ),
+                          const SizedBox(height: AppSpacing.md),
+                        ],
+                        if (permissions.isEmpty)
+                          Text(
+                            l10n.profileNoPermissions,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          )
+                        else
+                          AppListCard(
+                            padding: EdgeInsets.zero,
+                            child: Column(
+                              children: [
+                                for (final entry in groups.entries)
+                                  Theme(
+                                    data: Theme.of(context).copyWith(
+                                      dividerColor: Colors.transparent,
+                                    ),
+                                    child: ExpansionTile(
+                                      tilePadding: const EdgeInsets.symmetric(
+                                        horizontal: AppSpacing.md,
+                                        vertical: AppSpacing.xs,
+                                      ),
+                                      childrenPadding: EdgeInsets.zero,
+                                      initiallyExpanded: groups.length <= 3,
+                                      title: Text(
+                                        _moduleLabel(l10n, entry.key),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleSmall
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      subtitle: Text(
+                                        '${entry.value.length}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                            ),
+                                      ),
+                                      children: [
+                                        Padding(
+                                          padding: const EdgeInsets.fromLTRB(
+                                            AppSpacing.md,
+                                            0,
+                                            AppSpacing.md,
+                                            AppSpacing.md,
+                                          ),
+                                          child: Align(
+                                            alignment: AlignmentDirectional
+                                                .centerStart,
+                                            child: Wrap(
+                                              spacing: AppSpacing.sm,
+                                              runSpacing: AppSpacing.sm,
+                                              children: entry.value
+                                                  .map(
+                                                    (permission) => Chip(
+                                                      label: Text(
+                                                        _actionLabel(
+                                                          permission,
+                                                        ),
+                                                      ),
+                                                      visualDensity:
+                                                          VisualDensity
+                                                              .compact,
+                                                    ),
+                                                  )
+                                                  .toList(),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        if (state.message != null &&
+                            !isUserFacingNetworkNoise(state.message)) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            localizeAppMessage(l10n, state.message),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.xl),
+                        const Center(
+                          child: InfinityBrandImageView.logo(height: 72),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Center(
+                          child: Text(
+                            AppConfig.appName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                        Center(
+                          child: Text(
+                            AppConfig.companyName,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xl),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.lock_outline),
+                          title: Text(l10n.settingsChangePassword),
+                          onTap: () =>
+                              context.push(RoutePaths.usersChangePassword),
+                        ),
+                        ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: const Icon(Icons.logout),
+                          title: Text(l10n.logout),
+                          onTap: () async {
+                            await context.read<AuthCubit>().logout();
+                            if (context.mounted) {
+                              context.go(RoutePaths.login);
+                            }
+                          },
                         ),
                       ],
-                      const SizedBox(height: AppSpacing.xl),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.lock_outline),
-                        title: Text(l10n.settingsChangePassword),
-                        onTap: () =>
-                            context.push(RoutePaths.usersChangePassword),
-                      ),
-                      ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.logout),
-                        title: Text(l10n.logout),
-                        onTap: () async {
-                          await context.read<AuthCubit>().logout();
-                          if (context.mounted) {
-                            context.go(RoutePaths.login);
-                          }
-                        },
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -221,16 +296,118 @@ class _ProfileView extends StatelessWidget {
     );
   }
 
-  String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+'));
-    if (parts.isEmpty || parts.first.isEmpty) {
-      return '?';
+  static Map<String, List<String>> _groupPermissions(List<String> permissions) {
+    final groups = <String, List<String>>{};
+    for (final permission in permissions) {
+      final sep = permission.indexOf(':');
+      final module = sep > 0 ? permission.substring(0, sep) : 'general';
+      groups.putIfAbsent(module, () => []).add(permission);
     }
-    if (parts.length == 1) {
-      return parts.first.substring(0, 1).toUpperCase();
+    final keys = groups.keys.toList()..sort();
+    return {for (final key in keys) key: (groups[key]!..sort())};
+  }
+
+  static String _moduleLabel(AppLocalizations l10n, String module) {
+    return switch (module) {
+      'overtime' => l10n.overtime,
+      'work_orders' => l10n.workOrders,
+      'attendance' => l10n.attendance,
+      'inventory' => l10n.inventory,
+      'assets' => l10n.assets,
+      'reports' => l10n.reportsTitle,
+      'settings' => l10n.settings,
+      'dashboard' => l10n.dashboard,
+      'users' => l10n.usersTitle,
+      'organization' => l10n.companyLabel,
+      'pm' => l10n.pmTitle,
+      'roles' => l10n.roleLabel,
+      _ => module.replaceAll('_', ' '),
+    };
+  }
+
+  static String _actionLabel(String permission) {
+    final sep = permission.indexOf(':');
+    if (sep < 0 || sep >= permission.length - 1) return permission;
+    return permission.substring(sep + 1).replaceAll('_', ' ');
+  }
+}
+
+class _ProfileHeaderCard extends StatelessWidget {
+  const _ProfileHeaderCard({
+    required this.isDesktop,
+    required this.imageUrl,
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.fallbackLabel,
+  });
+
+  final bool isDesktop;
+  final String? imageUrl;
+  final String name;
+  final String email;
+  final String role;
+  final String fallbackLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final avatar = AppNetworkAvatar(
+      imageUrl: imageUrl,
+      radius: isDesktop ? 36 : 42,
+      fallbackLabel: fallbackLabel,
+    );
+
+    if (!isDesktop) {
+      return Column(
+        children: [
+          avatar,
+          const SizedBox(height: AppSpacing.md),
+          Text(
+            name,
+            style: theme.textTheme.headlineSmall,
+            textAlign: TextAlign.center,
+          ),
+        ],
+      );
     }
-    return '${parts.first.substring(0, 1)}${parts.last.substring(0, 1)}'
-        .toUpperCase();
+
+    return AppListCard(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          avatar,
+          const SizedBox(width: AppSpacing.lg),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  email,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                Chip(
+                  avatar: const Icon(Icons.badge_outlined, size: 16),
+                  label: Text(role),
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

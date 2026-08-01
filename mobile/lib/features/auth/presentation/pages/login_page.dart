@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
+import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
@@ -39,6 +41,7 @@ class _LoginView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
 
     return BlocListener<LoginCubit, LoginState>(
       listenWhen: (previous, current) =>
@@ -61,51 +64,70 @@ class _LoginView extends StatelessWidget {
       },
       child: Scaffold(
         resizeToAvoidBottomInset: false,
-        body: SafeArea(
-          child: GestureDetector(
-            onTap: _dismissKeyboard,
-            behavior: HitTestBehavior.opaque,
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final viewInsets = MediaQuery.viewInsetsOf(context);
-                final isWide = constraints.maxWidth >= 900;
-                final minContentHeight =
-                    (constraints.maxHeight - viewInsets.bottom)
-                        .clamp(0.0, double.infinity);
+        body: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                colorScheme.surface,
+                colorScheme.primary.withValues(alpha: 0.06),
+                colorScheme.surface,
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: GestureDetector(
+              onTap: _dismissKeyboard,
+              behavior: HitTestBehavior.opaque,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final viewInsets = MediaQuery.viewInsetsOf(context);
+                  final width = constraints.maxWidth;
+                  final isDesktop = AppBreakpoints.isDesktop(width);
+                  final isTablet = AppBreakpoints.isTablet(width);
+                  final minContentHeight =
+                      (constraints.maxHeight - viewInsets.bottom)
+                          .clamp(0.0, double.infinity);
 
-                return AnimatedPadding(
-                  duration: const Duration(milliseconds: 100),
-                  curve: Curves.easeOut,
-                  padding: EdgeInsets.only(bottom: viewInsets.bottom),
-                  child: SingleChildScrollView(
-                    keyboardDismissBehavior:
-                        ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: const EdgeInsets.all(AppSpacing.lg),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: (minContentHeight - AppSpacing.lg * 2)
-                            .clamp(0.0, double.infinity),
-                        maxWidth: 1100,
+                  return AnimatedPadding(
+                    duration: const Duration(milliseconds: 100),
+                    curve: Curves.easeOut,
+                    padding: EdgeInsets.only(bottom: viewInsets.bottom),
+                    child: SingleChildScrollView(
+                      keyboardDismissBehavior:
+                          ScrollViewKeyboardDismissBehavior.onDrag,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isDesktop
+                            ? AppSpacing.xxl
+                            : AppSpacing.lg,
+                        vertical: isDesktop ? AppSpacing.xxl : AppSpacing.lg,
                       ),
                       child: Center(
-                        child: isWide
-                            ? IntrinsicHeight(
-                                child: Row(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.stretch,
-                                  children: [
-                                    const Expanded(child: _BrandingPanel()),
-                                    const SizedBox(width: AppSpacing.xl),
-                                    Expanded(child: _FormColumn(l10n: l10n)),
-                                  ],
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: (minContentHeight -
+                                    (isDesktop
+                                        ? AppSpacing.xxl * 2
+                                        : AppSpacing.lg * 2))
+                                .clamp(0.0, double.infinity),
+                            maxWidth: isDesktop
+                                ? AppBreakpoints.authShellMax
+                                : AppBreakpoints.authCardMax + 48,
+                          ),
+                          child: isDesktop
+                              ? _DesktopAuthShell(l10n: l10n)
+                              : _AuthCard(
+                                  l10n: l10n,
+                                  showBrand: true,
+                                  compactBrand: !isTablet,
                                 ),
-                              )
-                            : _FormColumn(l10n: l10n),
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -114,39 +136,96 @@ class _LoginView extends StatelessWidget {
   }
 }
 
-class _BrandingPanel extends StatelessWidget {
-  const _BrandingPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.xl),
-      decoration: BoxDecoration(
-        color: colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: colorScheme.primary.withValues(alpha: 0.16)),
-      ),
-      child: const Center(
-        child: InfinityBrandHeader(
-          image: InfinityBrandImage.logo,
-          imageHeight: 140,
-        ),
-      ),
-    );
-  }
-}
-
-class _FormColumn extends StatelessWidget {
-  const _FormColumn({required this.l10n});
+class _DesktopAuthShell extends StatelessWidget {
+  const _DesktopAuthShell({required this.l10n});
 
   final AppLocalizations l10n;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final showMobileBrand = MediaQuery.sizeOf(context).width < 900;
+    final height = MediaQuery.sizeOf(context).height;
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: (height - AppSpacing.xxl * 4).clamp(420.0, 720.0),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 5,
+              child: Container(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.14),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const InfinityBrandHeader(
+                      image: InfinityBrandImage.logo,
+                      imageHeight: 148,
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    Text(
+                      l10n.loginTitle,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      l10n.loginSubtitle,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xl),
+            Expanded(
+              flex: 4,
+              child: Align(
+                alignment: Alignment.center,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxWidth: AppBreakpoints.authCardMax,
+                  ),
+                  child: _AuthCard(l10n: l10n, showBrand: false),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _AuthCard extends StatelessWidget {
+  const _AuthCard({
+    required this.l10n,
+    required this.showBrand,
+    this.compactBrand = true,
+  });
+
+  final AppLocalizations l10n;
+  final bool showBrand;
+  final bool compactBrand;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       child: Padding(
@@ -155,17 +234,17 @@ class _FormColumn extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (showMobileBrand) ...[
-              const InfinityBrandHeader(
+            if (showBrand) ...[
+              InfinityBrandHeader(
                 image: InfinityBrandImage.logo,
-                imageHeight: 72,
-                compact: true,
+                imageHeight: compactBrand ? 72 : 96,
+                compact: compactBrand,
               ),
               const SizedBox(height: AppSpacing.xl),
             ],
             Text(
               l10n.loginTitle,
-              style: showMobileBrand
+              style: showBrand
                   ? Theme.of(context).textTheme.titleLarge
                   : Theme.of(context).textTheme.headlineSmall,
             ),

@@ -18,6 +18,7 @@ export function uploadOvertimePhotoBuffer(buffer, { userId, photoType }) {
         folder: `overtime/${photoType}`,
         public_id: `${userId}_${Date.now()}`,
         resource_type: 'image',
+        format: 'jpg',
         overwrite: false,
       },
       (error, result) => {

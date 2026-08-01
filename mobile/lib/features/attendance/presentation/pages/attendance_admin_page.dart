@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/duration_formatter.dart';
@@ -10,8 +11,11 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
+import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
+import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_record.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
@@ -91,7 +95,9 @@ class _AttendanceAdminViewState extends State<_AttendanceAdminView> {
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.attendanceManagement)),
-      body: Column(
+      body: AppPageFrame(
+        maxWidth: AppBreakpoints.contentWideMax,
+        child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -338,30 +344,15 @@ class _AttendanceAdminViewState extends State<_AttendanceAdminView> {
                         onRefresh: () => context
                             .read<AttendanceAdminCubit>()
                             .loadFirstPage(),
-                        child: ListView.separated(
+                        child: AppResponsiveCardList(
                           controller: _scrollController,
-                          physics: const AlwaysScrollableScrollPhysics(),
-                          padding: AppScrollPadding.resolve(
-                            context,
-                            base: const EdgeInsets.all(AppSpacing.lg),
-                            chrome: AppBottomChrome.system,
-                          ),
-                          itemCount: state.items.length +
-                              (state.status ==
-                                      AttendanceAdminStatus.loadingMore
-                                  ? 1
-                                  : 0),
-                          separatorBuilder: (_, _) =>
-                              const SizedBox(height: AppSpacing.md),
+                          chrome: AppBottomChrome.system,
+                          itemCount: state.items.length,
+                          loadingMore: state.status ==
+                              AttendanceAdminStatus.loadingMore,
+                          desktopColumns: 2,
+                          tabletColumns: 2,
                           itemBuilder: (context, index) {
-                            if (index >= state.items.length) {
-                              return const Padding(
-                                padding: EdgeInsets.all(AppSpacing.md),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              );
-                            }
                             final record = state.items[index];
                             return _AdminAttendanceCard(
                               record: record,
@@ -382,6 +373,7 @@ class _AttendanceAdminViewState extends State<_AttendanceAdminView> {
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -435,144 +427,140 @@ class _AdminAttendanceCard extends StatelessWidget {
     final source = record.clockIn?.source ?? record.clockOut?.source;
     final dash = l10n.valueNotSet;
 
-    return Material(
-      color: theme.colorScheme.surface,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    return AppListCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              ClipOval(
+                child: avatarUrl != null && avatarUrl.isNotEmpty
+                    ? AppCachedNetworkImage(
+                        imageUrl: avatarUrl,
+                        width: 44,
+                        height: 44,
+                        memCacheWidth: 88,
+                        memCacheHeight: 88,
+                      )
+                    : Container(
+                        width: 44,
+                        height: 44,
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.person_outline,
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipOval(
-                      child: avatarUrl != null && avatarUrl.isNotEmpty
-                          ? AppCachedNetworkImage(
-                              imageUrl: avatarUrl,
-                              width: 44,
-                              height: 44,
-                              memCacheWidth: 88,
-                              memCacheHeight: 88,
-                            )
-                          : Container(
-                              width: 44,
-                              height: 44,
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              child: Icon(
-                                Icons.person_outline,
-                                color: theme.colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            employee?.displayName ?? l10n.workOrderTechnician,
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            attendanceRoleLabel(
-                              l10n,
-                              employee?.primaryRole,
-                            ),
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                    Text(
+                      employee?.displayName ?? l10n.workOrderTechnician,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    AttendanceStatusBadge(
-                      status: record.status,
-                      useManagementLabels: true,
+                    const SizedBox(height: 2),
+                    Text(
+                      attendanceRoleLabel(
+                        l10n,
+                        employee?.primaryRole,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                _InfoLine(
-                  label: l10n.attendanceClockIn,
-                  value: record.clockIn == null
-                      ? dash
-                      : timeFormat.format(record.clockIn!.at.toLocal()),
-                ),
-                _InfoLine(
-                  label: l10n.attendanceClockOut,
-                  value: record.clockOut == null
-                      ? dash
-                      : timeFormat.format(record.clockOut!.at.toLocal()),
-                ),
-                _InfoLine(
-                  label: l10n.attendanceWorkingHours,
-                  value: DurationFormatter.fromMinutes(
-                    record.workingMinutes,
-                    l10n,
+              ),
+              if (selfieUrl != null && selfieUrl.isNotEmpty) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: AppCachedNetworkImage(
+                    imageUrl: selfieUrl,
+                    width: 44,
+                    height: 44,
+                    memCacheWidth: 88,
+                    memCacheHeight: 88,
                   ),
                 ),
-                _InfoLine(
-                  label: l10n.attendanceOvertimeHours,
-                  value: dash,
-                ),
-                _InfoLine(
-                  label: l10n.attendanceLocation,
-                  value: attendanceAddressSnippet(address, fallback: dash),
-                ),
-                _InfoLine(
-                  label: l10n.attendanceDevice,
-                  value: (deviceId == null || deviceId.isEmpty) ? dash : deviceId,
-                ),
-                _InfoLine(
-                  label: l10n.attendanceSyncSource,
-                  value: (source == null || source.isEmpty) ? dash : source,
-                ),
-                _InfoLine(
-                  label: l10n.attendanceLastUpdated,
-                  value: record.updatedAt == null
-                      ? dash
-                      : dateTimeFormat.format(record.updatedAt!.toLocal()),
-                ),
-                if (selfieUrl != null && selfieUrl.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: AppCachedNetworkImage(
-                        imageUrl: selfieUrl,
-                        width: 56,
-                        height: 56,
-                        memCacheWidth: 112,
-                        memCacheHeight: 112,
-                      ),
-                    ),
-                  ),
-                ],
+                const SizedBox(width: AppSpacing.sm),
               ],
+              AttendanceStatusBadge(
+                status: record.status,
+                useManagementLabels: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Wrap(
+            spacing: AppSpacing.lg,
+            runSpacing: AppSpacing.xs,
+            children: [
+              _CompactMeta(
+                label: l10n.attendanceClockIn,
+                value: record.clockIn == null
+                    ? dash
+                    : timeFormat.format(record.clockIn!.at.toLocal()),
+              ),
+              _CompactMeta(
+                label: l10n.attendanceClockOut,
+                value: record.clockOut == null
+                    ? dash
+                    : timeFormat.format(record.clockOut!.at.toLocal()),
+              ),
+              _CompactMeta(
+                label: l10n.attendanceWorkingHours,
+                value: DurationFormatter.fromMinutes(
+                  record.workingMinutes,
+                  l10n,
+                ),
+              ),
+              _CompactMeta(
+                label: l10n.attendanceOvertimeHours,
+                value: dash,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            attendanceAddressSnippet(address, fallback: dash),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
-        ),
+          const SizedBox(height: 2),
+          Text(
+            [
+              if (deviceId != null && deviceId.isNotEmpty) deviceId,
+              if (source != null && source.isNotEmpty) source,
+              if (record.updatedAt != null)
+                dateTimeFormat.format(record.updatedAt!.toLocal()),
+            ].whereType<String>().join(' · '),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class _InfoLine extends StatelessWidget {
-  const _InfoLine({required this.label, required this.value});
+class _CompactMeta extends StatelessWidget {
+  const _CompactMeta({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -580,23 +568,17 @@ class _InfoLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              label,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
-          Expanded(child: Text(value, style: theme.textTheme.bodyMedium)),
-        ],
-      ),
+        ),
+        Text(value, style: theme.textTheme.bodyMedium),
+      ],
     );
   }
 }

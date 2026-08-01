@@ -23,6 +23,8 @@ export function uploadWorkOrderAttachmentBuffer(buffer, { companyId, fileName, m
         folder: `work-orders/${companyId}`,
         public_id: `${Date.now()}_${safeName}`,
         resource_type: resourceType,
+        // Force JPEG for images so Flutter Windows never receives AVIF/auto.
+        ...(isPdf ? {} : { format: 'jpg' }),
         overwrite: false,
       },
       (error, result) => {

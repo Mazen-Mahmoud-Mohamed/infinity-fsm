@@ -88,7 +88,7 @@ class AppTheme {
       onInverseSurface: AppColors.darkBackground,
       inversePrimary: AppColors.primary,
       surfaceTint: AppColors.accent,
-      surfaceContainerLowest: AppColors.darkBackground,
+      surfaceContainerLowest: AppColors.darkSurface,
       surfaceContainerLow: AppColors.darkSurface,
       surfaceContainer: AppColors.darkSurfaceContainer,
       surfaceContainerHigh: AppColors.darkSurfaceContainerHigh,
@@ -275,6 +275,35 @@ class AppTheme {
             color: selected ? colorScheme.primary : colorScheme.onSurfaceVariant,
           );
         }),
+      ),
+      navigationRailTheme: NavigationRailThemeData(
+        backgroundColor: navigationBackground,
+        elevation: 0,
+        minWidth: 72,
+        minExtendedWidth: 220,
+        groupAlignment: -0.95,
+        indicatorColor: colorScheme.primary.withValues(alpha: 0.14),
+        indicatorShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        selectedIconTheme: IconThemeData(
+          size: 22,
+          color: colorScheme.primary,
+        ),
+        unselectedIconTheme: IconThemeData(
+          size: 22,
+          color: colorScheme.onSurfaceVariant,
+        ),
+        selectedLabelTextStyle: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.primary,
+        ),
+        unselectedLabelTextStyle: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: colorScheme.onSurfaceVariant,
+        ),
       ),
       dialogTheme: DialogThemeData(
         backgroundColor: dialogBackground,

@@ -21,6 +21,7 @@ export function uploadUserAvatarBuffer(buffer, { companyId, userId }) {
         folder: `users/${companyId}/avatars`,
         public_id: `${safeId}_${Date.now()}`,
         resource_type: 'image',
+        format: 'jpg',
         overwrite: false,
       },
       (error, result) => {

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_detail_cubit.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
@@ -98,132 +99,158 @@ class _OvertimeDetailView extends StatelessWidget {
               session.isPendingReview;
 
           final showStickyActions = canApprove || canReject;
+          final isDesktop = AppBreakpoints.isDesktopOf(context);
+
+          final leftSections = <Widget>[
+            _SectionCard(
+              title: l10n.overtimeTechnicianInfo,
+              children: [
+                _DetailRow(
+                  label: l10n.labelName,
+                  value: session.technician?.displayName ?? '-',
+                ),
+                _DetailRow(
+                  label: l10n.email,
+                  value: session.technician?.email ?? '-',
+                ),
+                _DetailRow(
+                  label: l10n.roleLabel,
+                  value: session.technician?.primaryRole ?? '-',
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _SectionCard(
+              title: l10n.overtimeSessionInfo,
+              trailing: OvertimeStatusBadge(status: session.status),
+              children: [
+                _DetailRow(
+                  label: l10n.labelType,
+                  value: overtimeTypeLabel(l10n, session.type),
+                ),
+                _DetailRow(
+                  label: l10n.overtimeStartTime,
+                  value: dateFormat.format(session.startAt.toLocal()),
+                ),
+                _DetailRow(
+                  label: l10n.overtimeEndTime,
+                  value: session.endAt == null
+                      ? '-'
+                      : dateFormat.format(session.endAt!.toLocal()),
+                ),
+                _DetailRow(
+                  label: l10n.overtimeTotalDuration,
+                  value: OvertimeFormatters.durationFromMinutes(
+                    session.totalDurationMinutes,
+                    l10n,
+                  ),
+                ),
+                _DetailRow(
+                  label: l10n.overtimeEligible,
+                  value: OvertimeFormatters.durationFromMinutes(
+                    session.eligibleOvertimeMinutes,
+                    l10n,
+                  ),
+                ),
+                if (session.rejectionReason != null &&
+                    session.rejectionReason!.isNotEmpty)
+                  _DetailRow(
+                    label: l10n.overtimeRejectionReason,
+                    value: session.rejectionReason!,
+                  ),
+                if (session.approvedBy != null)
+                  _DetailRow(
+                    label: l10n.overtimeApprovedBy,
+                    value: session.approvedBy!.displayName,
+                  ),
+                if (session.approvedAt != null)
+                  _DetailRow(
+                    label: l10n.overtimeApprovedAt,
+                    value: dateFormat.format(session.approvedAt!.toLocal()),
+                  ),
+                if (session.rejectedBy != null)
+                  _DetailRow(
+                    label: l10n.overtimeRejectedBy,
+                    value: session.rejectedBy!.displayName,
+                  ),
+                if (session.rejectedAt != null)
+                  _DetailRow(
+                    label: l10n.overtimeRejectedAt,
+                    value: dateFormat.format(session.rejectedAt!.toLocal()),
+                  ),
+              ],
+            ),
+          ];
+
+          final rightSections = <Widget>[
+            OvertimeLocationSection(
+              startGps: session.startGps,
+              endGps: session.endGps,
+              startAddress: session.startAddress,
+              endAddress: session.endAddress,
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _SectionCard(
+              title: l10n.overtimeImages,
+              children: [
+                _ResponsivePhotoGrid(
+                  items: [
+                    _PhotoGridItem(
+                      label: l10n.overtimeStartPhoto,
+                      imageUrl: session.startPhotoUrl,
+                    ),
+                    _PhotoGridItem(
+                      label: l10n.overtimeEndPhoto,
+                      imageUrl: session.endPhotoUrl,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            _SectionCard(
+              title: l10n.overtimeDeviceInfo,
+              children: [
+                _DetailRow(
+                  label: l10n.overtimeStartDevice,
+                  value: session.startDeviceId,
+                ),
+                _DetailRow(
+                  label: l10n.overtimeEndDevice,
+                  value: session.endDeviceId ?? '-',
+                ),
+              ],
+            ),
+          ];
 
           return Column(
             children: [
               Expanded(
                 child: AppBottomSafeListView(
-                  basePadding: const EdgeInsets.all(AppSpacing.lg),
+                  basePadding: EdgeInsets.all(
+                    isDesktop ? AppSpacing.xl : AppSpacing.lg,
+                  ),
                   chrome: showStickyActions
                       ? AppBottomChrome.stickyActions
                       : AppBottomChrome.system,
                   children: [
-                    _SectionCard(
-                      title: l10n.overtimeTechnicianInfo,
-                      children: [
-                        _DetailRow(
-                          label: l10n.labelName,
-                          value: session.technician?.displayName ?? '-',
+                    if (isDesktop)
+                      AppDesktopSplitView(
+                        start: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: leftSections,
                         ),
-                        _DetailRow(
-                          label: l10n.email,
-                          value: session.technician?.email ?? '-',
+                        end: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: rightSections,
                         ),
-                        _DetailRow(
-                          label: l10n.roleLabel,
-                          value: session.technician?.primaryRole ?? '-',
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _SectionCard(
-                      title: l10n.overtimeSessionInfo,
-                      trailing: OvertimeStatusBadge(status: session.status),
-                      children: [
-                        _DetailRow(
-                          label: l10n.labelType,
-                          value: overtimeTypeLabel(l10n, session.type),
-                        ),
-                        _DetailRow(
-                          label: l10n.overtimeStartTime,
-                          value: dateFormat.format(session.startAt.toLocal()),
-                        ),
-                        _DetailRow(
-                          label: l10n.overtimeEndTime,
-                          value: session.endAt == null
-                              ? '-'
-                              : dateFormat.format(session.endAt!.toLocal()),
-                        ),
-                        _DetailRow(
-                          label: l10n.overtimeTotalDuration,
-                          value: OvertimeFormatters.durationFromMinutes(
-                            session.totalDurationMinutes,
-                            l10n,
-                          ),
-                        ),
-                        _DetailRow(
-                          label: l10n.overtimeEligible,
-                          value: OvertimeFormatters.durationFromMinutes(
-                            session.eligibleOvertimeMinutes,
-                            l10n,
-                          ),
-                        ),
-                        if (session.rejectionReason != null &&
-                            session.rejectionReason!.isNotEmpty)
-                          _DetailRow(
-                            label: l10n.overtimeRejectionReason,
-                            value: session.rejectionReason!,
-                          ),
-                        if (session.approvedBy != null)
-                          _DetailRow(
-                            label: l10n.overtimeApprovedBy,
-                            value: session.approvedBy!.displayName,
-                          ),
-                        if (session.approvedAt != null)
-                          _DetailRow(
-                            label: l10n.overtimeApprovedAt,
-                            value: dateFormat
-                                .format(session.approvedAt!.toLocal()),
-                          ),
-                        if (session.rejectedBy != null)
-                          _DetailRow(
-                            label: l10n.overtimeRejectedBy,
-                            value: session.rejectedBy!.displayName,
-                          ),
-                        if (session.rejectedAt != null)
-                          _DetailRow(
-                            label: l10n.overtimeRejectedAt,
-                            value: dateFormat
-                                .format(session.rejectedAt!.toLocal()),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    OvertimeLocationSection(
-                      startGps: session.startGps,
-                      endGps: session.endGps,
-                      startAddress: session.startAddress,
-                      endAddress: session.endAddress,
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _SectionCard(
-                      title: l10n.overtimeImages,
-                      children: [
-                        _PhotoTile(
-                          label: l10n.overtimeStartPhoto,
-                          imageUrl: session.startPhotoUrl,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        _PhotoTile(
-                          label: l10n.overtimeEndPhoto,
-                          imageUrl: session.endPhotoUrl,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    _SectionCard(
-                      title: l10n.overtimeDeviceInfo,
-                      children: [
-                        _DetailRow(
-                          label: l10n.overtimeStartDevice,
-                          value: session.startDeviceId,
-                        ),
-                        _DetailRow(
-                          label: l10n.overtimeEndDevice,
-                          value: session.endDeviceId ?? '-',
-                        ),
-                      ],
-                    ),
+                      )
+                    else
+                      ...leftSections,
+                    if (!isDesktop) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      ...rightSections,
+                    ],
                   ],
                 ),
               ),
@@ -410,6 +437,45 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
+class _PhotoGridItem {
+  const _PhotoGridItem({required this.label, required this.imageUrl});
+
+  final String label;
+  final String? imageUrl;
+}
+
+class _ResponsivePhotoGrid extends StatelessWidget {
+  const _ResponsivePhotoGrid({required this.items});
+
+  final List<_PhotoGridItem> items;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final crossAxisCount = width >= AppBreakpoints.tabletMax
+        ? 2
+        : width >= AppBreakpoints.phoneMax
+            ? 2
+            : 1;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: items.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: AppSpacing.md,
+        crossAxisSpacing: AppSpacing.md,
+        childAspectRatio: 4 / 3,
+      ),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return _PhotoTile(label: item.label, imageUrl: item.imageUrl);
+      },
+    );
+  }
+}
+
 class _PhotoTile extends StatelessWidget {
   const _PhotoTile({required this.label, required this.imageUrl});
 
@@ -423,35 +489,36 @@ class _PhotoTile extends StatelessWidget {
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(label, style: theme.textTheme.titleSmall),
         const SizedBox(height: AppSpacing.sm),
-        if (!hasImage)
-          Text(
-            l10n.overtimeNoPhotoAvailable,
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          )
-        else
-          GestureDetector(
-            onTap: () => openOvertimeFullscreenImage(
-              context,
-              imageUrl: imageUrl!,
-              title: label,
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: AspectRatio(
-                aspectRatio: 16 / 10,
-                child: AppCachedNetworkImage(
-                  imageUrl: imageUrl!,
-                  fit: BoxFit.cover,
+        Expanded(
+          child: !hasImage
+              ? Align(
+                  alignment: AlignmentDirectional.centerStart,
+                  child: Text(
+                    l10n.overtimeNoPhotoAvailable,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : GestureDetector(
+                  onTap: () => openOvertimeFullscreenImage(
+                    context,
+                    imageUrl: imageUrl!,
+                    title: label,
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: AppCachedNetworkImage(
+                      imageUrl: imageUrl!,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ),
+        ),
       ],
     );
   }

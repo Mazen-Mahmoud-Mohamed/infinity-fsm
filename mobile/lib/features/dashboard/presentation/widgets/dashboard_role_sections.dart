@@ -10,6 +10,7 @@ import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_executive_layout.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_metric_group_card.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section_grid.dart';
 
 String formatDashboardNum(num value, [BuildContext? context]) {
   if (context != null) {
@@ -83,11 +84,10 @@ List<Widget> _admin({
   final pm = summary.preventiveMaintenance;
   final inventory = summary.inventory;
   final assets = summary.assets;
-  final children = <Widget>[];
+  final cards = <Widget>[];
 
   // Hero: most important live signals first.
-  children.add(
-    DashboardHeroMetrics(
+  final hero = DashboardHeroMetrics(
       metrics: [
         if (kpis != null)
           DashboardMetric(
@@ -118,12 +118,10 @@ List<Widget> _admin({
             onTap: () => context.go(RoutePaths.attendance),
           ),
       ],
-    ),
-  );
-  children.add(SizedBox(height: sectionGap));
+    );
 
   if (kpis != null || attendance != null || overtime != null) {
-    children.add(
+    cards.add(
       DashboardMetricGroupCard(
         title: l10n.dashboardWorkforce,
         metrics: [
@@ -191,11 +189,10 @@ List<Widget> _admin({
             : null,
       ),
     );
-    children.add(SizedBox(height: sectionGap));
   }
 
   if (workOrders != null || pm != null) {
-    children.add(
+    cards.add(
       DashboardMetricGroupCard(
         title: l10n.dashboardOperations,
         onHeaderTap: workOrders != null
@@ -245,11 +242,10 @@ List<Widget> _admin({
         ],
       ),
     );
-    children.add(SizedBox(height: sectionGap));
   }
 
   if (inventory != null || assets != null) {
-    children.add(
+    cards.add(
       DashboardMetricGroupCard(
         title: l10n.dashboardResources,
         metrics: [
@@ -258,7 +254,7 @@ List<Widget> _admin({
               label: l10n.dashboardLowStock,
               value: '${inventory.lowStock}',
               icon: Icons.warning_amber_outlined,
-              onTap: () => context.push(RoutePaths.inventory),
+              onTap: () => context.go(RoutePaths.inventory),
             ),
             DashboardMetric(
               label: l10n.dashboardKpiOutOfStock,
@@ -307,11 +303,14 @@ List<Widget> _admin({
             : null,
       ),
     );
-    children.add(SizedBox(height: sectionGap));
   }
 
-  children.addAll(
-    _trendsAndFeeds(
+  return [
+    hero,
+    SizedBox(height: sectionGap),
+    DashboardSectionGrid(gap: sectionGap, children: cards),
+    SizedBox(height: sectionGap),
+    ..._trendsAndFeeds(
       context: context,
       l10n: l10n,
       summary: summary,
@@ -319,9 +318,7 @@ List<Widget> _admin({
       chartWindowDays: chartWindowDays,
       onChartWindowChanged: onChartWindowChanged,
     ),
-  );
-
-  return children;
+  ];
 }
 
 List<Widget> _supervisor({
@@ -338,10 +335,9 @@ List<Widget> _supervisor({
   final pm = summary.teamPm;
   final inventory = summary.teamInventoryAlerts;
   final performance = summary.teamPerformance;
-  final children = <Widget>[];
+  final cards = <Widget>[];
 
-  children.add(
-    DashboardHeroMetrics(
+  final hero = DashboardHeroMetrics(
       metrics: [
         if (attendance != null)
           DashboardMetric(
@@ -370,11 +366,9 @@ List<Widget> _supervisor({
             icon: Icons.more_time_outlined,
           ),
       ],
-    ),
-  );
-  children.add(SizedBox(height: sectionGap));
+    );
 
-  children.add(
+  cards.add(
     DashboardMetricGroupCard(
       title: l10n.dashboardSectionTeamAttendance,
       metrics: [
@@ -421,10 +415,9 @@ List<Widget> _supervisor({
       ],
     ),
   );
-  children.add(SizedBox(height: sectionGap));
 
   if (workOrders != null || pm != null || inventory != null) {
-    children.add(
+    cards.add(
       DashboardMetricGroupCard(
         title: l10n.dashboardOperations,
         metrics: [
@@ -468,16 +461,19 @@ List<Widget> _supervisor({
               label: l10n.dashboardLowStock,
               value: '${inventory.lowStock}',
               icon: Icons.warning_amber_outlined,
-              onTap: () => context.push(RoutePaths.inventory),
+              onTap: () => context.go(RoutePaths.inventory),
             ),
         ],
       ),
     );
-    children.add(SizedBox(height: sectionGap));
   }
 
-  children.addAll(
-    _trendsAndFeeds(
+  return [
+    hero,
+    SizedBox(height: sectionGap),
+    DashboardSectionGrid(gap: sectionGap, children: cards),
+    SizedBox(height: sectionGap),
+    ..._trendsAndFeeds(
       context: context,
       l10n: l10n,
       summary: summary,
@@ -486,9 +482,7 @@ List<Widget> _supervisor({
       onChartWindowChanged: onChartWindowChanged,
       activityOverride: summary.teamActivity,
     ),
-  );
-
-  return children;
+  ];
 }
 
 List<Widget> _technician({
@@ -505,10 +499,9 @@ List<Widget> _technician({
   final pm = summary.preventiveMaintenance;
   final location = summary.location;
   final performance = summary.performance;
-  final children = <Widget>[];
+  final cards = <Widget>[];
 
-  children.add(
-    DashboardHeroMetrics(
+  final hero = DashboardHeroMetrics(
       metrics: [
         if (work != null)
           DashboardMetric(
@@ -538,11 +531,9 @@ List<Widget> _technician({
             onTap: () => context.go(RoutePaths.attendance),
           ),
       ],
-    ),
-  );
-  children.add(SizedBox(height: sectionGap));
+    );
 
-  children.add(
+  cards.add(
     DashboardMetricGroupCard(
       title: l10n.dashboardSectionPerformance,
       metrics: [
@@ -613,10 +604,13 @@ List<Widget> _technician({
             ),
     ),
   );
-  children.add(SizedBox(height: sectionGap));
 
-  children.addAll(
-    _trendsAndFeeds(
+  return [
+    hero,
+    SizedBox(height: sectionGap),
+    DashboardSectionGrid(gap: sectionGap, children: cards),
+    SizedBox(height: sectionGap),
+    ..._trendsAndFeeds(
       context: context,
       l10n: l10n,
       summary: summary,
@@ -625,9 +619,7 @@ List<Widget> _technician({
       onChartWindowChanged: onChartWindowChanged,
       includeActivity: false,
     ),
-  );
-
-  return children;
+  ];
 }
 
 List<Widget> _trendsAndFeeds({
@@ -682,13 +674,9 @@ List<Widget> _trendsAndFeeds({
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ),
-        child: Column(
-          children: [
-            for (var i = 0; i < visibleTrends.length; i++) ...[
-              if (i > 0) const SizedBox(height: AppSpacing.sm),
-              visibleTrends[i],
-            ],
-          ],
+        child: DashboardSectionGrid(
+          gap: AppSpacing.sm,
+          children: visibleTrends,
         ),
       ),
     );

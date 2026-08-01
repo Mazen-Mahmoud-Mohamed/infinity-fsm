@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/features/auth/domain/services/permission_checker.dart';
 
 class _QuickAction {
@@ -83,8 +85,8 @@ class DashboardQuickActionsGrid extends StatelessWidget {
   }
 
   int _columnsFor(double width) {
-    if (width >= 900) return 4;
-    if (width >= 600) return 3;
+    if (width >= AppBreakpoints.tabletMax) return 4;
+    if (width >= AppBreakpoints.phoneMax) return 3;
     return 2;
   }
 
@@ -97,9 +99,25 @@ class DashboardQuickActionsGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
+        final isDesktop = width >= AppBreakpoints.tabletMax;
+
+        if (isDesktop) {
+          return Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final action in actions)
+                _DesktopQuickActionChip(
+                  label: action.label,
+                  icon: action.icon,
+                  onTap: () => context.push(action.route),
+                ),
+            ],
+          );
+        }
+
         final columns = _columnsFor(width);
         const spacing = AppSpacing.sm;
-        // Wider aspect = shorter cards → avoids RenderFlex on 320–360dp.
         final aspectRatio = width < 340
             ? 1.15
             : width < 400
@@ -128,6 +146,54 @@ class DashboardQuickActionsGrid extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _DesktopQuickActionChip extends StatelessWidget {
+  const _DesktopQuickActionChip({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return AppListCard(
+      onTap: onTap,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, size: 18, color: colorScheme.primary),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            label,
+            style: theme.textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

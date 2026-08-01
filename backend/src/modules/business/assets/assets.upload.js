@@ -21,6 +21,7 @@ export function uploadAssetImageBuffer(buffer, { companyId, assetNumber }) {
         folder: `assets/${companyId}`,
         public_id: `${safeNumber}_${Date.now()}`,
         resource_type: 'image',
+        format: 'jpg',
         overwrite: false,
       },
       (error, result) => {

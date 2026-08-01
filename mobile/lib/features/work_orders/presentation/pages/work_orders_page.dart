@@ -4,12 +4,16 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
+import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
@@ -103,7 +107,7 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
       (AuthCubit cubit) =>
           cubit.state.user?.permissionChecker.canCreateWorkOrder() == true,
     );
-    final contentMaxWidth = width >= 900 ? 840.0 : double.infinity;
+    final pagePad = AppBreakpoints.pagePadding(width);
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.workOrders)),
@@ -120,17 +124,15 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                   label: Text(l10n.workOrderCreate),
                 ))
           : null,
-      body: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: contentMaxWidth),
-          child: Column(
+      body: AppPageFrame(
+        maxWidth: AppBreakpoints.contentWideMax,
+        child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
+                padding: EdgeInsets.fromLTRB(
+                  pagePad,
                   AppSpacing.md,
-                  AppSpacing.lg,
+                  pagePad,
                   AppSpacing.sm,
                 ),
                 child: TextField(
@@ -161,8 +163,7 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                 builder: (context, state) {
                   return SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                    padding: EdgeInsets.symmetric(horizontal: pagePad),
                     child: Row(
                       children: [
                         _FilterChip(
@@ -271,61 +272,42 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                         AppRefreshBar(visible: state.isRefreshing),
                         Expanded(
                           child: RefreshIndicator(
-                      onRefresh: () =>
-                          context.read<WorkOrdersListCubit>().refresh(),
-                      child: ListView.separated(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: AppScrollPadding.resolve(
-                          context,
-                          base: const EdgeInsets.fromLTRB(
-                            AppSpacing.lg,
-                            AppSpacing.sm,
-                            AppSpacing.lg,
-                            0,
-                          ),
-                          chrome: AppBottomChrome.fab,
-                        ),
-                        itemCount: state.items.length +
-                            (state.status == WorkOrdersListStatus.loadingMore
-                                ? 1
-                                : 0),
-                        separatorBuilder: (_, index) =>
-                            const SizedBox(height: AppSpacing.sm),
-                        itemBuilder: (context, index) {
-                          if (index >= state.items.length) {
-                            return const Padding(
-                              padding: EdgeInsets.all(AppSpacing.md),
-                              child: Center(
-                                child: SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                ),
+                            onRefresh: () =>
+                                context.read<WorkOrdersListCubit>().refresh(),
+                            child: AppResponsiveCardList(
+                              controller: _scrollController,
+                              chrome: AppBottomChrome.fab,
+                              padding: EdgeInsets.fromLTRB(
+                                pagePad,
+                                AppSpacing.sm,
+                                pagePad,
+                                0,
                               ),
-                            );
-                          }
-                          final item = state.items[index];
-                          return _WorkOrderTile(
-                            workOrder: item,
-                            dateFormat: dateFormat,
-                            showTechnician: widget.isAdminMode,
-                            onTap: () async {
-                              final changed = await context.push<bool>(
-                                RoutePaths.workOrderDetail(item.id),
-                              );
-                              if (!context.mounted) {
-                                return;
-                              }
-                              if (changed == true) {
-                                context.read<WorkOrdersListCubit>().refresh();
-                              }
-                            },
-                          );
-                        },
-                      ),
+                              itemCount: state.items.length,
+                              loadingMore: state.status ==
+                                  WorkOrdersListStatus.loadingMore,
+                              itemBuilder: (context, index) {
+                                final item = state.items[index];
+                                return _WorkOrderTile(
+                                  workOrder: item,
+                                  dateFormat: dateFormat,
+                                  showTechnician: widget.isAdminMode,
+                                  onTap: () async {
+                                    final changed = await context.push<bool>(
+                                      RoutePaths.workOrderDetail(item.id),
+                                    );
+                                    if (!context.mounted) {
+                                      return;
+                                    }
+                                    if (changed == true) {
+                                      context
+                                          .read<WorkOrdersListCubit>()
+                                          .refresh();
+                                    }
+                                  },
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ],
@@ -335,7 +317,6 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
               ),
             ],
           ),
-        ),
       ),
     );
   }
@@ -367,80 +348,72 @@ class _WorkOrderTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surfaceContainerLowest,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Column(
+    return AppListCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Text(
-                      workOrder.jobTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  WorkOrderStatusBadge(status: workOrder.status),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                workOrder.jobNumber,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              if (workOrder.customerName != null &&
-                  workOrder.customerName!.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  workOrder.customerName!,
-                  maxLines: 1,
+              Expanded(
+                child: Text(
+                  workOrder.jobTitle,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ],
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: AppSpacing.sm,
-                runSpacing: AppSpacing.sm,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  WorkOrderPriorityBadge(priority: workOrder.priority),
-                  if (workOrder.scheduledAt != null)
-                    Text(
-                      dateFormat.format(workOrder.scheduledAt!.toLocal()),
-                      style: theme.textTheme.bodySmall,
-                    ),
-                  if (showTechnician &&
-                      workOrder.assignedTechnicianName != null)
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 160),
-                      child: Text(
-                        workOrder.assignedTechnicianName!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                    ),
-                ],
               ),
+              const SizedBox(width: AppSpacing.sm),
+              WorkOrderStatusBadge(status: workOrder.status),
             ],
           ),
-        ),
+          const SizedBox(height: 6),
+          Text(
+            workOrder.jobNumber,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (workOrder.customerName != null &&
+              workOrder.customerName!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              workOrder.customerName!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              WorkOrderPriorityBadge(priority: workOrder.priority),
+              if (workOrder.scheduledAt != null)
+                Text(
+                  dateFormat.format(workOrder.scheduledAt!.toLocal()),
+                  style: theme.textTheme.bodySmall,
+                ),
+              if (showTechnician &&
+                  workOrder.assignedTechnicianName != null)
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 160),
+                  child: Text(
+                    workOrder.assignedTechnicianName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
     );
   }

@@ -9,6 +9,7 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -203,18 +204,25 @@ class _UserDetailPageState extends State<UserDetailPage> {
                         children: [
                           CircleAvatar(
                             radius: 48,
-                            backgroundImage: user.avatarUrl != null
-                                ? NetworkImage(user.avatarUrl!)
-                                : null,
-                            child: user.avatarUrl == null
-                                ? Text(
+                            child: user.avatarUrl != null
+                                ? ClipOval(
+                                    child: AppCachedNetworkImage(
+                                      imageUrl: user.avatarUrl!,
+                                      width: 96,
+                                      height: 96,
+                                      memCacheWidth: 192,
+                                      memCacheHeight: 192,
+                                      errorIcon: Icons.person_outline,
+                                    ),
+                                  )
+                                : Text(
                                     user.fullName.isNotEmpty
                                         ? user.fullName[0].toUpperCase()
                                         : '?',
-                                    style:
-                                        Theme.of(context).textTheme.headlineMedium,
-                                  )
-                                : null,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .headlineMedium,
+                                  ),
                           ),
                           if (canUpdate)
                             Positioned(

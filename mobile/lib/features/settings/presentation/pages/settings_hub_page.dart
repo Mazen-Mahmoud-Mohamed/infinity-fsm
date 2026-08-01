@@ -1,12 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
+import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
+import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
+import 'package:mobile/features/settings/presentation/pages/system_settings_page.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_tiles.dart';
+
+enum _SettingsEmbedTarget {
+  organization,
+  system,
+  language,
+  theme,
+  notifications,
+  about,
+}
 
 class SettingsHubPage extends StatefulWidget {
   const SettingsHubPage({super.key});
@@ -18,6 +33,8 @@ class SettingsHubPage extends StatefulWidget {
 class _SettingsHubPageState extends State<SettingsHubPage> {
   final _searchController = TextEditingController();
   String _query = '';
+  int _selectedSection = 0;
+  _SettingsEmbedTarget? _embeddedTarget;
 
   @override
   void dispose() {
@@ -31,20 +48,29 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
     return values.any((v) => v.toLowerCase().contains(q));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
+  void _embed(_SettingsEmbedTarget target) {
+    setState(() => _embeddedTarget = target);
+  }
+
+  void _handleTileTap(_SettingsItem item, bool isDesktop) {
+    if (isDesktop && item.embedTarget != null) {
+      _embed(item.embedTarget!);
+      return;
+    }
+    item.onTap();
+  }
+
+  List<_SettingsSection> _buildSections(AppLocalizations l10n) {
     final authUser = context.watch<AuthCubit>().state.user;
     final canViewSettings =
         authUser?.permissionChecker.canViewSettings() == true;
     final canManageSettings =
         authUser?.permissionChecker.canManageSettings() == true;
-    final canUsers = authUser?.permissionChecker.canViewUsers() == true;
-    final canRoles = authUser?.permissionChecker.canViewRoles() == true;
 
-    final sections = <_SettingsSection>[
+    return <_SettingsSection>[
       _SettingsSection(
         title: l10n.settingsSectionAccount,
+        icon: Icons.person_outline,
         tiles: [
           _SettingsItem(
             icon: Icons.person_outline,
@@ -63,26 +89,30 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
             title: l10n.settingsLanguage,
             keywords: ['language', 'locale', 'arabic', 'english'],
             onTap: () => context.push(RoutePaths.settingsLanguage),
+            embedTarget: _SettingsEmbedTarget.language,
           ),
           _SettingsItem(
             icon: Icons.brightness_6_outlined,
             title: l10n.settingsTheme,
             keywords: ['theme', 'dark', 'light'],
             onTap: () => context.push(RoutePaths.settingsTheme),
+            embedTarget: _SettingsEmbedTarget.theme,
           ),
           _SettingsItem(
             icon: Icons.notifications_outlined,
             title: l10n.settingsNotificationPreferences,
             keywords: ['notification', 'push', 'email'],
             onTap: () => context.push(RoutePaths.settingsNotifications),
+            embedTarget: _SettingsEmbedTarget.notifications,
           ),
           _SettingsItem(
             icon: Icons.logout,
             title: l10n.logout,
             keywords: ['logout', 'sign out'],
             onTap: () async {
+              final navigator = GoRouter.of(context);
               await context.read<AuthCubit>().logout();
-              if (context.mounted) context.go(RoutePaths.login);
+              navigator.go(RoutePaths.login);
             },
           ),
         ],
@@ -90,44 +120,28 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
       if (canViewSettings || canManageSettings)
         _SettingsSection(
           title: l10n.settingsCompanyInformation,
+          icon: Icons.business_outlined,
           tiles: [
             _SettingsItem(
               icon: Icons.business_outlined,
               title: l10n.settingsCompanyInformation,
               keywords: ['company', 'logo', 'address'],
               onTap: () => context.push(RoutePaths.settingsCompany),
+              embedTarget: _SettingsEmbedTarget.organization,
             ),
-          ],
-        ),
-      if (canUsers || canRoles)
-        _SettingsSection(
-          title: l10n.settingsSectionAdministration,
-          tiles: [
-            if (canUsers)
-              _SettingsItem(
-                icon: Icons.manage_accounts_outlined,
-                title: l10n.usersTitle,
-                keywords: ['users', 'employees'],
-                onTap: () => context.push(RoutePaths.users),
-              ),
-            if (canRoles)
-              _SettingsItem(
-                icon: Icons.admin_panel_settings_outlined,
-                title: l10n.rolesTitle,
-                keywords: ['roles', 'permissions'],
-                onTap: () => context.push(RoutePaths.roles),
-              ),
           ],
         ),
       if (canViewSettings)
         _SettingsSection(
           title: l10n.settingsSectionSystem,
+          icon: Icons.settings_suggest_outlined,
           tiles: [
             _SettingsItem(
               icon: Icons.backup_outlined,
               title: l10n.settingsBackupRestore,
               keywords: ['backup', 'restore'],
               onTap: () => context.push(RoutePaths.settingsSystem),
+              embedTarget: _SettingsEmbedTarget.system,
               subtitle: l10n.settingsUiOnly,
             ),
             _SettingsItem(
@@ -135,6 +149,7 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
               title: l10n.settingsCacheManagement,
               keywords: ['cache'],
               onTap: () => context.push(RoutePaths.settingsSystem),
+              embedTarget: _SettingsEmbedTarget.system,
               subtitle: l10n.settingsUiOnly,
             ),
             _SettingsItem(
@@ -142,23 +157,27 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
               title: l10n.settingsSystemStatus,
               keywords: ['api', 'database', 'storage', 'version'],
               onTap: () => context.push(RoutePaths.settingsSystem),
+              embedTarget: _SettingsEmbedTarget.system,
             ),
           ],
         ),
       _SettingsSection(
         title: l10n.settingsSectionAbout,
+        icon: Icons.info_outline,
         tiles: [
           _SettingsItem(
             icon: Icons.privacy_tip_outlined,
             title: l10n.settingsPrivacyPolicy,
             keywords: ['privacy'],
             onTap: () => context.push(RoutePaths.settingsAbout),
+            embedTarget: _SettingsEmbedTarget.about,
           ),
           _SettingsItem(
             icon: Icons.description_outlined,
             title: l10n.settingsTermsOfService,
             keywords: ['terms'],
             onTap: () => context.push(RoutePaths.settingsAbout),
+            embedTarget: _SettingsEmbedTarget.about,
           ),
           _SettingsItem(
             icon: Icons.code,
@@ -172,11 +191,21 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
         ],
       ),
     ];
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final isDesktop = AppBreakpoints.isDesktop(width);
+
+    final sections = _buildSections(l10n);
     final filtered = sections
         .map(
           (section) => _SettingsSection(
             title: section.title,
+            icon: section.icon,
             tiles: section.tiles
                 .where(
                   (tile) => _matches(_query, [
@@ -192,87 +221,221 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
         .where((section) => section.tiles.isNotEmpty)
         .toList();
 
+    if (filtered.isEmpty) {
+      // keep index
+    } else if (_selectedSection >= filtered.length) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _selectedSection = 0);
+      });
+    }
+
+    final contentIndex = filtered.isEmpty
+        ? 0
+        : _selectedSection.clamp(0, filtered.length - 1);
+
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.sm,
-            ),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: l10n.settingsSearchHint,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _query.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _query = '');
-                        },
-                      ),
+      body: AppPageFrame(
+        maxWidth: AppBreakpoints.contentWideMax,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.sm,
               ),
-              onChanged: (value) => setState(() => _query = value.trim()),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 520),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: l10n.settingsSearchHint,
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _query.isEmpty
+                        ? null
+                        : IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {
+                                _query = '';
+                                _embeddedTarget = null;
+                              });
+                            },
+                          ),
+                  ),
+                  onChanged: (value) => setState(() {
+                    _query = value.trim();
+                    _embeddedTarget = null;
+                  }),
+                ),
+              ),
+            ),
+            Expanded(
+              child: filtered.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.lg),
+                        child: Text(
+                          l10n.settingsEmptySearch,
+                          textAlign: TextAlign.center,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    )
+                  : isDesktop
+                      ? _DesktopSettingsSplit(
+                          sections: filtered,
+                          selectedIndex: contentIndex,
+                          embeddedTarget: _embeddedTarget,
+                          onSelect: (index) => setState(() {
+                            _selectedSection = index;
+                            _embeddedTarget = null;
+                          }),
+                          onTileTap: (item) => _handleTileTap(item, true),
+                        )
+                      : _MobileSettingsList(sections: filtered),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _DesktopSettingsSplit extends StatelessWidget {
+  const _DesktopSettingsSplit({
+    required this.sections,
+    required this.selectedIndex,
+    required this.embeddedTarget,
+    required this.onSelect,
+    required this.onTileTap,
+  });
+
+  final List<_SettingsSection> sections;
+  final int selectedIndex;
+  final _SettingsEmbedTarget? embeddedTarget;
+  final ValueChanged<int> onSelect;
+  final ValueChanged<_SettingsItem> onTileTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final selected = sections[selectedIndex];
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.md,
+        0,
+        AppSpacing.md,
+        AppSpacing.md,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 280,
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                itemCount: sections.length,
+                itemBuilder: (context, index) {
+                  final section = sections[index];
+                  final selectedNav = index == selectedIndex;
+                  return ListTile(
+                    selected: selectedNav,
+                    leading: Icon(section.icon),
+                    title: Text(section.title),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    onTap: () => onSelect(index),
+                  );
+                },
+              ),
             ),
           ),
+          const SizedBox(width: AppSpacing.md),
           Expanded(
-            child: filtered.isEmpty
-                ? Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Text(
-                        l10n.settingsEmptySearch,
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
-                      ),
-                    ),
-                  )
-                : ListView(
-                    padding: AppScrollPadding.resolve(
-                      context,
-                      base: const EdgeInsets.only(bottom: AppSpacing.xl),
-                      chrome: AppBottomChrome.system,
-                    ),
-                    children: [
-                      for (var s = 0; s < filtered.length; s++) ...[
-                        SettingsSectionHeader(
-                          title: filtered[s].title,
-                          isFirst: s == 0,
-                        ),
-                        Card(
-                          margin: const EdgeInsets.symmetric(
-                            horizontal: AppSpacing.md,
+            child: Card(
+              clipBehavior: Clip.antiAlias,
+              child: embeddedTarget == null
+                  ? ListView(
+                      padding: const EdgeInsets.only(bottom: AppSpacing.lg),
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            AppSpacing.lg,
+                            AppSpacing.sm,
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: Column(
-                            children: [
-                              for (var i = 0;
-                                  i < filtered[s].tiles.length;
-                                  i++) ...[
-                                if (i > 0) const Divider(height: 1),
-                                SettingsTile(
-                                  icon: filtered[s].tiles[i].icon,
-                                  title: filtered[s].tiles[i].title,
-                                  subtitle: filtered[s].tiles[i].subtitle,
-                                  onTap: filtered[s].tiles[i].onTap,
-                                ),
+                          child: Text(
+                            selected.title,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        for (var i = 0; i < selected.tiles.length; i++) ...[
+                          if (i > 0) const Divider(height: 1),
+                          SettingsTile(
+                            icon: selected.tiles[i].icon,
+                            title: selected.tiles[i].title,
+                            subtitle: selected.tiles[i].subtitle,
+                            onTap: () => onTileTap(selected.tiles[i]),
+                          ),
+                        ],
+                      ],
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (selected.tiles
+                            .where((t) => t.embedTarget != null)
+                            .length >
+                            1)
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.fromLTRB(
+                              AppSpacing.md,
+                              AppSpacing.md,
+                              AppSpacing.md,
+                              AppSpacing.sm,
+                            ),
+                            child: Row(
+                              children: [
+                                for (final tile in selected.tiles.where(
+                                  (t) => t.embedTarget != null,
+                                ))
+                                  Padding(
+                                    padding: const EdgeInsetsDirectional.only(
+                                      end: AppSpacing.sm,
+                                    ),
+                                    child: ChoiceChip(
+                                      selected: embeddedTarget ==
+                                          tile.embedTarget,
+                                      avatar: Icon(tile.icon, size: 18),
+                                      label: Text(tile.title),
+                                      onSelected: (_) => onTileTap(tile),
+                                    ),
+                                  ),
                               ],
-                            ],
+                            ),
+                          ),
+                        Expanded(
+                          child: _SettingsEmbeddedContent(
+                            target: embeddedTarget!,
                           ),
                         ),
                       ],
-                    ],
-                  ),
+                    ),
+            ),
           ),
         ],
       ),
@@ -280,9 +443,77 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
   }
 }
 
+class _SettingsEmbeddedContent extends StatelessWidget {
+  const _SettingsEmbeddedContent({required this.target});
+
+  final _SettingsEmbedTarget target;
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (target) {
+      _SettingsEmbedTarget.organization =>
+        const OrganizationSettingsPage(embedded: true),
+      _SettingsEmbedTarget.system => const SystemSettingsPage(embedded: true),
+      _SettingsEmbedTarget.language =>
+        const LanguageSettingsPage(embedded: true),
+      _SettingsEmbedTarget.theme => const ThemeSettingsPage(embedded: true),
+      _SettingsEmbedTarget.notifications =>
+        const NotificationPreferencesPage(embedded: true),
+      _SettingsEmbedTarget.about => const AboutSettingsPage(embedded: true),
+    };
+  }
+}
+
+class _MobileSettingsList extends StatelessWidget {
+  const _MobileSettingsList({required this.sections});
+
+  final List<_SettingsSection> sections;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: AppScrollPadding.resolve(
+        context,
+        base: const EdgeInsets.only(bottom: AppSpacing.xl),
+        chrome: AppBottomChrome.system,
+      ),
+      children: [
+        for (var s = 0; s < sections.length; s++) ...[
+          SettingsSectionHeader(
+            title: sections[s].title,
+            isFirst: s == 0,
+          ),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              children: [
+                for (var i = 0; i < sections[s].tiles.length; i++) ...[
+                  if (i > 0) const Divider(height: 1),
+                  SettingsTile(
+                    icon: sections[s].tiles[i].icon,
+                    title: sections[s].tiles[i].title,
+                    subtitle: sections[s].tiles[i].subtitle,
+                    onTap: sections[s].tiles[i].onTap,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _SettingsSection {
-  const _SettingsSection({required this.title, required this.tiles});
+  const _SettingsSection({
+    required this.title,
+    required this.tiles,
+    this.icon = Icons.settings_outlined,
+  });
   final String title;
+  final IconData icon;
   final List<_SettingsItem> tiles;
 }
 
@@ -293,6 +524,7 @@ class _SettingsItem {
     required this.keywords,
     required this.onTap,
     this.subtitle,
+    this.embedTarget,
   });
 
   final IconData icon;
@@ -300,4 +532,5 @@ class _SettingsItem {
   final String? subtitle;
   final List<String> keywords;
   final VoidCallback onTap;
+  final _SettingsEmbedTarget? embedTarget;
 }
