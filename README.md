@@ -2,32 +2,141 @@
 
 **Enterprise Field Service Management Platform**
 
-Infinity FSM is a production-oriented Field Service Management (FSM) system built for companies that manage technicians in the field. It combines attendance, overtime, travel overtime, GPS verification, live camera capture, work orders, inventory, assets, preventive maintenance, reporting, and role-based access control into one coherent platform.
+Infinity FSM is a production-oriented Field Service Management (FSM) system for companies that manage technicians in the field. It unifies attendance, overtime (including travel overtime), GPS verification, live camera capture, work orders, inventory, assets, preventive maintenance, service reports, user management, and fine-grained RBAC in one coherent platform.
 
-Designed for phones and tablets. Built with an offline-ready architecture. Backed by a modular Node.js API and a Clean Architecture Flutter client.
+The Flutter client targets **phones, tablets, and desktop (Windows)** with a shared responsive design system. Desktop uses a unified **Desktop Shell** with a persistent `NavigationRail` and shell-branch navigation. The backend is a modular Node.js / Express / MongoDB API with JWT auth, Cloudinary media, and a Socket.IO foundation.
+
+Designed for real field operations. Built with Clean Architecture on the client and a platform-first modular API on the server. Offline-ready repository interfaces are in place for future sync.
+
+---
+
+## Table of Contents
+
+- [Features](#-features)
+- [Desktop Experience](#-desktop-experience)
+- [Responsive UI](#-responsive-ui)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Screenshots](#-screenshots)
+- [Project Structure](#-project-structure)
+- [Documentation](#-documentation)
+- [Installation](#-installation)
+- [Backend Setup](#-backend-setup)
+- [Flutter Setup](#-flutter-setup)
+- [Environment Variables](#-environment-variables)
+- [Running Locally](#-running-locally)
+- [API Structure](#-api-structure)
+- [Security Features](#-security-features)
+- [Offline-first Architecture](#-offline-first-architecture)
+- [Roles & Permissions](#-roles--permissions)
+- [Recent Updates](#-recent-updates)
+- [Future Roadmap](#-future-roadmap)
+- [License](#-license)
+- [Author](#-author)
 
 ---
 
 ## Features
 
-- **Authentication** — JWT access/refresh tokens, secure local session storage
+### Platform & UX
+
+- **Responsive layouts** — Phones, tablets, and desktop (Windows) with adaptive chrome
+- **Desktop Shell navigation** — Persistent `NavigationRail` + content area (no full-screen hub pushes)
+- **Mobile navigation** — Bottom `NavigationBar` for primary day-to-day modules
+- **Authentication** — JWT access / refresh tokens with secure local session storage
 - **Role-based dashboards** — Admin, Supervisor, and Technician executive views
+- **Localization** — English and Arabic (RTL-ready) via Flutter gen-l10n
+- **Image upload & preview** — Cloudinary-backed uploads; desktop-safe image delivery (JPG-friendly)
+- **Reusable UI system** — Shared cards, grids, page frames, loaders, and desktop widgets
+- **State management** — `flutter_bloc` (Cubit) throughout the client
+- **API integration** — Dio + repository / datasource Clean Architecture layers
+- **Notifications** — In-app notification feed
+- **Offline-ready repositories** — Interfaces prepared for offline sync
+- **Real-time foundation** — Socket.IO enabled backend
+
+### Operations modules
+
 - **Attendance** — Clock in/out, breaks, GPS + live selfie verification
-- **Overtime** — Normal overtime with photo and location evidence
-- **Travel Overtime** — Dedicated travel OT tracking workflow
-- **GPS Tracking** — High-accuracy location capture with reverse geocoding
-- **Live Camera Verification** — Mandatory live photo capture (no gallery fallback)
+- **Overtime** — Normal and travel overtime with photo and location evidence
+- **GPS tracking** — High-accuracy location capture with reverse geocoding (OpenStreetMap)
+- **Live camera verification** — Mandatory live photo capture for attendance / overtime evidence
 - **Work Orders** — Create, assign, accept, execute, and complete field jobs
+- **Work Order execution workflow** — Staged field execution with attachments, locations, and timeline
 - **Inventory** — Warehouses, spare parts, stock movements, low-stock alerts
 - **Assets** — Asset registry, categories, history, QR-ready architecture
 - **Preventive Maintenance (PM)** — Plans, schedules, checklists, history
 - **Service Reports** — Report generation and customer signatures
+- **User Management** — First-class module for user lifecycle and administration
 - **Roles & Permissions** — Fine-grained RBAC (Admin / Supervisor / Technician)
-- **Notifications** — In-app notification feed
-- **Settings & Profile** — Organization, account, and system preferences
-- **Localization** — English and Arabic (RTL-ready)
-- **Offline-ready repositories** — Interfaces prepared for offline sync
-- **Real-time foundation** — Socket.IO enabled backend
+- **Profile** — Personal account view and preferences entry points
+- **Settings** — Account, company information, system, and about (application settings only)
+
+---
+
+## Desktop Experience
+
+Desktop (and wide tablet) uses a single navigation model and a shared design system.
+
+### Unified Desktop Shell
+
+- Persistent **NavigationRail** beside the content area
+- Primary modules open via **shell branch navigation** (`goBranch`) — content swaps inside the shell
+- Hub destinations do **not** push full-screen routes or show a Back button to leave the rail
+- Phone bottom navigation remains limited to day-to-day modules (Dashboard, Attendance, Work Orders, Overtime, Profile)
+
+### NavigationRail primary modules
+
+1. Dashboard  
+2. Attendance  
+3. Work Orders  
+4. Overtime  
+5. Profile  
+6. Inventory  
+7. Assets  
+8. Preventive Maintenance  
+9. Service Reports  
+10. User Management  
+11. Roles & Permissions  
+12. Settings  
+
+### Desktop UI system
+
+- **`AppPageFrame`** — Centers content and caps readable width under the shell
+- **Desktop cards & grids** — `AppDesktopActionCard`, `AppDesktopStatGrid`, shared list cards
+- **Desktop split layouts** — e.g. Work Order detail (main execution column + sidebar for attachments / locations / timeline)
+- **Settings redesign** — Split section list + right content panel (Account, Company, System, About)
+- **Dashboard improvements** — Responsive KPI / action layouts aligned with the desktop frame
+- **Users & Roles hubs** — Same stats + action-card patterns as Inventory / Assets / Dashboard
+- **Login** — Wide two-column branded layout on desktop
+
+---
+
+## Responsive UI
+
+Infinity FSM uses a shared breakpoint and widget layer so features adapt without duplicate business logic.
+
+| Breakpoint | Width | Typical chrome |
+|------------|-------|----------------|
+| Phone | `< 600` | Bottom `NavigationBar` |
+| Tablet | `600–900` | Compact rail / adaptive padding |
+| Desktop | `≥ 900` | Extended / labeled `NavigationRail` |
+
+### Shared building blocks
+
+- `AppBreakpoints` — Phone / tablet / desktop helpers, content max widths, grid columns, page padding
+- `AppPageFrame` — Bounded, centered content for lists, forms, and hubs
+- `AppDesktopStatGrid` / `AppDesktopActionCard` / `AppDesktopSplitView` — Desktop hub patterns
+- `AppListCard`, loaders, refresh bars, scroll padding, offline banner
+- `AppCachedNetworkImage` — Platform-aware network images (desktop-safe decoding)
+
+### Desktop vs mobile behavior
+
+| Concern | Desktop | Mobile |
+|---------|---------|--------|
+| Primary navigation | `NavigationRail` (all primary modules) | Bottom bar (5 modules) |
+| Module hubs | Shell content swap | Same routes; phone chrome adapted |
+| Dense layouts | Multi-column grids, split views | Single-column lists / sheets |
+| Settings | Section rail + content panel | Stacked settings list |
 
 ---
 
@@ -46,16 +155,18 @@ Notifications                          Assets
 Audit logging                          Preventive Maintenance
 File storage (Cloudinary)              Service Reports
 Maps / GPS utilities                   Dashboard analytics
-Sync & Search foundations
+Sync & Search foundations              User Management UI
 ```
 
 ### Flutter (Clean Architecture)
 
 ```
-Presentation  →  Cubits (flutter_bloc)
+Presentation  →  Cubits (flutter_bloc) + pages / widgets
 Domain        →  Entities / Use Cases / Repository interfaces
 Data          →  Models / Remote datasources / Repository implementations
 ```
+
+Routing uses **`go_router`** with a **`StatefulShellRoute.indexedStack`** for the Desktop Shell and phone bottom navigation.
 
 ### Backend
 
@@ -69,17 +180,26 @@ Routes → Validators → Controllers → Services → Mongoose Models
 
 | Layer | Technology |
 |-------|------------|
-| Mobile | Flutter, Material 3, flutter_bloc (Cubit), Clean Architecture |
-| Backend | Node.js, Express, MongoDB, Mongoose, JWT, Socket.IO |
-| Media | Cloudinary |
-| Maps | OpenStreetMap (`flutter_map`) |
+| Client | Flutter (Material 3), Windows / Android / iOS targets |
+| State | flutter_bloc (Cubit), get_it DI |
+| Navigation | go_router (StatefulShellRoute) |
+| Networking | Dio |
+| Backend | Node.js 20+, Express, MongoDB, Mongoose |
+| Auth | JWT (access + refresh) |
+| Realtime | Socket.IO |
+| Media | Cloudinary (JPG-oriented image delivery for desktop clients) |
+| Maps | OpenStreetMap (`flutter_map`, geolocator, geocoding) |
 | Localization | Flutter gen-l10n (EN / AR) |
+| Logging | Pino (API), logger (Flutter) |
 
 ---
 
 ## Screenshots
 
-> Replace the placeholders in `/screenshots` with real captures before publishing.
+> Replace placeholders in `/screenshots` with real captures before publishing.  
+> See [screenshots/README.md](./screenshots/README.md) for suggested filenames.
+
+### Mobile / general
 
 | Screen | Light | Dark |
 |--------|-------|------|
@@ -94,6 +214,17 @@ Routes → Validators → Controllers → Services → Mongoose Models
 | Reports | ![Reports](./screenshots/reports.png) | |
 | Settings | ![Settings](./screenshots/settings.png) | |
 
+### Desktop (placeholders)
+
+| Screen | Capture |
+|--------|---------|
+| Desktop Shell / Dashboard | ![Desktop Dashboard](./screenshots/desktop-dashboard.png) |
+| Desktop Work Order detail | ![Desktop Work Order](./screenshots/desktop-work-order.png) |
+| Desktop Inventory hub | ![Desktop Inventory](./screenshots/desktop-inventory.png) |
+| Desktop User Management | ![Desktop Users](./screenshots/desktop-users.png) |
+| Desktop Roles & Permissions | ![Desktop Roles](./screenshots/desktop-roles.png) |
+| Desktop Settings | ![Desktop Settings](./screenshots/desktop-settings.png) |
+
 ---
 
 ## Project Structure
@@ -104,16 +235,20 @@ infinity-fsm/
 │   ├── src/
 │   │   ├── config/
 │   │   ├── modules/
-│   │   │   ├── core/        # auth, rbac, organization, settings, dashboard, ...
-│   │   │   └── business/    # attendance, overtime, work-orders, inventory, assets, pm, ...
+│   │   │   ├── core/        # auth, rbac, organization, settings, dashboard, users, ...
+│   │   │   └── business/    # attendance, overtime, work-orders, inventory, assets, pm, reports
+│   │   ├── routes/          # API version mounting (/api/v1)
 │   │   └── shared/          # middleware, errors, utils
 │   ├── scripts/
 │   └── .env.example
 ├── mobile/                  # Flutter application
 │   ├── lib/
-│   │   ├── core/            # network, theme, router, localization, services
+│   │   ├── core/            # config, network, theme, router, localization, widgets, breakpoints
+│   │   │   └── widgets/
+│   │   │       └── desktop/ # AppDesktopActionCard, StatGrid, SplitView, ...
 │   │   ├── features/        # feature modules (Clean Architecture)
-│   │   └── shared/
+│   │   └── shared/          # cross-feature presentation (e.g. profile)
+│   ├── windows/             # Desktop runner
 │   └── assets/
 ├── docs/                    # Architecture & API documentation
 ├── infra/                   # Docker / CI / deployment planning
@@ -149,7 +284,7 @@ infinity-fsm/
 
 - Node.js **20+**
 - MongoDB **6+** (local or Atlas)
-- Flutter **3.24+** / Dart **3.5+**
+- Flutter SDK with **Dart 3.12+** (see `mobile/pubspec.yaml`)
 - Cloudinary account (required for production media uploads)
 
 ---
@@ -184,6 +319,14 @@ flutter run
 > API base URL is centralized in `mobile/lib/core/config/env_config.dart`.  
 > Default production API: `https://infinity-fsm-api.onrender.com/api/v1`  
 > Override for local backend: `--dart-define=API_BASE_URL=http://<lan-ip>:3000/api/v1`
+
+### Desktop (Windows)
+
+```bash
+cd mobile
+flutter pub get
+flutter run -d windows
+```
 
 ### Build APK
 
@@ -232,6 +375,13 @@ Copy `backend/.env.example` to `backend/.env` and fill in real values.
 
 **Never commit `backend/.env`.**
 
+Flutter client overrides (compile-time):
+
+| Define | Description |
+|--------|-------------|
+| `API_BASE_URL` | REST base URL including `/api/v1` |
+| `ENV` | `development` or `production` (logging behavior) |
+
 ---
 
 ## Running Locally
@@ -243,10 +393,13 @@ cp .env.example .env
 npm install
 npm run dev
 
-# Terminal 2 — Flutter
+# Terminal 2 — Flutter (device / emulator)
 cd mobile
 flutter pub get
 flutter run
+
+# Or desktop Windows
+flutter run -d windows
 ```
 
 ---
@@ -264,6 +417,8 @@ flutter build apk --release
 
 ```
 /api/v1
+├── /health
+├── /health/ready
 ├── /auth
 ├── /users
 ├── /roles
@@ -276,12 +431,14 @@ flutter build apk --release
 ├── /pm
 ├── /reports
 ├── /dashboard
-├── /notifications
 ├── /settings
+├── /security
 └── /time
 ```
 
 See [docs/API.md](./docs/API.md) for the full catalog.
+
+> In-app notifications are implemented on the Flutter client; backend notification surface continues to evolve with the realtime / sync roadmap.
 
 ---
 
@@ -321,7 +478,28 @@ Full offline execution continues to expand per the product roadmap.
 | **Supervisor** | Team attendance, overtime review, work order oversight |
 | **Technician** | Self attendance, overtime, assigned work orders |
 
+User Management and Roles & Permissions are **top-level Desktop Shell modules** (not nested under Settings). Settings remains focused on account, company, system, and about.
+
 See [docs/RBAC.md](./docs/RBAC.md).
+
+---
+
+## Recent Updates
+
+Summary of the latest product and UX improvements:
+
+- **Desktop Shell navigation refactor** — Primary modules open inside one shell via `StatefulShellRoute` branches
+- **NavigationRail improvements** — Consistent rail destinations for all primary desktop modules
+- **Users & Roles promoted** — First-class rail modules; removed from Settings → Administration
+- **Settings redesign** — Desktop split panel for Account, Company Information, System, and About
+- **Desktop dashboard redesign** — Frame width, spacing, and action patterns aligned with the design system
+- **Desktop Work Orders redesign** — Split detail layout (execution main + sidebar context)
+- **Responsive component system** — Shared breakpoints, grids, action cards, and list cards
+- **Desktop page frame** — `AppPageFrame` for consistent content width under the shell
+- **Image handling improvements** — Desktop-safe network image decoding / Cloudinary JPG-oriented delivery
+- **Work Order detail layout improvements** — Clearer execution vs context separation on wide screens
+- **Navigation improvements** — Shell `goBranch` instead of full-screen hub pushes; Settings / Profile entry via shell routes
+- **UI consistency improvements** — Inventory, Assets, Users, Roles, and Dashboard share the same desktop hub language
 
 ---
 

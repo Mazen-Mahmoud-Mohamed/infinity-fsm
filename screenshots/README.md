@@ -4,6 +4,8 @@ Add product screenshots here before publishing the GitHub release.
 
 Suggested filenames (referenced by the root README):
 
+## Mobile / general
+
 | File | Description |
 |------|-------------|
 | `login.png` | Login screen (light) |
@@ -19,4 +21,15 @@ Suggested filenames (referenced by the root README):
 | `reports.png` | Service reports |
 | `settings.png` | Settings hub |
 
-Recommended size: 1080×2400 (phone) or 1600×1000 (tablet landscape).
+## Desktop
+
+| File | Description |
+|------|-------------|
+| `desktop-dashboard.png` | Desktop Shell with dashboard |
+| `desktop-work-order.png` | Work order detail split layout |
+| `desktop-inventory.png` | Inventory hub (stats + action cards) |
+| `desktop-users.png` | User Management hub |
+| `desktop-roles.png` | Roles & Permissions hub |
+| `desktop-settings.png` | Settings split panel |
+
+Recommended size: 1080×2400 (phone) or 1600×1000 (tablet / desktop landscape).
