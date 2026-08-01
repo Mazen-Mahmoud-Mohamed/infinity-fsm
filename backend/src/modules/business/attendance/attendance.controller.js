@@ -43,6 +43,39 @@ export const getHistory = asyncHandler(async (req, res) => {
   sendSuccess(res, result.items, 200, { pagination: result.pagination });
 });
 
+export const listRecords = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 20,
+    status,
+    search,
+    startDate,
+    endDate,
+    userId,
+    role,
+  } = req.query;
+  const result = await attendanceService.listRecords(req.user, req.auth, {
+    page,
+    limit,
+    status,
+    search,
+    startDate,
+    endDate,
+    userId,
+    role,
+  });
+  sendSuccess(res, result.items, 200, { pagination: result.pagination });
+});
+
+export const getRecordById = asyncHandler(async (req, res) => {
+  const data = await attendanceService.getRecordById(
+    req.user,
+    req.auth,
+    req.params.id
+  );
+  sendSuccess(res, data);
+});
+
 export const updateGpsAddress = asyncHandler(async (req, res) => {
   const data = await attendanceService.updateGpsAddress(req.user, req.body);
   sendSuccess(res, data);

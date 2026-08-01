@@ -148,12 +148,14 @@ class _OvertimeDetailView extends StatelessWidget {
                           label: l10n.overtimeTotalDuration,
                           value: OvertimeFormatters.durationFromMinutes(
                             session.totalDurationMinutes,
+                            l10n,
                           ),
                         ),
                         _DetailRow(
                           label: l10n.overtimeEligible,
                           value: OvertimeFormatters.durationFromMinutes(
                             session.eligibleOvertimeMinutes,
+                            l10n,
                           ),
                         ),
                         if (session.rejectionReason != null &&

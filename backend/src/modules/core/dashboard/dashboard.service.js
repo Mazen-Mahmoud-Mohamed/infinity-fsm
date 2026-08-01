@@ -67,6 +67,7 @@ function resolvePeriod(query = {}) {
   }
 
   if (period === 'week') {
+    // Calendar week starting Monday (ISO business week).
     const from = startOfDay(now);
     from.setDate(from.getDate() - ((from.getDay() + 6) % 7));
     return { period: 'week', from, to: endOfDay(now) };
@@ -77,7 +78,7 @@ function resolvePeriod(query = {}) {
     return { period: 'year', from, to: endOfDay(now) };
   }
 
-  // month (default)
+  // Calendar month-to-date (default)
   const from = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
   return { period: 'month', from, to: endOfDay(now) };
 }

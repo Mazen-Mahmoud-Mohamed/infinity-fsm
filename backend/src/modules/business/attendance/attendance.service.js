@@ -2,10 +2,22 @@ import Attendance from './models/attendance.model.js';
 import BreakSession from './models/breakSession.model.js';
 import AttendanceEvent from './models/attendanceEvent.model.js';
 import AttendanceSummary from './models/attendanceSummary.model.js';
+import User from '../../core/organization/models/user.model.js';
+import Team from '../../core/organization/models/team.model.js';
 import { uploadSelfieBuffer } from './attendance.upload.js';
 import config from '../../../config/index.js';
-import AppError, { ConflictError, NotFoundError } from '../../../shared/errors/AppError.js';
+import AppError, {
+  ConflictError,
+  ForbiddenError,
+  NotFoundError,
+} from '../../../shared/errors/AppError.js';
 import auditService from '../../core/audit/audit.service.js';
+import PERMISSIONS from '../../../shared/constants/permissions.constants.js';
+import mongoose from 'mongoose';
+
+function escapeRegex(value) {
+  return String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 function todayDateKey(date = new Date()) {
   return date.toISOString().slice(0, 10);
@@ -485,6 +497,242 @@ class AttendanceService {
     };
   }
 
+  /**
+   * Company/team attendance list for managers (additive endpoint).
+   * Does not change personal history/clock behavior.
+   */
+  async listRecords(user, auth, {
+    page = 1,
+    limit = 20,
+    status,
+    search,
+    startDate,
+    endDate,
+    userId,
+    role,
+  } = {}) {
+    const filter = { companyId: new mongoose.Types.ObjectId(auth.companyId) };
+    const scopedUserIds = await this._resolveViewableUserIds(user, auth);
+    if (scopedUserIds) {
+      filter.userId = { $in: scopedUserIds };
+    }
+
+    if (userId) {
+      const requested = new mongoose.Types.ObjectId(userId);
+      if (scopedUserIds && !scopedUserIds.some((id) => String(id) === String(requested))) {
+        throw new ForbiddenError('You cannot view this employee attendance');
+      }
+      filter.userId = requested;
+    }
+
+    if (status) {
+      filter.status = String(status).toUpperCase();
+    }
+
+    if (startDate || endDate) {
+      filter.date = {};
+      if (startDate) filter.date.$gte = String(startDate).slice(0, 10);
+      if (endDate) filter.date.$lte = String(endDate).slice(0, 10);
+    }
+
+    let employeeIdsForSearch = null;
+    if ((search && String(search).trim()) || role) {
+      const userFilter = {
+        companyId: auth.companyId,
+        deletedAt: null,
+      };
+      if (search && String(search).trim()) {
+        const term = escapeRegex(String(search).trim());
+        userFilter.$or = [
+          { firstName: { $regex: term, $options: 'i' } },
+          { lastName: { $regex: term, $options: 'i' } },
+          { email: { $regex: term, $options: 'i' } },
+          { fullName: { $regex: term, $options: 'i' } },
+        ];
+      }
+      if (role) {
+        userFilter.roles = String(role).toUpperCase();
+      }
+      const matchingUsers = await User.find(userFilter).select('_id').lean();
+      employeeIdsForSearch = matchingUsers.map((item) => item._id);
+      if (filter.userId?.$in) {
+        const allowed = new Set(filter.userId.$in.map(String));
+        employeeIdsForSearch = employeeIdsForSearch.filter((id) =>
+          allowed.has(String(id))
+        );
+      } else if (filter.userId && !filter.userId.$in) {
+        employeeIdsForSearch = employeeIdsForSearch.filter(
+          (id) => String(id) === String(filter.userId)
+        );
+      }
+      filter.userId = { $in: employeeIdsForSearch };
+    }
+
+    const skip = (page - 1) * limit;
+    const [items, total] = await Promise.all([
+      Attendance.find(filter)
+        .populate('userId', 'firstName lastName fullName email roles avatarUrl')
+        .sort({ date: -1, updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Attendance.countDocuments(filter),
+    ]);
+
+    return {
+      items: items.map((item) => this._mapAttendanceListItem(item)),
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total,
+        totalPages: Math.max(1, Math.ceil(total / limit)),
+      },
+    };
+  }
+
+  async getRecordById(user, auth, id) {
+    const attendance = await Attendance.findOne({
+      _id: id,
+      companyId: auth.companyId,
+    })
+      .populate('userId', 'firstName lastName fullName email roles avatarUrl')
+      .lean();
+
+    if (!attendance) {
+      throw new NotFoundError('Attendance record');
+    }
+
+    await this._assertCanViewAttendanceRecord(user, auth, attendance);
+
+    const [events, breakSessions] = await Promise.all([
+      AttendanceEvent.find({ attendanceId: attendance._id }).sort({ at: 1 }).lean(),
+      BreakSession.find({ attendanceId: attendance._id }).sort({ startAt: 1 }).lean(),
+    ]);
+
+    return {
+      attendance: this._mapAttendanceListItem(attendance),
+      events: events.map((event) => this._mapEvent(event)),
+      breakSessions: breakSessions.map((session) => this._mapBreakSession(session)),
+    };
+  }
+
+  async _resolveViewableUserIds(user, auth) {
+    const permissions = auth.permissions || [];
+    if (permissions.includes(PERMISSIONS.ATTENDANCE_VIEW_ALL)) {
+      return null;
+    }
+    if (!permissions.includes(PERMISSIONS.ATTENDANCE_VIEW_TEAM)) {
+      throw new ForbiddenError('Attendance view permission required');
+    }
+
+    const companyId = new mongoose.Types.ObjectId(auth.companyId);
+    const userId = new mongoose.Types.ObjectId(auth.userId);
+
+    const [self, ledTeams] = await Promise.all([
+      User.findOne({ _id: userId, companyId, deletedAt: null })
+        .select('teamId departmentId')
+        .lean(),
+      Team.find({ companyId, leadId: userId, deletedAt: null, isActive: true })
+        .select('_id')
+        .lean(),
+    ]);
+
+    const teamIds = new Set();
+    if (self?.teamId) teamIds.add(String(self.teamId));
+    for (const team of ledTeams) {
+      teamIds.add(String(team._id));
+    }
+
+    let members = [];
+    if (teamIds.size > 0) {
+      members = await User.find({
+        companyId,
+        deletedAt: null,
+        teamId: { $in: [...teamIds].map((id) => new mongoose.Types.ObjectId(id)) },
+      })
+        .select('_id')
+        .lean();
+    } else if (self?.departmentId) {
+      members = await User.find({
+        companyId,
+        deletedAt: null,
+        departmentId: self.departmentId,
+      })
+        .select('_id')
+        .lean();
+    }
+
+    const memberIds = members.map((m) => m._id);
+    if (!memberIds.some((id) => String(id) === String(userId))) {
+      memberIds.push(userId);
+    }
+    return memberIds;
+  }
+
+  async _assertCanViewAttendanceRecord(user, auth, attendance) {
+    const permissions = auth.permissions || [];
+    if (permissions.includes(PERMISSIONS.ATTENDANCE_VIEW_ALL)) {
+      return;
+    }
+
+    const recordUserId =
+      attendance.userId?._id?.toString?.() ||
+      attendance.userId?.toString?.() ||
+      String(attendance.userId);
+
+    if (
+      permissions.includes(PERMISSIONS.ATTENDANCE_VIEW_OWN) &&
+      recordUserId === String(auth.userId)
+    ) {
+      return;
+    }
+
+    if (permissions.includes(PERMISSIONS.ATTENDANCE_VIEW_TEAM)) {
+      const scoped = await this._resolveViewableUserIds(user, auth);
+      if (scoped?.some((id) => String(id) === recordUserId)) {
+        return;
+      }
+    }
+
+    throw new ForbiddenError('You cannot view this attendance record');
+  }
+
+  _mapEmployee(userDoc) {
+    if (!userDoc || typeof userDoc !== 'object' || !userDoc._id) {
+      return null;
+    }
+    const firstName = userDoc.firstName || '';
+    const lastName = userDoc.lastName || '';
+    const fullName =
+      userDoc.fullName ||
+      [firstName, lastName].filter(Boolean).join(' ').trim() ||
+      userDoc.email ||
+      '';
+    return {
+      id: userDoc._id.toString(),
+      firstName,
+      lastName,
+      fullName,
+      email: userDoc.email || null,
+      roles: Array.isArray(userDoc.roles) ? userDoc.roles : [],
+      avatarUrl: userDoc.avatarUrl || null,
+    };
+  }
+
+  _mapAttendanceListItem(attendance) {
+    const base = this._mapAttendance(attendance);
+    const employee = this._mapEmployee(attendance.userId);
+    return {
+      ...base,
+      userId:
+        employee?.id ||
+        attendance.userId?._id?.toString?.() ||
+        attendance.userId?.toString?.() ||
+        null,
+      employee,
+    };
+  }
+
   async _recordEvent(attendance, user, { type, at, gps, selfieUrl, body }) {
     return AttendanceEvent.create({
       companyId: user.companyId,
@@ -552,6 +800,8 @@ class AttendanceService {
   }
 
   _mapAttendance(attendance) {
+    const createdAt = attendance.createdAt;
+    const updatedAt = attendance.updatedAt;
     return {
       id: attendance._id.toString(),
       date: attendance.date,
@@ -561,14 +811,21 @@ class AttendanceService {
       breakCount: attendance.breakCount,
       breakMinutes: attendance.breakMinutes,
       workingMinutes: attendance.workingMinutes,
-      createdAt: attendance.createdAt?.toISOString() || null,
-      updatedAt: attendance.updatedAt?.toISOString() || null,
+      createdAt:
+        createdAt instanceof Date
+          ? createdAt.toISOString()
+          : createdAt || null,
+      updatedAt:
+        updatedAt instanceof Date
+          ? updatedAt.toISOString()
+          : updatedAt || null,
     };
   }
 
   _mapActionRecord(record) {
+    const at = record.at;
     return {
-      at: record.at?.toISOString() || null,
+      at: at instanceof Date ? at.toISOString() : at || null,
       gps: this._mapGps(record.gps),
       selfieUrl: record.selfieUrl,
       deviceId: record.deviceId,

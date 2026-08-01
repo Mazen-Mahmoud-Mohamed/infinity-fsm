@@ -15,6 +15,7 @@ class ApiConstants {
   static const String organizationPositions = '/organization/positions';
   static const String organizationUsers = '/organization/users';
 
+  static const String attendanceSessions = '/attendance';
   static const String attendanceClockIn = '/attendance/clock-in';
   static const String attendanceClockOut = '/attendance/clock-out';
   static const String attendanceBreakStart = '/attendance/break-start';
@@ -23,6 +24,8 @@ class ApiConstants {
   static const String attendanceToday = '/attendance/today';
   static const String attendanceHistory = '/attendance/history';
   static const String attendanceGpsAddress = '/attendance/gps-address';
+
+  static String attendanceById(String id) => '/attendance/$id';
 
   static const String overtimeSessions = '/overtime';
   static const String overtimeRunning = '/overtime/running';

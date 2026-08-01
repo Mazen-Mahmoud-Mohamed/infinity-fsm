@@ -2597,19 +2597,19 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardPeriodWeek.
   ///
   /// In en, this message translates to:
-  /// **'Week'**
+  /// **'This Week'**
   String get dashboardPeriodWeek;
 
   /// No description provided for @dashboardPeriodMonth.
   ///
   /// In en, this message translates to:
-  /// **'Month'**
+  /// **'This Month'**
   String get dashboardPeriodMonth;
 
   /// No description provided for @dashboardPeriodYear.
   ///
   /// In en, this message translates to:
-  /// **'Year'**
+  /// **'This Year'**
   String get dashboardPeriodYear;
 
   /// No description provided for @dashboardPeriodCustom.
@@ -2617,6 +2617,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Custom'**
   String get dashboardPeriodCustom;
+
+  /// No description provided for @dashboardRangeUntilNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get dashboardRangeUntilNow;
+
+  /// No description provided for @dashboardRangeSpan.
+  ///
+  /// In en, this message translates to:
+  /// **'{from} – {to}'**
+  String dashboardRangeSpan(String from, String to);
+
+  /// No description provided for @dashboardReportLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Report: {range}'**
+  String dashboardReportLine(String range);
 
   /// No description provided for @dashboardSectionKpis.
   ///
@@ -3071,7 +3089,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSectionOrganization.
   ///
   /// In en, this message translates to:
-  /// **'Organization'**
+  /// **'Company'**
   String get settingsSectionOrganization;
 
   /// No description provided for @settingsSectionAdministration.
@@ -3607,6 +3625,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clocked out'**
   String get attendanceStatusClockedOut;
+
+  /// No description provided for @attendanceStatusPresent.
+  ///
+  /// In en, this message translates to:
+  /// **'Present'**
+  String get attendanceStatusPresent;
+
+  /// No description provided for @attendanceStatusCheckedOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked out'**
+  String get attendanceStatusCheckedOut;
+
+  /// No description provided for @attendanceManagement.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance Management'**
+  String get attendanceManagement;
+
+  /// No description provided for @attendanceManageTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage attendance'**
+  String get attendanceManageTooltip;
+
+  /// No description provided for @attendanceSearchEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Search employee name or email'**
+  String get attendanceSearchEmployee;
+
+  /// No description provided for @attendanceAdminEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No attendance records found.'**
+  String get attendanceAdminEmpty;
+
+  /// No description provided for @attendanceAdminLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load attendance records.'**
+  String get attendanceAdminLoadFailed;
+
+  /// No description provided for @attendanceDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance details'**
+  String get attendanceDetails;
+
+  /// No description provided for @attendanceDetailsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading attendance details...'**
+  String get attendanceDetailsLoading;
+
+  /// No description provided for @attendanceDetailsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to load attendance details.'**
+  String get attendanceDetailsLoadFailed;
+
+  /// No description provided for @attendanceEmployeeInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee information'**
+  String get attendanceEmployeeInfo;
+
+  /// No description provided for @attendanceSessionInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Session information'**
+  String get attendanceSessionInfo;
+
+  /// No description provided for @attendanceDeviceInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Device information'**
+  String get attendanceDeviceInfo;
+
+  /// No description provided for @attendanceLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Location'**
+  String get attendanceLocation;
+
+  /// No description provided for @attendanceDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get attendanceDevice;
+
+  /// No description provided for @attendanceSyncSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync source'**
+  String get attendanceSyncSource;
+
+  /// No description provided for @attendanceLastUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Last updated'**
+  String get attendanceLastUpdated;
+
+  /// No description provided for @attendanceSelfie.
+  ///
+  /// In en, this message translates to:
+  /// **'Selfie'**
+  String get attendanceSelfie;
+
+  /// No description provided for @attendanceDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get attendanceDate;
+
+  /// No description provided for @attendanceOvertimeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime hours'**
+  String get attendanceOvertimeHours;
+
+  /// No description provided for @attendanceRoleAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All roles'**
+  String get attendanceRoleAll;
 
   /// No description provided for @overtimeStartTitle.
   ///
@@ -5077,6 +5221,162 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Upload failed. Please try again.'**
   String get errorUploadFailed;
+
+  /// No description provided for @valueNotSet.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get valueNotSet;
+
+  /// No description provided for @workOrderAttachmentFallback.
+  ///
+  /// In en, this message translates to:
+  /// **'Attachment'**
+  String get workOrderAttachmentFallback;
+
+  /// No description provided for @durationMinutesOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String durationMinutesOnly(int minutes);
+
+  /// No description provided for @durationHoursMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}:{minutes} h'**
+  String durationHoursMinutes(String hours, String minutes);
+
+  /// No description provided for @navDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Home'**
+  String get navDashboard;
+
+  /// No description provided for @navAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Time'**
+  String get navAttendance;
+
+  /// No description provided for @navWorkOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Jobs'**
+  String get navWorkOrders;
+
+  /// No description provided for @navOvertime.
+  ///
+  /// In en, this message translates to:
+  /// **'OT'**
+  String get navOvertime;
+
+  /// No description provided for @navProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Me'**
+  String get navProfile;
+
+  /// No description provided for @eventAuthLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed in successfully'**
+  String get eventAuthLogin;
+
+  /// No description provided for @eventAuthLoginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign-in attempt failed'**
+  String get eventAuthLoginFailed;
+
+  /// No description provided for @eventAuthLogout.
+  ///
+  /// In en, this message translates to:
+  /// **'Signed out'**
+  String get eventAuthLogout;
+
+  /// No description provided for @eventAuthTokenRefreshed.
+  ///
+  /// In en, this message translates to:
+  /// **'Session refreshed'**
+  String get eventAuthTokenRefreshed;
+
+  /// No description provided for @eventAuthGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Account activity'**
+  String get eventAuthGeneric;
+
+  /// No description provided for @eventAttendanceGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance update'**
+  String get eventAttendanceGeneric;
+
+  /// No description provided for @eventOvertimeGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime update'**
+  String get eventOvertimeGeneric;
+
+  /// No description provided for @eventWorkOrderGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Work order update'**
+  String get eventWorkOrderGeneric;
+
+  /// No description provided for @eventInventoryGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory update'**
+  String get eventInventoryGeneric;
+
+  /// No description provided for @eventAssetsGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Asset update'**
+  String get eventAssetsGeneric;
+
+  /// No description provided for @eventPmGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance update'**
+  String get eventPmGeneric;
+
+  /// No description provided for @eventReportsGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Report update'**
+  String get eventReportsGeneric;
+
+  /// No description provided for @eventUsersGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'User update'**
+  String get eventUsersGeneric;
+
+  /// No description provided for @eventOrganizationGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization update'**
+  String get eventOrganizationGeneric;
+
+  /// No description provided for @eventSecurityGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Security event'**
+  String get eventSecurityGeneric;
+
+  /// No description provided for @eventGenericActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'System activity'**
+  String get eventGenericActivity;
+
+  /// No description provided for @eventFeedActorLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{module} · {actor}'**
+  String eventFeedActorLine(String module, String actor);
 }
 
 class _AppLocalizationsDelegate

@@ -470,10 +470,24 @@
   "dashboardNoNotifications": "لا توجد إشعارات حديثة",
   "dashboardQuickActions": "إجراءات سريعة",
   "dashboardPeriodToday": "اليوم",
-  "dashboardPeriodWeek": "أسبوع",
-  "dashboardPeriodMonth": "شهر",
-  "dashboardPeriodYear": "سنة",
+  "dashboardPeriodWeek": "هذا الأسبوع",
+  "dashboardPeriodMonth": "هذا الشهر",
+  "dashboardPeriodYear": "هذه السنة",
   "dashboardPeriodCustom": "مخصص",
+  "dashboardRangeUntilNow": "حتى الآن",
+  "dashboardRangeSpan": "{from} – {to}",
+  "@dashboardRangeSpan": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "dashboardReportLine": "التقرير: {range}",
+  "@dashboardReportLine": {
+    "placeholders": {
+      "range": { "type": "String" }
+    }
+  },
   "dashboardSectionKpis": "المؤشرات الرئيسية",
   "dashboardSectionAttendance": "الحضور",
   "dashboardSectionOvertime": "الوقت الإضافي",
@@ -576,7 +590,7 @@
   "settingsSearchHint": "بحث في الإعدادات",
   "settingsEmptySearch": "لا توجد إعدادات مطابقة",
   "settingsSectionAccount": "الحساب",
-  "settingsSectionOrganization": "المنظمة",
+  "settingsSectionOrganization": "الشركة",
   "settingsSectionAdministration": "الإدارة",
   "settingsSectionSystem": "النظام",
   "settingsSectionAbout": "حول",
@@ -668,6 +682,27 @@
   "attendanceStatusWorking": "يعمل",
   "attendanceStatusOnBreak": "في استراحة",
   "attendanceStatusClockedOut": "انتهى الدوام",
+  "attendanceStatusPresent": "حاضر",
+  "attendanceStatusCheckedOut": "تم الانصراف",
+  "attendanceManagement": "إدارة الحضور",
+  "attendanceManageTooltip": "إدارة الحضور",
+  "attendanceSearchEmployee": "البحث باسم الموظف أو البريد",
+  "attendanceAdminEmpty": "لا توجد سجلات حضور.",
+  "attendanceAdminLoadFailed": "فشل تحميل سجلات الحضور.",
+  "attendanceDetails": "تفاصيل الحضور",
+  "attendanceDetailsLoading": "جاري تحميل تفاصيل الحضور...",
+  "attendanceDetailsLoadFailed": "فشل تحميل تفاصيل الحضور.",
+  "attendanceEmployeeInfo": "معلومات الموظف",
+  "attendanceSessionInfo": "معلومات الجلسة",
+  "attendanceDeviceInfo": "معلومات الجهاز",
+  "attendanceLocation": "الموقع",
+  "attendanceDevice": "الجهاز",
+  "attendanceSyncSource": "مصدر المزامنة",
+  "attendanceLastUpdated": "آخر تحديث",
+  "attendanceSelfie": "صورة سيلفي",
+  "attendanceDate": "التاريخ",
+  "attendanceOvertimeHours": "ساعات الوقت الإضافي",
+  "attendanceRoleAll": "كل الأدوار",
 
   "overtimeStartTitle": "بدء الوقت الإضافي",
   "overtimeStartHint": "ساعات العمل الرسمية من 09:00 صباحاً إلى 05:00 مساءً. يُحتسب الوقت خارج هذه الفترة تلقائياً.",
@@ -959,5 +994,51 @@
   "errorInvalidDate": "قيمة التاريخ غير صالحة.",
   "errorInvalidStatus": "قيمة الحالة غير صالحة.",
   "errorAvatarRequired": "صورة الملف الشخصي مطلوبة.",
-  "errorUploadFailed": "فشل الرفع. يرجى المحاولة مرة أخرى."
+  "errorUploadFailed": "فشل الرفع. يرجى المحاولة مرة أخرى.",
+
+  "valueNotSet": "غير محدد",
+  "workOrderAttachmentFallback": "مرفق",
+  "durationMinutesOnly": "{minutes} دقيقة",
+  "@durationMinutesOnly": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours}:{minutes} ساعة",
+  "@durationHoursMinutes": {
+    "placeholders": {
+      "hours": { "type": "String" },
+      "minutes": { "type": "String" }
+    }
+  },
+
+  "navDashboard": "الرئيسية",
+  "navAttendance": "الوقت",
+  "navWorkOrders": "المهام",
+  "navOvertime": "إضافي",
+  "navProfile": "أنا",
+
+  "eventAuthLogin": "تم تسجيل الدخول بنجاح",
+  "eventAuthLoginFailed": "فشل محاولة تسجيل الدخول",
+  "eventAuthLogout": "تم تسجيل الخروج",
+  "eventAuthTokenRefreshed": "تم تحديث الجلسة",
+  "eventAuthGeneric": "نشاط الحساب",
+  "eventAttendanceGeneric": "تحديث الحضور",
+  "eventOvertimeGeneric": "تحديث الوقت الإضافي",
+  "eventWorkOrderGeneric": "تحديث أمر العمل",
+  "eventInventoryGeneric": "تحديث المخزون",
+  "eventAssetsGeneric": "تحديث الأصل",
+  "eventPmGeneric": "تحديث الصيانة",
+  "eventReportsGeneric": "تحديث التقرير",
+  "eventUsersGeneric": "تحديث المستخدم",
+  "eventOrganizationGeneric": "تحديث المؤسسة",
+  "eventSecurityGeneric": "حدث أمني",
+  "eventGenericActivity": "نشاط النظام",
+  "eventFeedActorLine": "{module} · {actor}",
+  "@eventFeedActorLine": {
+    "placeholders": {
+      "module": { "type": "String" },
+      "actor": { "type": "String" }
+    }
+  }
 }

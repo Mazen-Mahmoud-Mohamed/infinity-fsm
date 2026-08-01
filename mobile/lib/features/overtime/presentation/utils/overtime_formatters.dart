@@ -1,19 +1,11 @@
+import 'package:mobile/core/localization/duration_formatter.dart';
+import 'package:mobile/core/localization/l10n/app_localizations.dart';
+
 class OvertimeFormatters {
   OvertimeFormatters._();
 
-  static String durationFromMinutes(int? minutes) {
-    if (minutes == null) {
-      return '-';
-    }
-    final hours = minutes ~/ 60;
-    final mins = minutes % 60;
-    if (hours <= 0) {
-      return '${mins}m';
-    }
-    if (mins == 0) {
-      return '${hours}h';
-    }
-    return '${hours}h ${mins}m';
+  static String durationFromMinutes(int? minutes, AppLocalizations l10n) {
+    return DurationFormatter.fromMinutes(minutes, l10n);
   }
 
   static String coordinates({

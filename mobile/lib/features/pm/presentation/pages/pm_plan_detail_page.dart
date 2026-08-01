@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/core/localization/duration_formatter.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
@@ -201,24 +201,23 @@ class _PmPlanDetailPageState extends State<PmPlanDetailPage> {
                       l10n.pmNextDueDate,
                       plan.nextDueDate != null
                           ? dateFormat.format(plan.nextDueDate!.toLocal())
-                          : '—',
+                          : l10n.valueNotSet,
                     ),
                     _row(
                       l10n.pmEstimatedDuration,
-                      l10n.pmMinutes(plan.estimatedDurationMinutes),
-                    ),
-                    _row(
-                      l10n.pmAssignedTeam,
-                      plan.assignedTeam?.name ?? '—',
+                      DurationFormatter.fromMinutes(
+                        plan.estimatedDurationMinutes,
+                        l10n,
+                      ),
                     ),
                     _row(
                       l10n.pmAssignedTechnician,
-                      plan.assignedTechnician?.name ?? '—',
+                      plan.assignedTechnician?.name ?? l10n.valueNotSet,
                     ),
                     _row(
                       l10n.pmLinkedAsset,
                       plan.asset == null
-                          ? '—'
+                          ? l10n.valueNotSet
                           : [
                               if (plan.asset!.assetNumber != null)
                                 plan.asset!.assetNumber!,

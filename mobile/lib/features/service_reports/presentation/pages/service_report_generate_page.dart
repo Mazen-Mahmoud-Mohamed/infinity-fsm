@@ -245,7 +245,7 @@ class _ServiceReportGeneratePageState extends State<ServiceReportGeneratePage> {
                     contentPadding: EdgeInsets.zero,
                     title: Text(l10n.reportsStartTime),
                     subtitle: Text(
-                      _startTime?.toLocal().toString() ?? '—',
+                      _startTime?.toLocal().toString() ?? l10n.valueNotSet,
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.schedule),
@@ -256,7 +256,7 @@ class _ServiceReportGeneratePageState extends State<ServiceReportGeneratePage> {
                   ListTile(
                     contentPadding: EdgeInsets.zero,
                     title: Text(l10n.reportsEndTime),
-                    subtitle: Text(_endTime?.toLocal().toString() ?? '—'),
+                    subtitle: Text(_endTime?.toLocal().toString() ?? l10n.valueNotSet),
                     trailing: IconButton(
                       icon: const Icon(Icons.schedule),
                       onPressed: generating

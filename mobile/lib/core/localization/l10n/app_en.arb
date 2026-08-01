@@ -470,10 +470,24 @@
   "dashboardNoNotifications": "No recent notifications",
   "dashboardQuickActions": "Quick actions",
   "dashboardPeriodToday": "Today",
-  "dashboardPeriodWeek": "Week",
-  "dashboardPeriodMonth": "Month",
-  "dashboardPeriodYear": "Year",
+  "dashboardPeriodWeek": "This Week",
+  "dashboardPeriodMonth": "This Month",
+  "dashboardPeriodYear": "This Year",
   "dashboardPeriodCustom": "Custom",
+  "dashboardRangeUntilNow": "Today",
+  "dashboardRangeSpan": "{from} – {to}",
+  "@dashboardRangeSpan": {
+    "placeholders": {
+      "from": { "type": "String" },
+      "to": { "type": "String" }
+    }
+  },
+  "dashboardReportLine": "Report: {range}",
+  "@dashboardReportLine": {
+    "placeholders": {
+      "range": { "type": "String" }
+    }
+  },
   "dashboardSectionKpis": "Key metrics",
   "dashboardSectionAttendance": "Attendance",
   "dashboardSectionOvertime": "Overtime",
@@ -576,7 +590,7 @@
   "settingsSearchHint": "Search settings",
   "settingsEmptySearch": "No settings match your search",
   "settingsSectionAccount": "Account",
-  "settingsSectionOrganization": "Organization",
+  "settingsSectionOrganization": "Company",
   "settingsSectionAdministration": "Administration",
   "settingsSectionSystem": "System",
   "settingsSectionAbout": "About",
@@ -668,6 +682,27 @@
   "attendanceStatusWorking": "Working",
   "attendanceStatusOnBreak": "On break",
   "attendanceStatusClockedOut": "Clocked out",
+  "attendanceStatusPresent": "Present",
+  "attendanceStatusCheckedOut": "Checked out",
+  "attendanceManagement": "Attendance Management",
+  "attendanceManageTooltip": "Manage attendance",
+  "attendanceSearchEmployee": "Search employee name or email",
+  "attendanceAdminEmpty": "No attendance records found.",
+  "attendanceAdminLoadFailed": "Failed to load attendance records.",
+  "attendanceDetails": "Attendance details",
+  "attendanceDetailsLoading": "Loading attendance details...",
+  "attendanceDetailsLoadFailed": "Failed to load attendance details.",
+  "attendanceEmployeeInfo": "Employee information",
+  "attendanceSessionInfo": "Session information",
+  "attendanceDeviceInfo": "Device information",
+  "attendanceLocation": "Location",
+  "attendanceDevice": "Device",
+  "attendanceSyncSource": "Sync source",
+  "attendanceLastUpdated": "Last updated",
+  "attendanceSelfie": "Selfie",
+  "attendanceDate": "Date",
+  "attendanceOvertimeHours": "Overtime hours",
+  "attendanceRoleAll": "All roles",
 
   "overtimeStartTitle": "Start overtime",
   "overtimeStartHint": "Official hours are 09:00 AM – 05:00 PM. Time outside that window is calculated automatically.",
@@ -959,5 +994,51 @@
   "errorInvalidDate": "Invalid date value.",
   "errorInvalidStatus": "Invalid status value.",
   "errorAvatarRequired": "Avatar image is required.",
-  "errorUploadFailed": "Upload failed. Please try again."
+  "errorUploadFailed": "Upload failed. Please try again.",
+
+  "valueNotSet": "Not set",
+  "workOrderAttachmentFallback": "Attachment",
+  "durationMinutesOnly": "{minutes} min",
+  "@durationMinutesOnly": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationHoursMinutes": "{hours}:{minutes} h",
+  "@durationHoursMinutes": {
+    "placeholders": {
+      "hours": { "type": "String" },
+      "minutes": { "type": "String" }
+    }
+  },
+
+  "navDashboard": "Home",
+  "navAttendance": "Time",
+  "navWorkOrders": "Jobs",
+  "navOvertime": "OT",
+  "navProfile": "Me",
+
+  "eventAuthLogin": "Signed in successfully",
+  "eventAuthLoginFailed": "Sign-in attempt failed",
+  "eventAuthLogout": "Signed out",
+  "eventAuthTokenRefreshed": "Session refreshed",
+  "eventAuthGeneric": "Account activity",
+  "eventAttendanceGeneric": "Attendance update",
+  "eventOvertimeGeneric": "Overtime update",
+  "eventWorkOrderGeneric": "Work order update",
+  "eventInventoryGeneric": "Inventory update",
+  "eventAssetsGeneric": "Asset update",
+  "eventPmGeneric": "Maintenance update",
+  "eventReportsGeneric": "Report update",
+  "eventUsersGeneric": "User update",
+  "eventOrganizationGeneric": "Organization update",
+  "eventSecurityGeneric": "Security event",
+  "eventGenericActivity": "System activity",
+  "eventFeedActorLine": "{module} · {actor}",
+  "@eventFeedActorLine": {
+    "placeholders": {
+      "module": { "type": "String" },
+      "actor": { "type": "String" }
+    }
+  }
 }

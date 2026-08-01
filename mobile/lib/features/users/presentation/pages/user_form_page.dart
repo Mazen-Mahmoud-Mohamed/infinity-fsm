@@ -77,9 +77,29 @@ class _UserFormPageState extends State<UserFormPage> {
     setState(() {});
   }
 
+  /// Single-company apps still need org refs for the API. Resolve silently
+  /// from the first available branch/department without exposing hierarchy UI.
+  void _ensureOrgDefaults(UserFormState state) {
+    if (_branchId == null && state.branches.isNotEmpty) {
+      _branchId = state.branches.first.id;
+    }
+    if (_departmentId == null) {
+      final scoped = state.departments
+          .where((d) => _branchId == null || d.branchId == _branchId)
+          .toList();
+      if (scoped.isNotEmpty) {
+        _departmentId = scoped.first.id;
+      } else if (state.departments.isNotEmpty) {
+        _departmentId = state.departments.first.id;
+      }
+    }
+  }
+
   Future<void> _submit() async {
     final l10n = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
+
+    _ensureOrgDefaults(_cubit.state);
 
     Department? department;
     for (final d in _cubit.state.departments) {
@@ -146,7 +166,12 @@ class _UserFormPageState extends State<UserFormPage> {
         ),
         body: BlocConsumer<UserFormCubit, UserFormState>(
           listener: (context, state) {
-            if (state.user != null) _seed(state.user!);
+            if (state.user != null) {
+              _seed(state.user!);
+            }
+            if (state.status == UserFormStatus.success) {
+              _ensureOrgDefaults(state);
+            }
           },
           builder: (context, state) {
             if (state.status == UserFormStatus.loading ||
@@ -155,9 +180,6 @@ class _UserFormPageState extends State<UserFormPage> {
             }
 
             final saving = state.status == UserFormStatus.saving;
-            final departments = state.departments
-                .where((d) => _branchId == null || d.branchId == _branchId)
-                .toList();
 
             return Form(
               key: _formKey,
@@ -284,46 +306,6 @@ class _UserFormPageState extends State<UserFormPage> {
                         : (v) {
                             if (v != null) setState(() => _status = v);
                           },
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  DropdownButtonFormField<String>(
-                    initialValue: _branchId,
-                    decoration: InputDecoration(labelText: l10n.usersBranch),
-                    items: state.branches
-                        .map(
-                          (b) => DropdownMenuItem(
-                            value: b.id,
-                            child: Text(b.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: saving
-                        ? null
-                        : (v) => setState(() {
-                              _branchId = v;
-                              _departmentId = null;
-                            }),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? l10n.usersRequired : null,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  DropdownButtonFormField<String>(
-                    initialValue: _departmentId,
-                    decoration:
-                        InputDecoration(labelText: l10n.usersDepartment),
-                    items: departments
-                        .map(
-                          (Department d) => DropdownMenuItem(
-                            value: d.id,
-                            child: Text(d.name),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: saving
-                        ? null
-                        : (v) => setState(() => _departmentId = v),
-                    validator: (v) =>
-                        v == null || v.isEmpty ? l10n.usersRequired : null,
                   ),
                   const SizedBox(height: AppSpacing.lg),
                   FilledButton(

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/core/localization/duration_formatter.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
@@ -213,7 +213,10 @@ class _HistoryTile extends StatelessWidget {
                 Expanded(
                   child: _InfoColumn(
                     label: l10n.attendanceStatusWorking,
-                    value: _formatMinutes(item.workingMinutes),
+                    value: DurationFormatter.fromMinutes(
+                      item.workingMinutes,
+                      l10n,
+                    ),
                   ),
                 ),
                 Expanded(
@@ -228,12 +231,6 @@ class _HistoryTile extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatMinutes(int minutes) {
-    final hours = minutes ~/ 60;
-    final mins = minutes % 60;
-    return '${hours}h ${mins}m';
   }
 }
 

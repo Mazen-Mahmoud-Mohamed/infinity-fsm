@@ -1276,16 +1276,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardPeriodToday => 'Today';
 
   @override
-  String get dashboardPeriodWeek => 'Week';
+  String get dashboardPeriodWeek => 'This Week';
 
   @override
-  String get dashboardPeriodMonth => 'Month';
+  String get dashboardPeriodMonth => 'This Month';
 
   @override
-  String get dashboardPeriodYear => 'Year';
+  String get dashboardPeriodYear => 'This Year';
 
   @override
   String get dashboardPeriodCustom => 'Custom';
+
+  @override
+  String get dashboardRangeUntilNow => 'Today';
+
+  @override
+  String dashboardRangeSpan(String from, String to) {
+    return '$from – $to';
+  }
+
+  @override
+  String dashboardReportLine(String range) {
+    return 'Report: $range';
+  }
 
   @override
   String get dashboardSectionKpis => 'Key metrics';
@@ -1521,7 +1534,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSectionAccount => 'Account';
 
   @override
-  String get settingsSectionOrganization => 'Organization';
+  String get settingsSectionOrganization => 'Company';
 
   @override
   String get settingsSectionAdministration => 'Administration';
@@ -1796,6 +1809,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get attendanceStatusClockedOut => 'Clocked out';
+
+  @override
+  String get attendanceStatusPresent => 'Present';
+
+  @override
+  String get attendanceStatusCheckedOut => 'Checked out';
+
+  @override
+  String get attendanceManagement => 'Attendance Management';
+
+  @override
+  String get attendanceManageTooltip => 'Manage attendance';
+
+  @override
+  String get attendanceSearchEmployee => 'Search employee name or email';
+
+  @override
+  String get attendanceAdminEmpty => 'No attendance records found.';
+
+  @override
+  String get attendanceAdminLoadFailed => 'Failed to load attendance records.';
+
+  @override
+  String get attendanceDetails => 'Attendance details';
+
+  @override
+  String get attendanceDetailsLoading => 'Loading attendance details...';
+
+  @override
+  String get attendanceDetailsLoadFailed =>
+      'Failed to load attendance details.';
+
+  @override
+  String get attendanceEmployeeInfo => 'Employee information';
+
+  @override
+  String get attendanceSessionInfo => 'Session information';
+
+  @override
+  String get attendanceDeviceInfo => 'Device information';
+
+  @override
+  String get attendanceLocation => 'Location';
+
+  @override
+  String get attendanceDevice => 'Device';
+
+  @override
+  String get attendanceSyncSource => 'Sync source';
+
+  @override
+  String get attendanceLastUpdated => 'Last updated';
+
+  @override
+  String get attendanceSelfie => 'Selfie';
+
+  @override
+  String get attendanceDate => 'Date';
+
+  @override
+  String get attendanceOvertimeHours => 'Overtime hours';
+
+  @override
+  String get attendanceRoleAll => 'All roles';
 
   @override
   String get overtimeStartTitle => 'Start overtime';
@@ -2589,4 +2666,88 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get errorUploadFailed => 'Upload failed. Please try again.';
+
+  @override
+  String get valueNotSet => 'Not set';
+
+  @override
+  String get workOrderAttachmentFallback => 'Attachment';
+
+  @override
+  String durationMinutesOnly(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String durationHoursMinutes(String hours, String minutes) {
+    return '$hours:$minutes h';
+  }
+
+  @override
+  String get navDashboard => 'Home';
+
+  @override
+  String get navAttendance => 'Time';
+
+  @override
+  String get navWorkOrders => 'Jobs';
+
+  @override
+  String get navOvertime => 'OT';
+
+  @override
+  String get navProfile => 'Me';
+
+  @override
+  String get eventAuthLogin => 'Signed in successfully';
+
+  @override
+  String get eventAuthLoginFailed => 'Sign-in attempt failed';
+
+  @override
+  String get eventAuthLogout => 'Signed out';
+
+  @override
+  String get eventAuthTokenRefreshed => 'Session refreshed';
+
+  @override
+  String get eventAuthGeneric => 'Account activity';
+
+  @override
+  String get eventAttendanceGeneric => 'Attendance update';
+
+  @override
+  String get eventOvertimeGeneric => 'Overtime update';
+
+  @override
+  String get eventWorkOrderGeneric => 'Work order update';
+
+  @override
+  String get eventInventoryGeneric => 'Inventory update';
+
+  @override
+  String get eventAssetsGeneric => 'Asset update';
+
+  @override
+  String get eventPmGeneric => 'Maintenance update';
+
+  @override
+  String get eventReportsGeneric => 'Report update';
+
+  @override
+  String get eventUsersGeneric => 'User update';
+
+  @override
+  String get eventOrganizationGeneric => 'Organization update';
+
+  @override
+  String get eventSecurityGeneric => 'Security event';
+
+  @override
+  String get eventGenericActivity => 'System activity';
+
+  @override
+  String eventFeedActorLine(String module, String actor) {
+    return '$module · $actor';
+  }
 }

@@ -1,5 +1,8 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/attendance/domain/entities/attendance_admin_detail.dart';
+import 'package:mobile/features/attendance/domain/entities/attendance_record_page.dart';
+import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status_snapshot.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_summary.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_today.dart';
@@ -31,6 +34,19 @@ abstract class AttendanceRepository {
     DateTime? endDate,
     bool forceRefresh = false,
   });
+
+  Future<Result<AttendanceRecordPage>> listAdmin({
+    int page = 1,
+    int limit = 20,
+    AttendanceStatus? status,
+    String? search,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? userId,
+    String? role,
+  });
+
+  Future<Result<AttendanceAdminDetail>> getAdminDetail(String id);
 
   Future<Result<AttendanceActionOutcome>> clockIn({
     required GpsSnapshot gps,

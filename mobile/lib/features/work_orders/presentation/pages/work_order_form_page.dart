@@ -290,7 +290,7 @@ class _WorkOrderFormViewState extends State<_WorkOrderFormView> {
                 title: Text(l10n.workOrderScheduledDate),
                 subtitle: Text(
                   state.scheduledAt == null
-                      ? '—'
+                      ? l10n.valueNotSet
                       : dateFormat.format(state.scheduledAt!.toLocal()),
                 ),
                 trailing: Row(
@@ -356,7 +356,7 @@ class _WorkOrderFormViewState extends State<_WorkOrderFormView> {
                 children: [
                   ...state.existingAttachments.map(
                     (item) => InputChip(
-                      label: Text(item.fileName ?? 'Attachment'),
+                      label: Text(item.fileName ?? l10n.workOrderAttachmentFallback),
                       onDeleted: saving
                           ? null
                           : () => context

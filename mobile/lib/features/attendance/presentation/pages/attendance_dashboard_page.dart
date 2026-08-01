@@ -10,19 +10,42 @@ import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status_snapshot.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_state.dart';
+import 'package:mobile/features/attendance/presentation/pages/attendance_admin_page.dart';
 import 'package:mobile/features/attendance/presentation/widgets/attendance_timeline.dart';
 import 'package:mobile/features/attendance/presentation/widgets/clock_action_buttons.dart';
 import 'package:mobile/features/attendance/presentation/widgets/today_status_card.dart';
-import 'package:mobile/features/organization/presentation/widgets/offline_banner.dart';
+import 'package:mobile/features/auth/domain/entities/current_user.dart';
+import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 
+/// Bottom-nav / `/attendance` entry.
+///
+/// Admin & Supervisor (or [PermissionChecker.canViewAllAttendance]) open
+/// [AttendanceAdminPage]. Technicians keep the personal clock dashboard.
 class AttendanceDashboardPage extends StatelessWidget {
   const AttendanceDashboardPage({super.key});
 
+  static bool opensManagementFor(CurrentUser? user) {
+    if (user == null) return false;
+    final roles = user.roles.map((role) => role.toUpperCase());
+    if (roles.contains('ADMIN') || roles.contains('SUPERVISOR')) {
+      return true;
+    }
+    final permissions = user.permissionChecker;
+    return permissions.canViewAllAttendance() ||
+        permissions.canViewTeamAttendance();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthCubit>().state.user;
+    if (opensManagementFor(user)) {
+      return const AttendanceAdminPage();
+    }
+
     return BlocProvider(
       create: (_) => getIt<AttendanceCubit>()..initialize(),
       child: const _AttendanceDashboardView(),
@@ -36,6 +59,8 @@ class _AttendanceDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final permissions =
+        context.watch<AuthCubit>().state.user?.permissionChecker;
 
     return BlocListener<AttendanceCubit, AttendanceState>(
       listenWhen: (previous, current) =>
@@ -69,6 +94,12 @@ class _AttendanceDashboardView extends StatelessWidget {
               icon: const Icon(Icons.history),
               onPressed: () => context.push(RoutePaths.attendanceHistory),
             ),
+            if (permissions?.canViewAllAttendance() == true)
+              IconButton(
+                tooltip: l10n.attendanceManageTooltip,
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                onPressed: () => context.push(RoutePaths.attendanceAdmin),
+              ),
           ],
         ),
         body: BlocBuilder<AttendanceCubit, AttendanceState>(

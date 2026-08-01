@@ -85,7 +85,11 @@ class DashboardMetricGroupCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             LayoutBuilder(
               builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 560 ? 3 : 2;
+                final columns = constraints.maxWidth >= 720
+                    ? 4
+                    : constraints.maxWidth >= 480
+                        ? 3
+                        : 2;
                 final rows = <Widget>[];
                 for (var i = 0; i < metrics.length; i += columns) {
                   final slice = metrics.skip(i).take(columns).toList();
@@ -94,17 +98,20 @@ class DashboardMetricGroupCard extends StatelessWidget {
                       padding: EdgeInsets.only(
                         bottom: i + columns < metrics.length ? AppSpacing.sm : 0,
                       ),
-                      child: Row(
-                        children: [
-                          for (var j = 0; j < columns; j++) ...[
-                            if (j > 0) const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: j < slice.length
-                                  ? _MetricCell(metric: slice[j])
-                                  : const SizedBox.shrink(),
-                            ),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var j = 0; j < columns; j++) ...[
+                              if (j > 0) const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: j < slice.length
+                                    ? _MetricCell(metric: slice[j])
+                                    : const SizedBox.shrink(),
+                              ),
+                            ],
                           ],
-                        ],
+                        ),
                       ),
                     ),
                   );
@@ -170,8 +177,10 @@ class _MetricCell extends StatelessWidget {
             metric.value,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            softWrap: false,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w700,
+              height: 1.15,
             ),
           ),
         ],

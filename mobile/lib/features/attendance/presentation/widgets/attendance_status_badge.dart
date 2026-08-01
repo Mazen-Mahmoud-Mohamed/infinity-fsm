@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
+import 'package:mobile/features/attendance/presentation/utils/attendance_admin_labels.dart';
 
 class AttendanceStatusBadge extends StatelessWidget {
-  const AttendanceStatusBadge({super.key, required this.status});
+  const AttendanceStatusBadge({
+    super.key,
+    required this.status,
+    this.useManagementLabels = false,
+  });
 
   final AttendanceStatus status;
+  final bool useManagementLabels;
 
   Color _color(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -37,6 +43,9 @@ class AttendanceStatusBadge extends StatelessWidget {
   }
 
   String _label(AppLocalizations l10n) {
+    if (useManagementLabels) {
+      return attendanceManagementStatusLabel(l10n, status);
+    }
     switch (status) {
       case AttendanceStatus.notStarted:
         return l10n.attendanceStatusNotStarted;

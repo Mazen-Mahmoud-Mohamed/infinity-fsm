@@ -181,8 +181,9 @@ flutter gen-l10n
 flutter run
 ```
 
-> Development API base URL is configured in `mobile/lib/core/config/env_config.dart`.  
-> Update the host to your machine/LAN IP before running against a local backend.
+> API base URL is centralized in `mobile/lib/core/config/env_config.dart`.  
+> Default production API: `https://infinity-fsm-api.onrender.com/api/v1`  
+> Override for local backend: `--dart-define=API_BASE_URL=http://<lan-ip>:3000/api/v1`
 
 ### Build APK
 
@@ -191,10 +192,10 @@ cd mobile
 flutter build apk --release
 ```
 
-### Production API URL
+### Local API override
 
 ```bash
-flutter build apk --release --dart-define=ENV=production --dart-define=API_BASE_URL=https://api.example.com/api/v1
+flutter run --dart-define=ENV=development --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
 ```
 
 ---

@@ -89,13 +89,13 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
       ),
       if (canViewSettings || canManageSettings)
         _SettingsSection(
-          title: l10n.settingsSectionOrganization,
+          title: l10n.settingsCompanyInformation,
           tiles: [
             _SettingsItem(
               icon: Icons.business_outlined,
               title: l10n.settingsCompanyInformation,
-              keywords: ['company', 'organization', 'logo', 'address'],
-              onTap: () => context.push(RoutePaths.settingsOrganization),
+              keywords: ['company', 'logo', 'address'],
+              onTap: () => context.push(RoutePaths.settingsCompany),
             ),
           ],
         ),

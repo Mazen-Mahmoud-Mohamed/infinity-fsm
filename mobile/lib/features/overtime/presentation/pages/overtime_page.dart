@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/core/localization/duration_formatter.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
@@ -12,18 +13,39 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/attendance/presentation/widgets/working_timer.dart';
+import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:mobile/features/organization/presentation/widgets/offline_banner.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
+import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 
+/// Bottom-nav / `/overtime` entry.
+///
+/// Admin & Supervisor open [OvertimeAdminPage] (management).
+/// Technicians open personal Start/End tracking.
 class OvertimePage extends StatelessWidget {
   const OvertimePage({super.key});
 
+  static bool opensManagementFor(CurrentUser? user) {
+    if (user == null) return false;
+    final roles = user.roles.map((role) => role.toUpperCase());
+    if (roles.contains('ADMIN') || roles.contains('SUPERVISOR')) {
+      return true;
+    }
+    final permissions = user.permissionChecker;
+    return permissions.canViewAllOvertime() || permissions.canApproveOvertime();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = context.watch<AuthCubit>().state.user;
+    if (opensManagementFor(user)) {
+      return const OvertimeAdminPage();
+    }
+
     return BlocProvider(
       create: (_) => getIt<OvertimeCubit>()..initialize(),
       child: const _OvertimeTrackingView(),
@@ -360,29 +382,29 @@ class _CompletedSummaryCard extends StatelessWidget {
             _MetaRow(label: l10n.labelType, value: overtimeTypeLabel(l10n, session.type)),
             _MetaRow(
               label: l10n.overtimeTotalDuration,
-              value: _formatMinutes(session.totalDurationMinutes),
+              value: DurationFormatter.fromMinutes(
+                session.totalDurationMinutes,
+                l10n,
+              ),
             ),
             _MetaRow(
               label: l10n.overtimeWorkingDuration,
-              value: _formatMinutes(session.workingDurationMinutes),
+              value: DurationFormatter.fromMinutes(
+                session.workingDurationMinutes,
+                l10n,
+              ),
             ),
             _MetaRow(
               label: AppLocalizations.of(context).overtimeEligible,
-              value: _formatMinutes(session.eligibleOvertimeMinutes),
+              value: DurationFormatter.fromMinutes(
+                session.eligibleOvertimeMinutes,
+                l10n,
+              ),
             ),
           ],
         ),
       ),
     );
-  }
-
-  String _formatMinutes(int? minutes) {
-    if (minutes == null) {
-      return '-';
-    }
-    final hours = minutes ~/ 60;
-    final mins = minutes % 60;
-    return '${hours}h ${mins}m';
   }
 }
 

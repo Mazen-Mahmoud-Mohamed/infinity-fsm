@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/core/localization/duration_formatter.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/service_reports/domain/entities/service_report_entities.dart';
 import 'package:mobile/features/service_reports/presentation/widgets/report_status_badge.dart';
@@ -81,7 +82,10 @@ class ServiceReportPreviewCard extends StatelessWidget {
               _line(
                 l10n.reportsTotalDuration,
                 report.totalDurationMinutes != null
-                    ? l10n.reportsMinutes(report.totalDurationMinutes!)
+                    ? DurationFormatter.fromMinutes(
+                        report.totalDurationMinutes,
+                        l10n,
+                      )
                     : null,
               ),
             ]),

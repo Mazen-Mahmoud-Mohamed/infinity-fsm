@@ -1,36 +1,31 @@
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/router/auth_router_refresh.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/features/assets/presentation/pages/assets_page.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/presentation/pages/asset_categories_page.dart';
 import 'package:mobile/features/assets/presentation/pages/asset_detail_page.dart';
 import 'package:mobile/features/assets/presentation/pages/asset_form_page.dart';
 import 'package:mobile/features/assets/presentation/pages/asset_history_page.dart';
 import 'package:mobile/features/assets/presentation/pages/assets_list_page.dart';
+import 'package:mobile/features/assets/presentation/pages/assets_page.dart';
+import 'package:mobile/features/attendance/presentation/pages/attendance_admin_detail_page.dart';
+import 'package:mobile/features/attendance/presentation/pages/attendance_admin_page.dart';
 import 'package:mobile/features/attendance/presentation/pages/attendance_dashboard_page.dart';
 import 'package:mobile/features/attendance/presentation/pages/attendance_history_page.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/features/dashboard/presentation/pages/dashboard_page.dart';
-import 'package:mobile/features/notifications/presentation/pages/notifications_page.dart';
-import 'package:mobile/features/organization/presentation/pages/company_list_page.dart';
-import 'package:mobile/features/organization/presentation/pages/organization_hub_page.dart';
-import 'package:mobile/features/overtime/presentation/pages/overtime_admin_detail_page.dart';
-import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
-import 'package:mobile/features/overtime/presentation/pages/overtime_history_page.dart';
-import 'package:mobile/features/overtime/presentation/pages/overtime_page.dart';
-import 'package:mobile/features/work_orders/presentation/pages/work_order_detail_page.dart';
-import 'package:mobile/features/work_orders/presentation/pages/work_order_form_page.dart';
-import 'package:mobile/features/work_orders/presentation/pages/work_orders_page.dart';
-import 'package:mobile/features/inventory/domain/entities/spare_part.dart';
 import 'package:mobile/features/inventory/presentation/pages/inventory_dashboard_page.dart';
 import 'package:mobile/features/inventory/presentation/pages/spare_part_detail_page.dart';
 import 'package:mobile/features/inventory/presentation/pages/spare_part_form_page.dart';
 import 'package:mobile/features/inventory/presentation/pages/spare_parts_page.dart';
 import 'package:mobile/features/inventory/presentation/pages/stock_history_page.dart';
 import 'package:mobile/features/inventory/presentation/pages/warehouses_page.dart';
-import 'package:mobile/features/pm/domain/entities/pm_entities.dart';
+import 'package:mobile/features/notifications/presentation/pages/notifications_page.dart';
+import 'package:mobile/features/overtime/presentation/pages/overtime_admin_detail_page.dart';
+import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
+import 'package:mobile/features/overtime/presentation/pages/overtime_history_page.dart';
+import 'package:mobile/features/overtime/presentation/pages/overtime_page.dart';
 import 'package:mobile/features/pm/presentation/pages/pm_checklist_builder_page.dart';
 import 'package:mobile/features/pm/presentation/pages/pm_dashboard_page.dart';
 import 'package:mobile/features/pm/presentation/pages/pm_history_page.dart';
@@ -38,11 +33,18 @@ import 'package:mobile/features/pm/presentation/pages/pm_plan_detail_page.dart';
 import 'package:mobile/features/pm/presentation/pages/pm_plan_form_page.dart';
 import 'package:mobile/features/pm/presentation/pages/pm_plans_page.dart';
 import 'package:mobile/features/pm/presentation/pages/pm_schedules_page.dart';
+import 'package:mobile/features/roles/presentation/pages/role_detail_page.dart';
+import 'package:mobile/features/roles/presentation/pages/role_form_page.dart';
+import 'package:mobile/features/roles/presentation/pages/roles_dashboard_page.dart';
+import 'package:mobile/features/roles/presentation/pages/roles_list_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/customer_signature_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/service_report_detail_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/service_report_generate_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/service_reports_dashboard_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/service_reports_list_page.dart';
+import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
+import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
+import 'package:mobile/features/settings/presentation/pages/system_settings_page.dart';
 import 'package:mobile/features/users/domain/entities/user_management_entities.dart';
 import 'package:mobile/features/users/presentation/pages/change_password_page.dart';
 import 'package:mobile/features/users/presentation/pages/reset_password_page.dart';
@@ -50,15 +52,11 @@ import 'package:mobile/features/users/presentation/pages/user_detail_page.dart';
 import 'package:mobile/features/users/presentation/pages/user_form_page.dart';
 import 'package:mobile/features/users/presentation/pages/users_dashboard_page.dart';
 import 'package:mobile/features/users/presentation/pages/users_list_page.dart';
-import 'package:mobile/features/roles/presentation/pages/role_detail_page.dart';
-import 'package:mobile/features/roles/presentation/pages/role_form_page.dart';
-import 'package:mobile/features/roles/presentation/pages/roles_dashboard_page.dart';
-import 'package:mobile/features/roles/presentation/pages/roles_list_page.dart';
+import 'package:mobile/features/work_orders/presentation/pages/work_order_detail_page.dart';
+import 'package:mobile/features/work_orders/presentation/pages/work_order_form_page.dart';
+import 'package:mobile/features/work_orders/presentation/pages/work_orders_page.dart';
 import 'package:mobile/shared/presentation/pages/profile_page.dart';
 import 'package:mobile/shared/presentation/pages/settings_page.dart';
-import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
-import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
-import 'package:mobile/features/settings/presentation/pages/system_settings_page.dart';
 import 'package:mobile/shared/presentation/pages/splash_page.dart';
 
 GoRouter createAppRouter({
@@ -123,19 +121,21 @@ GoRouter createAppRouter({
               ),
             ],
           ),
+          // Branch indexes must match MainNavigationShell destinations:
+          // 0 Dashboard, 1 Attendance, 2 Work Orders, 3 Overtime, 4 Profile
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: RoutePaths.overtime,
-                builder: (context, state) => const OvertimePage(),
+                path: RoutePaths.workOrders,
+                builder: (context, state) => const WorkOrdersPage(),
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: RoutePaths.workOrders,
-                builder: (context, state) => const WorkOrdersPage(),
+                path: RoutePaths.overtime,
+                builder: (context, state) => const OvertimePage(),
               ),
             ],
           ),
@@ -158,8 +158,8 @@ GoRouter createAppRouter({
         builder: (context, state) {
           final extra = state.extra;
           AssetStatus? initialStatus;
-          if (extra is String && extra.toUpperCase() != 'ALL') {
-            initialStatus = AssetStatus.fromApi(extra);
+          if (extra is AssetStatus) {
+            initialStatus = extra;
           }
           return AssetsListPage(initialStatus: initialStatus);
         },
@@ -186,12 +186,7 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: RoutePaths.assetsHistory,
-        builder: (context, state) {
-          final extra = state.extra;
-          return AssetHistoryPage(
-            assetId: extra is String && extra.isNotEmpty ? extra : null,
-          );
-        },
+        builder: (context, state) => const AssetHistoryPage(),
       ),
       GoRoute(
         path: RoutePaths.pm,
@@ -199,14 +194,13 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: RoutePaths.pmPlans,
-        builder: (context, state) {
-          final extra = state.extra;
-          PmPlanStatus? initialStatus;
-          if (extra is String) {
-            initialStatus = PmPlanStatus.fromApi(extra);
-          }
-          return PmPlansPage(initialStatus: initialStatus);
-        },
+        builder: (context, state) => const PmPlansPage(),
+      ),
+      GoRoute(
+        path: '/pm/plans/:id',
+        builder: (context, state) => PmPlanDetailPage(
+          planId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: RoutePaths.pmPlanForm,
@@ -225,41 +219,12 @@ GoRouter createAppRouter({
         ),
       ),
       GoRoute(
-        path: '/pm/plans/:id',
-        builder: (context, state) => PmPlanDetailPage(
-          planId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
         path: RoutePaths.pmSchedules,
-        builder: (context, state) {
-          final extra = state.extra;
-          PmScheduleStatus? initialStatus;
-          String? planId;
-          if (extra is String) {
-            initialStatus = PmScheduleStatus.fromApi(extra);
-          } else if (extra is Map) {
-            final status = extra['status'];
-            final id = extra['planId'];
-            if (status is String) {
-              initialStatus = PmScheduleStatus.fromApi(status);
-            }
-            if (id is String && id.isNotEmpty) planId = id;
-          }
-          return PmSchedulesPage(
-            initialStatus: initialStatus,
-            planId: planId,
-          );
-        },
+        builder: (context, state) => const PmSchedulesPage(),
       ),
       GoRoute(
         path: RoutePaths.pmHistory,
-        builder: (context, state) {
-          final extra = state.extra;
-          return PmHistoryPage(
-            planId: extra is String && extra.isNotEmpty ? extra : null,
-          );
-        },
+        builder: (context, state) => const PmHistoryPage(),
       ),
       GoRoute(
         path: RoutePaths.reports,
@@ -292,8 +257,8 @@ GoRouter createAppRouter({
         builder: (context, state) {
           final extra = state.extra;
           ManagedUserStatus? initialStatus;
-          if (extra is String) {
-            initialStatus = ManagedUserStatus.fromApi(extra);
+          if (extra is ManagedUserStatus) {
+            initialStatus = extra;
           }
           return UsersListPage(initialStatus: initialStatus);
         },
@@ -330,23 +295,13 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: RoutePaths.rolesList,
-        builder: (context, state) {
-          final extra = state.extra;
-          bool? initialActive;
-          bool? initialSystem;
-          if (extra is Map) {
-            if (extra['isActive'] is bool) {
-              initialActive = extra['isActive'] as bool;
-            }
-            if (extra['isSystem'] is bool) {
-              initialSystem = extra['isSystem'] as bool;
-            }
-          }
-          return RolesListPage(
-            initialActive: initialActive,
-            initialSystem: initialSystem,
-          );
-        },
+        builder: (context, state) => const RolesListPage(),
+      ),
+      GoRoute(
+        path: '/roles/detail/:id',
+        builder: (context, state) => RoleDetailPage(
+          roleId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: RoutePaths.rolesForm,
@@ -359,12 +314,6 @@ GoRouter createAppRouter({
         ),
       ),
       GoRoute(
-        path: '/roles/detail/:id',
-        builder: (context, state) => RoleDetailPage(
-          roleId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
         path: RoutePaths.inventory,
         builder: (context, state) => const InventoryDashboardPage(),
       ),
@@ -374,17 +323,13 @@ GoRouter createAppRouter({
       ),
       GoRoute(
         path: RoutePaths.inventoryParts,
-        builder: (context, state) {
-          final extra = state.extra;
-          StockStatus? initialStatus;
-          if (extra is String) {
-            initialStatus = StockStatus.fromApi(extra);
-            if (extra.toUpperCase() == 'ALL') {
-              initialStatus = null;
-            }
-          }
-          return SparePartsPage(initialStockStatus: initialStatus);
-        },
+        builder: (context, state) => const SparePartsPage(),
+      ),
+      GoRoute(
+        path: '/inventory/parts/:id',
+        builder: (context, state) => SparePartDetailPage(
+          partId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: RoutePaths.inventoryPartForm,
@@ -397,19 +342,8 @@ GoRouter createAppRouter({
         ),
       ),
       GoRoute(
-        path: '/inventory/parts/:id',
-        builder: (context, state) => SparePartDetailPage(
-          partId: state.pathParameters['id']!,
-        ),
-      ),
-      GoRoute(
         path: RoutePaths.inventoryStockHistory,
-        builder: (context, state) {
-          final extra = state.extra;
-          return StockHistoryPage(
-            sparePartId: extra is String && extra.isNotEmpty ? extra : null,
-          );
-        },
+        builder: (context, state) => const StockHistoryPage(),
       ),
       GoRoute(
         path: RoutePaths.notifications,
@@ -420,7 +354,7 @@ GoRouter createAppRouter({
         builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
-        path: RoutePaths.settingsOrganization,
+        path: RoutePaths.settingsCompany,
         builder: (context, state) => const OrganizationSettingsPage(),
       ),
       GoRoute(
@@ -444,36 +378,18 @@ GoRouter createAppRouter({
         builder: (context, state) => const AboutSettingsPage(),
       ),
       GoRoute(
-        path: RoutePaths.organization,
-        builder: (context, state) => const OrganizationHubPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.organizationCompanies,
-        builder: (context, state) => const CompanyListPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.organizationBranches,
-        builder: (context, state) => const BranchListPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.organizationDepartments,
-        builder: (context, state) => const DepartmentListPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.organizationTeams,
-        builder: (context, state) => const TeamListPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.organizationPositions,
-        builder: (context, state) => const PositionListPage(),
-      ),
-      GoRoute(
-        path: RoutePaths.organizationUsers,
-        builder: (context, state) => const UserDirectoryPage(),
-      ),
-      GoRoute(
         path: RoutePaths.attendanceHistory,
         builder: (context, state) => const AttendanceHistoryPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.attendanceAdmin,
+        builder: (context, state) => const AttendanceAdminPage(),
+      ),
+      GoRoute(
+        path: '/attendance/admin/:id',
+        builder: (context, state) => AttendanceAdminDetailPage(
+          attendanceId: state.pathParameters['id']!,
+        ),
       ),
       GoRoute(
         path: RoutePaths.overtimeHistory,

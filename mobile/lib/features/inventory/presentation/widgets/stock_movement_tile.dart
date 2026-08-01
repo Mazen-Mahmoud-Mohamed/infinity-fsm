@@ -24,7 +24,8 @@ class StockMovementTile extends StatelessWidget {
     final deltaText = delta > 0
         ? '+${_formatQty(context, delta)}'
         : _formatQty(context, delta);
-    final partName = movement.sparePart.name ?? movement.sparePart.partNumber ?? '—';
+    final partName =
+        movement.sparePart.name ?? movement.sparePart.partNumber ?? l10n.valueNotSet;
 
     return Card(
       child: ListTile(

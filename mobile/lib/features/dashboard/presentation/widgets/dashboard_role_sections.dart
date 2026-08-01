@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
+import 'package:mobile/core/localization/duration_formatter.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_audit_event.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_executive_layout.dart';
@@ -21,7 +23,7 @@ String formatDashboardNum(num value, [BuildContext? context]) {
 
 String formatDashboardHours(num value, AppLocalizations l10n,
         [BuildContext? context]) =>
-    l10n.dashboardHoursValue(formatDashboardNum(value, context));
+    DurationFormatter.fromHours(value, l10n);
 
 String formatDashboardPercent(num value, AppLocalizations l10n,
         [BuildContext? context]) =>
@@ -92,6 +94,7 @@ List<Widget> _admin({
             label: l10n.dashboardKpiCurrentlyWorking,
             value: '${kpis.employeesCurrentlyWorking}',
             icon: Icons.work_outline,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
         if (kpis != null)
           DashboardMetric(
@@ -112,6 +115,7 @@ List<Widget> _admin({
             label: l10n.dashboardKpiAttendanceRate,
             value: formatDashboardPercent(attendance.attendanceRate, l10n, context),
             icon: Icons.percent_outlined,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
       ],
     ),
@@ -145,11 +149,13 @@ List<Widget> _admin({
               label: l10n.dashboardKpiTotalWorkingHours,
               value: formatDashboardHours(attendance.totalWorkingHours, l10n, context),
               icon: Icons.schedule_outlined,
+              onTap: () => context.go(RoutePaths.attendance),
             ),
             DashboardMetric(
               label: l10n.dashboardKpiAverageWorkingHours,
               value: formatDashboardHours(attendance.averageWorkingHours, l10n, context),
               icon: Icons.av_timer_outlined,
+              onTap: () => context.go(RoutePaths.attendance),
             ),
           ],
           if (overtime != null) ...[
@@ -234,11 +240,6 @@ List<Widget> _admin({
               label: l10n.dashboardKpiPmOverdue,
               value: '${pm.overdue}',
               icon: Icons.event_busy_outlined,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiPmCompleted,
-              value: '${pm.completed}',
-              icon: Icons.task_alt_outlined,
             ),
           ],
         ],
@@ -347,6 +348,7 @@ List<Widget> _supervisor({
             label: l10n.dashboardKpiCurrentlyWorking,
             value: '${attendance.currentlyWorking}',
             icon: Icons.work_outline,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
         if (workOrders != null)
           DashboardMetric(
@@ -381,16 +383,19 @@ List<Widget> _supervisor({
             label: l10n.dashboardKpiTotalWorkingHours,
             value: formatDashboardHours(attendance.totalWorkingHours, l10n, context),
             icon: Icons.schedule_outlined,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
           DashboardMetric(
             label: l10n.dashboardKpiCurrentlyWorking,
             value: '${attendance.currentlyWorking}',
             icon: Icons.badge_outlined,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
           DashboardMetric(
             label: l10n.dashboardKpiActiveEmployees,
             value: '${attendance.membersPresent}',
             icon: Icons.groups_outlined,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
         ],
         if (overtime != null) ...[
@@ -411,6 +416,7 @@ List<Widget> _supervisor({
             label: l10n.dashboardKpiAverageWorkingHours,
             value: formatDashboardHours(performance.averageWorkingHours, l10n, context),
             icon: Icons.av_timer_outlined,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
       ],
     ),
@@ -522,12 +528,14 @@ List<Widget> _technician({
             label: l10n.dashboardKpiTotalWorkingHours,
             value: formatDashboardHours(attendance.totalWorkingHours, l10n, context),
             icon: Icons.schedule_outlined,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
         if (performance != null)
           DashboardMetric(
             label: l10n.dashboardKpiAttendanceRate,
             value: formatDashboardPercent(performance.attendanceRate, l10n, context),
             icon: Icons.percent_outlined,
+            onTap: () => context.go(RoutePaths.attendance),
           ),
       ],
     ),
@@ -705,9 +713,12 @@ List<Widget> _trendsAndFeeds({
                           items: activity
                               .map(
                                 (e) => DashboardFeedItem(
-                                  title: e.action,
-                                  subtitle:
-                                      '${e.module} · ${e.actorName ?? l10n.dashboardSystemActor}',
+                                  title: localizeAuditEvent(l10n, e.action),
+                                  subtitle: localizeAuditFeedSubtitle(
+                                    l10n,
+                                    module: e.module,
+                                    actorName: e.actorName,
+                                  ),
                                   icon: Icons.history,
                                 ),
                               )
@@ -716,9 +727,12 @@ List<Widget> _trendsAndFeeds({
                 items: activity
                     .map(
                       (e) => DashboardFeedItem(
-                        title: e.action,
-                        subtitle:
-                            '${e.module} · ${e.actorName ?? l10n.dashboardSystemActor}',
+                        title: localizeAuditEvent(l10n, e.action),
+                        subtitle: localizeAuditFeedSubtitle(
+                          l10n,
+                          module: e.module,
+                          actorName: e.actorName,
+                        ),
                         icon: Icons.history,
                       ),
                     )
@@ -732,8 +746,8 @@ List<Widget> _trendsAndFeeds({
               items: summary.notifications
                   .map(
                     (n) => DashboardFeedItem(
-                      title: n.title,
-                      subtitle: n.body,
+                      title: localizeAuditEvent(l10n, n.title),
+                      subtitle: _localizeNotificationBody(l10n, n.body),
                       icon: Icons.notifications_outlined,
                       onTap: () => context.push(RoutePaths.notifications),
                     ),
@@ -768,6 +782,27 @@ List<Widget> _trendsAndFeeds({
   }
 
   return children;
+}
+
+String _localizeNotificationBody(AppLocalizations l10n, String? body) {
+  final raw = (body ?? '').trim();
+  if (raw.isEmpty) return l10n.eventGenericActivity;
+
+  final separator = raw.contains(' · ') ? ' · ' : (raw.contains('·') ? '·' : null);
+  if (separator != null) {
+    final parts = raw.split(separator);
+    if (parts.length >= 2) {
+      final module = parts.first.trim();
+      final actor = parts.sublist(1).join(separator).trim();
+      return localizeAuditFeedSubtitle(
+        l10n,
+        module: module,
+        actorName: actor,
+      );
+    }
+  }
+
+  return localizeAuditEvent(l10n, raw);
 }
 
 void _showFeedSheet(

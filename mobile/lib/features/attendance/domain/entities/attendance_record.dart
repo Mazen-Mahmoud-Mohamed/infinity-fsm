@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_action_record.dart';
+import 'package:mobile/features/attendance/domain/entities/attendance_employee.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
 
 class AttendanceRecord extends Equatable {
@@ -12,6 +13,10 @@ class AttendanceRecord extends Equatable {
     required this.workingMinutes,
     this.clockIn,
     this.clockOut,
+    this.userId,
+    this.employee,
+    this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
@@ -22,6 +27,10 @@ class AttendanceRecord extends Equatable {
   final int breakCount;
   final int breakMinutes;
   final int workingMinutes;
+  final String? userId;
+  final AttendanceEmployee? employee;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   @override
   List<Object?> get props => [
@@ -33,5 +42,9 @@ class AttendanceRecord extends Equatable {
         breakCount,
         breakMinutes,
         workingMinutes,
+        userId,
+        employee,
+        createdAt,
+        updatedAt,
       ];
 }

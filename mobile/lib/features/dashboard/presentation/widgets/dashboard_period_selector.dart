@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
+import 'package:mobile/features/dashboard/presentation/utils/dashboard_period_range.dart';
 
 class DashboardPeriodSelector extends StatelessWidget {
   const DashboardPeriodSelector({
@@ -11,6 +12,8 @@ class DashboardPeriodSelector extends StatelessWidget {
     required this.onCustomRangeSelected,
     this.customFrom,
     this.customTo,
+    this.rangeFrom,
+    this.rangeTo,
   });
 
   final DashboardPeriod period;
@@ -18,6 +21,10 @@ class DashboardPeriodSelector extends StatelessWidget {
   final void Function(DateTime from, DateTime to) onCustomRangeSelected;
   final DateTime? customFrom;
   final DateTime? customTo;
+
+  /// Server-resolved range when available; otherwise local calendar bounds.
+  final DateTime? rangeFrom;
+  final DateTime? rangeTo;
 
   Future<void> _pickCustomRange(BuildContext context) async {
     final now = DateTime.now();
@@ -37,6 +44,7 @@ class DashboardPeriodSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
 
     final chips = <({DashboardPeriod? period, String label, bool custom})>[
       (period: DashboardPeriod.today, label: l10n.dashboardPeriodToday, custom: false),
@@ -46,28 +54,55 @@ class DashboardPeriodSelector extends StatelessWidget {
       (period: null, label: l10n.dashboardPeriodCustom, custom: true),
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: [
-          for (var i = 0; i < chips.length; i++) ...[
-            if (i > 0) const SizedBox(width: AppSpacing.sm),
-            ChoiceChip(
-              label: Text(chips[i].label),
-              selected: chips[i].custom
-                  ? period == DashboardPeriod.custom
-                  : period == chips[i].period,
-              onSelected: (_) {
-                if (chips[i].custom) {
-                  _pickCustomRange(context);
-                } else {
-                  onPeriodSelected(chips[i].period!);
-                }
-              },
-            ),
-          ],
-        ],
-      ),
+    final local = DashboardPeriodRange.resolveLocal(
+      period: period,
+      customFrom: customFrom,
+      customTo: customTo,
+    );
+    final from = rangeFrom ?? local.from;
+    final to = rangeTo ?? local.to;
+    final reportLine = DashboardPeriodRange.formatReportLine(
+      context: context,
+      period: period,
+      from: from,
+      to: to,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (var i = 0; i < chips.length; i++) ...[
+                if (i > 0) const SizedBox(width: AppSpacing.sm),
+                ChoiceChip(
+                  label: Text(chips[i].label),
+                  selected: chips[i].custom
+                      ? period == DashboardPeriod.custom
+                      : period == chips[i].period,
+                  onSelected: (_) {
+                    if (chips[i].custom) {
+                      _pickCustomRange(context);
+                    } else {
+                      onPeriodSelected(chips[i].period!);
+                    }
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          reportLine,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 }

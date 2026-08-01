@@ -105,7 +105,8 @@ class _OverviewSection extends StatelessWidget {
             items: [
               _MetaItem(
                 label: l10n.workOrderCustomer,
-                value: workOrder.customerName ?? '—',
+                value: workOrder.customerName ??
+                    AppLocalizations.of(context).valueNotSet,
                 icon: Icons.business_outlined,
               ),
               _MetaItem(

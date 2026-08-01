@@ -333,6 +333,7 @@ class _AdminSessionCard extends StatelessWidget {
                       label: OvertimeFormatters.durationFromMinutes(
                         session.totalDurationMinutes ??
                             session.eligibleOvertimeMinutes,
+                        l10n,
                       ),
                     ),
                   ],

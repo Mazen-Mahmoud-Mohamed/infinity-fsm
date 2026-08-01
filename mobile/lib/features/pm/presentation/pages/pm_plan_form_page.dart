@@ -287,7 +287,7 @@ class _PmPlanFormPageState extends State<PmPlanFormPage> {
                     title: Text(l10n.pmNextDueDate),
                     subtitle: Text(
                       _nextDueDate == null
-                          ? '—'
+                          ? l10n.valueNotSet
                           : '${_nextDueDate!.day}/${_nextDueDate!.month}/${_nextDueDate!.year}',
                     ),
                     trailing: IconButton(
@@ -300,26 +300,6 @@ class _PmPlanFormPageState extends State<PmPlanFormPage> {
                     decoration:
                         InputDecoration(labelText: l10n.pmEstimatedDuration),
                     keyboardType: TextInputType.number,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  DropdownButtonFormField<String?>(
-                    initialValue: _teamId,
-                    decoration: InputDecoration(labelText: l10n.pmAssignedTeam),
-                    items: [
-                      DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text(l10n.pmNone),
-                      ),
-                      ...state.teams.map(
-                        (t) => DropdownMenuItem(
-                          value: t.id,
-                          child: Text(t.name),
-                        ),
-                      ),
-                    ],
-                    onChanged: saving
-                        ? null
-                        : (v) => setState(() => _teamId = v),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   DropdownButtonFormField<String?>(

@@ -24,11 +24,15 @@ import 'package:mobile/features/attendance/domain/repositories/attendance_reposi
 import 'package:mobile/features/attendance/domain/usecases/clock_in_usecase.dart';
 import 'package:mobile/features/attendance/domain/usecases/clock_out_usecase.dart';
 import 'package:mobile/features/attendance/domain/usecases/end_break_usecase.dart';
+import 'package:mobile/features/attendance/domain/usecases/get_admin_attendance_detail_usecase.dart';
 import 'package:mobile/features/attendance/domain/usecases/get_attendance_history_usecase.dart';
 import 'package:mobile/features/attendance/domain/usecases/get_attendance_status_usecase.dart';
 import 'package:mobile/features/attendance/domain/usecases/get_attendance_today_usecase.dart';
+import 'package:mobile/features/attendance/domain/usecases/list_admin_attendance_usecase.dart';
 import 'package:mobile/features/attendance/domain/usecases/start_break_usecase.dart';
 import 'package:mobile/features/attendance/domain/usecases/sync_pending_attendance_usecase.dart';
+import 'package:mobile/features/attendance/presentation/cubit/attendance_admin_cubit.dart';
+import 'package:mobile/features/attendance/presentation/cubit/attendance_admin_detail_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_history_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
@@ -46,7 +50,6 @@ import 'package:mobile/features/organization/data/datasources/organization_local
 import 'package:mobile/features/organization/data/datasources/organization_remote_datasource.dart';
 import 'package:mobile/features/organization/data/repositories/organization_repository_impl.dart';
 import 'package:mobile/features/organization/domain/repositories/organization_repository.dart';
-import 'package:mobile/features/organization/presentation/cubit/organization_cubit.dart';
 import 'package:mobile/features/organization/presentation/cubit/profile_cubit.dart';
 import 'package:mobile/features/overtime/data/datasources/overtime_local_datasource.dart';
 import 'package:mobile/features/overtime/data/datasources/overtime_remote_datasource.dart';
@@ -248,13 +251,6 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  getIt.registerFactory<OrganizationCubit>(
-    () => OrganizationCubit(
-      repository: getIt<OrganizationRepository>(),
-      sessionQueryCache: getIt<SessionQueryCache>(),
-    ),
-  );
-
   getIt.registerFactory<ProfileCubit>(
     () => ProfileCubit(
       repository: getIt<OrganizationRepository>(),
@@ -328,6 +324,12 @@ Future<void> configureDependencies() async {
     () => GetAttendanceHistoryUseCase(getIt<AttendanceRepository>()),
   );
   getIt.registerLazySingleton(
+    () => ListAdminAttendanceUseCase(getIt<AttendanceRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => GetAdminAttendanceDetailUseCase(getIt<AttendanceRepository>()),
+  );
+  getIt.registerLazySingleton(
     () => ClockInUseCase(getIt<AttendanceRepository>()),
   );
   getIt.registerLazySingleton(
@@ -368,6 +370,20 @@ Future<void> configureDependencies() async {
       useCase: getIt<GetAttendanceHistoryUseCase>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
       localDataSource: getIt<AttendanceLocalDataSource>(),
+    ),
+  );
+
+  getIt.registerFactory<AttendanceAdminCubit>(
+    () => AttendanceAdminCubit(
+      listAdmin: getIt<ListAdminAttendanceUseCase>(),
+      sessionQueryCache: getIt<SessionQueryCache>(),
+    ),
+  );
+
+  getIt.registerFactoryParam<AttendanceAdminDetailCubit, String, void>(
+    (attendanceId, _) => AttendanceAdminDetailCubit(
+      getDetail: getIt<GetAdminAttendanceDetailUseCase>(),
+      attendanceId: attendanceId,
     ),
   );
 

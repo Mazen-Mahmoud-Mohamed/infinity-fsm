@@ -11,7 +11,9 @@ import 'package:mobile/features/attendance/data/datasources/attendance_remote_da
 import 'package:mobile/features/attendance/data/models/attendance_record_model.dart';
 import 'package:mobile/features/attendance/data/models/attendance_status_snapshot_model.dart';
 import 'package:mobile/features/attendance/data/models/pending_attendance_action_model.dart';
+import 'package:mobile/features/attendance/domain/entities/attendance_admin_detail.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_event.dart';
+import 'package:mobile/features/attendance/domain/entities/attendance_record_page.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status_snapshot.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_summary.dart';
@@ -137,6 +139,44 @@ class AttendanceRepositoryImpl implements AttendanceRepository {
       if (cached.isNotEmpty) {
         return Success(cached);
       }
+      return NetworkErrorMapper.map(error);
+    }
+  }
+
+  @override
+  Future<Result<AttendanceRecordPage>> listAdmin({
+    int page = 1,
+    int limit = 20,
+    AttendanceStatus? status,
+    String? search,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? userId,
+    String? role,
+  }) async {
+    try {
+      final result = await _remote.listAdmin(
+        page: page,
+        limit: limit,
+        status: status,
+        search: search,
+        startDate: startDate,
+        endDate: endDate,
+        userId: userId,
+        role: role,
+      );
+      return Success(result);
+    } on Object catch (error) {
+      return NetworkErrorMapper.map(error);
+    }
+  }
+
+  @override
+  Future<Result<AttendanceAdminDetail>> getAdminDetail(String id) async {
+    try {
+      final result = await _remote.getAdminDetail(id);
+      return Success(result);
+    } on Object catch (error) {
       return NetworkErrorMapper.map(error);
     }
   }

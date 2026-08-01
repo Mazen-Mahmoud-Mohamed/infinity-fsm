@@ -13,9 +13,10 @@ import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_period_selector.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_sections.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
-import 'package:mobile/features/organization/presentation/widgets/offline_banner.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -140,6 +141,14 @@ class _DashboardViewState extends State<_DashboardView> {
                         period: state.period,
                         customFrom: state.customFrom,
                         customTo: state.customTo,
+                        rangeFrom: summary != null &&
+                                summary.period == state.period
+                            ? summary.from
+                            : null,
+                        rangeTo: summary != null &&
+                                summary.period == state.period
+                            ? summary.to
+                            : null,
                         onPeriodSelected: (period) => context
                             .read<ExecutiveDashboardCubit>()
                             .setPeriod(period),
@@ -174,112 +183,17 @@ class _DashboardViewState extends State<_DashboardView> {
                           },
                         ),
                       ],
-                      SizedBox(height: sectionGap),
-                      DashboardSection(
-                        title: l10n.dashboardQuickActions,
-                        child: Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
-                          children: [
-                            FilledButton.tonalIcon(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 40),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.sm,
-                                ),
-                              ),
-                              onPressed: () =>
-                                  context.go(RoutePaths.attendance),
-                              icon: const Icon(Icons.access_time, size: 18),
-                              label: Text(l10n.attendance),
-                            ),
-                            FilledButton.tonalIcon(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 40),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.sm,
-                                ),
-                              ),
-                              onPressed: () =>
-                                  context.go(RoutePaths.workOrders),
-                              icon: const Icon(
-                                Icons.assignment_outlined,
-                                size: 18,
-                              ),
-                              label: Text(l10n.workOrders),
-                            ),
-                            FilledButton.tonalIcon(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 40),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.sm,
-                                ),
-                              ),
-                              onPressed: () => context.go(RoutePaths.overtime),
-                              icon: const Icon(
-                                Icons.more_time_outlined,
-                                size: 18,
-                              ),
-                              label: Text(l10n.overtime),
-                            ),
-                            if (authUser?.permissionChecker.canViewUsers() ==
-                                true)
-                              FilledButton.tonalIcon(
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(0, 40),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.md,
-                                    vertical: AppSpacing.sm,
-                                  ),
-                                ),
-                                onPressed: () =>
-                                    context.push(RoutePaths.users),
-                                icon: const Icon(
-                                  Icons.manage_accounts_outlined,
-                                  size: 18,
-                                ),
-                                label: Text(l10n.usersTitle),
-                              ),
-                            if (authUser?.permissionChecker.canViewRoles() ==
-                                true)
-                              FilledButton.tonalIcon(
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(0, 40),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: AppSpacing.md,
-                                    vertical: AppSpacing.sm,
-                                  ),
-                                ),
-                                onPressed: () =>
-                                    context.push(RoutePaths.roles),
-                                icon: const Icon(
-                                  Icons.admin_panel_settings_outlined,
-                                  size: 18,
-                                ),
-                                label: Text(l10n.rolesTitle),
-                              ),
-                            FilledButton.tonalIcon(
-                              style: FilledButton.styleFrom(
-                                minimumSize: const Size(0, 40),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.md,
-                                  vertical: AppSpacing.sm,
-                                ),
-                              ),
-                              onPressed: () =>
-                                  context.push(RoutePaths.settings),
-                              icon: const Icon(
-                                Icons.settings_outlined,
-                                size: 18,
-                              ),
-                              label: Text(l10n.settings),
-                            ),
-                          ],
+                      if (DashboardQuickActionsGrid.hasVisibleActions(
+                        authUser?.permissionChecker,
+                      )) ...[
+                        SizedBox(height: sectionGap),
+                        DashboardSection(
+                          title: l10n.dashboardQuickActions,
+                          child: DashboardQuickActionsGrid(
+                            permissions: authUser?.permissionChecker,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),
@@ -308,6 +222,9 @@ class MainNavigationShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 400;
+    final veryCompact = width < 340;
 
     return Scaffold(
       body: Column(
@@ -323,33 +240,37 @@ class MainNavigationShell extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: NavigationBar(
+        height: compact ? 68 : 80,
+        labelBehavior: veryCompact
+            ? NavigationDestinationLabelBehavior.onlyShowSelected
+            : NavigationDestinationLabelBehavior.alwaysShow,
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: _onDestinationSelected,
         destinations: [
           NavigationDestination(
             icon: const Icon(Icons.dashboard_outlined),
             selectedIcon: const Icon(Icons.dashboard),
-            label: l10n.dashboard,
+            label: compact ? l10n.navDashboard : l10n.dashboard,
           ),
           NavigationDestination(
             icon: const Icon(Icons.access_time_outlined),
             selectedIcon: const Icon(Icons.access_time),
-            label: l10n.attendance,
+            label: compact ? l10n.navAttendance : l10n.attendance,
           ),
           NavigationDestination(
             icon: const Icon(Icons.assignment_outlined),
             selectedIcon: const Icon(Icons.assignment),
-            label: l10n.workOrders,
+            label: compact ? l10n.navWorkOrders : l10n.workOrders,
           ),
           NavigationDestination(
             icon: const Icon(Icons.more_time_outlined),
             selectedIcon: const Icon(Icons.more_time),
-            label: l10n.overtime,
+            label: compact ? l10n.navOvertime : l10n.overtime,
           ),
           NavigationDestination(
             icon: const Icon(Icons.person_outline),
             selectedIcon: const Icon(Icons.person),
-            label: l10n.profile,
+            label: compact ? l10n.navProfile : l10n.profile,
           ),
         ],
       ),

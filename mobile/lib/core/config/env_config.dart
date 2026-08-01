@@ -1,32 +1,63 @@
+/// Centralized environment / API configuration for Infinity FSM.
+///
+/// This is the **single source of truth** for the backend base URL.
+/// Dio, repositories, and datasources must consume [apiBaseUrl] via DI —
+/// never hardcode hosts elsewhere.
+///
+/// Override at build/run time:
+/// ```bash
+/// flutter run --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
+/// flutter run --dart-define=ENV=production
+/// ```
 class EnvConfig {
   EnvConfig({
     required this.apiBaseUrl,
     required this.enableNetworkLogging,
   });
 
+  /// Production Render API (includes `/api/v1`).
+  static const String productionApiBaseUrl =
+      'https://infinity-fsm-api.onrender.com/api/v1';
+
+  /// Resolved base URL: `--dart-define=API_BASE_URL=...` or [productionApiBaseUrl].
+  static const String resolvedApiBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: productionApiBaseUrl,
+  );
+
   factory EnvConfig.development() => EnvConfig(
-        apiBaseUrl: 'http://192.168.1.16:3000/api/v1',
+        apiBaseUrl: resolvedApiBaseUrl,
         enableNetworkLogging: true,
       );
 
   factory EnvConfig.production() => EnvConfig(
-        apiBaseUrl: const String.fromEnvironment(
-          'API_BASE_URL',
-          defaultValue: 'https://api.infinity-fsm.com/api/v1',
-        ),
+        apiBaseUrl: resolvedApiBaseUrl,
         enableNetworkLogging: false,
       );
 
+  /// REST API base URL, e.g. `https://host/api/v1`.
   final String apiBaseUrl;
+
   final bool enableNetworkLogging;
+
+  /// Socket.IO server origin (scheme + host[+port]), derived from [apiBaseUrl].
+  ///
+  /// Example: `https://infinity-fsm-api.onrender.com`
+  String get socketBaseUrl {
+    final uri = Uri.parse(apiBaseUrl);
+    if (!uri.hasScheme || uri.host.isEmpty) {
+      return apiBaseUrl;
+    }
+    return uri.origin;
+  }
 
   static EnvConfig get current {
     const environment = String.fromEnvironment(
       'ENV',
-      defaultValue: 'development',
+      defaultValue: 'production',
     );
-    return environment == 'production'
-        ? EnvConfig.production()
-        : EnvConfig.development();
+    return environment == 'development'
+        ? EnvConfig.development()
+        : EnvConfig.production();
   }
 }

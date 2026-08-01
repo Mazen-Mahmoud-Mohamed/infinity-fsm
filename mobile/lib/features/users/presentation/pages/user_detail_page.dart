@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
@@ -243,8 +242,6 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     _row(l10n.usersPhone, user.phone),
                     _row(l10n.usersJobTitle, user.jobTitle),
                     _row(l10n.usersRole, user.primaryRole),
-                    _row(l10n.usersDepartment, user.department?.name),
-                    _row(l10n.usersBranch, user.branch?.name),
                     _row(
                       l10n.usersLastLogin,
                       user.lastLoginAt != null

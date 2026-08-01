@@ -6,6 +6,8 @@ class RoutePaths {
   static const String dashboard = '/dashboard';
   static const String attendance = '/attendance';
   static const String attendanceHistory = '/attendance/history';
+  static const String attendanceAdmin = '/attendance/admin';
+  static String attendanceAdminDetail(String id) => '/attendance/admin/$id';
   static const String overtime = '/overtime';
   static const String overtimeHistory = '/overtime/history';
   static const String overtimeAdmin = '/overtime/admin';
@@ -56,18 +58,10 @@ class RoutePaths {
   static const String notifications = '/notifications';
   static const String profile = '/profile';
   static const String settings = '/settings';
-  static const String settingsOrganization = '/settings/organization';
+  static const String settingsCompany = '/settings/company';
   static const String settingsSystem = '/settings/system';
   static const String settingsLanguage = '/settings/language';
   static const String settingsTheme = '/settings/theme';
   static const String settingsNotifications = '/settings/notifications';
   static const String settingsAbout = '/settings/about';
-
-  static const String organization = '/organization';
-  static const String organizationCompanies = '/organization/companies';
-  static const String organizationBranches = '/organization/branches';
-  static const String organizationDepartments = '/organization/departments';
-  static const String organizationTeams = '/organization/teams';
-  static const String organizationPositions = '/organization/positions';
-  static const String organizationUsers = '/organization/users';
 }

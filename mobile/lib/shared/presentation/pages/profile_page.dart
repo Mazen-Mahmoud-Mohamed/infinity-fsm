@@ -13,7 +13,7 @@ import 'package:mobile/core/widgets/branding/infinity_brand.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/features/organization/presentation/cubit/profile_cubit.dart';
-import 'package:mobile/features/organization/presentation/widgets/offline_banner.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -117,18 +117,6 @@ class _ProfileView extends StatelessWidget {
                       _ProfileRow(
                         label: l10n.companyLabel,
                         value: org?.company?.name ?? '-',
-                      ),
-                      _ProfileRow(
-                        label: l10n.usersBranch,
-                        value: org?.branch?.name ?? '-',
-                      ),
-                      _ProfileRow(
-                        label: l10n.departmentLabel,
-                        value: org?.department?.name ?? '-',
-                      ),
-                      _ProfileRow(
-                        label: l10n.profilePosition,
-                        value: org?.position?.name ?? '-',
                       ),
                       const SizedBox(height: AppSpacing.xl),
                       const Center(

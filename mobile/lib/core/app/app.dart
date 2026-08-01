@@ -9,7 +9,7 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:mobile/features/organization/presentation/widgets/offline_banner.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 

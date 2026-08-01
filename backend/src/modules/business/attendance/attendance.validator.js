@@ -1,4 +1,4 @@
-import { body, query } from 'express-validator';
+import { body, query, param } from 'express-validator';
 
 const gpsFields = [
   body('latitude')
@@ -53,4 +53,23 @@ export const historyValidator = [
   query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
   query('startDate').optional().isISO8601(),
   query('endDate').optional().isISO8601(),
+];
+
+export const listAttendanceValidator = [
+  query('page').optional().isInt({ min: 1 }).toInt(),
+  query('limit').optional().isInt({ min: 1, max: 100 }).toInt(),
+  query('status')
+    .optional()
+    .isString()
+    .trim()
+    .isIn(['CLOCKED_IN', 'ON_BREAK', 'CLOCKED_OUT', 'clocked_in', 'on_break', 'clocked_out']),
+  query('search').optional().isString().trim().isLength({ max: 120 }),
+  query('startDate').optional().isISO8601(),
+  query('endDate').optional().isISO8601(),
+  query('userId').optional().isMongoId(),
+  query('role').optional().isString().trim().isLength({ max: 40 }),
+];
+
+export const attendanceIdValidator = [
+  param('id').isMongoId().withMessage('Invalid attendance id'),
 ];

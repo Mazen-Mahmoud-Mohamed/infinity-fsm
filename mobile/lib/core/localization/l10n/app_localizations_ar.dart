@@ -1272,16 +1272,29 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardPeriodToday => 'اليوم';
 
   @override
-  String get dashboardPeriodWeek => 'أسبوع';
+  String get dashboardPeriodWeek => 'هذا الأسبوع';
 
   @override
-  String get dashboardPeriodMonth => 'شهر';
+  String get dashboardPeriodMonth => 'هذا الشهر';
 
   @override
-  String get dashboardPeriodYear => 'سنة';
+  String get dashboardPeriodYear => 'هذه السنة';
 
   @override
   String get dashboardPeriodCustom => 'مخصص';
+
+  @override
+  String get dashboardRangeUntilNow => 'حتى الآن';
+
+  @override
+  String dashboardRangeSpan(String from, String to) {
+    return '$from – $to';
+  }
+
+  @override
+  String dashboardReportLine(String range) {
+    return 'التقرير: $range';
+  }
 
   @override
   String get dashboardSectionKpis => 'المؤشرات الرئيسية';
@@ -1517,7 +1530,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsSectionAccount => 'الحساب';
 
   @override
-  String get settingsSectionOrganization => 'المنظمة';
+  String get settingsSectionOrganization => 'الشركة';
 
   @override
   String get settingsSectionAdministration => 'الإدارة';
@@ -1789,6 +1802,69 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get attendanceStatusClockedOut => 'انتهى الدوام';
+
+  @override
+  String get attendanceStatusPresent => 'حاضر';
+
+  @override
+  String get attendanceStatusCheckedOut => 'تم الانصراف';
+
+  @override
+  String get attendanceManagement => 'إدارة الحضور';
+
+  @override
+  String get attendanceManageTooltip => 'إدارة الحضور';
+
+  @override
+  String get attendanceSearchEmployee => 'البحث باسم الموظف أو البريد';
+
+  @override
+  String get attendanceAdminEmpty => 'لا توجد سجلات حضور.';
+
+  @override
+  String get attendanceAdminLoadFailed => 'فشل تحميل سجلات الحضور.';
+
+  @override
+  String get attendanceDetails => 'تفاصيل الحضور';
+
+  @override
+  String get attendanceDetailsLoading => 'جاري تحميل تفاصيل الحضور...';
+
+  @override
+  String get attendanceDetailsLoadFailed => 'فشل تحميل تفاصيل الحضور.';
+
+  @override
+  String get attendanceEmployeeInfo => 'معلومات الموظف';
+
+  @override
+  String get attendanceSessionInfo => 'معلومات الجلسة';
+
+  @override
+  String get attendanceDeviceInfo => 'معلومات الجهاز';
+
+  @override
+  String get attendanceLocation => 'الموقع';
+
+  @override
+  String get attendanceDevice => 'الجهاز';
+
+  @override
+  String get attendanceSyncSource => 'مصدر المزامنة';
+
+  @override
+  String get attendanceLastUpdated => 'آخر تحديث';
+
+  @override
+  String get attendanceSelfie => 'صورة سيلفي';
+
+  @override
+  String get attendanceDate => 'التاريخ';
+
+  @override
+  String get attendanceOvertimeHours => 'ساعات الوقت الإضافي';
+
+  @override
+  String get attendanceRoleAll => 'كل الأدوار';
 
   @override
   String get overtimeStartTitle => 'بدء الوقت الإضافي';
@@ -2576,4 +2652,88 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get errorUploadFailed => 'فشل الرفع. يرجى المحاولة مرة أخرى.';
+
+  @override
+  String get valueNotSet => 'غير محدد';
+
+  @override
+  String get workOrderAttachmentFallback => 'مرفق';
+
+  @override
+  String durationMinutesOnly(int minutes) {
+    return '$minutes دقيقة';
+  }
+
+  @override
+  String durationHoursMinutes(String hours, String minutes) {
+    return '$hours:$minutes ساعة';
+  }
+
+  @override
+  String get navDashboard => 'الرئيسية';
+
+  @override
+  String get navAttendance => 'الوقت';
+
+  @override
+  String get navWorkOrders => 'المهام';
+
+  @override
+  String get navOvertime => 'إضافي';
+
+  @override
+  String get navProfile => 'أنا';
+
+  @override
+  String get eventAuthLogin => 'تم تسجيل الدخول بنجاح';
+
+  @override
+  String get eventAuthLoginFailed => 'فشل محاولة تسجيل الدخول';
+
+  @override
+  String get eventAuthLogout => 'تم تسجيل الخروج';
+
+  @override
+  String get eventAuthTokenRefreshed => 'تم تحديث الجلسة';
+
+  @override
+  String get eventAuthGeneric => 'نشاط الحساب';
+
+  @override
+  String get eventAttendanceGeneric => 'تحديث الحضور';
+
+  @override
+  String get eventOvertimeGeneric => 'تحديث الوقت الإضافي';
+
+  @override
+  String get eventWorkOrderGeneric => 'تحديث أمر العمل';
+
+  @override
+  String get eventInventoryGeneric => 'تحديث المخزون';
+
+  @override
+  String get eventAssetsGeneric => 'تحديث الأصل';
+
+  @override
+  String get eventPmGeneric => 'تحديث الصيانة';
+
+  @override
+  String get eventReportsGeneric => 'تحديث التقرير';
+
+  @override
+  String get eventUsersGeneric => 'تحديث المستخدم';
+
+  @override
+  String get eventOrganizationGeneric => 'تحديث المؤسسة';
+
+  @override
+  String get eventSecurityGeneric => 'حدث أمني';
+
+  @override
+  String get eventGenericActivity => 'نشاط النظام';
+
+  @override
+  String eventFeedActorLine(String module, String actor) {
+    return '$module · $actor';
+  }
 }

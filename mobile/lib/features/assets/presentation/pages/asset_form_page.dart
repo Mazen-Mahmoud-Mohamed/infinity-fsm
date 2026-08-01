@@ -14,7 +14,6 @@ import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/domain/entities/asset_category.dart';
 import 'package:mobile/features/assets/presentation/cubit/asset_detail_form_history_cubits.dart';
-import 'package:mobile/features/organization/domain/entities/branch.dart';
 
 class AssetFormPage extends StatefulWidget {
   const AssetFormPage({super.key, this.assetId});
@@ -336,7 +335,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
                     title: Text(l10n.assetsInstallationDate),
                     subtitle: Text(
                       _installationDate?.toLocal().toString().split(' ').first ??
-                          '—',
+                          l10n.valueNotSet,
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.calendar_today),
@@ -348,29 +347,12 @@ class _AssetFormPageState extends State<AssetFormPage> {
                     title: Text(l10n.assetsWarrantyExpiry),
                     subtitle: Text(
                       _warrantyExpiry?.toLocal().toString().split(' ').first ??
-                          '—',
+                          l10n.valueNotSet,
                     ),
                     trailing: IconButton(
                       icon: const Icon(Icons.calendar_today),
                       onPressed: () => _pickDate(installation: false),
                     ),
-                  ),
-                  DropdownButtonFormField<String?>(
-                    initialValue: _branchId,
-                    decoration: InputDecoration(labelText: l10n.assetsBranch),
-                    items: [
-                      DropdownMenuItem<String?>(
-                        value: null,
-                        child: Text(l10n.assetsFilterAll),
-                      ),
-                      ...state.branches.map(
-                        (Branch b) => DropdownMenuItem(
-                          value: b.id,
-                          child: Text(b.name),
-                        ),
-                      ),
-                    ],
-                    onChanged: (v) => setState(() => _branchId = v),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   TextFormField(
