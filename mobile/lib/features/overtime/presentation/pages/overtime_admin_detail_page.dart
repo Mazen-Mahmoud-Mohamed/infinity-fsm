@@ -146,6 +146,13 @@ class _OvertimeDetailView extends StatelessWidget {
                   ),
                 ),
                 _DetailRow(
+                  label: l10n.overtimeWorkingDuration,
+                  value: OvertimeFormatters.durationFromMinutes(
+                    session.workingDurationMinutes,
+                    l10n,
+                  ),
+                ),
+                _DetailRow(
                   label: l10n.overtimeEligible,
                   value: OvertimeFormatters.durationFromMinutes(
                     session.eligibleOvertimeMinutes,

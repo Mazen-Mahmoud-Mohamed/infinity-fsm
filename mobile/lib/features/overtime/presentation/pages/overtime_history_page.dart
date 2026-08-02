@@ -205,7 +205,8 @@ class _HistoryCard extends StatelessWidget {
           Text(
             l10n.overtimeDurationLine(
               OvertimeFormatters.durationFromMinutes(
-                session.totalDurationMinutes ?? session.eligibleOvertimeMinutes,
+                session.eligibleOvertimeMinutes ??
+                    session.totalDurationMinutes,
                 l10n,
               ),
             ),

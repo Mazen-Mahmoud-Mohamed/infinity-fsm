@@ -13,6 +13,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_calculator.dart';
 
 class OvertimeRepositoryImpl implements OvertimeRepository {
   OvertimeRepositoryImpl({
@@ -39,17 +40,17 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         code == 'NETWORK_ERROR';
   }
 
-  /// Ceil seconds into whole minutes so any positive elapsed time is > 0.
-  static int durationMinutesFromSeconds(int durationSeconds) {
-    if (durationSeconds <= 0) {
-      return 0;
-    }
-    return (durationSeconds + 59) ~/ 60;
-  }
-
   static int durationSecondsBetween(DateTime startAt, DateTime endAt) {
     final seconds = endAt.difference(startAt).inSeconds;
     return seconds < 0 ? 0 : seconds;
+  }
+
+  /// Shared OT split (must match backend `calculateOvertimeDurations`).
+  static OvertimeDurationResult calculateDurations(
+    DateTime startAt,
+    DateTime endAt,
+  ) {
+    return OvertimeCalculator.calculate(startAt, endAt);
   }
 
   GpsSnapshot _gpsWithRecordedAt(GpsSnapshot gps, DateTime recordedAt) {
@@ -395,7 +396,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       const Duration(seconds: 1),
     );
     final durationSeconds = durationSecondsBetween(startAt, safeEndAt);
-    final totalDurationMinutes = durationMinutesFromSeconds(durationSeconds);
+    final durations = calculateDurations(startAt, safeEndAt);
 
     final ended = _copySession(
       running,
@@ -405,9 +406,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       endGps: _gpsWithRecordedAt(gps, safeEndAt),
       endAddress: address,
       endDeviceId: deviceId,
-      totalDurationMinutes: totalDurationMinutes,
-      workingDurationMinutes: totalDurationMinutes,
-      eligibleOvertimeMinutes: totalDurationMinutes,
+      totalDurationMinutes: durations.totalDurationMinutes,
+      workingDurationMinutes: durations.workingDurationMinutes,
+      eligibleOvertimeMinutes: durations.eligibleOvertimeMinutes,
       liveElapsedSeconds: durationSeconds,
     );
 
@@ -651,24 +652,16 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             durationSeconds: durationSeconds,
           );
 
-          // Prefer the offline timeline over server clock when present.
+          // Prefer offline timeline clocks; always keep server OT minutes
+          // (authoritative overlap with official working hours).
           final localEnded = startedAt != null
               ? _copySession(
                   _asModel(endedRemote),
                   startAt: startedAt,
                   endAt: endedAt,
-                  totalDurationMinutes: durationMinutesFromSeconds(
-                    enriched.durationSeconds ??
-                        durationSecondsBetween(startedAt, endedAt),
-                  ),
-                  workingDurationMinutes: durationMinutesFromSeconds(
-                    enriched.durationSeconds ??
-                        durationSecondsBetween(startedAt, endedAt),
-                  ),
-                  eligibleOvertimeMinutes: durationMinutesFromSeconds(
-                    enriched.durationSeconds ??
-                        durationSecondsBetween(startedAt, endedAt),
-                  ),
+                  totalDurationMinutes: endedRemote.totalDurationMinutes,
+                  workingDurationMinutes: endedRemote.workingDurationMinutes,
+                  eligibleOvertimeMinutes: endedRemote.eligibleOvertimeMinutes,
                   liveElapsedSeconds: enriched.durationSeconds ??
                       durationSecondsBetween(startedAt, endedAt),
                   endGps: _gpsWithRecordedAt(enriched.gps, endedAt),

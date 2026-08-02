@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 
 /// Locale-aware date/number formatters for user-visible values.
+///
+/// Clock times are always shown in **12-hour** form (never `HH:mm`).
 class AppFormatters {
   AppFormatters._();
 
@@ -15,25 +17,24 @@ class AppFormatters {
   static DateFormat mediumDate(BuildContext context) =>
       date(context, 'dd MMM yyyy');
 
-  /// Medium date + time
+  /// Medium date + 12-hour time (e.g. 31 Jul 2026, 4:35 PM)
   static DateFormat mediumDateTime(BuildContext context) =>
-      date(context, 'dd MMM yyyy, HH:mm');
+      date(context, 'dd MMM yyyy, h:mm a');
 
-  /// Medium date + time (space separator)
+  /// Medium date + 12-hour time (space separator)
   static DateFormat mediumDateTimeSpaced(BuildContext context) =>
-      date(context, 'dd MMM yyyy HH:mm');
+      date(context, 'dd MMM yyyy h:mm a');
 
   /// Weekday + month day: Fri, Jul 31
   static DateFormat weekdayMonthDay(BuildContext context) =>
       date(context, 'EEE, MMM d');
 
-  /// Localized time (e.g. 5:30 PM / ٥:٣٠ م)
+  /// Localized 12-hour time (e.g. 5:30 PM / ٥:٣٠ م)
   static DateFormat jm(BuildContext context) =>
       DateFormat.jm(localeName(context));
 
-  /// 24h time
-  static DateFormat hm(BuildContext context) =>
-      DateFormat('HH:mm', localeName(context));
+  /// Localized 12-hour time — same as [jm] (24-hour display is not used).
+  static DateFormat hm(BuildContext context) => jm(context);
 
   static String formatDecimal(
     BuildContext context,

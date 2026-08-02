@@ -26,11 +26,26 @@ See [ARCHITECTURE.md](../../../../docs/ARCHITECTURE.md) Section 13 for transitio
 | GET | `/overtime/:id` | `overtime:view_*` |
 | GET | `/overtime/pending-review` | `overtime:view_team` |
 
+## Duration calculation
+
+Authoritative implementation:
+
+- `working-hours.policy.js` — official window `09:00→17:00` (`Asia/Baghdad`)
+- `overtime.calculation.js` — `calculateOvertimeDurations(startAt, endAt)`
+
+Rules:
+
+- **Working duration** = overlap with official hours `[09:00, 17:00)`
+- **Eligible overtime** = total duration − working duration (never negative)
+- Same formula for **NORMAL** and **TRAVEL**
+- Absolute timestamps stored in UTC; overlap uses company timezone wall-clock
+- Applied on session **end**; Flutter offline uses the mirrored `OvertimeCalculator`
+
 ## Domain Services
 
-- `overtime-calculator.service.js` — Server-side calculation
-- `overtime-state-machine.service.js` — Transition validation
-- `working-hours.policy.js` — Official hours + holiday exclusion
+- `overtime.calculation.js` — Server-side eligible OT calculation
+- `working-hours.policy.js` — Official hours (central config)
+- `overtime.timeline.js` — Online vs offline start/end resolution
 
 ## Extended Data
 

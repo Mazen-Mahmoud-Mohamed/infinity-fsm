@@ -1,3 +1,6 @@
+export 'overtime_calculator.dart';
+
+/// Legacy alias — prefer [OfficialWorkingHours.current] / [OvertimeCalculator].
 class OvertimeRules {
   OvertimeRules._();
 

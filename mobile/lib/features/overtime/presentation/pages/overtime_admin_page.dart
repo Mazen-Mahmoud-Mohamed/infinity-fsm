@@ -313,8 +313,8 @@ class _AdminSessionCard extends StatelessWidget {
               _MetaChip(
                 icon: Icons.timer_outlined,
                 label: OvertimeFormatters.durationFromMinutes(
-                  session.totalDurationMinutes ??
-                      session.eligibleOvertimeMinutes,
+                  session.eligibleOvertimeMinutes ??
+                      session.totalDurationMinutes,
                   l10n,
                 ),
               ),
