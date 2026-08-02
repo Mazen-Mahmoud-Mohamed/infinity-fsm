@@ -652,8 +652,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             durationSeconds: durationSeconds,
           );
 
-          // Prefer offline timeline clocks; always keep server OT minutes
-          // (authoritative overlap with official working hours).
+          // Keep server OT minutes after sync — never overwrite migrated /
+          // authoritative backend duration fields with a local recalculation.
           final localEnded = startedAt != null
               ? _copySession(
                   _asModel(endedRemote),

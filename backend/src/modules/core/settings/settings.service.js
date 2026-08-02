@@ -84,11 +84,11 @@ class SettingsService {
         country: company.address?.country || null,
         postalCode: company.address?.postalCode || null,
       },
-      timezone: company.timezone || workingHours.timezone || 'Asia/Baghdad',
+      timezone: company.timezone || workingHours.timezone || 'Africa/Cairo',
       workingHours: {
         start: workingHours.start,
         end: workingHours.end,
-        timezone: workingHours.timezone || company.timezone || 'Asia/Baghdad',
+        timezone: workingHours.timezone || company.timezone || 'Africa/Cairo',
       },
       isActive: company.isActive !== false,
       updatedAt: company.updatedAt,
@@ -107,7 +107,7 @@ class SettingsService {
       this._getSettingValue(
         companyId,
         WORKING_HOURS_TIMEZONE_KEY,
-        company.timezone || 'Asia/Baghdad'
+        company.timezone || 'Africa/Cairo'
       ),
     ]);
 
@@ -141,7 +141,7 @@ class SettingsService {
     }
 
     if (payload.timezone !== undefined) {
-      company.timezone = String(payload.timezone).trim() || 'Asia/Baghdad';
+      company.timezone = String(payload.timezone).trim() || 'Africa/Cairo';
     }
 
     if (payload.address !== undefined && payload.address !== null) {
@@ -194,7 +194,7 @@ class SettingsService {
         this._upsertSetting({
           companyId,
           key: WORKING_HOURS_TIMEZONE_KEY,
-          value: tz || 'Asia/Baghdad',
+          value: tz || 'Africa/Cairo',
           group: 'working_hours',
           dataType: 'string',
           updatedBy: user._id,

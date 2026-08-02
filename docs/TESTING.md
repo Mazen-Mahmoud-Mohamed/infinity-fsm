@@ -89,7 +89,7 @@
 | 7 | 07:00 | 17:00 | 0h 00m | Exact official hours |
 | 8 | 09:00 | 17:00 | 0h 00m | Full official day |
 | 9 | 07:00 | 20:00 + holiday | 12h 00m | Holiday = full day OT |
-| 10 | 07:00 | 20:00 | 5h 00m | Different timezone (UTC+3) |
+| 10 | 07:00 | 20:00 | 5h 00m | Company timezone Africa/Cairo |
 
 ### 3.2 Integration Tests
 

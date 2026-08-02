@@ -30,21 +30,32 @@ See [ARCHITECTURE.md](../../../../docs/ARCHITECTURE.md) Section 13 for transitio
 
 Authoritative implementation:
 
-- `working-hours.policy.js` — official window `09:00→17:00` (`Asia/Baghdad`)
+- `working-hours.policy.js` — official window `09:00→17:00` (`Africa/Cairo`)
 - `overtime.calculation.js` — `calculateOvertimeDurations(startAt, endAt)`
 
 Rules:
 
-- **Working duration** = overlap with official hours `[09:00, 17:00)`
+- **Working days:** Saturday–Thursday
+- **Friday:** full overtime day (working duration = 0 for Friday segments)
+- **Working duration** = overlap with official hours `[09:00, 17:00)` on working days only
 - **Eligible overtime** = total duration − working duration (never negative)
 - Same formula for **NORMAL** and **TRAVEL**
 - Absolute timestamps stored in UTC; overlap uses company timezone wall-clock
 - Applied on session **end**; Flutter offline uses the mirrored `OvertimeCalculator`
 
+### Historical recalculation
+
+One-time script (not auto-run):
+
+```bash
+npm run migrate:overtime-durations          # dry-run
+npm run migrate:overtime-durations:apply    # write
+```
+
 ## Domain Services
 
 - `overtime.calculation.js` — Server-side eligible OT calculation
-- `working-hours.policy.js` — Official hours (central config)
+- `working-hours.policy.js` — Official hours + Friday rule (central config)
 - `overtime.timeline.js` — Online vs offline start/end resolution
 
 ## Extended Data

@@ -8,14 +8,18 @@ import {
  * Overtime duration calculator (authoritative).
  *
  * Eligible overtime = any session time OUTSIDE official working hours.
- * Working duration = session overlap with official hours.
+ * Working duration = session overlap with official hours on working days.
  * Eligible = Total − Working (never negative).
  *
- * Same algorithm for NORMAL and TRAVEL overtime.
+ * Friday has no official hours — the entire Friday segment is eligible OT.
+ * Working days: Saturday–Thursday with window [09:00, 17:00) in Africa/Cairo.
  *
- * Calculation version bumped whenever the algorithm or official window changes.
+ * Calendar days and weekdays are always resolved in Africa/Cairo — never via
+ * Node process timezone, Render host TZ, or raw UTC calendar days.
+ *
+ * Same algorithm for NORMAL and TRAVEL overtime.
  */
-export const CALCULATION_VERSION = 'ot-v2-outside-official-hours';
+export const CALCULATION_VERSION = 'ot-v4-africa-cairo';
 
 /**
  * @typedef {object} OvertimeDurationResult
@@ -58,6 +62,28 @@ export function getZonedParts(date, timeZone) {
     minute: Number(map.minute),
     second: Number(map.second),
   };
+}
+
+/**
+ * Short English weekday for a calendar day in `timeZone` (e.g. "Fri").
+ * @param {{ year: number, month: number, day: number }} ymd
+ * @param {string} timeZone
+ */
+export function getZonedWeekdayShort(ymd, timeZone) {
+  const noon = zonedLocalToUtc(timeZone, ymd.year, ymd.month, ymd.day, 12, 0, 0);
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    weekday: 'short',
+  }).format(noon);
+}
+
+/**
+ * Whether the calendar day has official working hours.
+ * Friday is never a working day.
+ */
+export function isOfficialWorkingDay(ymd, hours = OFFICIAL_WORKING_HOURS) {
+  const weekday = getZonedWeekdayShort(ymd, hours.timeZone);
+  return !hours.nonWorkingWeekdays.includes(weekday);
 }
 
 /**
@@ -125,6 +151,7 @@ function compareYmd(a, b) {
 /**
  * Overlap of [sessionStart, sessionEnd) with official hours for one calendar day
  * in the company timezone. Returns exact milliseconds.
+ * Non-working days (Friday) contribute 0 working minutes.
  *
  * @param {Date} sessionStart
  * @param {Date} sessionEnd
@@ -132,6 +159,10 @@ function compareYmd(a, b) {
  * @param {typeof OFFICIAL_WORKING_HOURS} hours
  */
 function workingOverlapMsForDay(sessionStart, sessionEnd, ymd, hours) {
+  if (!isOfficialWorkingDay(ymd, hours)) {
+    return 0;
+  }
+
   const startMin = officialStartMinutesOfDay(hours);
   const endMin = officialEndMinutesOfDay(hours);
   const startH = Math.floor(startMin / 60);
@@ -208,7 +239,13 @@ export function calculateOvertimeDurations(
 ) {
   const calculatedAt = new Date();
 
-  if (!(startAt instanceof Date) || !(endAt instanceof Date) || Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime()) || endAt.getTime() <= startAt.getTime()) {
+  if (
+    !(startAt instanceof Date) ||
+    !(endAt instanceof Date) ||
+    Number.isNaN(startAt.getTime()) ||
+    Number.isNaN(endAt.getTime()) ||
+    endAt.getTime() <= startAt.getTime()
+  ) {
     return {
       totalDurationMinutes: 0,
       workingDurationMinutes: 0,
@@ -237,8 +274,6 @@ export function calculateOvertimeDurations(
     day: endParts.day,
   };
 
-  // If the session ends exactly at midnight, the end calendar day has zero length —
-  // still safe: overlap for that day is 0.
   let guard = 0;
   while (compareYmd(cursor, last) <= 0 && guard < 400) {
     workingMs += workingOverlapMsForDay(startAt, endAt, cursor, hours);

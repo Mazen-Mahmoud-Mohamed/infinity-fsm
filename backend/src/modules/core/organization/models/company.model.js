@@ -57,7 +57,7 @@ const companySchema = new Schema(
     timezone: {
       type: String,
       trim: true,
-      default: 'Asia/Baghdad',
+      default: 'Africa/Cairo',
       maxlength: 80,
     },
     isActive: {

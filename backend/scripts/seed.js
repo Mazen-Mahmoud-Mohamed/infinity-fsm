@@ -23,7 +23,7 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 const DEFAULT_SETTINGS = [
   { key: 'working_hours.start', value: '09:00', group: 'working_hours', dataType: 'string' },
   { key: 'working_hours.end', value: '17:00', group: 'working_hours', dataType: 'string' },
-  { key: 'working_hours.timezone', value: 'Asia/Baghdad', group: 'working_hours', dataType: 'string' },
+  { key: 'working_hours.timezone', value: 'Africa/Cairo', group: 'working_hours', dataType: 'string' },
   { key: 'overtime.allowed_types', value: ['REGULAR', 'TRAVEL'], group: 'overtime', dataType: 'array' },
   { key: 'overtime.gps_accuracy_limit_meters', value: 100, group: 'overtime', dataType: 'number' },
   { key: 'media.max_image_size_mb', value: 5, group: 'media', dataType: 'number' },

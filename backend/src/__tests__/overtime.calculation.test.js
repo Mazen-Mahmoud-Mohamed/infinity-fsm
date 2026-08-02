@@ -12,7 +12,7 @@ function at(year, month, day, hour, minute = 0) {
   return zonedLocalToUtc(TZ, year, month, day, hour, minute, 0);
 }
 
-describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
+describe('calculateOvertimeDurations (official 09:00–17:00, Fri = full OT)', () => {
   it('exposes calculation version', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 4, 0),
@@ -21,7 +21,8 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.calculationVersion).toBe(CALCULATION_VERSION);
   });
 
-  it('Example A: 04:00 → 12:00 → working 3h, eligible 5h', () => {
+  // 2026-08-01 is Saturday (working day)
+  it('Example A: Sat 04:00 → 12:00 → working 3h, eligible 5h', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 4, 0),
       at(2026, 8, 1, 12, 0)
@@ -31,7 +32,7 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(5 * 60);
   });
 
-  it('Example B: 14:00 → 18:00 → working 3h, eligible 1h', () => {
+  it('Example B: Sat 14:00 → 18:00 → working 3h, eligible 1h', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 14, 0),
       at(2026, 8, 1, 18, 0)
@@ -41,7 +42,7 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(1 * 60);
   });
 
-  it('Example C: 18:00 → 23:00 → working 0, eligible 5h', () => {
+  it('Example C: Sat 18:00 → 23:00 → working 0, eligible 5h', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 18, 0),
       at(2026, 8, 1, 23, 0)
@@ -51,7 +52,7 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(5 * 60);
   });
 
-  it('Example D: 07:00 → 08:30 → working 0, eligible 1h30m', () => {
+  it('Example D: Sat 07:00 → 08:30 → working 0, eligible 1h30m', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 7, 0),
       at(2026, 8, 1, 8, 30)
@@ -61,7 +62,7 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(90);
   });
 
-  it('Example E: 08:00 → 20:00 → working 8h, eligible 4h', () => {
+  it('Example E: Sat 08:00 → 20:00 → working 8h, eligible 4h', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 8, 0),
       at(2026, 8, 1, 20, 0)
@@ -71,7 +72,7 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(4 * 60);
   });
 
-  it('midnight crossing: 22:00 → 04:00 → 6h eligible, 0 working', () => {
+  it('midnight crossing Sat→Sun: 22:00 → 04:00 → 6h eligible', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 22, 0),
       at(2026, 8, 2, 4, 0)
@@ -81,7 +82,39 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(6 * 60);
   });
 
-  it('fully inside official hours: 10:00 → 16:00 → eligible 0', () => {
+  // 2026-07-31 is Friday
+  it('Friday full day: all eligible, working 0', () => {
+    const result = calculateOvertimeDurations(
+      at(2026, 7, 31, 0, 0),
+      at(2026, 7, 31, 23, 59)
+    );
+    expect(result.totalDurationMinutes).toBe(23 * 60 + 59);
+    expect(result.workingDurationMinutes).toBe(0);
+    expect(result.eligibleOvertimeMinutes).toBe(23 * 60 + 59);
+  });
+
+  it('Friday during former office hours still counts as OT', () => {
+    const result = calculateOvertimeDurations(
+      at(2026, 7, 31, 9, 0),
+      at(2026, 7, 31, 17, 0)
+    );
+    expect(result.totalDurationMinutes).toBe(8 * 60);
+    expect(result.workingDurationMinutes).toBe(0);
+    expect(result.eligibleOvertimeMinutes).toBe(8 * 60);
+  });
+
+  // Thursday 2026-07-30 → Friday 2026-07-31
+  it('Thu 22:00 → Fri 08:00 → working 0, eligible 10h', () => {
+    const result = calculateOvertimeDurations(
+      at(2026, 7, 30, 22, 0),
+      at(2026, 7, 31, 8, 0)
+    );
+    expect(result.totalDurationMinutes).toBe(10 * 60);
+    expect(result.workingDurationMinutes).toBe(0);
+    expect(result.eligibleOvertimeMinutes).toBe(10 * 60);
+  });
+
+  it('fully inside official hours on working day: eligible 0', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 10, 0),
       at(2026, 8, 1, 16, 0)
@@ -91,7 +124,7 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(0);
   });
 
-  it('exactly official window: 09:00 → 17:00 → eligible 0', () => {
+  it('exactly official window on working day: eligible 0', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 9, 0),
       at(2026, 8, 1, 17, 0)
@@ -101,22 +134,12 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
     expect(result.eligibleOvertimeMinutes).toBe(0);
   });
 
-  it('starts at 17:00 → all eligible', () => {
-    const result = calculateOvertimeDurations(
-      at(2026, 8, 1, 17, 0),
-      at(2026, 8, 1, 19, 0)
-    );
-    expect(result.totalDurationMinutes).toBe(2 * 60);
-    expect(result.workingDurationMinutes).toBe(0);
-    expect(result.eligibleOvertimeMinutes).toBe(2 * 60);
-  });
-
-  it('multi-day: 20:00 day1 → 10:00 day2', () => {
+  it('multi-day Sat 20:00 → Sun 10:00', () => {
     const result = calculateOvertimeDurations(
       at(2026, 8, 1, 20, 0),
       at(2026, 8, 2, 10, 0)
     );
-    // 14h total; working = 09:00–10:00 = 1h; eligible = 13h
+    // 14h total; working = Sun 09:00–10:00 = 1h; eligible = 13h
     expect(result.totalDurationMinutes).toBe(14 * 60);
     expect(result.workingDurationMinutes).toBe(1 * 60);
     expect(result.eligibleOvertimeMinutes).toBe(13 * 60);
@@ -135,7 +158,8 @@ describe('calculateOvertimeDurations (official 09:00–17:00)', () => {
   it('eligible always equals total − working', () => {
     const cases = [
       [at(2026, 8, 1, 3, 15), at(2026, 8, 1, 21, 45)],
-      [at(2026, 8, 1, 9, 0), at(2026, 8, 3, 9, 0)],
+      [at(2026, 7, 31, 8, 0), at(2026, 7, 31, 18, 0)],
+      [at(2026, 7, 30, 22, 0), at(2026, 7, 31, 10, 0)],
       [at(2026, 8, 1, 23, 30), at(2026, 8, 2, 0, 15)],
     ];
     for (const [start, end] of cases) {

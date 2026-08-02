@@ -436,7 +436,7 @@ Key-value store with grouping. Replaces simple settings from v1.0.
 | `company.logo` | null | profile |
 | `working_hours.start` | `"09:00"` | working_hours |
 | `working_hours.end` | `"17:00"` | working_hours |
-| `working_hours.timezone` | `"Asia/Baghdad"` | working_hours |
+| `working_hours.timezone` | `"Africa/Cairo"` | working_hours |
 | `overtime.allowed_types` | `["REGULAR","TRAVEL"]` | overtime |
 | `overtime.max_session_hours` | `16` | overtime |
 | `overtime.gps_accuracy_limit_meters` | `100` | overtime |

@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
+import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
@@ -12,6 +14,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest.dart' as tzdata;
 
 class _FakeConnectivityService implements ConnectivityService {
   _FakeConnectivityService({this.online = false});
@@ -23,6 +26,20 @@ class _FakeConnectivityService implements ConnectivityService {
 
   @override
   Stream<bool> get onConnectivityChanged => Stream<bool>.value(online);
+}
+
+class _FakeAddressResolver extends Fake implements AddressResolverService {
+  @override
+  Future<String> resolve(GpsSnapshot gps) async => 'Test Address';
+}
+
+class _FakeGpsAddressSync extends Fake implements GpsAddressSyncService {
+  @override
+  Future<void> enqueueOvertime({
+    required String sessionId,
+    required String point,
+    required GpsSnapshot gps,
+  }) async {}
 }
 
 /// In-memory stand-in for MongoDB that honors client GPS timestamps.
@@ -105,8 +122,8 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
           effectiveStart,
           effectiveEnd,
         );
-    final minutes =
-        OvertimeRepositoryImpl.durationMinutesFromSeconds(seconds);
+    final durations =
+        OvertimeRepositoryImpl.calculateDurations(effectiveStart, effectiveEnd);
 
     final ended = OvertimeSessionModel(
       id: existing.id,
@@ -124,9 +141,9 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
       endAddress: address,
       endPhotoUrl: 'https://example.com/end.jpg',
       endDeviceId: deviceId,
-      totalDurationMinutes: minutes,
-      workingDurationMinutes: minutes,
-      eligibleOvertimeMinutes: minutes,
+      totalDurationMinutes: durations.totalDurationMinutes,
+      workingDurationMinutes: durations.workingDurationMinutes,
+      eligibleOvertimeMinutes: durations.eligibleOvertimeMinutes,
       liveElapsedSeconds: seconds,
       createdAt: existing.createdAt,
     );
@@ -152,6 +169,7 @@ GpsSnapshot _gps(DateTime at) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  tzdata.initializeTimeZones();
 
   late PreferencesService preferences;
   late OvertimeLocalDataSource local;
@@ -170,6 +188,8 @@ void main() {
       remote: remote,
       local: local,
       connectivity: connectivity,
+      addressResolver: _FakeAddressResolver(),
+      gpsAddressSync: _FakeGpsAddressSync(),
     );
   });
 
@@ -219,7 +239,10 @@ void main() {
       expect(ended.endAt!.isAfter(ended.startAt), isTrue);
       expect(ended.liveElapsedSeconds, 12 * 60 + 30);
       expect(ended.totalDurationMinutes, greaterThan(0));
-      expect(ended.totalDurationMinutes, 13); // ceil(750s / 60)
+      // 750s → floor minutes = 12 (never ceil / never treat all as eligible blindly).
+      expect(ended.totalDurationMinutes, 12);
+      expect(ended.eligibleOvertimeMinutes, 12);
+      expect(ended.workingDurationMinutes, 0);
 
       final history = local.readHistory();
       expect(history, hasLength(1));

@@ -612,7 +612,7 @@ Available to all authenticated users (needed for overtime UI):
   "data": {
     "start": "09:00",
     "end": "17:00",
-    "timezone": "Asia/Baghdad",
+    "timezone": "Africa/Cairo",
     "allowedOvertimeTypes": ["REGULAR", "TRAVEL"]
   }
 }

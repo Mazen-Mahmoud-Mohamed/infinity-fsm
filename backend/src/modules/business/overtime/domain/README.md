@@ -1,42 +1,23 @@
-# Overtime Domain Layer
+# Overtime Domain (business module)
 
-Pure business logic — zero framework dependencies.
-
-## Files
+## Authoritative calculation
 
 | File | Purpose |
 |------|---------|
-| `overtime.entity.js` | Domain entity |
-| `overtime-calculator.service.js` | Server-side overtime calculation |
-| `overtime-state-machine.service.js` | 6-state transition validation |
-| `working-hours.policy.js` | Official hours + holiday exclusion |
-| `gps-quality.policy.js` | GPS accuracy threshold evaluation |
-| `travel-metadata.validator.js` | Travel field validation |
+| `../working-hours.policy.js` | Official hours `09:00–17:00`, timezone `Africa/Cairo`, Friday = full OT |
+| `../overtime.calculation.js` | Single shared `calculateOvertimeDurations(startAt, endAt)` |
+| `../overtime.timeline.js` | Online vs offline start/end resolution |
+| `../overtime.service.js` | Applies calculator on session **end**; list/approve return stored fields |
 
-## State Machine
+## Rules
 
-Valid transitions enforced here — not in controller:
+- Eligible OT = total − working (never negative)
+- Working = overlap with `[09:00, 17:00)` on Saturday–Thursday (Cairo)
+- Friday segments: working = 0 (full overtime day)
+- Multi-day / midnight: split by Cairo calendar day
 
-```javascript
-const TRANSITIONS = {
-  DRAFT:           ['RUNNING'],
-  RUNNING:         ['PENDING_REVIEW', 'DRAFT'],
-  PENDING_REVIEW:  ['APPROVED', 'REJECTED'],
-  APPROVED:        ['ARCHIVED'],
-  REJECTED:        ['ARCHIVED'],
-  ARCHIVED:        []
-};
-```
+## Tests
 
-## Test Requirements
+See `backend/src/__tests__/overtime.calculation.test.js`.
 
-- 10+ calculator test cases (mandatory business examples)
-- Every valid transition tested
-- Every invalid transition rejected
-- Holiday exclusion tests
-- Multi-day session tests
-- Timezone tests
-
-See [TESTING.md](../../../../../docs/TESTING.md).
-
-**Implementation:** Phase 0 (tests), Phase 2 (implementation)
+Historical recalculation: `npm run migrate:overtime-durations:apply`

@@ -38,8 +38,8 @@ class OrganizationSettingsModel extends OrganizationSettings {
         start: hours is Map ? hours['start']?.toString() ?? '09:00' : '09:00',
         end: hours is Map ? hours['end']?.toString() ?? '17:00' : '17:00',
         timezone: hours is Map
-            ? hours['timezone']?.toString() ?? 'Asia/Baghdad'
-            : 'Asia/Baghdad',
+            ? hours['timezone']?.toString() ?? 'Africa/Cairo'
+            : 'Africa/Cairo',
       ),
       isActive: json['isActive'] != false,
       updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? ''),

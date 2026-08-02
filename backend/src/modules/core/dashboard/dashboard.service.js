@@ -12,26 +12,57 @@ import Asset from '../../business/assets/models/asset.model.js';
 import AuditLog from '../audit/models/auditLog.model.js';
 import { ROLES } from '../../../shared/constants/roles.constants.js';
 import { ValidationError } from '../../../shared/errors/AppError.js';
+import {
+  getZonedParts,
+  zonedLocalToUtc,
+} from '../../business/overtime/overtime.calculation.js';
+import { OFFICIAL_WORKING_HOURS } from '../../business/overtime/working-hours.policy.js';
+
+const COMPANY_TZ = OFFICIAL_WORKING_HOURS.timeZone;
 
 function otMinutesExpr() {
+  // Always sum persisted eligible OT — never fall back to total session length.
+  return { $ifNull: ['$eligibleOvertimeMinutes', 0] };
+}
+
+function addCairoCalendarDays(year, month, day, daysToAdd) {
+  const utc = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
+  utc.setUTCDate(utc.getUTCDate() + daysToAdd);
   return {
-    $ifNull: [
-      '$eligibleOvertimeMinutes',
-      { $ifNull: ['$totalDurationMinutes', 0] },
-    ],
+    year: utc.getUTCFullYear(),
+    month: utc.getUTCMonth() + 1,
+    day: utc.getUTCDate(),
   };
 }
 
+/** Start of calendar day in Africa/Cairo (absolute UTC instant). */
 function startOfDay(date) {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
+  const parts = getZonedParts(new Date(date), COMPANY_TZ);
+  return zonedLocalToUtc(
+    COMPANY_TZ,
+    parts.year,
+    parts.month,
+    parts.day,
+    0,
+    0,
+    0
+  );
 }
 
+/** Inclusive end of calendar day in Africa/Cairo. */
 function endOfDay(date) {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
+  const parts = getZonedParts(new Date(date), COMPANY_TZ);
+  const next = addCairoCalendarDays(parts.year, parts.month, parts.day, 1);
+  const nextMidnight = zonedLocalToUtc(
+    COMPANY_TZ,
+    next.year,
+    next.month,
+    next.day,
+    0,
+    0,
+    0
+  );
+  return new Date(nextMidnight.getTime() - 1);
 }
 
 function toHours(minutes) {
@@ -67,19 +98,50 @@ function resolvePeriod(query = {}) {
   }
 
   if (period === 'week') {
-    // Calendar week starting Monday (ISO business week).
-    const from = startOfDay(now);
-    from.setDate(from.getDate() - ((from.getDay() + 6) % 7));
+    // ISO business week starting Monday in Africa/Cairo.
+    const todayStart = startOfDay(now);
+    const weekdayShort = new Intl.DateTimeFormat('en-US', {
+      timeZone: COMPANY_TZ,
+      weekday: 'short',
+    }).format(todayStart);
+    const mondayOffset = {
+      Mon: 0,
+      Tue: 1,
+      Wed: 2,
+      Thu: 3,
+      Fri: 4,
+      Sat: 5,
+      Sun: 6,
+    }[weekdayShort] ?? 0;
+
+    const parts = getZonedParts(todayStart, COMPANY_TZ);
+    const monday = addCairoCalendarDays(
+      parts.year,
+      parts.month,
+      parts.day,
+      -mondayOffset
+    );
+    const from = zonedLocalToUtc(
+      COMPANY_TZ,
+      monday.year,
+      monday.month,
+      monday.day,
+      0,
+      0,
+      0
+    );
     return { period: 'week', from, to: endOfDay(now) };
   }
 
   if (period === 'year') {
-    const from = startOfDay(new Date(now.getFullYear(), 0, 1));
+    const parts = getZonedParts(now, COMPANY_TZ);
+    const from = zonedLocalToUtc(COMPANY_TZ, parts.year, 1, 1, 0, 0, 0);
     return { period: 'year', from, to: endOfDay(now) };
   }
 
-  // Calendar month-to-date (default)
-  const from = startOfDay(new Date(now.getFullYear(), now.getMonth(), 1));
+  // Calendar month-to-date in Africa/Cairo (default)
+  const parts = getZonedParts(now, COMPANY_TZ);
+  const from = zonedLocalToUtc(COMPANY_TZ, parts.year, parts.month, 1, 0, 0, 0);
   return { period: 'month', from, to: endOfDay(now) };
 }
 
@@ -95,36 +157,58 @@ function resolveViewRole(roles = []) {
 }
 
 function dateKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const parts = getZonedParts(new Date(date), COMPANY_TZ);
+  const m = String(parts.month).padStart(2, '0');
+  const d = String(parts.day).padStart(2, '0');
+  return `${parts.year}-${m}-${d}`;
 }
 
 function buildTrendBuckets(from, to) {
   const buckets = [];
-  const dayMs = 24 * 60 * 60 * 1000;
-  // Always emit daily points so charts show real trends (not a single monthly bar).
-  // Cap at 31 days ending at `to` for executive sparklines (7d / 30d UI windows).
+  const fromDay = startOfDay(from);
+  const toDay = startOfDay(to);
   const spanDays = Math.max(
     1,
-    Math.ceil((startOfDay(to).getTime() - startOfDay(from).getTime()) / dayMs) + 1
+    Math.round((toDay.getTime() - fromDay.getTime()) / 86400000) + 1
   );
   const days = Math.min(31, spanDays);
-  const cursor = startOfDay(to);
-  cursor.setDate(cursor.getDate() - (days - 1));
 
-  while (cursor <= to && buckets.length < 31) {
-    if (cursor >= startOfDay(from)) {
+  let cursorParts = getZonedParts(toDay, COMPANY_TZ);
+  cursorParts = addCairoCalendarDays(
+    cursorParts.year,
+    cursorParts.month,
+    cursorParts.day,
+    -(days - 1)
+  );
+  const fromKey = dateKey(fromDay);
+
+  for (let i = 0; i < days; i += 1) {
+    const cursor = zonedLocalToUtc(
+      COMPANY_TZ,
+      cursorParts.year,
+      cursorParts.month,
+      cursorParts.day,
+      0,
+      0,
+      0
+    );
+    const key = dateKey(cursor);
+    if (key >= fromKey) {
       buckets.push({
-        key: dateKey(cursor),
-        label: `${cursor.getMonth() + 1}/${cursor.getDate()}`,
-        from: new Date(cursor),
+        key,
+        label: `${cursorParts.month}/${cursorParts.day}`,
+        from: cursor,
         to: endOfDay(cursor),
       });
     }
-    cursor.setDate(cursor.getDate() + 1);
+    cursorParts = addCairoCalendarDays(
+      cursorParts.year,
+      cursorParts.month,
+      cursorParts.day,
+      1
+    );
   }
+
   return buckets;
 }
 

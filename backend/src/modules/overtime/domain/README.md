@@ -1,24 +1,12 @@
 # Overtime Domain Layer
 
-Pure business logic with no framework dependencies.
-
-## Files (Planned)
+Authoritative overtime duration logic lives in the business overtime module:
 
 | File | Purpose |
 |------|---------|
-| `overtime.entity.js` | Domain entity with business methods |
-| `overtime-calculator.service.js` | Calculate overtime minutes from start/end times |
-| `working-hours.policy.js` | Official hours configuration and exclusion logic |
+| `../business/overtime/working-hours.policy.js` | Official hours `09:00–17:00`, `Africa/Cairo`, Friday = full OT |
+| `../business/overtime/overtime.calculation.js` | `calculateOvertimeDurations` (single backend calculator) |
 
-## Overtime Calculator
+Do **not** add a parallel calculator here.
 
-Input: `startDateTime`, `endDateTime`, `WorkingHoursPolicy`  
-Output: `{ rawDurationMinutes, excludedMinutes, overtimeMinutes }`
-
-Must handle:
-- Same-day sessions
-- Multi-day sessions (split per calendar day)
-- Timezone-aware calculations
-- All business rule examples from requirements
-
-**Implementation:** Phase 2 (with comprehensive unit tests)
+Flutter mirrors the same rules in `mobile/lib/features/overtime/domain/services/overtime_calculator.dart` for offline preview only. After sync, the API values are authoritative.
