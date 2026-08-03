@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -382,35 +383,36 @@ class _TimelineStageTile extends StatelessWidget {
                         label: l10n.overtimeNotes,
                         value: checkpoint!.notes!,
                       ),
-                    if (!compact) ...[
+                    // Map + live location always available for completed checkpoints
+                    // (employee + admin). Never hide behind compact mode.
+                    const SizedBox(height: AppSpacing.sm),
+                    _CheckpointMapActions(
+                      gps: checkpoint!.gps,
+                      label: title,
+                      address: checkpoint!.address,
+                    ),
+                    if (!compact &&
+                        checkpoint!.photoUrl != null &&
+                        checkpoint!.photoUrl!.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.sm),
-                      _LazyMapSection(
-                        gps: checkpoint!.gps,
-                        label: title,
-                        address: checkpoint!.address,
-                      ),
-                      if (checkpoint!.photoUrl != null &&
-                          checkpoint!.photoUrl!.isNotEmpty) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: InkWell(
-                              onTap: () => openOvertimeFullscreenImage(
-                                context,
-                                imageUrl: checkpoint!.photoUrl!,
-                                title: title,
-                              ),
-                              child: AppCachedNetworkImage(
-                                imageUrl: checkpoint!.photoUrl!,
-                                fit: BoxFit.cover,
-                                memCacheWidth: 800,
-                              ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: AspectRatio(
+                          aspectRatio: 16 / 9,
+                          child: InkWell(
+                            onTap: () => openOvertimeFullscreenImage(
+                              context,
+                              imageUrl: checkpoint!.photoUrl!,
+                              title: title,
+                            ),
+                            child: AppCachedNetworkImage(
+                              imageUrl: checkpoint!.photoUrl!,
+                              fit: BoxFit.cover,
+                              memCacheWidth: 800,
                             ),
                           ),
                         ),
-                      ],
+                      ),
                     ],
                   ],
                 ],
@@ -563,11 +565,9 @@ class _ProgressGlyph extends StatelessWidget {
   }
 }
 
-/// Map is only built when the user expands "Show map" — avoids paying tile
-/// loading cost for every checkpoint up front.
-/// "Open Live Location" opens Google Maps at the checkpoint coordinates.
-class _LazyMapSection extends StatefulWidget {
-  const _LazyMapSection({
+/// Show Map (interactive embedded preview) + Open Live Location (Google Maps).
+class _CheckpointMapActions extends StatefulWidget {
+  const _CheckpointMapActions({
     required this.gps,
     required this.label,
     this.address,
@@ -578,18 +578,18 @@ class _LazyMapSection extends StatefulWidget {
   final String? address;
 
   @override
-  State<_LazyMapSection> createState() => _LazyMapSectionState();
+  State<_CheckpointMapActions> createState() => _CheckpointMapActionsState();
 }
 
-class _LazyMapSectionState extends State<_LazyMapSection> {
+class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
   bool _expanded = false;
+  bool _markerSelected = false;
 
   bool get _hasValidCoordinates {
     final lat = widget.gps.latitude;
     final lng = widget.gps.longitude;
     return lat.isFinite &&
         lng.isFinite &&
-        !(lat == 0 && lng == 0) &&
         lat >= -90 &&
         lat <= 90 &&
         lng >= -180 &&
@@ -636,98 +636,174 @@ class _LazyMapSectionState extends State<_LazyMapSection> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final canOpen = _hasValidCoordinates;
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Wrap(
-          spacing: AppSpacing.md,
-          runSpacing: AppSpacing.xs,
-          crossAxisAlignment: WrapCrossAlignment.center,
+        Row(
           children: [
-            TextButton.icon(
-              onPressed: () => setState(() => _expanded = !_expanded),
-              icon: Icon(
-                _expanded ? Icons.map : Icons.map_outlined,
-                size: 18,
-              ),
-              label: Text(
-                _expanded ? l10n.overtimeHideMap : l10n.overtimeShowMap,
-              ),
-              style: TextButton.styleFrom(
-                padding: EdgeInsets.zero,
-                minimumSize: const Size(0, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                alignment: Alignment.centerLeft,
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () => setState(() => _expanded = !_expanded),
+                icon: Icon(
+                  _expanded ? Icons.map : Icons.map_outlined,
+                  size: 18,
+                ),
+                label: Text(
+                  _expanded ? l10n.overtimeHideMap : l10n.overtimeShowMap,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
-            Tooltip(
-              message: canOpen
-                  ? l10n.overtimeOpenLiveLocation
-                  : l10n.overtimeLocationUnavailable,
-              child: TextButton.icon(
-                onPressed: canOpen ? _openLiveLocation : null,
-                icon: const Icon(Icons.location_on_outlined, size: 18),
-                label: Text(l10n.overtimeOpenLiveLocation),
-                style: TextButton.styleFrom(
-                  padding: EdgeInsets.zero,
-                  minimumSize: const Size(0, 32),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  alignment: Alignment.centerLeft,
+            const SizedBox(width: AppSpacing.sm),
+            Expanded(
+              child: Tooltip(
+                message: canOpen
+                    ? l10n.overtimeOpenLiveLocation
+                    : l10n.overtimeLocationUnavailable,
+                child: FilledButton.tonalIcon(
+                  onPressed: canOpen ? _openLiveLocation : null,
+                  icon: const Icon(Icons.location_on_outlined, size: 18),
+                  label: Text(
+                    l10n.overtimeOpenLiveLocation,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ),
             ),
           ],
         ),
         if (_expanded) ...[
-          const SizedBox(height: AppSpacing.xs),
-          _MiniMapPreview(gps: widget.gps),
+          const SizedBox(height: AppSpacing.sm),
+          if (!_hasValidCoordinates)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+              child: Text(
+                l10n.overtimeLocationUnavailable,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            )
+          else
+            // Absorb drag so parent ListView does not steal pan/zoom.
+            RawGestureDetector(
+              gestures: <Type, GestureRecognizerFactory>{
+                EagerGestureRecognizer:
+                    GestureRecognizerFactoryWithHandlers<EagerGestureRecognizer>(
+                  EagerGestureRecognizer.new,
+                  (_) {},
+                ),
+              },
+              child: _InteractiveCheckpointMap(
+                gps: widget.gps,
+                markerSelected: _markerSelected,
+                onMarkerTap: () =>
+                    setState(() => _markerSelected = !_markerSelected),
+                onMapTap: () {
+                  if (_markerSelected) {
+                    setState(() => _markerSelected = false);
+                  }
+                },
+              ),
+            ),
         ],
       ],
     );
   }
 }
 
-class _MiniMapPreview extends StatelessWidget {
-  const _MiniMapPreview({required this.gps});
+/// Interactive FlutterMap — pan, zoom, marker tap (same behavior as legacy OT map).
+class _InteractiveCheckpointMap extends StatefulWidget {
+  const _InteractiveCheckpointMap({
+    required this.gps,
+    required this.markerSelected,
+    required this.onMarkerTap,
+    required this.onMapTap,
+  });
 
   final GpsSnapshot gps;
+  final bool markerSelected;
+  final VoidCallback onMarkerTap;
+  final VoidCallback onMapTap;
+
+  @override
+  State<_InteractiveCheckpointMap> createState() =>
+      _InteractiveCheckpointMapState();
+}
+
+class _InteractiveCheckpointMapState extends State<_InteractiveCheckpointMap> {
+  static const String _tileUserAgent = 'com.infinitytech.fsm.mobile';
+
+  final MapController _mapController = MapController();
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final point = LatLng(gps.latitude, gps.longitude);
-    final color = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final point = LatLng(widget.gps.latitude, widget.gps.longitude);
+    final pinColor = theme.colorScheme.primary;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(12),
       child: SizedBox(
-        height: 120,
-        child: IgnorePointer(
-          child: FlutterMap(
-            options: MapOptions(
-              initialCenter: point,
-              initialZoom: 15,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.none,
+        height: 220,
+        width: double.infinity,
+        child: ColoredBox(
+          color: theme.colorScheme.surfaceContainerHighest,
+          // Absorb vertical drag so ListView does not steal pan/zoom gestures.
+          child: Listener(
+            behavior: HitTestBehavior.opaque,
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: point,
+                initialZoom: 16,
+                backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                interactionOptions: const InteractionOptions(
+                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
+                ),
+                onTap: (_, _) => widget.onMapTap(),
               ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  fallbackUrl:
+                      'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+                  userAgentPackageName: _tileUserAgent,
+                  maxNativeZoom: 19,
+                  maxZoom: 20,
+                ),
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: point,
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.topCenter,
+                      child: GestureDetector(
+                        onTap: widget.onMarkerTap,
+                        child: Icon(
+                          Icons.location_on,
+                          size: widget.markerSelected ? 44 : 36,
+                          color: pinColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'com.infinitytech.fsm.mobile',
-              ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: point,
-                    width: 28,
-                    height: 28,
-                    child: Icon(Icons.location_on, color: color),
-                  ),
-                ],
-              ),
-            ],
           ),
         ),
       ),
