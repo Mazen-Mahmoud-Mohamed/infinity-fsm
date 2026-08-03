@@ -15,6 +15,16 @@ import AppError, {
 import auditService from '../../core/audit/audit.service.js';
 import { resolveSessionTimeline } from './overtime.timeline.js';
 
+const WORKFLOW_V2 = 'v2';
+const WORKFLOW_V1 = 'v1';
+
+const CHECKPOINT_STAGES = Object.freeze({
+  START_JOURNEY: 'startJourney',
+  ARRIVED: 'arrivedAtWorkSite',
+  FINISHED_WORK: 'finishedWork',
+  END_JOURNEY: 'endJourney',
+});
+
 function buildGps(body) {
   const fullAddress =
     (body.fullAddress && String(body.fullAddress).trim()) ||
@@ -33,6 +43,10 @@ function buildGps(body) {
     accuracy: Number(body.accuracy),
     heading: body.heading !== undefined && body.heading !== '' ? Number(body.heading) : null,
     speed: body.speed !== undefined && body.speed !== '' ? Number(body.speed) : null,
+    altitude:
+      body.altitude !== undefined && body.altitude !== ''
+        ? Number(body.altitude)
+        : null,
     provider: body.provider || null,
     recordedAt: new Date(body.recordedAt),
     fullAddress,
@@ -98,6 +112,67 @@ function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+function isWorkflowV2(record) {
+  return record?.workflowVersion === WORKFLOW_V2;
+}
+
+function buildCheckpoint({
+  at,
+  gps,
+  photo,
+  address,
+  deviceId,
+  notes,
+  clientRequestId,
+  batteryLevel,
+  networkStatus,
+}) {
+  const battery =
+    batteryLevel === undefined || batteryLevel === null || batteryLevel === ''
+      ? null
+      : Number(batteryLevel);
+  return {
+    at,
+    gps,
+    photo,
+    address: address || null,
+    deviceId,
+    clientRequestId: clientRequestId ? String(clientRequestId).trim() : null,
+    batteryLevel:
+      Number.isFinite(battery) && battery >= 0 && battery <= 100
+        ? Math.round(battery)
+        : null,
+    networkStatus: networkStatus
+      ? String(networkStatus).trim().slice(0, 40)
+      : null,
+    notes: notes ? String(notes).trim() : null,
+  };
+}
+
+function checkpointClientRequestId(record, stageKey) {
+  return record?.checkpoints?.[stageKey]?.clientRequestId || null;
+}
+
+function parseOptionalBattery(value) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function nextCheckpointKey(record) {
+  if (!isWorkflowV2(record)) {
+    return null;
+  }
+  const cp = record.checkpoints || {};
+  if (!cp.startJourney) return CHECKPOINT_STAGES.START_JOURNEY;
+  if (!cp.arrivedAtWorkSite) return CHECKPOINT_STAGES.ARRIVED;
+  if (!cp.finishedWork) return CHECKPOINT_STAGES.FINISHED_WORK;
+  if (!cp.endJourney) return CHECKPOINT_STAGES.END_JOURNEY;
+  return null;
+}
+
 class OvertimeService {
   async getRunning(user) {
     const record = await OvertimeRecord.findOne({
@@ -133,6 +208,16 @@ class OvertimeService {
       clientRequestId: body.clientRequestId,
     });
     if (existingByClient) {
+      await auditService.log({
+        companyId: user.companyId,
+        actorId: user._id,
+        actorRole: user.roles[0],
+        action: 'overtime.start_replay',
+        module: 'overtime',
+        resourceType: 'overtime_record',
+        resourceId: existingByClient._id,
+        metadata: { clientRequestId: body.clientRequestId },
+      });
       return this._map(existingByClient);
     }
 
@@ -159,6 +244,20 @@ class OvertimeService {
       fallbackStartAt: new Date(),
     });
 
+    const address = body.address || body.fullAddress || null;
+    const startCheckpoint = buildCheckpoint({
+      at: startAt,
+      gps,
+      photo,
+      address,
+      deviceId: body.deviceId,
+      notes: body.notes,
+      clientRequestId: body.clientRequestId,
+      batteryLevel: parseOptionalBattery(body.batteryLevel),
+      networkStatus: body.networkStatus,
+    });
+
+    // New sessions always use the 4-stage workflow (v2). Legacy records stay v1.
     const record = await OvertimeRecord.create({
       companyId: user.companyId,
       userId: user._id,
@@ -166,10 +265,14 @@ class OvertimeService {
       departmentId: user.departmentId,
       type,
       status: 'RUNNING',
+      workflowVersion: WORKFLOW_V2,
+      checkpoints: {
+        startJourney: startCheckpoint,
+      },
       startAt,
       startGps: gps,
       startPhoto: photo,
-      startAddress: body.address || body.fullAddress || null,
+      startAddress: address,
       startDeviceId: body.deviceId,
       clientRequestId: body.clientRequestId,
     });
@@ -182,10 +285,151 @@ class OvertimeService {
       module: 'overtime',
       resourceType: 'overtime_record',
       resourceId: record._id,
-      metadata: { type },
+      metadata: { type, workflowVersion: WORKFLOW_V2, checkpoint: CHECKPOINT_STAGES.START_JOURNEY },
     });
 
     return this._map(record);
+  }
+
+  /**
+   * Additive mid-journey checkpoints (v2 only).
+   * stage: arrivedAtWorkSite | finishedWork
+   * Idempotent via clientRequestId when the stage is already recorded.
+   */
+  async recordCheckpoint(user, id, stage, body, file) {
+    const normalized = String(stage || '').trim();
+    if (
+      normalized !== CHECKPOINT_STAGES.ARRIVED &&
+      normalized !== CHECKPOINT_STAGES.FINISHED_WORK
+    ) {
+      throw new AppError(
+        'INVALID_CHECKPOINT',
+        'Checkpoint must be arrivedAtWorkSite or finishedWork',
+        422
+      );
+    }
+
+    const record = await OvertimeRecord.findOne({
+      _id: id,
+      companyId: user.companyId,
+    });
+
+    if (!record) {
+      throw new NotFoundError('Overtime session');
+    }
+
+    if (record.userId.toString() !== user._id.toString()) {
+      throw new ForbiddenError('You can only update your own overtime session');
+    }
+
+    if (!body.clientRequestId) {
+      throw new AppError(
+        'CLIENT_REQUEST_REQUIRED',
+        'clientRequestId is required',
+        422
+      );
+    }
+
+    const clientRequestId = String(body.clientRequestId).trim();
+    const existingCp = record.checkpoints?.[normalized];
+    if (existingCp) {
+      const existingId = existingCp.clientRequestId;
+      if (existingId && existingId === clientRequestId) {
+        await auditService.log({
+          companyId: user.companyId,
+          actorId: user._id,
+          actorRole: user.roles[0],
+          action: 'overtime.checkpoint_replay',
+          module: 'overtime',
+          resourceType: 'overtime_record',
+          resourceId: record._id,
+          metadata: { checkpoint: normalized, clientRequestId },
+        });
+        // Idempotent replay (double-tap / retry / offline sync).
+        return this._map(await this._loadWithTechnician(record._id, user.companyId));
+      }
+      throw new ConflictError(
+        `Checkpoint ${normalized} is already completed and cannot be repeated`
+      );
+    }
+
+    if (record.status !== 'RUNNING') {
+      throw new ConflictError(
+        `Cannot record a checkpoint on a session that is ${record.status.toLowerCase()}`
+      );
+    }
+
+    if (!isWorkflowV2(record)) {
+      throw new AppError(
+        'LEGACY_WORKFLOW',
+        'This session uses the legacy start/end workflow and does not support mid-journey checkpoints',
+        422
+      );
+    }
+
+    const expected = nextCheckpointKey(record);
+    if (expected !== normalized) {
+      throw new ConflictError(
+        expected
+          ? `Next required checkpoint is ${expected}`
+          : 'All checkpoints are already completed'
+      );
+    }
+
+    if (!file) {
+      throw new AppError('LIVE_PHOTO_REQUIRED', 'A checkpoint photo is required', 422);
+    }
+
+    if (!body.deviceId) {
+      throw new AppError('DEVICE_REQUIRED', 'deviceId is required', 422);
+    }
+
+    const gps = buildGps(body);
+    assertClockSkew(gps.recordedAt);
+    assertGpsAccuracy(gps);
+
+    const { startedAt: checkpointAt } = resolveSessionTimeline({
+      body: {
+        startedAt: body.checkpointAt || body.startedAt || body.recordedAt,
+      },
+      fallbackStartAt: new Date(),
+    });
+
+    const photo = await uploadOvertimePhotoBuffer(file.buffer, {
+      userId: user._id.toString(),
+      photoType: normalized,
+    });
+
+    if (!record.checkpoints) {
+      record.checkpoints = {};
+    }
+
+    record.checkpoints[normalized] = buildCheckpoint({
+      at: checkpointAt,
+      gps,
+      photo,
+      address: body.address || body.fullAddress || null,
+      deviceId: body.deviceId,
+      notes: body.notes,
+      clientRequestId,
+      batteryLevel: parseOptionalBattery(body.batteryLevel),
+      networkStatus: body.networkStatus,
+    });
+    record.markModified('checkpoints');
+    await record.save();
+
+    await auditService.log({
+      companyId: user.companyId,
+      actorId: user._id,
+      actorRole: user.roles[0],
+      action: 'overtime.checkpoint',
+      module: 'overtime',
+      resourceType: 'overtime_record',
+      resourceId: record._id,
+      metadata: { checkpoint: normalized, clientRequestId },
+    });
+
+    return this._map(await this._loadWithTechnician(record._id, user.companyId));
   }
 
   async end(user, id, body, file) {
@@ -202,10 +446,45 @@ class OvertimeService {
       throw new ForbiddenError('You can only end your own overtime session');
     }
 
+    const clientRequestId = body.clientRequestId
+      ? String(body.clientRequestId).trim()
+      : null;
+
+    // Idempotent end replay: already finished with the same clientRequestId.
     if (record.status !== 'RUNNING') {
+      const endClientId = checkpointClientRequestId(
+        record,
+        CHECKPOINT_STAGES.END_JOURNEY
+      );
+      if (
+        clientRequestId &&
+        endClientId &&
+        endClientId === clientRequestId
+      ) {
+        return this._map(
+          await this._loadWithTechnician(record._id, user.companyId)
+        );
+      }
       throw new ConflictError(
         `Cannot end a session that is already ${record.status.toLowerCase()}`
       );
+    }
+
+    // v2 sessions must complete mid-journey checkpoints before End Journey.
+    if (isWorkflowV2(record)) {
+      const expected = nextCheckpointKey(record);
+      if (expected && expected !== CHECKPOINT_STAGES.END_JOURNEY) {
+        throw new ConflictError(
+          `Complete ${expected} before ending the journey`
+        );
+      }
+      if (!clientRequestId) {
+        throw new AppError(
+          'CLIENT_REQUEST_REQUIRED',
+          'clientRequestId is required',
+          422
+        );
+      }
     }
 
     if (!file) {
@@ -230,19 +509,32 @@ class OvertimeService {
       fallbackEndAt: new Date(),
     });
 
-    if (!assertReasonableSessionLength(startedAt, endedAt, config.overtime.maxSessionHours)) {
+    const softMaxHours = config.overtime.maxSessionHours;
+    const absoluteMaxHours =
+      config.overtime.absoluteMaxSessionHours || softMaxHours;
+
+    // Hard ceiling — abnormal beyond absolute max.
+    if (!assertReasonableSessionLength(startedAt, endedAt, absoluteMaxHours)) {
       throw new AppError(
         'SESSION_TOO_LONG',
-        `Overtime session exceeds the maximum of ${config.overtime.maxSessionHours} hours.`,
+        `Overtime session exceeds the absolute maximum of ${absoluteMaxHours} hours.`,
         422
       );
     }
+
+    // Soft policy — allow end but force manual review.
+    const exceedsSoftPolicy = !assertReasonableSessionLength(
+      startedAt,
+      endedAt,
+      softMaxHours
+    );
 
     const photo = await uploadOvertimePhotoBuffer(file.buffer, {
       userId: user._id.toString(),
       photoType: 'end',
     });
 
+    // Duration still uses Stage 1 (start) → Stage 4 (end) only.
     const calculated = calculateOvertimeDurations(startedAt, endedAt);
 
     record.status = 'PENDING_REVIEW';
@@ -259,6 +551,34 @@ class OvertimeService {
     record.eligibleOvertimeMinutes = calculated.eligibleOvertimeMinutes;
     record.calculationVersion = calculated.calculationVersion;
     record.calculatedAt = calculated.calculatedAt;
+
+    if (exceedsSoftPolicy) {
+      record.requiresManualReview = true;
+      record.reviewReason = `Session duration exceeded company policy of ${softMaxHours} hours`;
+    }
+
+    if (isWorkflowV2(record)) {
+      if (!record.checkpoints) {
+        record.checkpoints = {};
+      }
+      record.checkpoints.endJourney = buildCheckpoint({
+        at: endedAt,
+        gps,
+        photo,
+        address: body.address || body.fullAddress || null,
+        deviceId: body.deviceId,
+        notes: body.notes,
+        clientRequestId,
+        batteryLevel: parseOptionalBattery(body.batteryLevel),
+        networkStatus: body.networkStatus,
+      });
+      // Keep startJourney synced if client corrected startAt.
+      if (usedClientStart && record.checkpoints.startJourney) {
+        record.checkpoints.startJourney.at = startedAt;
+      }
+      record.markModified('checkpoints');
+    }
+
     await record.save();
 
     await auditService.log({
@@ -272,6 +592,9 @@ class OvertimeService {
       metadata: {
         totalDurationMinutes: calculated.totalDurationMinutes,
         eligibleOvertimeMinutes: calculated.eligibleOvertimeMinutes,
+        workflowVersion: record.workflowVersion || WORKFLOW_V1,
+        requiresManualReview: !!record.requiresManualReview,
+        clientRequestId: clientRequestId || null,
       },
     });
 
@@ -372,7 +695,7 @@ class OvertimeService {
     return this._map(record);
   }
 
-  async approve(user, auth, id) {
+  async approve(user, auth, id, { reviewNotes } = {}) {
     this._assertCanApprove(auth);
 
     const record = await OvertimeRecord.findOne({
@@ -394,6 +717,9 @@ class OvertimeService {
     record.rejectedBy = null;
     record.rejectedAt = null;
     record.rejectionReason = null;
+    if (reviewNotes !== undefined) {
+      record.reviewNotes = reviewNotes?.trim() || null;
+    }
     await record.save();
 
     await auditService.log({
@@ -404,12 +730,17 @@ class OvertimeService {
       module: 'overtime',
       resourceType: 'overtime_record',
       resourceId: record._id,
+      metadata: {
+        requiresManualReview: !!record.requiresManualReview,
+        reviewReason: record.reviewReason || null,
+        reviewNotes: record.reviewNotes || null,
+      },
     });
 
     return this._map(await this._loadWithTechnician(record._id, auth.companyId));
   }
 
-  async reject(user, auth, id, { rejectionReason } = {}) {
+  async reject(user, auth, id, { rejectionReason, reviewNotes } = {}) {
     this._assertCanReject(auth);
 
     const record = await OvertimeRecord.findOne({
@@ -429,6 +760,12 @@ class OvertimeService {
     record.rejectedBy = user._id;
     record.rejectedAt = new Date();
     record.rejectionReason = rejectionReason?.trim() || null;
+    if (reviewNotes !== undefined) {
+      record.reviewNotes = reviewNotes?.trim() || null;
+    } else if (rejectionReason?.trim()) {
+      // Backward compatible: treat rejection reason as review notes when notes omitted.
+      record.reviewNotes = record.reviewNotes || rejectionReason.trim();
+    }
     record.approvedBy = null;
     record.approvedAt = null;
     await record.save();
@@ -441,7 +778,11 @@ class OvertimeService {
       module: 'overtime',
       resourceType: 'overtime_record',
       resourceId: record._id,
-      metadata: { rejectionReason: record.rejectionReason },
+      metadata: {
+        rejectionReason: record.rejectionReason,
+        reviewNotes: record.reviewNotes || null,
+        requiresManualReview: !!record.requiresManualReview,
+      },
     });
 
     return this._map(await this._loadWithTechnician(record._id, auth.companyId));
@@ -632,6 +973,7 @@ class OvertimeService {
       accuracy: gps.accuracy,
       heading: gps.heading,
       speed: gps.speed,
+      altitude: gps.altitude ?? null,
       provider: gps.provider,
       recordedAt: gps.recordedAt?.toISOString?.() || gps.recordedAt || null,
       fullAddress: gps.fullAddress || null,
@@ -644,8 +986,41 @@ class OvertimeService {
     };
   }
 
+  _mapCheckpoint(cp) {
+    if (!cp) return null;
+    return {
+      at: cp.at?.toISOString?.() || cp.at || null,
+      gps: this._mapGps(cp.gps),
+      photoUrl: cp.photo?.url || null,
+      address: cp.address || null,
+      deviceId: cp.deviceId || null,
+      clientRequestId: cp.clientRequestId || null,
+      accuracy: cp.gps?.accuracy ?? null,
+      batteryLevel:
+        cp.batteryLevel === undefined || cp.batteryLevel === null
+          ? null
+          : cp.batteryLevel,
+      networkStatus: cp.networkStatus || null,
+      notes: cp.notes || null,
+    };
+  }
+
+  _mapCheckpoints(doc) {
+    const cp = doc.checkpoints;
+    if (!cp && !isWorkflowV2(doc)) {
+      return null;
+    }
+    return {
+      startJourney: this._mapCheckpoint(cp?.startJourney),
+      arrivedAtWorkSite: this._mapCheckpoint(cp?.arrivedAtWorkSite),
+      finishedWork: this._mapCheckpoint(cp?.finishedWork),
+      endJourney: this._mapCheckpoint(cp?.endJourney),
+    };
+  }
+
   _map(doc) {
     const technician = this._mapUserSummary(doc.userId);
+    const workflowVersion = doc.workflowVersion || WORKFLOW_V1;
     return {
       id: doc._id.toString(),
       companyId: doc.companyId.toString(),
@@ -655,6 +1030,12 @@ class OvertimeService {
       departmentId: doc.departmentId?.toString() || null,
       type: doc.type,
       status: doc.status,
+      workflowVersion,
+      checkpoints: this._mapCheckpoints(doc),
+      nextCheckpoint: nextCheckpointKey(doc),
+      requiresManualReview: !!doc.requiresManualReview,
+      reviewReason: doc.reviewReason || null,
+      reviewNotes: doc.reviewNotes || null,
       startAt: doc.startAt?.toISOString() || null,
       startGps: this._mapGps(doc.startGps),
       startPhotoUrl: doc.startPhoto?.url || null,
@@ -686,7 +1067,7 @@ class OvertimeService {
 
   /**
    * Fills reverse-geocoded address onto an existing overtime GPS snapshot.
-   * point: 'start' | 'end'
+   * point: start | end | startJourney | arrivedAtWorkSite | finishedWork | endJourney
    */
   async updateGpsAddress(user, id, body) {
     const record = await OvertimeRecord.findOne({
@@ -699,10 +1080,8 @@ class OvertimeService {
       throw new NotFoundError('Overtime session');
     }
 
-    const point = String(body.point || 'start').toLowerCase();
-    if (point !== 'start' && point !== 'end') {
-      throw new AppError('VALIDATION_ERROR', 'point must be start or end', 422);
-    }
+    const rawPoint = String(body.point || 'start').trim();
+    const point = rawPoint.toLowerCase();
 
     const addressPatch = {
       fullAddress: body.fullAddress ? String(body.fullAddress).trim() : null,
@@ -719,28 +1098,55 @@ class OvertimeService {
       throw new AppError('VALIDATION_ERROR', 'Resolved address fields are required', 422);
     }
 
-    if (point === 'start') {
-      if (!record.startGps) {
-        throw new AppError('VALIDATION_ERROR', 'Start GPS is missing', 422);
+    const applyToGps = (gps) => {
+      if (!gps) {
+        throw new AppError('VALIDATION_ERROR', 'GPS snapshot is missing', 422);
       }
-      record.startGps.fullAddress = addressPatch.fullAddress;
-      record.startGps.street = addressPatch.street;
-      record.startGps.area = addressPatch.area;
-      record.startGps.city = addressPatch.city;
-      record.startGps.country = addressPatch.country;
-      record.startGps.addressResolvedAt = addressPatch.addressResolvedAt;
+      gps.fullAddress = addressPatch.fullAddress;
+      gps.street = addressPatch.street;
+      gps.area = addressPatch.area;
+      gps.city = addressPatch.city;
+      gps.country = addressPatch.country;
+      gps.addressResolvedAt = addressPatch.addressResolvedAt;
+    };
+
+    const checkpointKeyMap = {
+      startjourney: CHECKPOINT_STAGES.START_JOURNEY,
+      arrivedatworksite: CHECKPOINT_STAGES.ARRIVED,
+      finishedwork: CHECKPOINT_STAGES.FINISHED_WORK,
+      endjourney: CHECKPOINT_STAGES.END_JOURNEY,
+    };
+
+    if (point === 'start' || point === 'startjourney') {
+      applyToGps(record.startGps);
       record.startAddress = addressPatch.fullAddress;
-    } else {
-      if (!record.endGps) {
-        throw new AppError('VALIDATION_ERROR', 'End GPS is missing', 422);
+      if (record.checkpoints?.startJourney) {
+        applyToGps(record.checkpoints.startJourney.gps);
+        record.checkpoints.startJourney.address = addressPatch.fullAddress;
+        record.markModified('checkpoints');
       }
-      record.endGps.fullAddress = addressPatch.fullAddress;
-      record.endGps.street = addressPatch.street;
-      record.endGps.area = addressPatch.area;
-      record.endGps.city = addressPatch.city;
-      record.endGps.country = addressPatch.country;
-      record.endGps.addressResolvedAt = addressPatch.addressResolvedAt;
+    } else if (point === 'end' || point === 'endjourney') {
+      applyToGps(record.endGps);
       record.endAddress = addressPatch.fullAddress;
+      if (record.checkpoints?.endJourney) {
+        applyToGps(record.checkpoints.endJourney.gps);
+        record.checkpoints.endJourney.address = addressPatch.fullAddress;
+        record.markModified('checkpoints');
+      }
+    } else if (checkpointKeyMap[point.replace(/[_-]/g, '')]) {
+      const key = checkpointKeyMap[point.replace(/[_-]/g, '')];
+      if (!record.checkpoints?.[key]) {
+        throw new AppError('VALIDATION_ERROR', `Checkpoint ${key} is missing`, 422);
+      }
+      applyToGps(record.checkpoints[key].gps);
+      record.checkpoints[key].address = addressPatch.fullAddress;
+      record.markModified('checkpoints');
+    } else {
+      throw new AppError(
+        'VALIDATION_ERROR',
+        'point must be start, end, or a checkpoint key',
+        422
+      );
     }
 
     await record.save();

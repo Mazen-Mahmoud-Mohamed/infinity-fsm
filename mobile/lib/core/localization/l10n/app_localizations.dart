@@ -3755,32 +3755,158 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeStartTitle.
   ///
   /// In en, this message translates to:
-  /// **'Start overtime'**
+  /// **'Start overtime journey'**
   String get overtimeStartTitle;
 
   /// No description provided for @overtimeStartHint.
   ///
   /// In en, this message translates to:
-  /// **'Official hours are 09:00 AM – 05:00 PM. Time outside that window is calculated automatically.'**
+  /// **'Official hours are 09:00 AM – 05:00 PM. Time outside that window is calculated automatically. New sessions use four checkpoints; duration still runs from Start Journey to End Journey.'**
   String get overtimeStartHint;
 
   /// No description provided for @overtimeStartNormal.
   ///
   /// In en, this message translates to:
-  /// **'Start Normal Overtime'**
+  /// **'Start Journey — Normal'**
   String get overtimeStartNormal;
 
   /// No description provided for @overtimeStartTravel.
   ///
   /// In en, this message translates to:
-  /// **'Start Travel Overtime'**
+  /// **'Start Journey — Travel'**
   String get overtimeStartTravel;
 
   /// No description provided for @overtimeEnd.
   ///
   /// In en, this message translates to:
-  /// **'End Overtime'**
+  /// **'End Journey'**
   String get overtimeEnd;
+
+  /// No description provided for @overtimeArrivedAtWorkSite.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at Work Site'**
+  String get overtimeArrivedAtWorkSite;
+
+  /// No description provided for @overtimeFinishedWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Work'**
+  String get overtimeFinishedWork;
+
+  /// No description provided for @overtimeStageStartJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Journey'**
+  String get overtimeStageStartJourney;
+
+  /// No description provided for @overtimeStageArrivedAtWorkSite.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at Work Site'**
+  String get overtimeStageArrivedAtWorkSite;
+
+  /// No description provided for @overtimeStageFinishedWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished Work'**
+  String get overtimeStageFinishedWork;
+
+  /// No description provided for @overtimeStageEndJourney.
+  ///
+  /// In en, this message translates to:
+  /// **'End Journey'**
+  String get overtimeStageEndJourney;
+
+  /// No description provided for @overtimeCheckpointCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get overtimeCheckpointCompleted;
+
+  /// No description provided for @overtimeCheckpointNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get overtimeCheckpointNext;
+
+  /// No description provided for @overtimeCheckpointPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get overtimeCheckpointPending;
+
+  /// No description provided for @overtimeJourneyTimeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Journey timeline'**
+  String get overtimeJourneyTimeline;
+
+  /// No description provided for @overtimeArrivedAtWorkSiteRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Arrived at work site recorded.'**
+  String get overtimeArrivedAtWorkSiteRecorded;
+
+  /// No description provided for @overtimeFinishedWorkRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Finished work recorded.'**
+  String get overtimeFinishedWorkRecorded;
+
+  /// No description provided for @overtimeCompletePriorCheckpoints.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete the previous checkpoints before ending the journey.'**
+  String get overtimeCompletePriorCheckpoints;
+
+  /// No description provided for @overtimeGpsAccuracy.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS accuracy'**
+  String get overtimeGpsAccuracy;
+
+  /// No description provided for @overtimeDeviceId.
+  ///
+  /// In en, this message translates to:
+  /// **'Device ID'**
+  String get overtimeDeviceId;
+
+  /// No description provided for @overtimeBatteryLevel.
+  ///
+  /// In en, this message translates to:
+  /// **'Battery'**
+  String get overtimeBatteryLevel;
+
+  /// No description provided for @overtimeNetworkStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get overtimeNetworkStatus;
+
+  /// No description provided for @overtimeNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get overtimeNotes;
+
+  /// No description provided for @overtimeNotesOptionalHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional notes for this checkpoint'**
+  String get overtimeNotesOptionalHint;
+
+  /// No description provided for @overtimeRequiresManualReview.
+  ///
+  /// In en, this message translates to:
+  /// **'Requires manual review'**
+  String get overtimeRequiresManualReview;
+
+  /// No description provided for @overtimeProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Progress'**
+  String get overtimeProgress;
 
   /// No description provided for @overtimeStatusLabel.
   ///
@@ -3829,6 +3955,102 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Travel Overtime'**
   String get overtimeTypeTravel;
+
+  /// No description provided for @overtimeContinueExistingSession.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a running overtime session.'**
+  String get overtimeContinueExistingSession;
+
+  /// No description provided for @overtimeContinueSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Existing Session'**
+  String get overtimeContinueSession;
+
+  /// No description provided for @overtimeActiveSessionReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overtime session is still running. Don\'t forget to end it when you\'re done.'**
+  String get overtimeActiveSessionReminder;
+
+  /// No description provided for @overtimeProgressOf.
+  ///
+  /// In en, this message translates to:
+  /// **'{current}/{total}'**
+  String overtimeProgressOf(int current, int total);
+
+  /// No description provided for @overtimeSyncPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending sync'**
+  String get overtimeSyncPending;
+
+  /// No description provided for @overtimeSyncSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced'**
+  String get overtimeSyncSynced;
+
+  /// No description provided for @overtimeSyncFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync failed'**
+  String get overtimeSyncFailed;
+
+  /// No description provided for @overtimeSyncOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline — queued'**
+  String get overtimeSyncOffline;
+
+  /// No description provided for @overtimeShowMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Show map'**
+  String get overtimeShowMap;
+
+  /// No description provided for @overtimeHideMap.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide map'**
+  String get overtimeHideMap;
+
+  /// No description provided for @overtimeReviewNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Review notes'**
+  String get overtimeReviewNotes;
+
+  /// No description provided for @overtimeReviewNotesHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional notes for this decision'**
+  String get overtimeReviewNotesHint;
+
+  /// No description provided for @overtimeGpsStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'GPS status'**
+  String get overtimeGpsStatus;
+
+  /// No description provided for @overtimeSyncStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync status'**
+  String get overtimeSyncStatus;
+
+  /// No description provided for @overtimeCurrentStage.
+  ///
+  /// In en, this message translates to:
+  /// **'Current stage'**
+  String get overtimeCurrentStage;
+
+  /// No description provided for @overtimeLiveCameraRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Live camera capture is required — gallery selection is disabled.'**
+  String get overtimeLiveCameraRequired;
 
   /// No description provided for @offlineMode.
   ///

@@ -1875,20 +1875,85 @@ class AppLocalizationsEn extends AppLocalizations {
   String get attendanceRoleAll => 'All roles';
 
   @override
-  String get overtimeStartTitle => 'Start overtime';
+  String get overtimeStartTitle => 'Start overtime journey';
 
   @override
   String get overtimeStartHint =>
-      'Official hours are 09:00 AM – 05:00 PM. Time outside that window is calculated automatically.';
+      'Official hours are 09:00 AM – 05:00 PM. Time outside that window is calculated automatically. New sessions use four checkpoints; duration still runs from Start Journey to End Journey.';
 
   @override
-  String get overtimeStartNormal => 'Start Normal Overtime';
+  String get overtimeStartNormal => 'Start Journey — Normal';
 
   @override
-  String get overtimeStartTravel => 'Start Travel Overtime';
+  String get overtimeStartTravel => 'Start Journey — Travel';
 
   @override
-  String get overtimeEnd => 'End Overtime';
+  String get overtimeEnd => 'End Journey';
+
+  @override
+  String get overtimeArrivedAtWorkSite => 'Arrived at Work Site';
+
+  @override
+  String get overtimeFinishedWork => 'Finish Work';
+
+  @override
+  String get overtimeStageStartJourney => 'Start Journey';
+
+  @override
+  String get overtimeStageArrivedAtWorkSite => 'Arrived at Work Site';
+
+  @override
+  String get overtimeStageFinishedWork => 'Finished Work';
+
+  @override
+  String get overtimeStageEndJourney => 'End Journey';
+
+  @override
+  String get overtimeCheckpointCompleted => 'Completed';
+
+  @override
+  String get overtimeCheckpointNext => 'Next';
+
+  @override
+  String get overtimeCheckpointPending => 'Pending';
+
+  @override
+  String get overtimeJourneyTimeline => 'Journey timeline';
+
+  @override
+  String get overtimeArrivedAtWorkSiteRecorded =>
+      'Arrived at work site recorded.';
+
+  @override
+  String get overtimeFinishedWorkRecorded => 'Finished work recorded.';
+
+  @override
+  String get overtimeCompletePriorCheckpoints =>
+      'Complete the previous checkpoints before ending the journey.';
+
+  @override
+  String get overtimeGpsAccuracy => 'GPS accuracy';
+
+  @override
+  String get overtimeDeviceId => 'Device ID';
+
+  @override
+  String get overtimeBatteryLevel => 'Battery';
+
+  @override
+  String get overtimeNetworkStatus => 'Network';
+
+  @override
+  String get overtimeNotes => 'Notes';
+
+  @override
+  String get overtimeNotesOptionalHint => 'Optional notes for this checkpoint';
+
+  @override
+  String get overtimeRequiresManualReview => 'Requires manual review';
+
+  @override
+  String get overtimeProgress => 'Progress';
 
   @override
   String get overtimeStatusLabel => 'Status';
@@ -1913,6 +1978,59 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overtimeTypeTravel => 'Travel Overtime';
+
+  @override
+  String get overtimeContinueExistingSession =>
+      'You already have a running overtime session.';
+
+  @override
+  String get overtimeContinueSession => 'Continue Existing Session';
+
+  @override
+  String get overtimeActiveSessionReminder =>
+      'Your overtime session is still running. Don\'t forget to end it when you\'re done.';
+
+  @override
+  String overtimeProgressOf(int current, int total) {
+    return '$current/$total';
+  }
+
+  @override
+  String get overtimeSyncPending => 'Pending sync';
+
+  @override
+  String get overtimeSyncSynced => 'Synced';
+
+  @override
+  String get overtimeSyncFailed => 'Sync failed';
+
+  @override
+  String get overtimeSyncOffline => 'Offline — queued';
+
+  @override
+  String get overtimeShowMap => 'Show map';
+
+  @override
+  String get overtimeHideMap => 'Hide map';
+
+  @override
+  String get overtimeReviewNotes => 'Review notes';
+
+  @override
+  String get overtimeReviewNotesHint => 'Optional notes for this decision';
+
+  @override
+  String get overtimeGpsStatus => 'GPS status';
+
+  @override
+  String get overtimeSyncStatus => 'Sync status';
+
+  @override
+  String get overtimeCurrentStage => 'Current stage';
+
+  @override
+  String get overtimeLiveCameraRequired =>
+      'Live camera capture is required — gallery selection is disabled.';
 
   @override
   String get offlineMode => 'Offline Mode';

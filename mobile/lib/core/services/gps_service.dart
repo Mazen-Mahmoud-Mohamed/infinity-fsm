@@ -29,6 +29,7 @@ class GpsReading {
     required this.recordedAt,
     this.heading,
     this.speed,
+    this.altitude,
     this.provider,
   });
 
@@ -37,6 +38,7 @@ class GpsReading {
   final double accuracy;
   final double? heading;
   final double? speed;
+  final double? altitude;
   final String? provider;
   final DateTime recordedAt;
 
@@ -86,6 +88,7 @@ class GpsService {
         accuracy: position.accuracy,
         heading: position.heading.isNaN ? null : position.heading,
         speed: position.speed.isNaN ? null : position.speed,
+        altitude: position.altitude.isNaN ? null : position.altitude,
         provider: 'fused',
         recordedAt: position.timestamp,
       );

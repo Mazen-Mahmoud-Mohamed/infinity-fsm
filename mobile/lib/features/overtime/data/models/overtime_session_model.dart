@@ -1,5 +1,6 @@
 import 'package:mobile/features/attendance/data/mappers/attendance_json_helpers.dart';
 import 'package:mobile/features/attendance/data/models/gps_snapshot_model.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_technician_summary.dart';
@@ -33,6 +34,12 @@ class OvertimeSessionModel extends OvertimeSession {
     super.rejectedAt,
     super.rejectionReason,
     super.createdAt,
+    super.workflowVersion,
+    super.checkpoints,
+    super.nextCheckpoint,
+    super.requiresManualReview,
+    super.reviewReason,
+    super.reviewNotes,
   });
 
   factory OvertimeSessionModel.fromJson(Map<String, dynamic> json) {
@@ -41,6 +48,7 @@ class OvertimeSessionModel extends OvertimeSession {
     final technicianJson = json['technician'] as Map<String, dynamic>?;
     final approvedByJson = json['approvedBy'] as Map<String, dynamic>?;
     final rejectedByJson = json['rejectedBy'] as Map<String, dynamic>?;
+    final checkpointsJson = json['checkpoints'] as Map<String, dynamic>?;
 
     return OvertimeSessionModel(
       id: requireString(json, 'id'),
@@ -73,6 +81,47 @@ class OvertimeSessionModel extends OvertimeSession {
       rejectedAt: parseDateTime(json['rejectedAt']),
       rejectionReason: optionalString(json, 'rejectionReason'),
       createdAt: parseDateTime(json['createdAt']),
+      workflowVersion:
+          OvertimeWorkflowVersion.fromApi(optionalString(json, 'workflowVersion')),
+      checkpoints: checkpointsJson == null
+          ? null
+          : _mapCheckpoints(checkpointsJson),
+      nextCheckpoint:
+          OvertimeCheckpointStage.fromApi(optionalString(json, 'nextCheckpoint')),
+      requiresManualReview: json['requiresManualReview'] == true,
+      reviewReason: optionalString(json, 'reviewReason'),
+      reviewNotes: optionalString(json, 'reviewNotes'),
+    );
+  }
+
+  static OvertimeCheckpoints _mapCheckpoints(Map<String, dynamic> json) {
+    return OvertimeCheckpoints(
+      startJourney: _mapCheckpoint(json['startJourney']),
+      arrivedAtWorkSite: _mapCheckpoint(json['arrivedAtWorkSite']),
+      finishedWork: _mapCheckpoint(json['finishedWork']),
+      endJourney: _mapCheckpoint(json['endJourney']),
+    );
+  }
+
+  static OvertimeCheckpoint? _mapCheckpoint(dynamic raw) {
+    if (raw is! Map<String, dynamic>) {
+      return null;
+    }
+    final gpsJson = raw['gps'] as Map<String, dynamic>? ?? const {};
+    final at = parseDateTime(raw['at']);
+    if (at == null) {
+      return null;
+    }
+    return OvertimeCheckpoint(
+      at: at,
+      gps: _mapGps(gpsJson),
+      photoUrl: optionalString(raw, 'photoUrl'),
+      address: optionalString(raw, 'address'),
+      deviceId: optionalString(raw, 'deviceId'),
+      clientRequestId: optionalString(raw, 'clientRequestId'),
+      batteryLevel: _readNullableInt(raw, 'batteryLevel'),
+      networkStatus: optionalString(raw, 'networkStatus'),
+      notes: optionalString(raw, 'notes'),
     );
   }
 
@@ -84,8 +133,15 @@ class OvertimeSessionModel extends OvertimeSession {
       accuracy: readDouble(json, 'accuracy'),
       heading: readOptionalDouble(json, 'heading'),
       speed: readOptionalDouble(json, 'speed'),
+      altitude: readOptionalDouble(json, 'altitude'),
       provider: optionalString(json, 'provider'),
       recordedAt: recordedAt,
+      fullAddress: optionalString(json, 'fullAddress'),
+      street: optionalString(json, 'street'),
+      area: optionalString(json, 'area'),
+      city: optionalString(json, 'city'),
+      country: optionalString(json, 'country'),
+      addressResolvedAt: parseDateTime(json['addressResolvedAt']),
     );
   }
 
@@ -117,6 +173,22 @@ class OvertimeSessionModel extends OvertimeSession {
     return int.tryParse(value.toString());
   }
 
+  static Map<String, dynamic>? _checkpointToJson(OvertimeCheckpoint? cp) {
+    if (cp == null) return null;
+    return {
+      'at': cp.at.toIso8601String(),
+      'gps': GpsSnapshotModel.fromEntity(cp.gps).toJson(),
+      'photoUrl': cp.photoUrl,
+      'address': cp.address,
+      'deviceId': cp.deviceId,
+      'clientRequestId': cp.clientRequestId,
+      'accuracy': cp.accuracy,
+      'batteryLevel': cp.batteryLevel,
+      'networkStatus': cp.networkStatus,
+      'notes': cp.notes,
+    };
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -134,6 +206,20 @@ class OvertimeSessionModel extends OvertimeSession {
             },
       'type': type.apiValue,
       'status': status.apiValue,
+      'workflowVersion': workflowVersion.apiValue,
+      'nextCheckpoint': nextCheckpoint?.apiValue,
+      'requiresManualReview': requiresManualReview,
+      'reviewReason': reviewReason,
+      'reviewNotes': reviewNotes,
+      'checkpoints': checkpoints == null
+          ? null
+          : {
+              'startJourney': _checkpointToJson(checkpoints!.startJourney),
+              'arrivedAtWorkSite':
+                  _checkpointToJson(checkpoints!.arrivedAtWorkSite),
+              'finishedWork': _checkpointToJson(checkpoints!.finishedWork),
+              'endJourney': _checkpointToJson(checkpoints!.endJourney),
+            },
       'startAt': startAt.toIso8601String(),
       'startGps': GpsSnapshotModel.fromEntity(startGps).toJson(),
       'startDeviceId': startDeviceId,

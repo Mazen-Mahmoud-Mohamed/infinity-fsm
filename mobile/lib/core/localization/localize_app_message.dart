@@ -84,6 +84,12 @@ String localizeAppMessage(
       return l10n.normalOvertimeStarted;
     case 'travelOvertimeStarted':
       return l10n.travelOvertimeStarted;
+    case 'overtimeArrivedAtWorkSiteRecorded':
+      return l10n.overtimeArrivedAtWorkSiteRecorded;
+    case 'overtimeFinishedWorkRecorded':
+      return l10n.overtimeFinishedWorkRecorded;
+    case 'overtimeCompletePriorCheckpoints':
+      return l10n.overtimeCompletePriorCheckpoints;
     case 'overtimeLoadFailed':
       return l10n.overtimeLoadFailed;
     case 'errorGeneric':
@@ -192,6 +198,10 @@ String localizeAppMessage(
       return l10n.authOfflineRestoreProfile;
     case 'overtimeNoRunningSession':
       return l10n.overtimeNoRunningSession;
+    case 'overtimeContinueExistingSession':
+      return l10n.overtimeContinueExistingSession;
+    case 'overtimeActiveSessionReminder':
+      return l10n.overtimeActiveSessionReminder;
     case 'assetsQrScannerNotReady':
       return l10n.assetsQrScannerNotReady;
     case 'A live photo is required.':

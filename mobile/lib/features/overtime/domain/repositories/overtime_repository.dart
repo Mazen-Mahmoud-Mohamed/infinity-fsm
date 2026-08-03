@@ -1,5 +1,6 @@
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
@@ -15,6 +16,23 @@ abstract class OvertimeRepository {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  });
+
+  /// Mid-journey checkpoints (v2 only): arrivedAtWorkSite | finishedWork.
+  Future<Result<OvertimeSession>> recordCheckpoint({
+    required String sessionId,
+    required OvertimeCheckpointStage stage,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   });
 
   Future<Result<OvertimeSession>> endSession({
@@ -23,6 +41,10 @@ abstract class OvertimeRepository {
     required List<int> photoBytes,
     required String deviceId,
     required String? address,
+    String? clientRequestId,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   });
 
   Future<Result<OvertimeSessionPage>> listAdminSessions({
@@ -40,11 +62,15 @@ abstract class OvertimeRepository {
 
   Future<Result<OvertimeSession>> getSessionById(String id);
 
-  Future<Result<OvertimeSession>> approveSession(String id);
+  Future<Result<OvertimeSession>> approveSession(
+    String id, {
+    String? reviewNotes,
+  });
 
   Future<Result<OvertimeSession>> rejectSession(
     String id, {
     String? rejectionReason,
+    String? reviewNotes,
   });
 
   Future<List<PendingOvertimeAction>> getPendingActions();

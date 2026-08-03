@@ -8,6 +8,7 @@ class GpsSnapshot extends Equatable {
     required this.recordedAt,
     this.heading,
     this.speed,
+    this.altitude,
     this.provider,
     this.fullAddress,
     this.street,
@@ -22,6 +23,7 @@ class GpsSnapshot extends Equatable {
   final double accuracy;
   final double? heading;
   final double? speed;
+  final double? altitude;
   final String? provider;
   final DateTime recordedAt;
 
@@ -60,6 +62,7 @@ class GpsSnapshot extends Equatable {
     double? accuracy,
     double? heading,
     double? speed,
+    double? altitude,
     String? provider,
     DateTime? recordedAt,
     String? fullAddress,
@@ -76,6 +79,7 @@ class GpsSnapshot extends Equatable {
       accuracy: accuracy ?? this.accuracy,
       heading: heading ?? this.heading,
       speed: speed ?? this.speed,
+      altitude: altitude ?? this.altitude,
       provider: provider ?? this.provider,
       recordedAt: recordedAt ?? this.recordedAt,
       fullAddress: clearAddress ? null : (fullAddress ?? this.fullAddress),
@@ -95,6 +99,7 @@ class GpsSnapshot extends Equatable {
         accuracy,
         heading,
         speed,
+        altitude,
         provider,
         recordedAt,
         fullAddress,

@@ -10,7 +10,12 @@ class RejectOvertimeUseCase {
   Future<Result<OvertimeSession>> call(
     String id, {
     String? rejectionReason,
+    String? reviewNotes,
   }) {
-    return _repository.rejectSession(id, rejectionReason: rejectionReason);
+    return _repository.rejectSession(
+      id,
+      rejectionReason: rejectionReason,
+      reviewNotes: reviewNotes,
+    );
   }
 }

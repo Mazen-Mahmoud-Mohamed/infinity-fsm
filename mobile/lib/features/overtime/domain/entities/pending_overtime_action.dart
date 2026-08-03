@@ -1,8 +1,14 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 
-enum PendingOvertimeActionType { start, end }
+enum PendingOvertimeActionType {
+  start,
+  arrivedAtWorkSite,
+  finishedWork,
+  end,
+}
 
 class PendingOvertimeAction extends Equatable {
   const PendingOvertimeAction({
@@ -19,6 +25,10 @@ class PendingOvertimeAction extends Equatable {
     this.startedAt,
     this.endedAt,
     this.durationSeconds,
+    this.checkpointAt,
+    this.notes,
+    this.batteryLevel,
+    this.networkStatus,
     this.retryCount = 0,
     this.lastError,
   });
@@ -42,9 +52,33 @@ class PendingOvertimeAction extends Equatable {
   /// `endedAt - startedAt` in seconds. Present on END actions.
   final int? durationSeconds;
 
+  /// Mid-journey checkpoint timestamp (arrived / finished).
+  final DateTime? checkpointAt;
+
+  final String? notes;
+  final int? batteryLevel;
+  final String? networkStatus;
+
   final DateTime createdAt;
   final int retryCount;
   final String? lastError;
+
+  bool get isMidCheckpoint =>
+      type == PendingOvertimeActionType.arrivedAtWorkSite ||
+      type == PendingOvertimeActionType.finishedWork;
+
+  OvertimeCheckpointStage? get checkpointStage {
+    switch (type) {
+      case PendingOvertimeActionType.start:
+        return OvertimeCheckpointStage.startJourney;
+      case PendingOvertimeActionType.arrivedAtWorkSite:
+        return OvertimeCheckpointStage.arrivedAtWorkSite;
+      case PendingOvertimeActionType.finishedWork:
+        return OvertimeCheckpointStage.finishedWork;
+      case PendingOvertimeActionType.end:
+        return OvertimeCheckpointStage.endJourney;
+    }
+  }
 
   PendingOvertimeAction copyWith({
     GpsSnapshot? gps,
@@ -55,6 +89,10 @@ class PendingOvertimeAction extends Equatable {
     DateTime? startedAt,
     DateTime? endedAt,
     int? durationSeconds,
+    DateTime? checkpointAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) {
     return PendingOvertimeAction(
       id: id,
@@ -69,6 +107,10 @@ class PendingOvertimeAction extends Equatable {
       startedAt: startedAt ?? this.startedAt,
       endedAt: endedAt ?? this.endedAt,
       durationSeconds: durationSeconds ?? this.durationSeconds,
+      checkpointAt: checkpointAt ?? this.checkpointAt,
+      notes: notes ?? this.notes,
+      batteryLevel: batteryLevel ?? this.batteryLevel,
+      networkStatus: networkStatus ?? this.networkStatus,
       createdAt: createdAt,
       retryCount: retryCount ?? this.retryCount,
       lastError: lastError,
@@ -89,6 +131,10 @@ class PendingOvertimeAction extends Equatable {
         startedAt,
         endedAt,
         durationSeconds,
+        checkpointAt,
+        notes,
+        batteryLevel,
+        networkStatus,
         createdAt,
         retryCount,
         lastError,

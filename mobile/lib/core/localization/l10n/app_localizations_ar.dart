@@ -1867,20 +1867,85 @@ class AppLocalizationsAr extends AppLocalizations {
   String get attendanceRoleAll => 'كل الأدوار';
 
   @override
-  String get overtimeStartTitle => 'بدء الوقت الإضافي';
+  String get overtimeStartTitle => 'بدء رحلة الوقت الإضافي';
 
   @override
   String get overtimeStartHint =>
-      'ساعات العمل الرسمية من 09:00 صباحاً إلى 05:00 مساءً. يُحتسب الوقت خارج هذه الفترة تلقائياً.';
+      'ساعات العمل الرسمية من 09:00 صباحاً إلى 05:00 مساءً. يُحتسب الوقت خارج هذه الفترة تلقائياً. الجلسات الجديدة تتضمن أربع نقاط تحقق؛ المدة تُحسب من بدء الرحلة إلى إنهاء الرحلة.';
 
   @override
-  String get overtimeStartNormal => 'بدء الوقت الإضافي العادي';
+  String get overtimeStartNormal => 'بدء الرحلة — عادي';
 
   @override
-  String get overtimeStartTravel => 'بدء الوقت الإضافي للسفر';
+  String get overtimeStartTravel => 'بدء الرحلة — سفر';
 
   @override
-  String get overtimeEnd => 'إنهاء الوقت الإضافي';
+  String get overtimeEnd => 'إنهاء الرحلة';
+
+  @override
+  String get overtimeArrivedAtWorkSite => 'الوصول لموقع العمل';
+
+  @override
+  String get overtimeFinishedWork => 'إنهاء العمل';
+
+  @override
+  String get overtimeStageStartJourney => 'بدء الرحلة';
+
+  @override
+  String get overtimeStageArrivedAtWorkSite => 'الوصول لموقع العمل';
+
+  @override
+  String get overtimeStageFinishedWork => 'إنهاء العمل';
+
+  @override
+  String get overtimeStageEndJourney => 'إنهاء الرحلة';
+
+  @override
+  String get overtimeCheckpointCompleted => 'مكتمل';
+
+  @override
+  String get overtimeCheckpointNext => 'التالي';
+
+  @override
+  String get overtimeCheckpointPending => 'قيد الانتظار';
+
+  @override
+  String get overtimeJourneyTimeline => 'الجدول الزمني للرحلة';
+
+  @override
+  String get overtimeArrivedAtWorkSiteRecorded =>
+      'تم تسجيل الوصول لموقع العمل.';
+
+  @override
+  String get overtimeFinishedWorkRecorded => 'تم تسجيل إنهاء العمل.';
+
+  @override
+  String get overtimeCompletePriorCheckpoints =>
+      'أكمل نقاط التحقق السابقة قبل إنهاء الرحلة.';
+
+  @override
+  String get overtimeGpsAccuracy => 'دقة GPS';
+
+  @override
+  String get overtimeDeviceId => 'معرف الجهاز';
+
+  @override
+  String get overtimeBatteryLevel => 'البطارية';
+
+  @override
+  String get overtimeNetworkStatus => 'الشبكة';
+
+  @override
+  String get overtimeNotes => 'ملاحظات';
+
+  @override
+  String get overtimeNotesOptionalHint => 'ملاحظات اختيارية لهذه النقطة';
+
+  @override
+  String get overtimeRequiresManualReview => 'يتطلب مراجعة يدوية';
+
+  @override
+  String get overtimeProgress => 'التقدم';
 
   @override
   String get overtimeStatusLabel => 'الحالة';
@@ -1905,6 +1970,59 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get overtimeTypeTravel => 'وقت إضافي للسفر';
+
+  @override
+  String get overtimeContinueExistingSession =>
+      'لديك بالفعل جلسة وقت إضافي قيد التشغيل.';
+
+  @override
+  String get overtimeContinueSession => 'متابعة الجلسة الحالية';
+
+  @override
+  String get overtimeActiveSessionReminder =>
+      'جلسة الوقت الإضافي ما زالت قيد التشغيل. لا تنسَ إنهاءها عند الانتهاء.';
+
+  @override
+  String overtimeProgressOf(int current, int total) {
+    return '$current/$total';
+  }
+
+  @override
+  String get overtimeSyncPending => 'بانتظار المزامنة';
+
+  @override
+  String get overtimeSyncSynced => 'تمت المزامنة';
+
+  @override
+  String get overtimeSyncFailed => 'فشلت المزامنة';
+
+  @override
+  String get overtimeSyncOffline => 'غير متصل — في قائمة الانتظار';
+
+  @override
+  String get overtimeShowMap => 'عرض الخريطة';
+
+  @override
+  String get overtimeHideMap => 'إخفاء الخريطة';
+
+  @override
+  String get overtimeReviewNotes => 'ملاحظات المراجعة';
+
+  @override
+  String get overtimeReviewNotesHint => 'ملاحظات اختيارية لهذا القرار';
+
+  @override
+  String get overtimeGpsStatus => 'حالة GPS';
+
+  @override
+  String get overtimeSyncStatus => 'حالة المزامنة';
+
+  @override
+  String get overtimeCurrentStage => 'المرحلة الحالية';
+
+  @override
+  String get overtimeLiveCameraRequired =>
+      'التقاط الصورة عبر الكاميرا المباشرة مطلوب — اختيار الصور من المعرض معطّل.';
 
   @override
   String get offlineMode => 'وضع دون اتصال';

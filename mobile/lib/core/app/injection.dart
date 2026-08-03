@@ -7,12 +7,14 @@ import 'package:mobile/core/router/app_router.dart';
 import 'package:mobile/core/router/auth_router_refresh.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/auth_session_service.dart';
+import 'package:mobile/core/services/checkpoint_telemetry_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/services/device_time_guard_service.dart';
 import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/services/gps_service.dart';
 import 'package:mobile/core/services/logger_service.dart';
 import 'package:mobile/core/services/monotonic_clock_service.dart';
+import 'package:mobile/core/services/overtime_session_reminder_service.dart';
 import 'package:mobile/core/services/selfie_capture_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/storage/secure_storage_service.dart';
@@ -62,6 +64,7 @@ import 'package:mobile/features/overtime/domain/usecases/get_running_overtime_us
 import 'package:mobile/features/overtime/domain/usecases/list_admin_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/list_my_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/reject_overtime_usecase.dart';
+import 'package:mobile/features/overtime/domain/usecases/record_overtime_checkpoint_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/start_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/sync_pending_overtime_usecase.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_admin_cubit.dart';
@@ -278,6 +281,11 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<GpsService>(GpsService.new);
   getIt.registerLazySingleton<SelfieCaptureService>(SelfieCaptureService.new);
   getIt.registerLazySingleton<AddressResolverService>(AddressResolverService.new);
+  getIt.registerLazySingleton<CheckpointTelemetryService>(
+    () => CheckpointTelemetryService(
+      connectivityService: getIt<ConnectivityService>(),
+    ),
+  );
   getIt.registerLazySingleton<MonotonicClockService>(MonotonicClockService.new);
   getIt.registerLazySingleton<DeviceTimeGuardService>(
     () => DeviceTimeGuardService(
@@ -424,6 +432,9 @@ Future<void> configureDependencies() async {
     () => EndOvertimeUseCase(getIt<OvertimeRepository>()),
   );
   getIt.registerLazySingleton(
+    () => RecordOvertimeCheckpointUseCase(getIt<OvertimeRepository>()),
+  );
+  getIt.registerLazySingleton(
     () => ListAdminOvertimeUseCase(getIt<OvertimeRepository>()),
   );
   getIt.registerLazySingleton(
@@ -451,11 +462,16 @@ Future<void> configureDependencies() async {
     ),
   );
 
+  getIt.registerLazySingleton<OvertimeSessionReminderService>(
+    () => OvertimeSessionReminderService(getIt<PreferencesService>()),
+  );
+
   getIt.registerFactory<OvertimeCubit>(
     () => OvertimeCubit(
       getRunningOvertimeUseCase: getIt<GetRunningOvertimeUseCase>(),
       startOvertimeUseCase: getIt<StartOvertimeUseCase>(),
       endOvertimeUseCase: getIt<EndOvertimeUseCase>(),
+      recordCheckpointUseCase: getIt<RecordOvertimeCheckpointUseCase>(),
       gpsService: getIt<GpsService>(),
       selfieCaptureService: getIt<SelfieCaptureService>(),
       addressResolverService: getIt<AddressResolverService>(),
@@ -463,8 +479,10 @@ Future<void> configureDependencies() async {
       gpsAddressSync: getIt<GpsAddressSyncService>(),
       preferencesService: getIt<PreferencesService>(),
       connectivityService: getIt<ConnectivityService>(),
+      checkpointTelemetryService: getIt<CheckpointTelemetryService>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
       localDataSource: getIt<OvertimeLocalDataSource>(),
+      reminderService: getIt<OvertimeSessionReminderService>(),
     ),
   );
 

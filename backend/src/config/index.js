@@ -110,7 +110,12 @@ const config = Object.freeze({
   overtime: Object.freeze({
     maxRequestHours: parseFloat(optionalEnv('OVERTIME_MAX_REQUEST_HOURS', '16')),
     minRequestHours: parseFloat(optionalEnv('OVERTIME_MIN_REQUEST_HOURS', '0.5')),
+    /** Soft threshold: session still ends but flagged for manual review. */
     maxSessionHours: parseFloat(optionalEnv('OVERTIME_MAX_SESSION_HOURS', '16')),
+    /** Hard ceiling: reject end if exceeded (must be >= maxSessionHours). */
+    absoluteMaxSessionHours: parseFloat(
+      optionalEnv('OVERTIME_ABSOLUTE_MAX_SESSION_HOURS', '48')
+    ),
     gpsAccuracyThresholdMeters: parseInt(
       optionalEnv('OVERTIME_GPS_ACCURACY_THRESHOLD_METERS', '100'),
       10

@@ -41,6 +41,9 @@ function buildGps(body) {
     accuracy: Number(body.accuracy),
     heading: body.heading !== undefined ? Number(body.heading) : null,
     speed: body.speed !== undefined ? Number(body.speed) : null,
+    altitude: body.altitude !== undefined && body.altitude !== ''
+      ? Number(body.altitude)
+      : null,
     provider: body.provider || null,
     recordedAt: new Date(body.recordedAt),
     fullAddress,
@@ -843,6 +846,7 @@ class AttendanceService {
       accuracy: gps.accuracy,
       heading: gps.heading,
       speed: gps.speed,
+      altitude: gps.altitude ?? null,
       provider: gps.provider,
       recordedAt: gps.recordedAt?.toISOString() || null,
       fullAddress: gps.fullAddress || null,

@@ -17,6 +17,28 @@ export const endSession = asyncHandler(async (req, res) => {
   sendSuccess(res, data);
 });
 
+export const recordArrivedAtWorkSite = asyncHandler(async (req, res) => {
+  const data = await overtimeService.recordCheckpoint(
+    req.user,
+    req.params.id,
+    'arrivedAtWorkSite',
+    req.body,
+    req.file
+  );
+  sendSuccess(res, data);
+});
+
+export const recordFinishedWork = asyncHandler(async (req, res) => {
+  const data = await overtimeService.recordCheckpoint(
+    req.user,
+    req.params.id,
+    'finishedWork',
+    req.body,
+    req.file
+  );
+  sendSuccess(res, data);
+});
+
 export const listSessions = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, status, search } = req.query;
   const result = await overtimeService.listSessions(req.user, req.auth, {
@@ -44,13 +66,16 @@ export const getSession = asyncHandler(async (req, res) => {
 });
 
 export const approveSession = asyncHandler(async (req, res) => {
-  const data = await overtimeService.approve(req.user, req.auth, req.params.id);
+  const data = await overtimeService.approve(req.user, req.auth, req.params.id, {
+    reviewNotes: req.body.reviewNotes,
+  });
   sendSuccess(res, data);
 });
 
 export const rejectSession = asyncHandler(async (req, res) => {
   const data = await overtimeService.reject(req.user, req.auth, req.params.id, {
     rejectionReason: req.body.rejectionReason,
+    reviewNotes: req.body.reviewNotes,
   });
   sendSuccess(res, data);
 });

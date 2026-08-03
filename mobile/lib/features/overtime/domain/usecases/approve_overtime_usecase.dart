@@ -7,7 +7,7 @@ class ApproveOvertimeUseCase {
 
   final OvertimeRepository _repository;
 
-  Future<Result<OvertimeSession>> call(String id) {
-    return _repository.approveSession(id);
+  Future<Result<OvertimeSession>> call(String id, {String? reviewNotes}) {
+    return _repository.approveSession(id, reviewNotes: reviewNotes);
   }
 }

@@ -15,6 +15,7 @@ import 'package:mobile/features/overtime/presentation/cubit/overtime_detail_cubi
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_fullscreen_image.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_location_map.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
 
@@ -102,6 +103,14 @@ class _OvertimeDetailView extends StatelessWidget {
           final isDesktop = AppBreakpoints.isDesktopOf(context);
 
           final leftSections = <Widget>[
+            if (session.requiresManualReview) ...[
+              _ManualReviewBanner(
+                reason: session.reviewReason,
+                totalDurationMinutes: session.totalDurationMinutes,
+                l10n: l10n,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+            ],
             _SectionCard(
               title: l10n.overtimeTechnicianInfo,
               children: [
@@ -165,6 +174,12 @@ class _OvertimeDetailView extends StatelessWidget {
                     label: l10n.overtimeRejectionReason,
                     value: session.rejectionReason!,
                   ),
+                if (session.reviewNotes != null &&
+                    session.reviewNotes!.isNotEmpty)
+                  _DetailRow(
+                    label: l10n.overtimeReviewNotes,
+                    value: session.reviewNotes!,
+                  ),
                 if (session.approvedBy != null)
                   _DetailRow(
                     label: l10n.overtimeApprovedBy,
@@ -190,44 +205,55 @@ class _OvertimeDetailView extends StatelessWidget {
           ];
 
           final rightSections = <Widget>[
-            OvertimeLocationSection(
-              startGps: session.startGps,
-              endGps: session.endGps,
-              startAddress: session.startAddress,
-              endAddress: session.endAddress,
-            ),
-            const SizedBox(height: AppSpacing.lg),
             _SectionCard(
-              title: l10n.overtimeImages,
+              title: l10n.overtimeJourneyTimeline,
               children: [
-                _ResponsivePhotoGrid(
-                  items: [
-                    _PhotoGridItem(
-                      label: l10n.overtimeStartPhoto,
-                      imageUrl: session.startPhotoUrl,
-                    ),
-                    _PhotoGridItem(
-                      label: l10n.overtimeEndPhoto,
-                      imageUrl: session.endPhotoUrl,
-                    ),
-                  ],
-                ),
+                OvertimeJourneyProgressStrip(session: session),
+                const SizedBox(height: AppSpacing.md),
+                OvertimeJourneyTimeline(session: session),
               ],
             ),
-            const SizedBox(height: AppSpacing.lg),
-            _SectionCard(
-              title: l10n.overtimeDeviceInfo,
-              children: [
-                _DetailRow(
-                  label: l10n.overtimeStartDevice,
-                  value: session.startDeviceId,
-                ),
-                _DetailRow(
-                  label: l10n.overtimeEndDevice,
-                  value: session.endDeviceId ?? '-',
-                ),
-              ],
-            ),
+            if (!session.isV2Workflow) ...[
+              const SizedBox(height: AppSpacing.lg),
+              OvertimeLocationSection(
+                startGps: session.startGps,
+                endGps: session.endGps,
+                startAddress: session.startAddress,
+                endAddress: session.endAddress,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _SectionCard(
+                title: l10n.overtimeImages,
+                children: [
+                  _ResponsivePhotoGrid(
+                    items: [
+                      _PhotoGridItem(
+                        label: l10n.overtimeStartPhoto,
+                        imageUrl: session.startPhotoUrl,
+                      ),
+                      _PhotoGridItem(
+                        label: l10n.overtimeEndPhoto,
+                        imageUrl: session.endPhotoUrl,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              _SectionCard(
+                title: l10n.overtimeDeviceInfo,
+                children: [
+                  _DetailRow(
+                    label: l10n.overtimeStartDevice,
+                    value: session.startDeviceId,
+                  ),
+                  _DetailRow(
+                    label: l10n.overtimeEndDevice,
+                    value: session.endDeviceId ?? '-',
+                  ),
+                ],
+              ),
+            ],
           ];
 
           return Column(
@@ -299,9 +325,7 @@ class _OvertimeDetailView extends StatelessWidget {
                             child: ElevatedButton(
                               onPressed: state.isBusy
                                   ? null
-                                  : () => context
-                                      .read<OvertimeDetailCubit>()
-                                      .approve(),
+                                  : () => _showApproveDialog(context),
                               child: state.isApproving
                                   ? const SizedBox(
                                       width: 18,
@@ -324,21 +348,78 @@ class _OvertimeDetailView extends StatelessWidget {
     );
   }
 
+  Future<void> _showApproveDialog(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final notesController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.approve),
+          content: TextField(
+            controller: notesController,
+            maxLines: 3,
+            maxLength: 2000,
+            decoration: InputDecoration(
+              labelText: l10n.overtimeReviewNotes,
+              hintText: l10n.overtimeReviewNotesHint,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.usersCancel),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.approve),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final notes = notesController.text.trim();
+    await context.read<OvertimeDetailCubit>().approve(
+          reviewNotes: notes.isEmpty ? null : notes,
+        );
+  }
+
   Future<void> _showRejectDialog(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final controller = TextEditingController();
+    final notesController = TextEditingController();
     final reason = await showDialog<String?>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(l10n.overtimeRejectDialogTitle),
-          content: TextField(
-            controller: controller,
-            maxLines: 3,
-            maxLength: 1000,
-            decoration: InputDecoration(
-              hintText: l10n.overtimeRejectReasonHint,
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: controller,
+                maxLines: 3,
+                maxLength: 1000,
+                decoration: InputDecoration(
+                  hintText: l10n.overtimeRejectReasonHint,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              TextField(
+                controller: notesController,
+                maxLines: 2,
+                maxLength: 2000,
+                decoration: InputDecoration(
+                  labelText: l10n.overtimeReviewNotes,
+                  hintText: l10n.overtimeReviewNotesHint,
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -359,9 +440,80 @@ class _OvertimeDetailView extends StatelessWidget {
       return;
     }
 
+    final notes = notesController.text.trim();
     await context.read<OvertimeDetailCubit>().reject(
           rejectionReason: reason.isEmpty ? null : reason,
+          reviewNotes: notes.isEmpty ? null : notes,
         );
+  }
+}
+
+class _ManualReviewBanner extends StatelessWidget {
+  const _ManualReviewBanner({
+    required this.reason,
+    required this.totalDurationMinutes,
+    required this.l10n,
+  });
+
+  final String? reason;
+  final int? totalDurationMinutes;
+  final AppLocalizations l10n;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.error.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, color: colorScheme.onErrorContainer),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.overtimeRequiresManualReview,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onErrorContainer,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                if (reason != null && reason!.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    reason!,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ],
+                if (totalDurationMinutes != null) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    OvertimeFormatters.durationFromMinutes(
+                      totalDurationMinutes,
+                      l10n,
+                    ),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onErrorContainer,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

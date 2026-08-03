@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
-import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/duration_formatter.dart';
@@ -16,11 +14,15 @@ import 'package:mobile/features/attendance/presentation/widgets/working_timer.da
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
+import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
+import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
 
 /// Bottom-nav / `/overtime` entry.
 ///
@@ -61,6 +63,7 @@ class _OvertimeTrackingView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final permissions =
         context.watch<AuthCubit>().state.user?.permissionChecker;
+    final syncState = context.watch<OvertimeSyncCubit>().state;
 
     return Scaffold(
       appBar: AppBar(
@@ -92,7 +95,12 @@ class _OvertimeTrackingView extends StatelessWidget {
               previous.message != current.message ||
               previous.isError != current.isError ||
               previous.currentAddress != current.currentAddress ||
-              previous.isRefreshing != current.isRefreshing;
+              previous.isRefreshing != current.isRefreshing ||
+              previous.offerContinueSession != current.offerContinueSession ||
+              previous.liveBatteryLevel != current.liveBatteryLevel ||
+              previous.liveNetworkStatus != current.liveNetworkStatus ||
+              previous.gpsAccuracyMeters != current.gpsAccuracyMeters ||
+              previous.notesDraft != current.notesDraft;
         },
         listenWhen: (previous, current) =>
             previous.message != current.message &&
@@ -104,6 +112,8 @@ class _OvertimeTrackingView extends StatelessWidget {
               isUserFacingNetworkNoise(state.message)) {
             return;
           }
+          final isContinuePrompt =
+              state.message == 'overtimeContinueExistingSession';
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()
             ..showSnackBar(
@@ -113,6 +123,14 @@ class _OvertimeTrackingView extends StatelessWidget {
                     ? Theme.of(context).colorScheme.error
                     : Theme.of(context).colorScheme.inverseSurface,
                 behavior: SnackBarBehavior.floating,
+                action: isContinuePrompt
+                    ? SnackBarAction(
+                        label: l10n.overtimeContinueSession,
+                        onPressed: () => context
+                            .read<OvertimeCubit>()
+                            .continueExistingSession(),
+                      )
+                    : null,
               ),
             );
           context.read<OvertimeCubit>().clearFeedback();
@@ -151,6 +169,14 @@ class _OvertimeTrackingView extends StatelessWidget {
                       chrome: AppBottomChrome.system,
                     ),
                     children: [
+                      if (state.offerContinueSession && state.isRunning) ...[
+                        _ContinueSessionBanner(
+                          onContinue: () => context
+                              .read<OvertimeCubit>()
+                              .continueExistingSession(),
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
                       if (state.completedSession != null) ...[
                         _CompletedSummaryCard(
                           session: state.completedSession!,
@@ -162,19 +188,30 @@ class _OvertimeTrackingView extends StatelessWidget {
                           session: state.session!,
                           address: state.currentAddress,
                           isBusy: state.isBusy,
-                          isEnding: state.isEnding,
-                          onEnd: () =>
-                              context.read<OvertimeCubit>().endSession(),
+                          busyAction: state.busyAction,
+                          liveBatteryLevel: state.liveBatteryLevel,
+                          liveNetworkStatus: state.liveNetworkStatus,
+                          gpsAccuracyMeters: state.gpsAccuracyMeters,
+                          pendingSyncCount: syncState.pendingCount,
+                          pendingActions: syncState.pendingActions,
+                          isOffline: state.isOffline || !syncState.isOnline,
+                          onAdvance: () => context
+                              .read<OvertimeCubit>()
+                              .completeNextCheckpoint(),
                         )
                       else
                         _StartActions(
                           isBusy: state.isBusy,
                           isNormalBusy: state.isStartingNormal,
                           isTravelBusy: state.isStartingTravel,
+                          offerContinueSession: state.offerContinueSession,
                           onStartNormal: () =>
                               context.read<OvertimeCubit>().startNormal(),
                           onStartTravel: () =>
                               context.read<OvertimeCubit>().startTravel(),
+                          onContinue: () => context
+                              .read<OvertimeCubit>()
+                              .continueExistingSession(),
                         ),
                     ],
                   ),
@@ -188,6 +225,47 @@ class _OvertimeTrackingView extends StatelessWidget {
   }
 }
 
+class _ContinueSessionBanner extends StatelessWidget {
+  const _ContinueSessionBanner({required this.onContinue});
+
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: colorScheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.info_outline, color: colorScheme.onTertiaryContainer),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(
+              l10n.overtimeContinueExistingSession,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onTertiaryContainer,
+              ),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          FilledButton.tonal(
+            onPressed: onContinue,
+            child: Text(l10n.overtimeContinueSession),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _StartActions extends StatelessWidget {
   const _StartActions({
     required this.isBusy,
@@ -195,13 +273,17 @@ class _StartActions extends StatelessWidget {
     required this.isTravelBusy,
     required this.onStartNormal,
     required this.onStartTravel,
+    this.offerContinueSession = false,
+    this.onContinue,
   });
 
   final bool isBusy;
   final bool isNormalBusy;
   final bool isTravelBusy;
+  final bool offerContinueSession;
   final VoidCallback onStartNormal;
   final VoidCallback onStartTravel;
+  final VoidCallback? onContinue;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +293,10 @@ class _StartActions extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (offerContinueSession && onContinue != null) ...[
+          _ContinueSessionBanner(onContinue: onContinue!),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         Text(
           l10n.overtimeStartTitle,
           style: theme.textTheme.titleLarge,
@@ -223,6 +309,19 @@ class _StartActions extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
+        TextField(
+          enabled: !isBusy,
+          maxLines: 2,
+          maxLength: 1000,
+          decoration: InputDecoration(
+            labelText: l10n.overtimeNotes,
+            hintText: l10n.overtimeNotesOptionalHint,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: (value) =>
+              context.read<OvertimeCubit>().updateNotesDraft(value),
+        ),
+        const SizedBox(height: AppSpacing.md),
         ElevatedButton.icon(
           onPressed: isBusy ? null : onStartNormal,
           icon: isNormalBusy
@@ -268,20 +367,40 @@ class _RunningSessionCard extends StatelessWidget {
     required this.session,
     required this.address,
     required this.isBusy,
-    required this.isEnding,
-    required this.onEnd,
+    required this.busyAction,
+    required this.onAdvance,
+    this.liveBatteryLevel,
+    this.liveNetworkStatus,
+    this.gpsAccuracyMeters,
+    this.pendingSyncCount = 0,
+    this.pendingActions = const [],
+    this.isOffline = false,
   });
 
   final OvertimeSession session;
   final String? address;
   final bool isBusy;
-  final bool isEnding;
-  final VoidCallback onEnd;
+  final OvertimeBusyAction? busyAction;
+  final VoidCallback onAdvance;
+  final int? liveBatteryLevel;
+  final String? liveNetworkStatus;
+  final double? gpsAccuracyMeters;
+  final int pendingSyncCount;
+  final List<PendingOvertimeAction> pendingActions;
+  final bool isOffline;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final timeFormat = AppFormatters.jm(context);
+    final l10n = AppLocalizations.of(context);
+    final next = session.effectiveNextCheckpoint;
+    final actionLabel = _nextActionLabel(l10n, next);
+    final isAdvancing = busyAction == OvertimeBusyAction.arrivedAtWorkSite ||
+        busyAction == OvertimeBusyAction.finishedWork ||
+        busyAction == OvertimeBusyAction.end;
+    final completed = overtimeCompletedCheckpointCount(session);
+    final total = overtimeTotalCheckpointCount(session);
+    final currentStageTitle = _currentStageTitle(l10n, next, session);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -292,28 +411,39 @@ class _RunningSessionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  overtimeTypeLabel(AppLocalizations.of(context), session.type),
-                  style: theme.textTheme.titleLarge,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        overtimeTypeLabel(l10n, session.type),
+                        style: theme.textTheme.titleLarge,
+                      ),
+                    ),
+                    _SyncStatusChip(
+                      pendingCount: pendingSyncCount,
+                      isOffline: isOffline,
+                    ),
+                  ],
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 _MetaRow(
-                  label: AppLocalizations.of(context).overtimeStatusLabel,
-                  value: overtimeStatusLabel(
-                    AppLocalizations.of(context),
-                    session.status,
+                  label: l10n.overtimeCurrentStage,
+                  value: currentStageTitle,
+                ),
+                _MetaRow(
+                  label: l10n.overtimeProgress,
+                  value: l10n.overtimeProgressOf(completed, total),
+                ),
+                if (address != null && address!.isNotEmpty)
+                  _MetaRow(
+                    label: l10n.overtimeLocation,
+                    value: address!,
                   ),
-                ),
-                _MetaRow(
-                  label: AppLocalizations.of(context).overtimeStartTime,
-                  value: timeFormat.format(session.startAt.toLocal()),
-                ),
-                _MetaRow(
-                  label: AppLocalizations.of(context).overtimeLocation,
-                  value: address?.isNotEmpty == true
-                      ? address!
-                      : '${session.startGps.latitude.toStringAsFixed(5)}, ${session.startGps.longitude.toStringAsFixed(5)}',
-                ),
+                if (gpsAccuracyMeters != null)
+                  _MetaRow(
+                    label: l10n.overtimeGpsStatus,
+                    value: '${gpsAccuracyMeters!.toStringAsFixed(0)} m',
+                  ),
                 const SizedBox(height: AppSpacing.lg),
                 Center(
                   child: BlocSelector<OvertimeCubit, OvertimeState, int>(
@@ -325,20 +455,71 @@ class _RunningSessionCard extends StatelessWidget {
                 const SizedBox(height: AppSpacing.xs),
                 Center(
                   child: Text(
-                    AppLocalizations.of(context).overtimeRunningTimer,
+                    l10n.overtimeRunningTimer,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Wrap(
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.xs,
+                  children: [
+                    if (liveBatteryLevel != null)
+                      _TelemetryChip(
+                        icon: Icons.battery_std_outlined,
+                        label: '$liveBatteryLevel%',
+                      ),
+                    if (liveNetworkStatus != null &&
+                        liveNetworkStatus!.isNotEmpty)
+                      _TelemetryChip(
+                        icon: liveNetworkStatus == 'offline'
+                            ? Icons.wifi_off_outlined
+                            : Icons.wifi_outlined,
+                        label: liveNetworkStatus!,
+                      ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
+        Text(
+          l10n.overtimeProgress,
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        OvertimeJourneyProgressStrip(session: session),
+        const SizedBox(height: AppSpacing.lg),
+        Text(
+          l10n.overtimeJourneyTimeline,
+          style: theme.textTheme.titleMedium,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        OvertimeJourneyTimeline(
+          session: session,
+          pendingActions: pendingActions,
+          isOffline: isOffline,
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        TextField(
+          enabled: !isBusy,
+          maxLines: 2,
+          maxLength: 1000,
+          decoration: InputDecoration(
+            labelText: l10n.overtimeNotes,
+            hintText: l10n.overtimeNotesOptionalHint,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: (value) =>
+              context.read<OvertimeCubit>().updateNotesDraft(value),
+        ),
+        const SizedBox(height: AppSpacing.md),
         ElevatedButton.icon(
-          onPressed: isBusy ? null : onEnd,
-          icon: isEnding
+          onPressed: isBusy || next == null ? null : onAdvance,
+          icon: isAdvancing
               ? SizedBox(
                   width: 18,
                   height: 18,
@@ -347,13 +528,144 @@ class _RunningSessionCard extends StatelessWidget {
                     color: theme.colorScheme.onPrimary,
                   ),
                 )
-              : const Icon(Icons.stop_circle_outlined),
-          label: Text(AppLocalizations.of(context).overtimeEnd),
+              : Icon(_nextActionIcon(next)),
+          label: Text(actionLabel),
           style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 20),
+            textStyle: theme.textTheme.titleMedium,
           ),
         ),
       ],
+    );
+  }
+
+  static String _currentStageTitle(
+    AppLocalizations l10n,
+    OvertimeCheckpointStage? next,
+    OvertimeSession session,
+  ) {
+    if (next == null) {
+      return l10n.overtimeStageEndJourney;
+    }
+    switch (next) {
+      case OvertimeCheckpointStage.startJourney:
+        return l10n.overtimeStageStartJourney;
+      case OvertimeCheckpointStage.arrivedAtWorkSite:
+        return l10n.overtimeStageArrivedAtWorkSite;
+      case OvertimeCheckpointStage.finishedWork:
+        return l10n.overtimeStageFinishedWork;
+      case OvertimeCheckpointStage.endJourney:
+        return l10n.overtimeStageEndJourney;
+    }
+  }
+
+  static String _nextActionLabel(
+    AppLocalizations l10n,
+    OvertimeCheckpointStage? next,
+  ) {
+    switch (next) {
+      case OvertimeCheckpointStage.arrivedAtWorkSite:
+        return l10n.overtimeArrivedAtWorkSite;
+      case OvertimeCheckpointStage.finishedWork:
+        return l10n.overtimeFinishedWork;
+      case OvertimeCheckpointStage.endJourney:
+        return l10n.overtimeEnd;
+      case OvertimeCheckpointStage.startJourney:
+      case null:
+        return l10n.overtimeEnd;
+    }
+  }
+
+  static IconData _nextActionIcon(OvertimeCheckpointStage? next) {
+    switch (next) {
+      case OvertimeCheckpointStage.arrivedAtWorkSite:
+        return Icons.location_on_outlined;
+      case OvertimeCheckpointStage.finishedWork:
+        return Icons.handyman_outlined;
+      case OvertimeCheckpointStage.endJourney:
+        return Icons.flag_outlined;
+      case OvertimeCheckpointStage.startJourney:
+      case null:
+        return Icons.stop_circle_outlined;
+    }
+  }
+}
+
+class _SyncStatusChip extends StatelessWidget {
+  const _SyncStatusChip({required this.pendingCount, required this.isOffline});
+
+  final int pendingCount;
+  final bool isOffline;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+    final (label, color, icon) = isOffline
+        ? (l10n.overtimeSyncOffline, colorScheme.outline, Icons.cloud_off_outlined)
+        : pendingCount > 0
+            ? (
+                l10n.overtimeSyncPending,
+                colorScheme.tertiary,
+                Icons.cloud_upload_outlined,
+              )
+            : (
+                l10n.overtimeSyncSynced,
+                colorScheme.primary,
+                Icons.cloud_done_outlined,
+              );
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context)
+                .textTheme
+                .labelSmall
+                ?.copyWith(color: color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TelemetryChip extends StatelessWidget {
+  const _TelemetryChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelSmall,
+          ),
+        ],
+      ),
     );
   }
 }

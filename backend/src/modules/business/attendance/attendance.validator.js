@@ -12,6 +12,7 @@ const gpsFields = [
     .withMessage('GPS_REQUIRED'),
   body('heading').optional().isFloat(),
   body('speed').optional().isFloat(),
+  body('altitude').optional({ values: 'falsy' }).isFloat(),
   body('provider').optional().isString(),
   body('recordedAt')
     .isISO8601()

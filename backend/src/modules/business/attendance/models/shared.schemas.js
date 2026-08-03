@@ -9,6 +9,7 @@ export const gpsSchema = new Schema(
     accuracy: { type: Number, required: true },
     heading: { type: Number, default: null },
     speed: { type: Number, default: null },
+    altitude: { type: Number, default: null },
     provider: { type: String, default: null },
     recordedAt: { type: Date, required: true },
     // Reverse-geocoded address (additive — may be filled later after offline sync)

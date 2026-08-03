@@ -14,6 +14,10 @@ class EndOvertimeUseCase {
     required List<int> photoBytes,
     required String deviceId,
     required String? address,
+    String? clientRequestId,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) {
     return _repository.endSession(
       sessionId: sessionId,
@@ -21,6 +25,10 @@ class EndOvertimeUseCase {
       photoBytes: photoBytes,
       deviceId: deviceId,
       address: address,
+      clientRequestId: clientRequestId,
+      notes: notes,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
     );
   }
 }

@@ -104,7 +104,7 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
     }
   }
 
-  Future<void> approve() async {
+  Future<void> approve({String? reviewNotes}) async {
     if (state.isBusy || state.session == null) {
       return;
     }
@@ -117,7 +117,7 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
       ),
     );
 
-    final result = await _approve(sessionId);
+    final result = await _approve(sessionId, reviewNotes: reviewNotes);
     switch (result) {
       case Success(data: final session):
         emit(
@@ -139,7 +139,7 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
     }
   }
 
-  Future<void> reject({String? rejectionReason}) async {
+  Future<void> reject({String? rejectionReason, String? reviewNotes}) async {
     if (state.isBusy || state.session == null) {
       return;
     }
@@ -155,6 +155,7 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
     final result = await _reject(
       sessionId,
       rejectionReason: rejectionReason,
+      reviewNotes: reviewNotes,
     );
     switch (result) {
       case Success(data: final session):

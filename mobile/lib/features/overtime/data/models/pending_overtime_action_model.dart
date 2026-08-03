@@ -20,6 +20,10 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
     super.startedAt,
     super.endedAt,
     super.durationSeconds,
+    super.checkpointAt,
+    super.notes,
+    super.batteryLevel,
+    super.networkStatus,
     super.retryCount,
     super.lastError,
   });
@@ -38,10 +42,42 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       startedAt: entity.startedAt,
       endedAt: entity.endedAt,
       durationSeconds: entity.durationSeconds,
+      checkpointAt: entity.checkpointAt,
+      notes: entity.notes,
+      batteryLevel: entity.batteryLevel,
+      networkStatus: entity.networkStatus,
       createdAt: entity.createdAt,
       retryCount: entity.retryCount,
       lastError: entity.lastError,
     );
+  }
+
+  static PendingOvertimeActionType _typeFromApi(String raw) {
+    switch (raw.trim().toUpperCase()) {
+      case 'END':
+        return PendingOvertimeActionType.end;
+      case 'ARRIVED_AT_WORK_SITE':
+      case 'ARRIVEDATWORKSITE':
+        return PendingOvertimeActionType.arrivedAtWorkSite;
+      case 'FINISHED_WORK':
+      case 'FINISHEDWORK':
+        return PendingOvertimeActionType.finishedWork;
+      default:
+        return PendingOvertimeActionType.start;
+    }
+  }
+
+  static String _typeToApi(PendingOvertimeActionType type) {
+    switch (type) {
+      case PendingOvertimeActionType.start:
+        return 'START';
+      case PendingOvertimeActionType.arrivedAtWorkSite:
+        return 'ARRIVED_AT_WORK_SITE';
+      case PendingOvertimeActionType.finishedWork:
+        return 'FINISHED_WORK';
+      case PendingOvertimeActionType.end:
+        return 'END';
+    }
   }
 
   factory PendingOvertimeActionModel.fromJson(Map<String, dynamic> json) {
@@ -50,9 +86,7 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
 
     return PendingOvertimeActionModel(
       id: requireString(json, 'id'),
-      type: requireString(json, 'type') == 'END'
-          ? PendingOvertimeActionType.end
-          : PendingOvertimeActionType.start,
+      type: _typeFromApi(requireString(json, 'type')),
       overtimeType: overtimeTypeRaw == null
           ? null
           : OvertimeType.fromApi(overtimeTypeRaw),
@@ -65,6 +99,10 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       startedAt: parseDateTime(json['startedAt']),
       endedAt: parseDateTime(json['endedAt']),
       durationSeconds: _readNullableInt(json['durationSeconds']),
+      checkpointAt: parseDateTime(json['checkpointAt']),
+      notes: optionalString(json, 'notes'),
+      batteryLevel: _readNullableInt(json['batteryLevel']),
+      networkStatus: optionalString(json, 'networkStatus'),
       createdAt: requireDateTime(json, 'createdAt'),
       retryCount: readInt(json, 'retryCount'),
       lastError: optionalString(json, 'lastError'),
@@ -74,7 +112,7 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'type': type == PendingOvertimeActionType.end ? 'END' : 'START',
+      'type': _typeToApi(type),
       'overtimeType': overtimeType?.apiValue,
       'sessionId': sessionId,
       'gps': GpsSnapshotModel.fromEntity(gps).toJson(),
@@ -85,6 +123,10 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       'startedAt': startedAt?.toIso8601String(),
       'endedAt': endedAt?.toIso8601String(),
       'durationSeconds': durationSeconds,
+      'checkpointAt': checkpointAt?.toIso8601String(),
+      'notes': notes,
+      'batteryLevel': batteryLevel,
+      'networkStatus': networkStatus,
       'createdAt': createdAt.toIso8601String(),
       'retryCount': retryCount,
       'lastError': lastError,

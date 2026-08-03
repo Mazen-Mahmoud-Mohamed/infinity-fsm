@@ -11,8 +11,10 @@ import * as overtimeController from './overtime.controller.js';
 import {
   startOvertimeValidator,
   endOvertimeValidator,
+  checkpointOvertimeValidator,
   listOvertimeValidator,
   rejectOvertimeValidator,
+  approveOvertimeValidator,
   overtimeIdValidator,
   updateOvertimeGpsAddressValidator,
 } from './overtime.validator.js';
@@ -70,6 +72,22 @@ router.get(
 );
 
 router.post(
+  '/:id/arrived-at-work-site',
+  requireAnyPermission(PERMISSIONS.OVERTIME_END, PERMISSIONS.OVERTIME_CREATE),
+  upload.single('photo'),
+  validate([...overtimeIdValidator, ...checkpointOvertimeValidator]),
+  overtimeController.recordArrivedAtWorkSite
+);
+
+router.post(
+  '/:id/finished-work',
+  requireAnyPermission(PERMISSIONS.OVERTIME_END, PERMISSIONS.OVERTIME_CREATE),
+  upload.single('photo'),
+  validate([...overtimeIdValidator, ...checkpointOvertimeValidator]),
+  overtimeController.recordFinishedWork
+);
+
+router.post(
   '/:id/end',
   requireAnyPermission(PERMISSIONS.OVERTIME_END, PERMISSIONS.OVERTIME_CREATE),
   upload.single('photo'),
@@ -92,7 +110,7 @@ router.patch(
 router.post(
   '/:id/approve',
   requirePermission(PERMISSIONS.OVERTIME_APPROVE),
-  validate(overtimeIdValidator),
+  validate([...overtimeIdValidator, ...approveOvertimeValidator]),
   overtimeController.approveSession
 );
 

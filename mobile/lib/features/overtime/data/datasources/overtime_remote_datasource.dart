@@ -37,6 +37,9 @@ class OvertimeRemoteDataSource {
     DateTime? startedAt,
     DateTime? endedAt,
     int? durationSeconds,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final formData = _buildForm(
       gps: gps,
@@ -50,6 +53,10 @@ class OvertimeRemoteDataSource {
         if (endedAt != null) 'endedAt': endedAt.toIso8601String(),
         if (durationSeconds != null)
           'durationSeconds': durationSeconds.toString(),
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (batteryLevel != null) 'batteryLevel': batteryLevel.toString(),
+        if (networkStatus != null && networkStatus.isNotEmpty)
+          'networkStatus': networkStatus,
       },
     );
 
@@ -71,6 +78,10 @@ class OvertimeRemoteDataSource {
     DateTime? startedAt,
     DateTime? endedAt,
     int? durationSeconds,
+    String? notes,
+    String? clientRequestId,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final formData = _buildForm(
       gps: gps,
@@ -82,11 +93,106 @@ class OvertimeRemoteDataSource {
         if (endedAt != null) 'endedAt': endedAt.toIso8601String(),
         if (durationSeconds != null)
           'durationSeconds': durationSeconds.toString(),
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (clientRequestId != null && clientRequestId.isNotEmpty)
+          'clientRequestId': clientRequestId,
+        if (batteryLevel != null) 'batteryLevel': batteryLevel.toString(),
+        if (networkStatus != null && networkStatus.isNotEmpty)
+          'networkStatus': networkStatus,
       },
     );
 
     final response = await _client.post<Map<String, dynamic>>(
       '${ApiConstants.overtimeSessions}/$sessionId/end',
+      data: formData,
+    );
+    return OvertimeSessionModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>,
+    );
+  }
+
+  Future<OvertimeSessionModel> recordArrivedAtWorkSite({
+    required String sessionId,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    DateTime? checkpointAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) {
+    return _postCheckpoint(
+      path: ApiConstants.overtimeArrivedAtWorkSite(sessionId),
+      gps: gps,
+      photoBytes: photoBytes,
+      deviceId: deviceId,
+      address: address,
+      clientRequestId: clientRequestId,
+      checkpointAt: checkpointAt,
+      notes: notes,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+    );
+  }
+
+  Future<OvertimeSessionModel> recordFinishedWork({
+    required String sessionId,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    DateTime? checkpointAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) {
+    return _postCheckpoint(
+      path: ApiConstants.overtimeFinishedWork(sessionId),
+      gps: gps,
+      photoBytes: photoBytes,
+      deviceId: deviceId,
+      address: address,
+      clientRequestId: clientRequestId,
+      checkpointAt: checkpointAt,
+      notes: notes,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+    );
+  }
+
+  Future<OvertimeSessionModel> _postCheckpoint({
+    required String path,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    DateTime? checkpointAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) async {
+    final formData = _buildForm(
+      gps: gps,
+      deviceId: deviceId,
+      photoBytes: photoBytes,
+      address: address,
+      extra: {
+        'clientRequestId': clientRequestId,
+        if (checkpointAt != null)
+          'checkpointAt': checkpointAt.toIso8601String(),
+        if (notes != null && notes.isNotEmpty) 'notes': notes,
+        if (batteryLevel != null) 'batteryLevel': batteryLevel.toString(),
+        if (networkStatus != null && networkStatus.isNotEmpty)
+          'networkStatus': networkStatus,
+      },
+    );
+
+    final response = await _client.post<Map<String, dynamic>>(
+      path,
       data: formData,
     );
     return OvertimeSessionModel.fromJson(
@@ -137,9 +243,16 @@ class OvertimeRemoteDataSource {
     );
   }
 
-  Future<OvertimeSessionModel> approve(String id) async {
+  Future<OvertimeSessionModel> approve(
+    String id, {
+    String? reviewNotes,
+  }) async {
     final response = await _client.post<Map<String, dynamic>>(
       '${ApiConstants.overtimeSessions}/$id/approve',
+      data: {
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'reviewNotes': reviewNotes.trim(),
+      },
     );
     return OvertimeSessionModel.fromJson(
       response.data?['data'] as Map<String, dynamic>,
@@ -149,12 +262,15 @@ class OvertimeRemoteDataSource {
   Future<OvertimeSessionModel> reject(
     String id, {
     String? rejectionReason,
+    String? reviewNotes,
   }) async {
     final response = await _client.post<Map<String, dynamic>>(
       '${ApiConstants.overtimeSessions}/$id/reject',
       data: {
         if (rejectionReason != null && rejectionReason.trim().isNotEmpty)
           'rejectionReason': rejectionReason.trim(),
+        if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
+          'reviewNotes': reviewNotes.trim(),
       },
     );
     return OvertimeSessionModel.fromJson(

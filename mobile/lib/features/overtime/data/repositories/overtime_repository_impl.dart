@@ -8,6 +8,7 @@ import 'package:mobile/features/overtime/data/datasources/overtime_local_datasou
 import 'package:mobile/features/overtime/data/datasources/overtime_remote_datasource.dart';
 import 'package:mobile/features/overtime/data/models/overtime_session_model.dart';
 import 'package:mobile/features/overtime/data/models/pending_overtime_action_model.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
@@ -60,48 +61,59 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   OvertimeSessionModel _asModel(OvertimeSession session) {
     return session is OvertimeSessionModel
         ? session
-        : OvertimeSessionModel.fromJson({
-            'id': session.id,
-            'companyId': session.companyId,
-            'userId': session.userId,
-            'type': session.type.apiValue,
-            'status': session.status.apiValue,
-            'startAt': session.startAt.toIso8601String(),
-            'startGps': {
-              'latitude': session.startGps.latitude,
-              'longitude': session.startGps.longitude,
-              'accuracy': session.startGps.accuracy,
-              'heading': session.startGps.heading,
-              'speed': session.startGps.speed,
-              'provider': session.startGps.provider,
-              'recordedAt': session.startGps.recordedAt.toIso8601String(),
-            },
-            'startDeviceId': session.startDeviceId,
-            'startAddress': session.startAddress,
-            'startPhotoUrl': session.startPhotoUrl,
-            'endAt': session.endAt?.toIso8601String(),
-            'endGps': session.endGps == null
-                ? null
-                : {
-                    'latitude': session.endGps!.latitude,
-                    'longitude': session.endGps!.longitude,
-                    'accuracy': session.endGps!.accuracy,
-                    'heading': session.endGps!.heading,
-                    'speed': session.endGps!.speed,
-                    'provider': session.endGps!.provider,
-                    'recordedAt':
-                        session.endGps!.recordedAt.toIso8601String(),
-                  },
-            'endAddress': session.endAddress,
-            'endPhotoUrl': session.endPhotoUrl,
-            'endDeviceId': session.endDeviceId,
-            'totalDurationMinutes': session.totalDurationMinutes,
-            'workingDurationMinutes': session.workingDurationMinutes,
-            'eligibleOvertimeMinutes': session.eligibleOvertimeMinutes,
-            'liveElapsedSeconds': session.liveElapsedSeconds,
-            'rejectionReason': session.rejectionReason,
-            'createdAt': session.createdAt?.toIso8601String(),
-          });
+        : OvertimeSessionModel.fromJson(OvertimeSessionModel(
+            id: session.id,
+            companyId: session.companyId,
+            userId: session.userId,
+            type: session.type,
+            status: session.status,
+            startAt: session.startAt,
+            startGps: session.startGps,
+            startDeviceId: session.startDeviceId,
+            startAddress: session.startAddress,
+            startPhotoUrl: session.startPhotoUrl,
+            endAt: session.endAt,
+            endGps: session.endGps,
+            endAddress: session.endAddress,
+            endPhotoUrl: session.endPhotoUrl,
+            endDeviceId: session.endDeviceId,
+            totalDurationMinutes: session.totalDurationMinutes,
+            workingDurationMinutes: session.workingDurationMinutes,
+            eligibleOvertimeMinutes: session.eligibleOvertimeMinutes,
+            liveElapsedSeconds: session.liveElapsedSeconds,
+            rejectionReason: session.rejectionReason,
+            createdAt: session.createdAt,
+            workflowVersion: session.workflowVersion,
+            checkpoints: session.checkpoints,
+            nextCheckpoint: session.nextCheckpoint,
+            requiresManualReview: session.requiresManualReview,
+            reviewReason: session.reviewReason,
+            reviewNotes: session.reviewNotes,
+          ).toJson());
+  }
+
+  OvertimeCheckpoint _buildCheckpoint({
+    required DateTime at,
+    required GpsSnapshot gps,
+    required String deviceId,
+    String? address,
+    String? photoUrl,
+    String? notes,
+    String? clientRequestId,
+    int? batteryLevel,
+    String? networkStatus,
+  }) {
+    return OvertimeCheckpoint(
+      at: at,
+      gps: _gpsWithRecordedAt(gps, at),
+      photoUrl: photoUrl,
+      address: address,
+      deviceId: deviceId,
+      clientRequestId: clientRequestId,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+      notes: notes,
+    );
   }
 
   OvertimeSessionModel _copySession(
@@ -125,7 +137,15 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     int? eligibleOvertimeMinutes,
     int? liveElapsedSeconds,
     DateTime? createdAt,
+    OvertimeWorkflowVersion? workflowVersion,
+    OvertimeCheckpoints? checkpoints,
+    OvertimeCheckpointStage? nextCheckpoint,
+    bool? requiresManualReview,
+    String? reviewReason,
+    String? reviewNotes,
+    bool clearNextCheckpoint = false,
     bool clearEnd = false,
+    bool clearReviewReason = false,
   }) {
     return OvertimeSessionModel(
       id: id ?? source.id,
@@ -151,6 +171,17 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           eligibleOvertimeMinutes ?? source.eligibleOvertimeMinutes,
       liveElapsedSeconds: liveElapsedSeconds ?? source.liveElapsedSeconds,
       createdAt: createdAt ?? source.createdAt,
+      workflowVersion: workflowVersion ?? source.workflowVersion,
+      checkpoints: checkpoints ?? source.checkpoints,
+      nextCheckpoint: clearNextCheckpoint
+          ? null
+          : (nextCheckpoint ?? source.nextCheckpoint),
+      requiresManualReview:
+          requiresManualReview ?? source.requiresManualReview,
+      reviewReason: clearReviewReason
+          ? null
+          : (reviewReason ?? source.reviewReason),
+      reviewNotes: reviewNotes ?? source.reviewNotes,
     );
   }
 
@@ -161,7 +192,20 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String clientRequestId,
     required String? address,
     required DateTime startAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) {
+    final startCheckpoint = _buildCheckpoint(
+      at: startAt,
+      gps: gps,
+      deviceId: deviceId,
+      address: address,
+      clientRequestId: clientRequestId,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+      notes: notes,
+    );
     return OvertimeSessionModel(
       id: 'local-$clientRequestId',
       companyId: 'local',
@@ -174,6 +218,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       startAddress: address,
       liveElapsedSeconds: 0,
       createdAt: startAt,
+      workflowVersion: OvertimeWorkflowVersion.v2,
+      checkpoints: OvertimeCheckpoints(startJourney: startCheckpoint),
+      nextCheckpoint: OvertimeCheckpointStage.arrivedAtWorkSite,
     );
   }
 
@@ -206,6 +253,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final isOnline = await _connectivity.isConnected;
     if (!isOnline) {
@@ -216,6 +266,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
       );
     }
 
@@ -227,6 +280,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
       );
       final model = _asModel(session);
       await _local.saveRunningSession(model);
@@ -248,6 +304,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           deviceId: deviceId,
           clientRequestId: clientRequestId,
           address: address,
+          notes: notes,
+          batteryLevel: batteryLevel,
+          networkStatus: networkStatus,
         );
       }
       return failure;
@@ -261,6 +320,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final startAt = gps.recordedAt;
     final optimistic = _buildOptimisticRunning(
@@ -270,6 +332,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       clientRequestId: clientRequestId,
       address: address,
       startAt: startAt,
+      notes: notes,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
     );
     await _local.saveRunningSession(optimistic);
     await _local.enqueue(
@@ -283,10 +348,192 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         clientRequestId: clientRequestId,
         address: address,
         startedAt: startAt,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
         createdAt: DateTime.now(),
       ),
     );
     return Success(optimistic);
+  }
+
+  @override
+  Future<Result<OvertimeSession>> recordCheckpoint({
+    required String sessionId,
+    required OvertimeCheckpointStage stage,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) async {
+    if (stage != OvertimeCheckpointStage.arrivedAtWorkSite &&
+        stage != OvertimeCheckpointStage.finishedWork) {
+      return const Failure(
+        'Invalid checkpoint stage',
+        code: 'INVALID_CHECKPOINT',
+      );
+    }
+
+    final isOnline = await _connectivity.isConnected;
+    if (!isOnline) {
+      return _queueCheckpoint(
+        sessionId: sessionId,
+        stage: stage,
+        gps: gps,
+        photoBytes: photoBytes,
+        deviceId: deviceId,
+        address: address,
+        clientRequestId: clientRequestId,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
+      );
+    }
+
+    try {
+      final session = stage == OvertimeCheckpointStage.arrivedAtWorkSite
+          ? await _remote.recordArrivedAtWorkSite(
+              sessionId: sessionId,
+              gps: gps,
+              photoBytes: photoBytes,
+              deviceId: deviceId,
+              address: address,
+              clientRequestId: clientRequestId,
+              checkpointAt: gps.recordedAt,
+              notes: notes,
+              batteryLevel: batteryLevel,
+              networkStatus: networkStatus,
+            )
+          : await _remote.recordFinishedWork(
+              sessionId: sessionId,
+              gps: gps,
+              photoBytes: photoBytes,
+              deviceId: deviceId,
+              address: address,
+              clientRequestId: clientRequestId,
+              checkpointAt: gps.recordedAt,
+              notes: notes,
+              batteryLevel: batteryLevel,
+              networkStatus: networkStatus,
+            );
+      final model = _asModel(session);
+      await _local.saveRunningSession(model);
+      if (gps.needsAddressResolution) {
+        await _gpsAddressSync.enqueueOvertime(
+          sessionId: model.id,
+          point: stage.apiValue,
+          gps: gps,
+        );
+      }
+      return Success(model);
+    } on Object catch (error) {
+      final failure = NetworkErrorMapper.map<OvertimeSession>(error);
+      if (_isConnectivityFailure(failure.code)) {
+        return _queueCheckpoint(
+          sessionId: sessionId,
+          stage: stage,
+          gps: gps,
+          photoBytes: photoBytes,
+          deviceId: deviceId,
+          address: address,
+          clientRequestId: clientRequestId,
+          notes: notes,
+          batteryLevel: batteryLevel,
+          networkStatus: networkStatus,
+        );
+      }
+      return failure;
+    }
+  }
+
+  Future<Result<OvertimeSession>> _queueCheckpoint({
+    required String sessionId,
+    required OvertimeCheckpointStage stage,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) async {
+    final running = _resolveRunningSession(sessionId);
+    if (running == null) {
+      return const Failure(
+        'overtimeNoRunningSession',
+        code: 'NO_RUNNING_SESSION',
+      );
+    }
+
+    if (!running.isV2Workflow) {
+      return const Failure(
+        'Legacy sessions do not support mid-journey checkpoints',
+        code: 'LEGACY_WORKFLOW',
+      );
+    }
+
+    final expected = running.effectiveNextCheckpoint;
+    if (expected != stage) {
+      return Failure(
+        expected == null
+            ? 'All checkpoints are already completed'
+            : 'Next required checkpoint is ${expected.apiValue}',
+        code: 'CHECKPOINT_ORDER',
+      );
+    }
+
+    final at = gps.recordedAt;
+    final checkpoint = _buildCheckpoint(
+      at: at,
+      gps: gps,
+      deviceId: deviceId,
+      address: address,
+      clientRequestId: clientRequestId,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+      notes: notes,
+    );
+    final existing = running.checkpoints ?? const OvertimeCheckpoints();
+    final updatedCheckpoints = stage == OvertimeCheckpointStage.arrivedAtWorkSite
+        ? existing.copyWith(arrivedAtWorkSite: checkpoint)
+        : existing.copyWith(finishedWork: checkpoint);
+    final next = updatedCheckpoints.nextStage;
+
+    final updated = _copySession(
+      running,
+      checkpoints: updatedCheckpoints,
+      nextCheckpoint: next,
+      clearNextCheckpoint: next == null,
+    );
+    await _local.saveRunningSession(updated);
+
+    final actionType = stage == OvertimeCheckpointStage.arrivedAtWorkSite
+        ? PendingOvertimeActionType.arrivedAtWorkSite
+        : PendingOvertimeActionType.finishedWork;
+
+    await _local.enqueue(
+      PendingOvertimeActionModel(
+        id: clientRequestId,
+        type: actionType,
+        sessionId: updated.id,
+        gps: _gpsWithRecordedAt(gps, at),
+        photoBytes: photoBytes,
+        deviceId: deviceId,
+        clientRequestId: clientRequestId,
+        address: address,
+        checkpointAt: at,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
+        createdAt: DateTime.now(),
+      ),
+    );
+    return Success(updated);
   }
 
   @override
@@ -296,6 +543,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required List<int> photoBytes,
     required String deviceId,
     required String? address,
+    String? clientRequestId,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final isOnline = await _connectivity.isConnected;
     if (!isOnline) {
@@ -305,6 +556,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         photoBytes: photoBytes,
         deviceId: deviceId,
         address: address,
+        clientRequestId: clientRequestId,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
       );
     }
 
@@ -315,6 +570,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         photoBytes: photoBytes,
         deviceId: deviceId,
         address: address,
+        clientRequestId: clientRequestId,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
       );
       final model = _asModel(session);
       await _local.saveRunningSession(null);
@@ -337,6 +596,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           photoBytes: photoBytes,
           deviceId: deviceId,
           address: address,
+          clientRequestId: clientRequestId,
+          notes: notes,
+          batteryLevel: batteryLevel,
+          networkStatus: networkStatus,
         );
       }
       return failure;
@@ -367,6 +630,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         clientRequestId: action.clientRequestId,
         address: action.address,
         startAt: startAt,
+        notes: action.notes,
+        batteryLevel: action.batteryLevel,
+        networkStatus: action.networkStatus,
       );
     }
     return null;
@@ -378,6 +644,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required List<int> photoBytes,
     required String deviceId,
     required String? address,
+    String? clientRequestId,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final running = _resolveRunningSession(sessionId);
     if (running == null) {
@@ -385,6 +655,17 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       'overtimeNoRunningSession',
       code: 'NO_RUNNING_SESSION',
     );
+    }
+
+    if (running.isV2Workflow) {
+      final expected = running.effectiveNextCheckpoint;
+      if (expected != null &&
+          expected != OvertimeCheckpointStage.endJourney) {
+        return Failure(
+          'Complete ${expected.apiValue} before ending the journey',
+          code: 'CHECKPOINT_ORDER',
+        );
+      }
     }
 
     // Never overwrite the original offline startTime.
@@ -398,6 +679,26 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     final durationSeconds = durationSecondsBetween(startAt, safeEndAt);
     final durations = calculateDurations(startAt, safeEndAt);
 
+    final resolvedClientRequestId =
+        (clientRequestId != null && clientRequestId.trim().isNotEmpty)
+            ? clientRequestId.trim()
+            : 'end-${running.id}-${safeEndAt.millisecondsSinceEpoch}';
+
+    final endCheckpoint = _buildCheckpoint(
+      at: safeEndAt,
+      gps: gps,
+      deviceId: deviceId,
+      address: address,
+      clientRequestId: resolvedClientRequestId,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+      notes: notes,
+    );
+    final existing = running.checkpoints ?? const OvertimeCheckpoints();
+    final updatedCheckpoints = running.isV2Workflow
+        ? existing.copyWith(endJourney: endCheckpoint)
+        : running.checkpoints;
+
     final ended = _copySession(
       running,
       status: OvertimeStatus.pendingReview,
@@ -410,6 +711,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       workingDurationMinutes: durations.workingDurationMinutes,
       eligibleOvertimeMinutes: durations.eligibleOvertimeMinutes,
       liveElapsedSeconds: durationSeconds,
+      checkpoints: updatedCheckpoints,
+      clearNextCheckpoint: true,
     );
 
     await _local.saveRunningSession(null);
@@ -419,17 +722,20 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     await _local.saveHistory([ended, ...history].take(50).toList());
     await _local.enqueue(
       PendingOvertimeActionModel(
-        id: 'end-${ended.id}-${safeEndAt.millisecondsSinceEpoch}',
+        id: resolvedClientRequestId,
         type: PendingOvertimeActionType.end,
         sessionId: ended.id,
         gps: _gpsWithRecordedAt(gps, safeEndAt),
         photoBytes: photoBytes,
         deviceId: deviceId,
-        clientRequestId: 'end-${ended.id}',
+        clientRequestId: resolvedClientRequestId,
         address: address,
         startedAt: startAt,
         endedAt: safeEndAt,
         durationSeconds: durationSeconds,
+        notes: notes,
+        batteryLevel: batteryLevel,
+        networkStatus: networkStatus,
         createdAt: DateTime.now(),
       ),
     );
@@ -506,9 +812,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   }
 
   @override
-  Future<Result<OvertimeSession>> approveSession(String id) async {
+  Future<Result<OvertimeSession>> approveSession(
+    String id, {
+    String? reviewNotes,
+  }) async {
     try {
-      final session = await _remote.approve(id);
+      final session = await _remote.approve(id, reviewNotes: reviewNotes);
       return Success(session);
     } on Object catch (error) {
       return NetworkErrorMapper.map(error);
@@ -519,11 +828,13 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   Future<Result<OvertimeSession>> rejectSession(
     String id, {
     String? rejectionReason,
+    String? reviewNotes,
   }) async {
     try {
       final session = await _remote.reject(
         id,
         rejectionReason: rejectionReason,
+        reviewNotes: reviewNotes,
       );
       return Success(session);
     } on Object catch (error) {
@@ -594,6 +905,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             clientRequestId: enriched.clientRequestId,
             address: enriched.address,
             startedAt: startedAt,
+            notes: enriched.notes,
+            batteryLevel: enriched.batteryLevel,
+            networkStatus: enriched.networkStatus,
           );
           final localId = 'local-${enriched.clientRequestId}';
           localIdMap[localId] = session.id;
@@ -610,6 +924,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                 startAt: running.startAt,
                 startPhotoUrl:
                     running.startPhotoUrl ?? session.startPhotoUrl,
+                workflowVersion: session.workflowVersion,
+                checkpoints: running.checkpoints ?? session.checkpoints,
+                nextCheckpoint:
+                    running.nextCheckpoint ?? session.nextCheckpoint,
+                requiresManualReview: session.requiresManualReview,
+                reviewReason: session.reviewReason,
               ),
             );
           }
@@ -620,6 +940,71 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             await _gpsAddressSync.enqueueOvertime(
               sessionId: session.id,
               point: 'start',
+              gps: enriched.gps,
+            );
+          }
+          synced += 1;
+        } else if (enriched.isMidCheckpoint) {
+          var sessionId = enriched.sessionId ?? '';
+          if (sessionId.startsWith('local-') &&
+              localIdMap.containsKey(sessionId)) {
+            sessionId = localIdMap[sessionId]!;
+          }
+          if (sessionId.startsWith('local-')) {
+            continue;
+          }
+
+          final checkpointAt =
+              enriched.checkpointAt ?? enriched.gps.recordedAt;
+          final remote = enriched.type ==
+                  PendingOvertimeActionType.arrivedAtWorkSite
+              ? await _remote.recordArrivedAtWorkSite(
+                  sessionId: sessionId,
+                  gps: _gpsWithRecordedAt(enriched.gps, checkpointAt),
+                  photoBytes: enriched.photoBytes,
+                  deviceId: enriched.deviceId,
+                  address: enriched.address,
+                  clientRequestId: enriched.clientRequestId,
+                  checkpointAt: checkpointAt,
+                  notes: enriched.notes,
+                  batteryLevel: enriched.batteryLevel,
+                  networkStatus: enriched.networkStatus,
+                )
+              : await _remote.recordFinishedWork(
+                  sessionId: sessionId,
+                  gps: _gpsWithRecordedAt(enriched.gps, checkpointAt),
+                  photoBytes: enriched.photoBytes,
+                  deviceId: enriched.deviceId,
+                  address: enriched.address,
+                  clientRequestId: enriched.clientRequestId,
+                  checkpointAt: checkpointAt,
+                  notes: enriched.notes,
+                  batteryLevel: enriched.batteryLevel,
+                  networkStatus: enriched.networkStatus,
+                );
+
+          final running = _local.readRunningSession();
+          if (running != null &&
+              (running.id == sessionId ||
+                  running.id == enriched.sessionId)) {
+            await _local.saveRunningSession(
+              _copySession(
+                _asModel(remote),
+                id: sessionId,
+                startAt: running.startAt,
+                checkpoints: remote.checkpoints ?? running.checkpoints,
+                nextCheckpoint: remote.nextCheckpoint,
+                requiresManualReview: remote.requiresManualReview,
+                reviewReason: remote.reviewReason,
+              ),
+            );
+          }
+
+          await _local.removeFromQueue(enriched.id);
+          if (enriched.gps.needsAddressResolution) {
+            await _gpsAddressSync.enqueueOvertime(
+              sessionId: sessionId,
+              point: enriched.checkpointStage?.apiValue ?? 'start',
               gps: enriched.gps,
             );
           }
@@ -650,6 +1035,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             startedAt: startedAt,
             endedAt: endedAt,
             durationSeconds: durationSeconds,
+            clientRequestId: enriched.clientRequestId,
+            notes: enriched.notes,
+            batteryLevel: enriched.batteryLevel,
+            networkStatus: enriched.networkStatus,
           );
 
           // Keep server OT minutes after sync — never overwrite migrated /
@@ -667,6 +1056,11 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                   endGps: _gpsWithRecordedAt(enriched.gps, endedAt),
                   endAddress: enriched.address ?? endedRemote.endAddress,
                   endDeviceId: enriched.deviceId,
+                  checkpoints: endedRemote.checkpoints,
+                  workflowVersion: endedRemote.workflowVersion,
+                  requiresManualReview: endedRemote.requiresManualReview,
+                  reviewReason: endedRemote.reviewReason,
+                  clearNextCheckpoint: true,
                 )
               : _asModel(endedRemote);
 
@@ -704,10 +1098,25 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             ),
           ),
         );
+        // Fail-closed: mid/end order must not skip ahead on hard failures.
+        if (action.isMidCheckpoint ||
+            action.type == PendingOvertimeActionType.end ||
+            _isOrderBlockingFailure(failure.code, failure.message)) {
+          break;
+        }
       }
     }
 
     return Success(synced);
+  }
+
+  bool _isOrderBlockingFailure(String? code, String message) {
+    if (code == 'CHECKPOINT_ORDER' ||
+        code == 'CONFLICT' ||
+        code == 'LEGACY_WORKFLOW') {
+      return true;
+    }
+    return message.contains('Next required');
   }
 
   Future<PendingOvertimeAction> _enrichPendingAction(

@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_technician_summary.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
@@ -32,6 +33,12 @@ class OvertimeSession extends Equatable {
     this.rejectedAt,
     this.rejectionReason,
     this.createdAt,
+    this.workflowVersion = OvertimeWorkflowVersion.v1,
+    this.checkpoints,
+    this.nextCheckpoint,
+    this.requiresManualReview = false,
+    this.reviewReason,
+    this.reviewNotes,
   });
 
   final String id;
@@ -61,8 +68,33 @@ class OvertimeSession extends Equatable {
   final String? rejectionReason;
   final DateTime? createdAt;
 
+  /// v1 = legacy start/end; v2 = four-stage journey.
+  final OvertimeWorkflowVersion workflowVersion;
+  final OvertimeCheckpoints? checkpoints;
+
+  /// Server-derived next stage for v2; null for legacy or completed.
+  final OvertimeCheckpointStage? nextCheckpoint;
+
+  /// Soft policy exceeded — elevated admin attention.
+  final bool requiresManualReview;
+  final String? reviewReason;
+
+  /// Optional admin note added when approving/rejecting the session.
+  final String? reviewNotes;
+
   bool get isRunning => status == OvertimeStatus.running;
   bool get isPendingReview => status == OvertimeStatus.pendingReview;
+  bool get isV2Workflow => workflowVersion == OvertimeWorkflowVersion.v2;
+
+  /// Effective next action for the employee UI.
+  OvertimeCheckpointStage? get effectiveNextCheckpoint {
+    if (!isRunning) return null;
+    if (isV2Workflow) {
+      return nextCheckpoint ?? checkpoints?.nextStage;
+    }
+    // Legacy running sessions still end via Stage 4 semantics (end).
+    return OvertimeCheckpointStage.endJourney;
+  }
 
   int get elapsedSeconds {
     if (liveElapsedSeconds != null) {
@@ -106,6 +138,12 @@ class OvertimeSession extends Equatable {
         rejectedAt,
         rejectionReason,
         createdAt,
+        workflowVersion,
+        checkpoints,
+        nextCheckpoint,
+        requiresManualReview,
+        reviewReason,
+        reviewNotes,
       ];
 }
 

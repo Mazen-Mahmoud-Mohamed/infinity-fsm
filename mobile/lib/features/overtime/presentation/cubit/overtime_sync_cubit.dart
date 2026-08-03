@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 import 'package:mobile/features/overtime/domain/usecases/sync_pending_overtime_usecase.dart';
 
@@ -14,18 +15,21 @@ class OvertimeSyncState extends Equatable {
   const OvertimeSyncState({
     this.status = OvertimeSyncStatus.idle,
     this.pendingCount = 0,
+    this.pendingActions = const [],
     this.isOnline = true,
     this.message,
   });
 
   final OvertimeSyncStatus status;
   final int pendingCount;
+  final List<PendingOvertimeAction> pendingActions;
   final bool isOnline;
   final String? message;
 
   OvertimeSyncState copyWith({
     OvertimeSyncStatus? status,
     int? pendingCount,
+    List<PendingOvertimeAction>? pendingActions,
     bool? isOnline,
     String? message,
     bool clearMessage = false,
@@ -33,13 +37,15 @@ class OvertimeSyncState extends Equatable {
     return OvertimeSyncState(
       status: status ?? this.status,
       pendingCount: pendingCount ?? this.pendingCount,
+      pendingActions: pendingActions ?? this.pendingActions,
       isOnline: isOnline ?? this.isOnline,
       message: clearMessage ? null : message ?? this.message,
     );
   }
 
   @override
-  List<Object?> get props => [status, pendingCount, isOnline, message];
+  List<Object?> get props =>
+      [status, pendingCount, pendingActions, isOnline, message];
 }
 
 class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
@@ -82,7 +88,7 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
     if (isClosed) {
       return;
     }
-    emit(state.copyWith(pendingCount: pending.length));
+    emit(state.copyWith(pendingCount: pending.length, pendingActions: pending));
   }
 
   Future<void> syncNow() async {
@@ -103,6 +109,7 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
           state.copyWith(
             status: OvertimeSyncStatus.idle,
             pendingCount: 0,
+            pendingActions: const [],
             isOnline: true,
           ),
         );
@@ -126,6 +133,7 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
           state.copyWith(
             status: OvertimeSyncStatus.success,
             pendingCount: pending.length,
+            pendingActions: pending,
             clearMessage: true,
           ),
         );

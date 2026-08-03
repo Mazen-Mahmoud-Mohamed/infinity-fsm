@@ -9,6 +9,7 @@ import 'package:mobile/features/overtime/data/datasources/overtime_local_datasou
 import 'package:mobile/features/overtime/data/datasources/overtime_remote_datasource.dart';
 import 'package:mobile/features/overtime/data/models/overtime_session_model.dart';
 import 'package:mobile/features/overtime/data/repositories/overtime_repository_impl.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
@@ -68,6 +69,9 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
     DateTime? startedAt,
     DateTime? endedAt,
     int? durationSeconds,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final byClientKey = 'client:$clientRequestId';
     final existing = mongo[byClientKey];
@@ -90,6 +94,21 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
       startAddress: address,
       startPhotoUrl: 'https://example.com/start.jpg',
       createdAt: startAt,
+      workflowVersion: OvertimeWorkflowVersion.v2,
+      checkpoints: OvertimeCheckpoints(
+        startJourney: OvertimeCheckpoint(
+          at: startAt,
+          gps: gps,
+          photoUrl: 'https://example.com/start.jpg',
+          address: address,
+          deviceId: deviceId,
+          clientRequestId: clientRequestId,
+          batteryLevel: batteryLevel,
+          networkStatus: networkStatus,
+          notes: notes,
+        ),
+      ),
+      nextCheckpoint: OvertimeCheckpointStage.arrivedAtWorkSite,
     );
     mongo[id] = session;
     mongo[byClientKey] = session;
@@ -106,6 +125,10 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
     DateTime? startedAt,
     DateTime? endedAt,
     int? durationSeconds,
+    String? notes,
+    String? clientRequestId,
+    int? batteryLevel,
+    String? networkStatus,
   }) async {
     final existing = mongo[sessionId];
     if (existing == null) {
@@ -146,6 +169,20 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
       eligibleOvertimeMinutes: durations.eligibleOvertimeMinutes,
       liveElapsedSeconds: seconds,
       createdAt: existing.createdAt,
+      workflowVersion: existing.workflowVersion,
+      checkpoints: (existing.checkpoints ?? const OvertimeCheckpoints()).copyWith(
+        endJourney: OvertimeCheckpoint(
+          at: effectiveEnd,
+          gps: gps,
+          photoUrl: 'https://example.com/end.jpg',
+          address: address,
+          deviceId: deviceId,
+          clientRequestId: clientRequestId,
+          batteryLevel: batteryLevel,
+          networkStatus: networkStatus,
+          notes: notes,
+        ),
+      ),
     );
     mongo[sessionId] = ended;
     for (final key in mongo.keys.toList()) {
@@ -154,6 +191,112 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
       }
     }
     return ended;
+  }
+
+  @override
+  Future<OvertimeSessionModel> recordArrivedAtWorkSite({
+    required String sessionId,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    DateTime? checkpointAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) {
+    return _applyCheckpoint(
+      sessionId: sessionId,
+      stage: OvertimeCheckpointStage.arrivedAtWorkSite,
+      gps: gps,
+      deviceId: deviceId,
+      address: address,
+      clientRequestId: clientRequestId,
+      checkpointAt: checkpointAt,
+      notes: notes,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+    );
+  }
+
+  @override
+  Future<OvertimeSessionModel> recordFinishedWork({
+    required String sessionId,
+    required GpsSnapshot gps,
+    required List<int> photoBytes,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    DateTime? checkpointAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) {
+    return _applyCheckpoint(
+      sessionId: sessionId,
+      stage: OvertimeCheckpointStage.finishedWork,
+      gps: gps,
+      deviceId: deviceId,
+      address: address,
+      clientRequestId: clientRequestId,
+      checkpointAt: checkpointAt,
+      notes: notes,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+    );
+  }
+
+  Future<OvertimeSessionModel> _applyCheckpoint({
+    required String sessionId,
+    required OvertimeCheckpointStage stage,
+    required GpsSnapshot gps,
+    required String deviceId,
+    required String? address,
+    required String clientRequestId,
+    DateTime? checkpointAt,
+    String? notes,
+    int? batteryLevel,
+    String? networkStatus,
+  }) async {
+    final existing = mongo[sessionId];
+    if (existing == null) {
+      throw StateError('Session $sessionId not found');
+    }
+    final at = checkpointAt ?? gps.recordedAt;
+    final cp = OvertimeCheckpoint(
+      at: at,
+      gps: gps,
+      photoUrl: 'https://example.com/${stage.apiValue}.jpg',
+      address: address,
+      deviceId: deviceId,
+      clientRequestId: clientRequestId,
+      batteryLevel: batteryLevel,
+      networkStatus: networkStatus,
+      notes: notes,
+    );
+    final base = existing.checkpoints ?? const OvertimeCheckpoints();
+    final checkpoints = stage == OvertimeCheckpointStage.arrivedAtWorkSite
+        ? base.copyWith(arrivedAtWorkSite: cp)
+        : base.copyWith(finishedWork: cp);
+    final updated = OvertimeSessionModel(
+      id: existing.id,
+      companyId: existing.companyId,
+      userId: existing.userId,
+      type: existing.type,
+      status: existing.status,
+      startAt: existing.startAt,
+      startGps: existing.startGps,
+      startDeviceId: existing.startDeviceId,
+      startAddress: existing.startAddress,
+      startPhotoUrl: existing.startPhotoUrl,
+      createdAt: existing.createdAt,
+      workflowVersion: OvertimeWorkflowVersion.v2,
+      checkpoints: checkpoints,
+      nextCheckpoint: checkpoints.nextStage,
+    );
+    mongo[sessionId] = updated;
+    return updated;
   }
 }
 
@@ -222,13 +365,39 @@ void main() {
       expect(startQueue.single.type, PendingOvertimeActionType.start);
       expect(startQueue.single.startedAt, startAt);
 
-      // 2) End offline after elapsed time
+      // 2) Mid-journey checkpoints (v2) — informational only
+      final arrivedAt = startAt.add(const Duration(minutes: 2));
+      final arrivedResult = await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.arrivedAtWorkSite,
+        gps: _gps(arrivedAt),
+        photoBytes: const [7, 8],
+        deviceId: 'device-1',
+        address: 'Site',
+        clientRequestId: 'ot-cp-device-1-arrivedAtWorkSite-1',
+      );
+      expect(arrivedResult, isA<Success<OvertimeSession>>());
+
+      final finishedAt = startAt.add(const Duration(minutes: 10));
+      final finishedResult = await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.finishedWork,
+        gps: _gps(finishedAt),
+        photoBytes: const [9],
+        deviceId: 'device-1',
+        address: 'Site',
+        clientRequestId: 'ot-cp-device-1-finishedWork-1',
+      );
+      expect(finishedResult, isA<Success<OvertimeSession>>());
+
+      // 3) End offline after elapsed time
       final endResult = await repository.endSession(
         sessionId: started.id,
         gps: _gps(endAt),
         photoBytes: const [4, 5, 6],
         deviceId: 'device-1',
         address: 'Riyadh End',
+        clientRequestId: 'ot-end-device-1-1',
       );
 
       expect(endResult, isA<Success<OvertimeSession>>());
@@ -251,7 +420,7 @@ void main() {
       expect(history.single.totalDurationMinutes, greaterThan(0));
 
       final queue = local.readQueue();
-      expect(queue, hasLength(2));
+      expect(queue, hasLength(4));
       final endAction =
           queue.singleWhere((a) => a.type == PendingOvertimeActionType.end);
       expect(endAction.startedAt, startAt);
@@ -259,11 +428,11 @@ void main() {
       expect(endAction.durationSeconds, 12 * 60 + 30);
       expect(endAction.durationSeconds, greaterThan(0));
 
-      // 3) Sync online — fake Mongo honors client timestamps
+      // 4) Sync online — fake Mongo honors client timestamps
       connectivity.online = true;
       final syncResult = await repository.syncPendingActions();
       expect(syncResult, isA<Success<int>>());
-      expect((syncResult as Success<int>).data, 2);
+      expect((syncResult as Success<int>).data, 4);
       expect(local.readQueue(), isEmpty);
 
       final mongoDocs = remote.mongo.entries
@@ -308,12 +477,34 @@ void main() {
       // Simulate lost running cache (the bug class that zeroed duration).
       await local.saveRunningSession(null);
 
+      final arrivedAt = startAt.add(const Duration(seconds: 20));
+      await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.arrivedAtWorkSite,
+        gps: _gps(arrivedAt),
+        photoBytes: const [3],
+        deviceId: 'device-2',
+        address: null,
+        clientRequestId: 'ot-cp-device-2-arrivedAtWorkSite-1',
+      );
+      final finishedAt = startAt.add(const Duration(seconds: 60));
+      await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.finishedWork,
+        gps: _gps(finishedAt),
+        photoBytes: const [4],
+        deviceId: 'device-2',
+        address: null,
+        clientRequestId: 'ot-cp-device-2-finishedWork-1',
+      );
+
       final endResult = await repository.endSession(
         sessionId: started.id,
         gps: _gps(endAt),
         photoBytes: const [2],
         deviceId: 'device-2',
         address: null,
+        clientRequestId: 'ot-end-device-2-1',
       );
 
       final ended = (endResult as Success<OvertimeSession>).data;

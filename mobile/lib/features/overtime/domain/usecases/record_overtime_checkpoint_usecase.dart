@@ -1,32 +1,34 @@
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
-import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 
-class StartOvertimeUseCase {
-  const StartOvertimeUseCase(this._repository);
+class RecordOvertimeCheckpointUseCase {
+  const RecordOvertimeCheckpointUseCase(this._repository);
 
   final OvertimeRepository _repository;
 
   Future<Result<OvertimeSession>> call({
-    required OvertimeType type,
+    required String sessionId,
+    required OvertimeCheckpointStage stage,
     required GpsSnapshot gps,
     required List<int> photoBytes,
     required String deviceId,
-    required String clientRequestId,
     required String? address,
+    required String clientRequestId,
     String? notes,
     int? batteryLevel,
     String? networkStatus,
   }) {
-    return _repository.startSession(
-      type: type,
+    return _repository.recordCheckpoint(
+      sessionId: sessionId,
+      stage: stage,
       gps: gps,
       photoBytes: photoBytes,
       deviceId: deviceId,
-      clientRequestId: clientRequestId,
       address: address,
+      clientRequestId: clientRequestId,
       notes: notes,
       batteryLevel: batteryLevel,
       networkStatus: networkStatus,
