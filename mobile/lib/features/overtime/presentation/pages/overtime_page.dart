@@ -119,10 +119,6 @@ class _OvertimeTrackingView extends StatelessWidget {
             ..showSnackBar(
               SnackBar(
                 content: Text(localizeAppMessage(l10n, state.message)),
-                backgroundColor: state.isError
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.inverseSurface,
-                behavior: SnackBarBehavior.floating,
                 action: isContinuePrompt
                     ? SnackBarAction(
                         label: l10n.overtimeContinueSession,

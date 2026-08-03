@@ -56,8 +56,6 @@ class _LoginView extends StatelessWidget {
             ..showSnackBar(
               SnackBar(
                 content: Text(localizeAppMessage(l10n, state.message)),
-                backgroundColor: Theme.of(context).colorScheme.error,
-                behavior: SnackBarBehavior.floating,
               ),
             );
         }

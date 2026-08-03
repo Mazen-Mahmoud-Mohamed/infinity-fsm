@@ -54,10 +54,6 @@ class _OvertimeDetailView extends StatelessWidget {
             ..showSnackBar(
               SnackBar(
                 content: Text(localizeAppMessage(l10n, state.message)),
-                backgroundColor: state.isError
-                    ? Theme.of(context).colorScheme.error
-                    : Theme.of(context).colorScheme.inverseSurface,
-                behavior: SnackBarBehavior.floating,
               ),
             );
           context.read<OvertimeDetailCubit>().clearFeedback();
@@ -588,7 +584,12 @@ class _DetailRow extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: Text(value, style: theme.textTheme.bodyLarge),
+            child: Text(
+              value,
+              style: theme.textTheme.bodyLarge,
+              softWrap: true,
+              textDirection: value.contains('@') ? TextDirection.ltr : null,
+            ),
           ),
         ],
       ),

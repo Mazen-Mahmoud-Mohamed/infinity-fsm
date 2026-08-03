@@ -6,7 +6,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -78,10 +77,6 @@ class _AttendanceDashboardView extends StatelessWidget {
           ..showSnackBar(
             SnackBar(
               content: Text(localizeAppMessage(l10n, state.message)),
-              backgroundColor: state.isError
-                  ? Theme.of(context).colorScheme.error
-                  : AppThemeColors.of(context).success,
-              behavior: SnackBarBehavior.floating,
             ),
           );
       },

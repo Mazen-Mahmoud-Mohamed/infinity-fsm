@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/core/theme/app_system_ui.dart';
 import 'package:mobile/core/theme/app_typography.dart';
 
 /// Infinity enterprise Material 3 themes (light + dark).
@@ -152,6 +153,13 @@ class AppTheme {
         backgroundColor: colorScheme.surface,
         foregroundColor: colorScheme.onSurface,
         surfaceTintColor: Colors.transparent,
+        systemOverlayStyle: AppSystemUi.overlayFor(
+          ThemeData(
+            brightness: colorScheme.brightness,
+            scaffoldBackgroundColor: scaffoldBackground,
+            colorScheme: colorScheme,
+          ),
+        ),
         iconTheme: IconThemeData(color: appBarIconColor),
         actionsIconTheme: IconThemeData(color: appBarIconColor),
         titleTextStyle: TextStyle(
@@ -335,12 +343,20 @@ class AppTheme {
       ),
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: snackBarBackground,
-        contentTextStyle: TextStyle(
-          color: colorScheme.brightness == Brightness.dark
-              ? colorScheme.onSurface
-              : Colors.white,
+        // Light: keep classic dark snackbar. Dark: tonal surface (never near-white).
+        backgroundColor: colorScheme.brightness == Brightness.dark
+            ? colorScheme.surfaceContainerHigh
+            : snackBarBackground,
+        contentTextStyle: const TextStyle(
+          color: Colors.white,
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
         ),
+        actionTextColor: colorScheme.primary,
+        disabledActionTextColor:
+            colorScheme.onSurface.withValues(alpha: 0.38),
+        closeIconColor: Colors.white,
+        elevation: 3,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),

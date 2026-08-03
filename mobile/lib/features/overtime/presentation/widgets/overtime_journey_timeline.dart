@@ -1,7 +1,7 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
@@ -62,13 +62,17 @@ class OvertimeJourneyTimeline extends StatelessWidget {
           ),
           if (i < stages.length - 1)
             Padding(
-              padding: const EdgeInsetsDirectional.only(start: 19),
+              // Align connector to the center of the 28px indicator.
+              padding: const EdgeInsetsDirectional.only(start: 13),
               child: SizedBox(
                 height: AppSpacing.md,
                 child: VerticalDivider(
                   width: 2,
                   thickness: 2,
-                  color: Theme.of(context).colorScheme.outlineVariant,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .outlineVariant
+                      .withValues(alpha: 0.7),
                 ),
               ),
             ),
@@ -264,6 +268,8 @@ class _TimelineStageTile extends StatelessWidget {
     this.syncBadge,
   });
 
+  static const double _indicatorSize = 28;
+
   final OvertimeCheckpointStage stage;
   final OvertimeCheckpoint? checkpoint;
   final bool isNext;
@@ -286,23 +292,27 @@ class _TimelineStageTile extends StatelessWidget {
             ? l10n.overtimeCheckpointNext
             : l10n.overtimeCheckpointPending);
 
+    // Do NOT use IntrinsicHeight + Expanded here — that breaks inside ListView
+    // (unbounded height) and blanks the entire detail scroll body.
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 40,
-          height: 40,
+          width: _indicatorSize,
+          height: _indicatorSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: statusColor.withValues(alpha: 0.15),
-            border: Border.all(color: statusColor, width: 2),
+            border: Border.all(color: statusColor, width: 1.5),
           ),
           child: Icon(
             completed
                 ? Icons.check
-                : (isNext ? Icons.radio_button_checked : Icons.circle_outlined),
+                : (isNext
+                    ? Icons.radio_button_checked
+                    : Icons.circle_outlined),
             color: statusColor,
-            size: 20,
+            size: 14,
           ),
         ),
         const SizedBox(width: AppSpacing.md),
@@ -314,15 +324,14 @@ class _TimelineStageTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  Wrap(
+                    spacing: AppSpacing.sm,
+                    runSpacing: AppSpacing.xs,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Expanded(
-                        child: Text(title, style: theme.textTheme.titleSmall),
-                      ),
-                      if (syncBadge != null) ...[
+                      Text(title, style: theme.textTheme.titleSmall),
+                      if (syncBadge != null)
                         _SyncBadgeChip(badge: syncBadge!),
-                        const SizedBox(width: AppSpacing.xs),
-                      ],
                       Text(
                         statusLabel,
                         style: theme.textTheme.labelSmall?.copyWith(
@@ -332,13 +341,13 @@ class _TimelineStageTile extends StatelessWidget {
                     ],
                   ),
                   if (checkpoint != null) ...[
-                    const SizedBox(height: AppSpacing.sm),
+                    const SizedBox(height: AppSpacing.md),
                     Text(
                       AppFormatters.mediumDateTime(context)
                           .format(checkpoint!.at.toLocal()),
                       style: theme.textTheme.bodySmall,
                     ),
-                    const SizedBox(height: AppSpacing.xs),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       checkpoint!.address?.isNotEmpty == true
                           ? checkpoint!.address!
@@ -354,7 +363,7 @@ class _TimelineStageTile extends StatelessWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(height: AppSpacing.sm),
+                    const SizedBox(height: AppSpacing.md),
                     _CheckpointMetaChip(
                       label: l10n.overtimeGpsAccuracy,
                       value:
@@ -383,9 +392,8 @@ class _TimelineStageTile extends StatelessWidget {
                         label: l10n.overtimeNotes,
                         value: checkpoint!.notes!,
                       ),
-                    // Map + live location always available for completed checkpoints
-                    // (employee + admin). Never hide behind compact mode.
-                    const SizedBox(height: AppSpacing.sm),
+                    // 1) Info  2) Actions  3) Interactive map  4) Selfie
+                    const SizedBox(height: AppSpacing.md),
                     _CheckpointMapActions(
                       gps: checkpoint!.gps,
                       label: title,
@@ -394,9 +402,9 @@ class _TimelineStageTile extends StatelessWidget {
                     if (!compact &&
                         checkpoint!.photoUrl != null &&
                         checkpoint!.photoUrl!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.sm),
+                      const SizedBox(height: AppSpacing.md),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         child: AspectRatio(
                           aspectRatio: 16 / 9,
                           child: InkWell(
@@ -638,47 +646,88 @@ class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final canOpen = _hasValidCoordinates;
+    final mapLabel = _expanded ? l10n.overtimeHideMap : l10n.overtimeShowMap;
+    final liveLabel = l10n.overtimeOpenLiveLocation;
+    final buttonShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+    );
+    const buttonPadding = EdgeInsets.symmetric(
+      horizontal: AppSpacing.md,
+      vertical: 12,
+    );
+
+    final showMapButton = OutlinedButton.icon(
+      onPressed: () => setState(() => _expanded = !_expanded),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        padding: buttonPadding,
+        shape: buttonShape,
+        alignment: Alignment.center,
+      ),
+      icon: Icon(
+        _expanded ? Icons.map : Icons.map_outlined,
+        size: 20,
+      ),
+      label: Text(
+        mapLabel,
+        textAlign: TextAlign.center,
+        softWrap: true,
+      ),
+    );
+
+    final liveLocationButton = Tooltip(
+      message: canOpen
+          ? liveLabel
+          : l10n.overtimeLocationUnavailable,
+      child: FilledButton.tonalIcon(
+        onPressed: canOpen ? _openLiveLocation : null,
+        style: FilledButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          padding: buttonPadding,
+          shape: buttonShape,
+          alignment: Alignment.center,
+        ),
+        icon: const Icon(Icons.location_on_outlined, size: 20),
+        label: Text(
+          liveLabel,
+          textAlign: TextAlign.center,
+          softWrap: true,
+        ),
+      ),
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => setState(() => _expanded = !_expanded),
-                icon: Icon(
-                  _expanded ? Icons.map : Icons.map_outlined,
-                  size: 18,
-                ),
-                label: Text(
-                  _expanded ? l10n.overtimeHideMap : l10n.overtimeShowMap,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Tooltip(
-                message: canOpen
-                    ? l10n.overtimeOpenLiveLocation
-                    : l10n.overtimeLocationUnavailable,
-                child: FilledButton.tonalIcon(
-                  onPressed: canOpen ? _openLiveLocation : null,
-                  icon: const Icon(Icons.location_on_outlined, size: 18),
-                  label: Text(
-                    l10n.overtimeOpenLiveLocation,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) {
+            // Side-by-side only when both full labels fit comfortably.
+            const minSideBySideWidth = 420.0;
+            final stackVertically = constraints.maxWidth < minSideBySideWidth;
+
+            if (stackVertically) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  showMapButton,
+                  const SizedBox(height: AppSpacing.sm),
+                  liveLocationButton,
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: showMapButton),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(child: liveLocationButton),
+              ],
+            );
+          },
         ),
         if (_expanded) ...[
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           if (!_hasValidCoordinates)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
@@ -690,26 +739,18 @@ class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
               ),
             )
           else
-            // Absorb drag so parent ListView does not steal pan/zoom.
-            RawGestureDetector(
-              gestures: <Type, GestureRecognizerFactory>{
-                EagerGestureRecognizer:
-                    GestureRecognizerFactoryWithHandlers<EagerGestureRecognizer>(
-                  EagerGestureRecognizer.new,
-                  (_) {},
-                ),
+            // Real interactive FlutterMap — same interaction model as legacy OT map.
+            // Do not wrap with IgnorePointer / AbsorbPointer / EagerGestureRecognizer.
+            _InteractiveCheckpointMap(
+              gps: widget.gps,
+              markerSelected: _markerSelected,
+              onMarkerTap: () =>
+                  setState(() => _markerSelected = !_markerSelected),
+              onMapTap: () {
+                if (_markerSelected) {
+                  setState(() => _markerSelected = false);
+                }
               },
-              child: _InteractiveCheckpointMap(
-                gps: widget.gps,
-                markerSelected: _markerSelected,
-                onMarkerTap: () =>
-                    setState(() => _markerSelected = !_markerSelected),
-                onMapTap: () {
-                  if (_markerSelected) {
-                    setState(() => _markerSelected = false);
-                  }
-                },
-              ),
             ),
         ],
       ],
@@ -717,7 +758,7 @@ class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
   }
 }
 
-/// Interactive FlutterMap — pan, zoom, marker tap (same behavior as legacy OT map).
+/// Interactive FlutterMap — pan, zoom, pinch, double-tap, marker tap.
 class _InteractiveCheckpointMap extends StatefulWidget {
   const _InteractiveCheckpointMap({
     required this.gps,
@@ -754,56 +795,52 @@ class _InteractiveCheckpointMapState extends State<_InteractiveCheckpointMap> {
     final pinColor = theme.colorScheme.primary;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: SizedBox(
         height: 220,
         width: double.infinity,
         child: ColoredBox(
           color: theme.colorScheme.surfaceContainerHighest,
-          // Absorb vertical drag so ListView does not steal pan/zoom gestures.
-          child: Listener(
-            behavior: HitTestBehavior.opaque,
-            child: FlutterMap(
-              mapController: _mapController,
-              options: MapOptions(
-                initialCenter: point,
-                initialZoom: 16,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-                ),
-                onTap: (_, _) => widget.onMapTap(),
+          child: FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: point,
+              initialZoom: 16,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
               ),
-              children: [
-                TileLayer(
-                  urlTemplate:
-                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  fallbackUrl:
-                      'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
-                  userAgentPackageName: _tileUserAgent,
-                  maxNativeZoom: 19,
-                  maxZoom: 20,
-                ),
-                MarkerLayer(
-                  markers: [
-                    Marker(
-                      point: point,
-                      width: 44,
-                      height: 44,
-                      alignment: Alignment.topCenter,
-                      child: GestureDetector(
-                        onTap: widget.onMarkerTap,
-                        child: Icon(
-                          Icons.location_on,
-                          size: widget.markerSelected ? 44 : 36,
-                          color: pinColor,
-                        ),
+              onTap: (_, _) => widget.onMapTap(),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                fallbackUrl: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+                userAgentPackageName: _tileUserAgent,
+                maxNativeZoom: 19,
+                maxZoom: 20,
+                keepBuffer: 2,
+                panBuffer: 1,
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: point,
+                    width: 44,
+                    height: 44,
+                    alignment: Alignment.topCenter,
+                    child: GestureDetector(
+                      onTap: widget.onMarkerTap,
+                      child: Icon(
+                        Icons.location_on,
+                        size: widget.markerSelected ? 44 : 36,
+                        color: pinColor,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
