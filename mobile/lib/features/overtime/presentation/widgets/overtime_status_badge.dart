@@ -5,13 +5,23 @@ import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 
 class OvertimeStatusBadge extends StatelessWidget {
-  const OvertimeStatusBadge({super.key, required this.status});
+  const OvertimeStatusBadge({
+    super.key,
+    required this.status,
+    this.pendingSync = false,
+  });
 
   final OvertimeStatus status;
+
+  /// Offline session waiting for upload — takes precedence over [status].
+  final bool pendingSync;
 
   Color _color(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final semantic = AppThemeColors.of(context);
+    if (pendingSync) {
+      return semantic.warning;
+    }
     switch (status) {
       case OvertimeStatus.running:
         return semantic.info;
@@ -26,6 +36,13 @@ class OvertimeStatusBadge extends StatelessWidget {
     }
   }
 
+  String _label(AppLocalizations l10n) {
+    if (pendingSync) {
+      return l10n.overtimeStatusPendingSync;
+    }
+    return overtimeStatusLabel(l10n, status);
+  }
+
   @override
   Widget build(BuildContext context) {
     final color = _color(context);
@@ -36,7 +53,7 @@ class OvertimeStatusBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
-        overtimeStatusLabel(AppLocalizations.of(context), status),
+        _label(AppLocalizations.of(context)),
         style: TextStyle(
           color: color,
           fontWeight: FontWeight.w600,

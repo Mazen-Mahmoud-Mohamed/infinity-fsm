@@ -972,6 +972,8 @@
   },
   "overtimeStatusRunning": "جاري",
   "overtimeStatusPendingReview": "قيد المراجعة",
+  "overtimeStatusPendingSync": "بانتظار المزامنة",
+  "overtimeStatusSynced": "تمت المزامنة",
   "overtimeStatusApproved": "موافق عليه",
   "overtimeStatusRejected": "مرفوض",
   "overtimeStatusCancelled": "ملغى",

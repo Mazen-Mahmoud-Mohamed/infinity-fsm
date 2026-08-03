@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
@@ -26,6 +27,10 @@ class _FakeConnectivityService implements ConnectivityService {
   Future<bool> get isConnected async => online;
 
   @override
+  Future<List<ConnectivityResult>> get connectionTypes async =>
+      online ? const [ConnectivityResult.wifi] : const [ConnectivityResult.none];
+
+  @override
   Stream<bool> get onConnectivityChanged => Stream<bool>.value(online);
 }
 
@@ -48,6 +53,17 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
   final Map<String, OvertimeSessionModel> mongo = {};
   var _seq = 0;
 
+  /// When true, the next non-START write fails once (simulates reconnect blip).
+  bool failNextNonStart = false;
+
+  void _maybeFailNonStart() {
+    if (!failNextNonStart) {
+      return;
+    }
+    failNextNonStart = false;
+    throw StateError('Simulated mid-sync connectivity blip');
+  }
+
   @override
   Future<OvertimeSessionModel?> getRunning() async {
     for (final doc in mongo.values) {
@@ -56,6 +72,26 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
       }
     }
     return null;
+  }
+
+  @override
+  Future<OvertimeSessionPage> listMine({
+    int page = 1,
+    int limit = 20,
+    OvertimeStatus? status,
+  }) async {
+    final items = mongo.entries
+        .where((e) => !e.key.startsWith('client:'))
+        .map((e) => e.value)
+        .where((s) => status == null || s.status == status)
+        .toList();
+    return OvertimeSessionPage(
+      items: items,
+      page: page,
+      limit: limit,
+      total: items.length,
+      totalPages: 1,
+    );
   }
 
   @override
@@ -130,6 +166,7 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
     int? batteryLevel,
     String? networkStatus,
   }) async {
+    _maybeFailNonStart();
     final existing = mongo[sessionId];
     if (existing == null) {
       throw StateError('Session $sessionId not found');
@@ -259,6 +296,7 @@ class _FakeOvertimeRemote extends Fake implements OvertimeRemoteDataSource {
     int? batteryLevel,
     String? networkStatus,
   }) async {
+    _maybeFailNonStart();
     final existing = mongo[sessionId];
     if (existing == null) {
       throw StateError('Session $sessionId not found');
@@ -453,6 +491,141 @@ void main() {
       expect(syncedLocal.endAt, endAt);
       expect(syncedLocal.totalDurationMinutes, greaterThan(0));
       expect(syncedLocal.id, synced.id);
+    },
+  );
+
+  test(
+    'interrupted sync after START still finishes mid/end on next pass',
+    () async {
+      final startAt = DateTime.utc(2026, 7, 30, 19, 0, 0);
+      final endAt = startAt.add(const Duration(minutes: 5));
+      const clientRequestId = 'ot-interrupted-1';
+
+      connectivity.online = false;
+      final startResult = await repository.startSession(
+        type: OvertimeType.normal,
+        gps: _gps(startAt),
+        photoBytes: List<int>.filled(2048, 7),
+        deviceId: 'device-3',
+        clientRequestId: clientRequestId,
+        address: 'Riyadh',
+      );
+      final started = (startResult as Success<OvertimeSession>).data;
+
+      await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.arrivedAtWorkSite,
+        gps: _gps(startAt.add(const Duration(minutes: 1))),
+        photoBytes: List<int>.filled(2048, 8),
+        deviceId: 'device-3',
+        address: 'Site',
+        clientRequestId: 'ot-cp-interrupted-arrived',
+      );
+      await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.finishedWork,
+        gps: _gps(startAt.add(const Duration(minutes: 4))),
+        photoBytes: List<int>.filled(2048, 9),
+        deviceId: 'device-3',
+        address: 'Site',
+        clientRequestId: 'ot-cp-interrupted-finished',
+      );
+      await repository.endSession(
+        sessionId: started.id,
+        gps: _gps(endAt),
+        photoBytes: List<int>.filled(2048, 10),
+        deviceId: 'device-3',
+        address: 'Riyadh End',
+        clientRequestId: 'ot-end-interrupted-1',
+      );
+
+      expect(local.readQueue(), hasLength(4));
+      // Photos must survive outside the queue JSON (four-stage size safety).
+      expect(
+        preferences.getString('overtime_pending_photo_$clientRequestId'),
+        isNotNull,
+      );
+
+      connectivity.online = true;
+      remote.failNextNonStart = true;
+      final firstPass = await repository.syncPendingActions();
+      expect(firstPass, isA<Success<int>>());
+      expect((firstPass as Success<int>).data, 1);
+      expect(local.readLocalIdMap()['local-$clientRequestId'], isNotNull);
+      expect(
+        local.readQueue().every((a) => a.type != PendingOvertimeActionType.start),
+        isTrue,
+      );
+
+      // Simulate app restart: in-memory map is gone; durable map + remapped
+      // queue session ids must still finish the pipeline.
+      remote.failNextNonStart = false;
+      final secondPass = await repository.syncPendingActions();
+      expect(secondPass, isA<Success<int>>());
+      expect((secondPass as Success<int>).data, 3);
+      expect(local.readQueue(), isEmpty);
+
+      final mongoDocs = remote.mongo.entries
+          .where((e) => !e.key.startsWith('client:'))
+          .map((e) => e.value)
+          .toList();
+      expect(mongoDocs, hasLength(1));
+      expect(mongoDocs.single.status, OvertimeStatus.pendingReview);
+      expect(mongoDocs.single.endAt, endAt);
+    },
+  );
+
+  test(
+    'online history fetch preserves unsynced local pending sessions',
+    () async {
+      final startAt = DateTime.utc(2026, 7, 30, 20, 0, 0);
+      final endAt = startAt.add(const Duration(minutes: 3));
+      connectivity.online = false;
+
+      final startResult = await repository.startSession(
+        type: OvertimeType.travel,
+        gps: _gps(startAt),
+        photoBytes: const [1],
+        deviceId: 'device-4',
+        clientRequestId: 'ot-preserve-history',
+        address: null,
+      );
+      final started = (startResult as Success<OvertimeSession>).data;
+      await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.arrivedAtWorkSite,
+        gps: _gps(startAt.add(const Duration(minutes: 1))),
+        photoBytes: const [2],
+        deviceId: 'device-4',
+        address: null,
+        clientRequestId: 'ot-preserve-arrived',
+      );
+      await repository.recordCheckpoint(
+        sessionId: started.id,
+        stage: OvertimeCheckpointStage.finishedWork,
+        gps: _gps(startAt.add(const Duration(minutes: 2))),
+        photoBytes: const [3],
+        deviceId: 'device-4',
+        address: null,
+        clientRequestId: 'ot-preserve-finished',
+      );
+      await repository.endSession(
+        sessionId: started.id,
+        gps: _gps(endAt),
+        photoBytes: const [4],
+        deviceId: 'device-4',
+        address: null,
+        clientRequestId: 'ot-preserve-end',
+      );
+
+      expect(local.readHistory(), hasLength(1));
+      expect(local.readHistory().single.id.startsWith('local-'), isTrue);
+
+      connectivity.online = true;
+      final listed = await repository.listMySessions();
+      expect(listed, isA<Success>());
+      expect(local.readHistory().any((s) => s.id.startsWith('local-')), isTrue);
+      expect(local.readQueue(), hasLength(4));
     },
   );
 

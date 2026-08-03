@@ -10,8 +10,11 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/branding/infinity_brand.dart';
+import 'package:mobile/features/overtime/data/datasources/overtime_local_datasource.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
+import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_history_cubit.dart';
+import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
@@ -59,101 +62,139 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
     }
   }
 
+  bool _isPendingSync(OvertimeSession session) {
+    if (session.id.startsWith('local-')) {
+      return true;
+    }
+    final queue = getIt<OvertimeLocalDataSource>().readQueue();
+    if (queue.isEmpty) {
+      return false;
+    }
+    final map = getIt<OvertimeLocalDataSource>().readLocalIdMap();
+    return queue.any((action) {
+      final sid = action.sessionId;
+      if (sid == session.id) {
+        return true;
+      }
+      if (action.type == PendingOvertimeActionType.start &&
+          'local-${action.clientRequestId}' == session.id) {
+        return true;
+      }
+      if (sid != null && map[sid] == session.id) {
+        return true;
+      }
+      return false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final dateFormat = AppFormatters.mediumDate(context);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.overtimeMyHistory)),
-      body: BlocBuilder<OvertimeHistoryCubit, OvertimeHistoryState>(
-        builder: (context, state) {
-          if (state.status == OvertimeHistoryStatus.loading &&
-              state.items.isEmpty) {
-            return AppLoader(message: l10n.attendanceHistoryLoading);
-          }
+    return BlocListener<OvertimeSyncCubit, OvertimeSyncState>(
+      listenWhen: (previous, current) =>
+          previous.pendingCount != current.pendingCount ||
+          previous.status != current.status,
+      listener: (context, syncState) {
+        // After offline queue drains (or shrinks), refresh History so badges
+        // move from Pending Sync → server status.
+        context.read<OvertimeHistoryCubit>().loadFirstPage();
+      },
+      child: Scaffold(
+        appBar: AppBar(title: Text(l10n.overtimeMyHistory)),
+        body: BlocBuilder<OvertimeHistoryCubit, OvertimeHistoryState>(
+          builder: (context, state) {
+            if (state.status == OvertimeHistoryStatus.loading &&
+                state.items.isEmpty) {
+              return AppLoader(message: l10n.attendanceHistoryLoading);
+            }
 
-          if (state.status == OvertimeHistoryStatus.failure &&
-              state.items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      state.message != null
-                          ? localizeAppMessage(l10n, state.message)
-                          : l10n.overtimeHistoryLoadFailed,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    ElevatedButton(
-                      onPressed: () =>
-                          context.read<OvertimeHistoryCubit>().loadFirstPage(),
-                      child: Text(l10n.retry),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          if (state.items.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const InfinityEmptyBrandMark(size: 56),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(l10n.overtimeHistoryEmpty),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          return Column(
-            children: [
-              AppRefreshBar(visible: state.isRefreshing),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () =>
-                      context.read<OvertimeHistoryCubit>().loadFirstPage(),
-                  child: ListView.separated(
-                    controller: _scrollController,
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: AppScrollPadding.resolve(
-                      context,
-                      base: const EdgeInsets.all(AppSpacing.lg),
-                      chrome: AppBottomChrome.system,
-                    ),
-                    itemCount: state.items.length +
-                        (state.status == OvertimeHistoryStatus.loadingMore
-                            ? 1
-                            : 0),
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: AppSpacing.md),
-                    itemBuilder: (context, index) {
-                      if (index >= state.items.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(AppSpacing.md),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      return _HistoryCard(
-                        session: state.items[index],
-                        dateFormat: dateFormat,
-                        l10n: l10n,
-                      );
-                    },
+            if (state.status == OvertimeHistoryStatus.failure &&
+                state.items.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        state.message != null
+                            ? localizeAppMessage(l10n, state.message)
+                            : l10n.overtimeHistoryLoadFailed,
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      ElevatedButton(
+                        onPressed: () => context
+                            .read<OvertimeHistoryCubit>()
+                            .loadFirstPage(),
+                        child: Text(l10n.retry),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ],
-          );
-        },
+              );
+            }
+
+            if (state.items.isEmpty) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const InfinityEmptyBrandMark(size: 56),
+                      const SizedBox(height: AppSpacing.md),
+                      Text(l10n.overtimeHistoryEmpty),
+                    ],
+                  ),
+                ),
+              );
+            }
+
+            return Column(
+              children: [
+                AppRefreshBar(visible: state.isRefreshing),
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () =>
+                        context.read<OvertimeHistoryCubit>().loadFirstPage(),
+                    child: ListView.separated(
+                      controller: _scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: AppScrollPadding.resolve(
+                        context,
+                        base: const EdgeInsets.all(AppSpacing.lg),
+                        chrome: AppBottomChrome.system,
+                      ),
+                      itemCount: state.items.length +
+                          (state.status == OvertimeHistoryStatus.loadingMore
+                              ? 1
+                              : 0),
+                      separatorBuilder: (_, __) =>
+                          const SizedBox(height: AppSpacing.md),
+                      itemBuilder: (context, index) {
+                        if (index >= state.items.length) {
+                          return const Padding(
+                            padding: EdgeInsets.all(AppSpacing.md),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+                        final session = state.items[index];
+                        return _HistoryCard(
+                          session: session,
+                          pendingSync: _isPendingSync(session),
+                          dateFormat: dateFormat,
+                          l10n: l10n,
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -162,11 +203,13 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
 class _HistoryCard extends StatelessWidget {
   const _HistoryCard({
     required this.session,
+    required this.pendingSync,
     required this.dateFormat,
     required this.l10n,
   });
 
   final OvertimeSession session;
+  final bool pendingSync;
   final DateFormat dateFormat;
   final AppLocalizations l10n;
 
@@ -196,11 +239,17 @@ class _HistoryCard extends StatelessWidget {
                   ),
                 ),
               ),
-              OvertimeStatusBadge(status: session.status),
+              OvertimeStatusBadge(
+                status: session.status,
+                pendingSync: pendingSync,
+              ),
             ],
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(overtimeTypeLabel(l10n, session.type), style: theme.textTheme.bodyLarge),
+          Text(
+            overtimeTypeLabel(l10n, session.type),
+            style: theme.textTheme.bodyLarge,
+          ),
           const SizedBox(height: AppSpacing.xs),
           Text(
             l10n.overtimeDurationLine(
@@ -213,6 +262,17 @@ class _HistoryCard extends StatelessWidget {
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (!pendingSync &&
+              session.id.isNotEmpty &&
+              !session.id.startsWith('local-')) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              l10n.overtimeStatusSynced,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
           if (session.rejectionReason != null &&
               session.rejectionReason!.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.sm),

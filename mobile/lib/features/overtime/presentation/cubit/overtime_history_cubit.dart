@@ -84,8 +84,11 @@ class OvertimeHistoryCubit extends Cubit<OvertimeHistoryState> {
   Future<void> loadFirstPage() async {
     final cached = _sessionQueryCache.get<_CachedOvertimeHistory>(_cacheKey);
     final localItems = _localDataSource.readHistory();
-    final seededItems = cached?.items ??
-        (localItems.isNotEmpty ? localItems : state.items);
+    // Prefer durable local pending sessions over a stale empty memory cache.
+    // Empty cached remote results previously hid offline sessions on History open.
+    final seededItems = localItems.isNotEmpty
+        ? localItems
+        : (cached?.items ?? state.items);
     final hasData = seededItems.isNotEmpty;
 
     if (hasData) {
@@ -110,18 +113,29 @@ class OvertimeHistoryCubit extends Cubit<OvertimeHistoryState> {
     final result = await _listMine(page: 1, limit: _pageSize);
     switch (result) {
       case Success(data: final page):
+        // Prefer merged page from repository (includes local pending-sync
+        // sessions). Never replace a non-empty local seed with an empty
+        // remote-only payload if pending offline work still exists.
+        final pendingQueue = _localDataSource.readQueue();
+        final latestLocal = _localDataSource.readHistory();
+        final resolvedItems = page.items.isNotEmpty
+            ? page.items
+            : (pendingQueue.isNotEmpty ||
+                    latestLocal.any((s) => s.id.startsWith('local-')))
+                ? (latestLocal.isNotEmpty ? latestLocal : seededItems)
+                : page.items;
         final next = _CachedOvertimeHistory(
-          items: page.items,
+          items: resolvedItems,
           page: page.page,
-          hasMore: page.hasMore,
+          hasMore: page.hasMore && page.items.isNotEmpty,
         );
         _sessionQueryCache.set(_cacheKey, next);
         emit(
           OvertimeHistoryState(
             status: OvertimeHistoryStatus.success,
-            items: page.items,
+            items: resolvedItems,
             page: page.page,
-            hasMore: page.hasMore,
+            hasMore: next.hasMore,
             isOffline: false,
             isRefreshing: false,
           ),
@@ -130,11 +144,15 @@ class OvertimeHistoryCubit extends Cubit<OvertimeHistoryState> {
         final offline = code == 'OFFLINE' ||
             code == 'TIMEOUT' ||
             code == 'NETWORK_ERROR';
+        final fallbackItems = localItems.isNotEmpty
+            ? localItems
+            : (state.items.isNotEmpty ? state.items : seededItems);
         emit(
           state.copyWith(
-            status: (offline || hasData) && state.items.isNotEmpty
+            status: (offline || fallbackItems.isNotEmpty)
                 ? OvertimeHistoryStatus.success
                 : OvertimeHistoryStatus.failure,
+            items: fallbackItems.isNotEmpty ? fallbackItems : state.items,
             message: offline ? null : message,
             isOffline: offline,
             isRefreshing: false,

@@ -61,6 +61,7 @@ import 'package:mobile/features/organization/presentation/cubit/profile_cubit.da
 import 'package:mobile/features/overtime/data/datasources/overtime_local_datasource.dart';
 import 'package:mobile/features/overtime/data/datasources/overtime_remote_datasource.dart';
 import 'package:mobile/features/overtime/data/repositories/overtime_repository_impl.dart';
+import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 import 'package:mobile/features/overtime/domain/usecases/approve_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/end_overtime_usecase.dart';
@@ -436,6 +437,8 @@ Future<void> configureDependencies() async {
     () => OvertimeLocalDataSource(getIt<PreferencesService>()),
   );
 
+  OvertimeOfflineTrace.bindLogger(getIt<LoggerService>());
+
   getIt.registerLazySingleton<OvertimeRepository>(
     () => OvertimeRepositoryImpl(
       remote: getIt<OvertimeRemoteDataSource>(),
@@ -506,6 +509,7 @@ Future<void> configureDependencies() async {
       checkpointTelemetryService: getIt<CheckpointTelemetryService>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
       localDataSource: getIt<OvertimeLocalDataSource>(),
+      overtimeSyncCubit: getIt<OvertimeSyncCubit>(),
       reminderService: getIt<OvertimeSessionReminderService>(),
     ),
   );

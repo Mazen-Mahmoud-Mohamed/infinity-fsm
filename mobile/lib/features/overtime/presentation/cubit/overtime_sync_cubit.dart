@@ -8,6 +8,7 @@ import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 import 'package:mobile/features/overtime/domain/usecases/sync_pending_overtime_usecase.dart';
+import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 
 enum OvertimeSyncStatus { idle, syncing, success, failure }
 
@@ -61,6 +62,11 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
         super(const OvertimeSyncState()) {
     _connectivitySubscription =
         _connectivity.onConnectivityChanged.listen((isOnline) {
+      OvertimeOfflineTrace.step(
+        'CONNECTIVITY',
+        status: isOnline ? 'success' : 'failure',
+        detail: isOnline ? 'restored' : 'lost',
+      );
       emit(state.copyWith(isOnline: isOnline));
       if (isOnline) {
         unawaited(syncNow());
@@ -93,15 +99,31 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
 
   Future<void> syncNow() async {
     if (_isSyncing || isClosed) {
+      OvertimeOfflineTrace.step(
+        'SYNC_SCHEDULER',
+        status: 'failure',
+        detail: _isSyncing ? 'already syncing' : 'cubit closed',
+      );
       return;
     }
 
     if (!await _connectivity.isConnected) {
+      OvertimeOfflineTrace.step(
+        'SYNC_SCHEDULER',
+        status: 'failure',
+        detail: 'offline',
+      );
       emit(state.copyWith(isOnline: false));
       return;
     }
 
     final pendingBefore = await _repository.getPendingActions();
+    OvertimeOfflineTrace.step(
+      'SYNC_SCHEDULER',
+      status: 'entered',
+      queueLength: pendingBefore.length,
+      detail: 'connectivity online',
+    );
     if (pendingBefore.isEmpty) {
       unawaited(_gpsAddressSync.processQueue());
       if (!isClosed) {
@@ -120,38 +142,65 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
     _isSyncing = true;
     emit(state.copyWith(status: OvertimeSyncStatus.syncing, isOnline: true));
 
-    final result = await _syncUseCase();
-    unawaited(_gpsAddressSync.processQueue());
-    if (isClosed) {
-      return;
-    }
+    try {
+      final result = await _syncUseCase();
+      unawaited(_gpsAddressSync.processQueue());
+      if (isClosed) {
+        return;
+      }
 
-    switch (result) {
-      case Success():
-        final pending = await _repository.getPendingActions();
-        emit(
-          state.copyWith(
-            status: OvertimeSyncStatus.success,
-            pendingCount: pending.length,
-            pendingActions: pending,
-            clearMessage: true,
-          ),
-        );
-      case Failure(message: final message, code: final code):
-        final offline = code == 'OFFLINE' ||
-            code == 'TIMEOUT' ||
-            code == 'NETWORK_ERROR';
+      switch (result) {
+        case Success(data: final synced):
+          final pending = await _repository.getPendingActions();
+          OvertimeOfflineTrace.step(
+            'SYNC_SCHEDULER',
+            status: 'success',
+            queueLength: pending.length,
+            detail: 'syncedCount=$synced',
+          );
+          emit(
+            state.copyWith(
+              status: OvertimeSyncStatus.success,
+              pendingCount: pending.length,
+              pendingActions: pending,
+              clearMessage: true,
+            ),
+          );
+        case Failure(message: final message, code: final code):
+          final offline = code == 'OFFLINE' ||
+              code == 'TIMEOUT' ||
+              code == 'NETWORK_ERROR';
+          OvertimeOfflineTrace.step(
+            'SYNC_SCHEDULER',
+            status: 'failure',
+            detail: 'code=$code message=$message',
+          );
+          emit(
+            state.copyWith(
+              status: OvertimeSyncStatus.failure,
+              clearMessage: offline,
+              message: offline ? null : message,
+              isOnline: !offline,
+            ),
+          );
+      }
+    } on Object catch (error) {
+      OvertimeOfflineTrace.step(
+        'SYNC_SCHEDULER',
+        status: 'failure',
+        detail: error.toString(),
+      );
+      if (!isClosed) {
         emit(
           state.copyWith(
             status: OvertimeSyncStatus.failure,
-            clearMessage: offline,
-            message: offline ? null : message,
-            isOnline: !offline,
+            message: error.toString(),
           ),
         );
+      }
+    } finally {
+      _isSyncing = false;
     }
-
-    _isSyncing = false;
   }
 
   @override

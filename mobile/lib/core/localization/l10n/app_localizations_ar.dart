@@ -2583,6 +2583,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeStatusPendingReview => 'قيد المراجعة';
 
   @override
+  String get overtimeStatusPendingSync => 'بانتظار المزامنة';
+
+  @override
+  String get overtimeStatusSynced => 'تمت المزامنة';
+
+  @override
   String get overtimeStatusApproved => 'موافق عليه';
 
   @override

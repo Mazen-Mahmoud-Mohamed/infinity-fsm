@@ -5108,6 +5108,18 @@ abstract class AppLocalizations {
   /// **'Pending review'**
   String get overtimeStatusPendingReview;
 
+  /// No description provided for @overtimeStatusPendingSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Sync'**
+  String get overtimeStatusPendingSync;
+
+  /// No description provided for @overtimeStatusSynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Synced'**
+  String get overtimeStatusSynced;
+
   /// No description provided for @overtimeStatusApproved.
   ///
   /// In en, this message translates to:

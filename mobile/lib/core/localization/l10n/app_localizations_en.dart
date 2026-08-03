@@ -2593,6 +2593,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeStatusPendingReview => 'Pending review';
 
   @override
+  String get overtimeStatusPendingSync => 'Pending Sync';
+
+  @override
+  String get overtimeStatusSynced => 'Synced';
+
+  @override
   String get overtimeStatusApproved => 'Approved';
 
   @override

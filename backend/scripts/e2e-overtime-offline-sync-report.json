@@ -1,0 +1,73 @@
+{
+  "httpRequests": [
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/auth/login",
+      "status": 200,
+      "ok": true,
+      "bodyPreview": "{\"success\":true,\"data\":{\"tokens\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YTcxMTkwZTY5MTcyYmFmMDc4YjRjNTAiLCJjb21wYW55SWQiOiI2YTcxMTkwODY5MTcyYmFmMDc4YjRjMW"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/auth/login",
+      "status": 200,
+      "ok": true,
+      "bodyPreview": "{\"success\":true,\"data\":{\"tokens\":{\"accessToken\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2YTcxMTkwZDY5MTcyYmFmMDc4YjRjNGQiLCJjb21wYW55SWQiOiI2YTcxMTkwODY5MTcyYmFmMDc4YjRjMW"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/overtime/start",
+      "status": 201,
+      "ok": true,
+      "id": "6a7119bcff61cfa15d94af37",
+      "bodyPreview": "{\"success\":true,\"data\":{\"id\":\"6a7119bcff61cfa15d94af37\",\"companyId\":\"6a71190869172baf078b4c1a\",\"userId\":\"6a71190e69172baf078b4c50\",\"technician\":{\"id\":\"6a71190e69172baf078b4c50\"},\"branchId\":\"6a71190969172baf078b4c23\",\"departmentId\":\"6a71190c"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/overtime/6a7119bcff61cfa15d94af37/arrived-at-work-site",
+      "status": 200,
+      "ok": true,
+      "id": "6a7119bcff61cfa15d94af37",
+      "bodyPreview": "{\"success\":true,\"data\":{\"id\":\"6a7119bcff61cfa15d94af37\",\"companyId\":\"6a71190869172baf078b4c1a\",\"userId\":\"6a71190e69172baf078b4c50\",\"technician\":{\"id\":\"6a71190e69172baf078b4c50\",\"firstName\":\"Field\",\"lastName\":\"Technician\",\"fullName\":\"Field T"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/overtime/6a7119bcff61cfa15d94af37/finished-work",
+      "status": 200,
+      "ok": true,
+      "id": "6a7119bcff61cfa15d94af37",
+      "bodyPreview": "{\"success\":true,\"data\":{\"id\":\"6a7119bcff61cfa15d94af37\",\"companyId\":\"6a71190869172baf078b4c1a\",\"userId\":\"6a71190e69172baf078b4c50\",\"technician\":{\"id\":\"6a71190e69172baf078b4c50\",\"firstName\":\"Field\",\"lastName\":\"Technician\",\"fullName\":\"Field T"
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/overtime/6a7119bcff61cfa15d94af37/end",
+      "status": 200,
+      "ok": true,
+      "id": "6a7119bcff61cfa15d94af37",
+      "bodyPreview": "{\"success\":true,\"data\":{\"id\":\"6a7119bcff61cfa15d94af37\",\"companyId\":\"6a71190869172baf078b4c1a\",\"userId\":\"6a71190e69172baf078b4c50\",\"technician\":{\"id\":\"6a71190e69172baf078b4c50\",\"firstName\":\"Field\",\"lastName\":\"Technician\",\"fullName\":\"Field T"
+    },
+    {
+      "method": "GET",
+      "url": "http://127.0.0.1:3000/api/v1/overtime?status=PENDING&limit=50&page=1",
+      "status": 200,
+      "ok": true,
+      "count": 1,
+      "bodyPreview": "{\"success\":true,\"data\":[{\"id\":\"6a7119bcff61cfa15d94af37\",\"companyId\":\"6a71190869172baf078b4c1a\",\"userId\":\"6a71190e69172baf078b4c50\",\"technician\":{\"id\":\"6a71190e69172baf078b4c50\",\"firstName\":\"Field\",\"lastName\":\"Technician\",\"fullName\":\"Field "
+    },
+    {
+      "method": "POST",
+      "url": "http://127.0.0.1:3000/api/v1/overtime/6a7119bcff61cfa15d94af37/approve",
+      "status": 200,
+      "ok": true,
+      "bodyPreview": "{\"success\":true,\"data\":{\"id\":\"6a7119bcff61cfa15d94af37\",\"companyId\":\"6a71190869172baf078b4c1a\",\"userId\":\"6a71190e69172baf078b4c50\",\"technician\":{\"id\":\"6a71190e69172baf078b4c50\",\"firstName\":\"Field\",\"lastName\":\"Technician\",\"fullName\":\"Field T"
+    }
+  ],
+  "queueCountBeforeSync": 4,
+  "queueCountAfterSync": 0,
+  "historyCountBeforeSync": 1,
+  "historyCountAfterSync": 1,
+  "backendRecordId": "6a7119bcff61cfa15d94af37",
+  "adminVisible": true,
+  "finalSyncStatus": "APPROVED",
+  "approved": true
+}

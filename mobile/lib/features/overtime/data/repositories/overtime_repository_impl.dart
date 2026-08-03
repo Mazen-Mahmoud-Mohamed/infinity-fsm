@@ -8,6 +8,7 @@ import 'package:mobile/features/overtime/data/datasources/overtime_local_datasou
 import 'package:mobile/features/overtime/data/datasources/overtime_remote_datasource.dart';
 import 'package:mobile/features/overtime/data/models/overtime_session_model.dart';
 import 'package:mobile/features/overtime/data/models/pending_overtime_action_model.dart';
+import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
@@ -226,21 +227,64 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
 
   @override
   Future<Result<OvertimeSession?>> getRunningSession() async {
+    OvertimeOfflineTrace.step('GET_RUNNING', status: 'entered');
     try {
       final session = await _remote.getRunning();
-      await _local.saveRunningSession(
-        session == null ? null : _asModel(session),
+      if (session != null) {
+        await _local.saveRunningSession(_asModel(session));
+        OvertimeOfflineTrace.step(
+          'GET_RUNNING',
+          status: 'success',
+          serverId: session.id,
+          detail: 'remote running adopted',
+        );
+        return Success(session);
+      }
+
+      // Do not wipe an optimistic offline running session while its pending
+      // START / checkpoints still need to sync — that made sessions "vanish".
+      final cached = _local.readRunningSession();
+      if (cached != null &&
+          (cached.id.startsWith('local-') ||
+              _local.hasPendingActionsForSession(cached.id))) {
+        OvertimeOfflineTrace.step(
+          'GET_RUNNING',
+          status: 'success',
+          localId: cached.id,
+          queueLength: _local.readQueue().length,
+          detail: 'kept local running; remote null',
+        );
+        return Success(cached);
+      }
+
+      await _local.saveRunningSession(null);
+      OvertimeOfflineTrace.step(
+        'GET_RUNNING',
+        status: 'success',
+        detail: 'remote null; cleared local running',
+        queueLength: _local.readQueue().length,
       );
-      return Success(session);
+      return const Success(null);
     } on Object catch (error) {
       final failure = NetworkErrorMapper.map<OvertimeSession?>(error);
       final cached = _local.readRunningSession();
       if (_isConnectivityFailure(failure.code)) {
+        OvertimeOfflineTrace.step(
+          'GET_RUNNING',
+          status: 'success',
+          localId: cached?.id,
+          detail: 'connectivity failure; returned cache',
+        );
         return Success(cached);
       }
       if (cached != null) {
         return Success(cached);
       }
+      OvertimeOfflineTrace.step(
+        'GET_RUNNING',
+        status: 'failure',
+        detail: failure.message,
+      );
       return failure;
     }
   }
@@ -324,6 +368,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     int? batteryLevel,
     String? networkStatus,
   }) async {
+    OvertimeOfflineTrace.step(
+      'QUEUE_START',
+      status: 'entered',
+      objectId: clientRequestId,
+      detail: 'photoBytes=${photoBytes.length}',
+    );
     final startAt = gps.recordedAt;
     final optimistic = _buildOptimisticRunning(
       type: type,
@@ -354,6 +404,14 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         createdAt: DateTime.now(),
       ),
     );
+    OvertimeOfflineTrace.step(
+      'QUEUE_START',
+      status: 'success',
+      localId: optimistic.id,
+      objectId: clientRequestId,
+      queueLength: _local.readQueue().length,
+    );
+    _local.dumpStorage();
     return Success(optimistic);
   }
 
@@ -649,8 +707,20 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     int? batteryLevel,
     String? networkStatus,
   }) async {
+    OvertimeOfflineTrace.step(
+      'QUEUE_END',
+      status: 'entered',
+      localId: sessionId,
+      detail: 'photoBytes=${photoBytes.length}',
+    );
     final running = _resolveRunningSession(sessionId);
     if (running == null) {
+      OvertimeOfflineTrace.step(
+        'QUEUE_END',
+        status: 'failure',
+        localId: sessionId,
+        detail: 'NO_RUNNING_SESSION',
+      );
       return const Failure(
       'overtimeNoRunningSession',
       code: 'NO_RUNNING_SESSION',
@@ -661,6 +731,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       final expected = running.effectiveNextCheckpoint;
       if (expected != null &&
           expected != OvertimeCheckpointStage.endJourney) {
+        OvertimeOfflineTrace.step(
+          'QUEUE_END',
+          status: 'failure',
+          localId: sessionId,
+          detail: 'CHECKPOINT_ORDER expected=${expected.apiValue}',
+        );
         return Failure(
           'Complete ${expected.apiValue} before ending the journey',
           code: 'CHECKPOINT_ORDER',
@@ -739,6 +815,16 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         createdAt: DateTime.now(),
       ),
     );
+    OvertimeOfflineTrace.step(
+      'QUEUE_END',
+      status: 'success',
+      localId: ended.id,
+      objectId: resolvedClientRequestId,
+      queueLength: _local.readQueue().length,
+      pendingSessions: _local.readHistory().where((e) => e.id.startsWith('local-')).length,
+      detail: 'converted to pending sync',
+    );
+    _local.dumpStorage();
     return Success(ended);
   }
 
@@ -768,6 +854,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     int limit = 20,
     OvertimeStatus? status,
   }) async {
+    OvertimeOfflineTrace.step(
+      'LIST_MY_SESSIONS',
+      status: 'entered',
+      detail: 'page=$page beforeDump',
+    );
+    _local.dumpStorage();
     try {
       final result = await _remote.listMine(
         page: page,
@@ -775,10 +867,51 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         status: status,
       );
       if (page == 1) {
-        await _local.saveHistory(
-          result.items.map(_asModel).toList(),
+        final remoteItems = result.items.map(_asModel).toList();
+        final before = _local.readHistory();
+        final merged = _mergeHistoryPreservingPending(remoteItems);
+        OvertimeOfflineTrace.step(
+          'HISTORY_REFRESH',
+          status: 'entered',
+          detail:
+              'remote=${remoteItems.length} localBefore=${before.length} merged=${merged.length}',
         );
+        await _local.saveHistory(merged);
+        OvertimeOfflineTrace.step(
+          'HISTORY_REFRESH',
+          status: 'success',
+          pendingSessions:
+              merged.where((e) => e.id.startsWith('local-')).length,
+          queueLength: _local.readQueue().length,
+        );
+        _local.dumpStorage();
+        // CRITICAL: return the merged list, not remote-only.
+        // Returning `result` made HistoryCubit / UI show an empty list while
+        // prefs still held the offline pending session (session "vanished").
+        final mergedPage = OvertimeSessionPage(
+          items: status == null
+              ? merged
+              : merged.where((item) => item.status == status).toList(),
+          page: 1,
+          limit: limit,
+          total: status == null
+              ? merged.length
+              : merged.where((item) => item.status == status).length,
+          totalPages: 1,
+        );
+        OvertimeOfflineTrace.step(
+          'LIST_MY_SESSIONS',
+          status: 'success',
+          detail:
+              'returning mergedCount=${mergedPage.items.length} (remote was ${result.items.length})',
+        );
+        return Success(mergedPage);
       }
+      OvertimeOfflineTrace.step(
+        'LIST_MY_SESSIONS',
+        status: 'success',
+        detail: 'returning remoteCount=${result.items.length}',
+      );
       return Success(result);
     } on Object catch (error) {
       final failure = NetworkErrorMapper.map<OvertimeSessionPage>(error);
@@ -787,6 +920,11 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         final filtered = status == null
             ? cached
             : cached.where((item) => item.status == status).toList();
+        OvertimeOfflineTrace.step(
+          'LIST_MY_SESSIONS',
+          status: 'success',
+          detail: 'offline/cache fallback count=${filtered.length}',
+        );
         return Success(
           OvertimeSessionPage(
             items: filtered,
@@ -797,8 +935,56 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           ),
         );
       }
+      OvertimeOfflineTrace.step(
+        'LIST_MY_SESSIONS',
+        status: 'failure',
+        detail: failure.message,
+      );
       return failure;
     }
+  }
+
+  /// Keep offline / pending-sync sessions visible until the queue drains.
+  List<OvertimeSessionModel> _mergeHistoryPreservingPending(
+    List<OvertimeSessionModel> remoteItems,
+  ) {
+    final localHistory = _local.readHistory();
+    final queue = _local.readQueue();
+    if (queue.isEmpty &&
+        localHistory.every((item) => !item.id.startsWith('local-'))) {
+      return remoteItems;
+    }
+
+    final remoteIds = remoteItems.map((item) => item.id).toSet();
+    final localIdMap = _local.readLocalIdMap();
+    final pendingLocal = <OvertimeSessionModel>[];
+
+    for (final item in localHistory) {
+      if (remoteIds.contains(item.id)) {
+        continue;
+      }
+      final keep = item.id.startsWith('local-') ||
+          queue.any((action) {
+            final actionSessionId = action.sessionId;
+            if (actionSessionId == item.id) {
+              return true;
+            }
+            if (action.type == PendingOvertimeActionType.start &&
+                'local-${action.clientRequestId}' == item.id) {
+              return true;
+            }
+            if (actionSessionId != null &&
+                localIdMap[actionSessionId] == item.id) {
+              return true;
+            }
+            return false;
+          });
+      if (keep) {
+        pendingLocal.add(item);
+      }
+    }
+
+    return [...pendingLocal, ...remoteItems].take(50).toList();
   }
 
   @override
@@ -880,22 +1066,44 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
 
   @override
   Future<Result<int>> syncPendingActions() async {
+    OvertimeOfflineTrace.step('SYNC_START', status: 'entered');
+    _local.dumpStorage();
     if (!await _connectivity.isConnected) {
+      OvertimeOfflineTrace.step(
+        'SYNC_START',
+        status: 'failure',
+        detail: 'offline — abort',
+        queueLength: _local.readQueue().length,
+      );
       return const Success(0);
     }
 
     var synced = 0;
     final queue = [..._local.readQueue()]
       ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    OvertimeOfflineTrace.step(
+      'SYNC_START',
+      status: 'success',
+      queueLength: queue.length,
+      detail: 'online; processing ${queue.map((e) => e.type.name).join(",")}',
+    );
 
-    // Resolve local session ids after start sync.
-    final localIdMap = <String, String>{};
+    // Durable across sync passes (and app restarts): in-memory map alone was
+    // lost after START was removed, leaving mid/end stuck on local-* forever.
+    final localIdMap = <String, String>{..._local.readLocalIdMap()};
+    _seedLocalIdMapFromCaches(localIdMap);
 
     for (final action in queue) {
       try {
         final enriched = await _enrichPendingAction(action);
 
         if (enriched.type == PendingOvertimeActionType.start) {
+          OvertimeOfflineTrace.step(
+            'REPO_UPLOAD',
+            status: 'entered',
+            objectId: enriched.id,
+            detail: 'START photoBytes=${enriched.photoBytes.length}',
+          );
           final startedAt = enriched.startedAt ?? enriched.gps.recordedAt;
           final session = await _remote.start(
             type: enriched.overtimeType ?? OvertimeType.normal,
@@ -909,8 +1117,18 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             batteryLevel: enriched.batteryLevel,
             networkStatus: enriched.networkStatus,
           );
+          OvertimeOfflineTrace.step(
+            'REPO_UPLOAD',
+            status: 'success',
+            objectId: enriched.id,
+            localId: 'local-${enriched.clientRequestId}',
+            serverId: session.id,
+            detail: 'START uploaded',
+          );
           final localId = 'local-${enriched.clientRequestId}';
           localIdMap[localId] = session.id;
+          await _local.rememberLocalIdMapping(localId, session.id);
+          await _local.remapQueueSessionIds(localId, session.id);
 
           final running = _local.readRunningSession();
           if (running != null && running.id == localId) {
@@ -946,10 +1164,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           synced += 1;
         } else if (enriched.isMidCheckpoint) {
           var sessionId = enriched.sessionId ?? '';
-          if (sessionId.startsWith('local-') &&
-              localIdMap.containsKey(sessionId)) {
-            sessionId = localIdMap[sessionId]!;
-          }
+          sessionId = _resolveSyncedSessionId(sessionId, localIdMap);
           if (sessionId.startsWith('local-')) {
             continue;
           }
@@ -1011,10 +1226,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           synced += 1;
         } else {
           var sessionId = enriched.sessionId ?? '';
-          if (sessionId.startsWith('local-') &&
-              localIdMap.containsKey(sessionId)) {
-            sessionId = localIdMap[sessionId]!;
-          }
+          sessionId = _resolveSyncedSessionId(sessionId, localIdMap);
           if (sessionId.startsWith('local-')) {
             // Start action not synced yet; keep for next pass.
             continue;
@@ -1076,6 +1288,20 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             [localEnded, ...withoutDupes].take(50).toList(),
           );
           await _local.removeFromQueue(enriched.id);
+
+          final localKey = enriched.sessionId;
+          if (localKey != null && localKey.startsWith('local-')) {
+            await _local.clearLocalIdMapping(localKey);
+            localIdMap.remove(localKey);
+          } else {
+            for (final entry in localIdMap.entries.toList()) {
+              if (entry.value == sessionId) {
+                await _local.clearLocalIdMapping(entry.key);
+                localIdMap.remove(entry.key);
+              }
+            }
+          }
+
           if (enriched.gps.needsAddressResolution) {
             await _gpsAddressSync.enqueueOvertime(
               sessionId: sessionId,
@@ -1108,6 +1334,43 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     }
 
     return Success(synced);
+  }
+
+  void _seedLocalIdMapFromCaches(Map<String, String> localIdMap) {
+    void consider(OvertimeSessionModel session) {
+      if (session.id.startsWith('local-')) {
+        return;
+      }
+      final clientRequestId =
+          session.checkpoints?.startJourney?.clientRequestId?.trim();
+      if (clientRequestId == null || clientRequestId.isEmpty) {
+        return;
+      }
+      localIdMap.putIfAbsent('local-$clientRequestId', () => session.id);
+    }
+
+    final running = _local.readRunningSession();
+    if (running != null) {
+      consider(running);
+    }
+    for (final item in _local.readHistory()) {
+      consider(item);
+    }
+  }
+
+  String _resolveSyncedSessionId(
+    String sessionId,
+    Map<String, String> localIdMap,
+  ) {
+    if (!sessionId.startsWith('local-')) {
+      return sessionId;
+    }
+    final mapped = localIdMap[sessionId];
+    if (mapped != null && mapped.isNotEmpty) {
+      return mapped;
+    }
+    _seedLocalIdMapFromCaches(localIdMap);
+    return localIdMap[sessionId] ?? sessionId;
   }
 
   bool _isOrderBlockingFailure(String? code, String message) {

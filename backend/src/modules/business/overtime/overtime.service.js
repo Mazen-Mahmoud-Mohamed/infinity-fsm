@@ -81,10 +81,31 @@ function assertGpsAccuracy(gps) {
   }
 }
 
-function assertClockSkew(recordedAt) {
+function assertClockSkew(recordedAt, { allowHistorical = false } = {}) {
   if (!recordedAt) return;
   const skewSeconds = config.security.maxDeviceClockSkewSeconds;
-  const deltaMs = Math.abs(Date.now() - new Date(recordedAt).getTime());
+  const recordedMs = new Date(recordedAt).getTime();
+  if (!Number.isFinite(recordedMs)) {
+    throw new AppError(
+      'CLOCK_SKEW',
+      'Device time appears to be incorrect',
+      422
+    );
+  }
+  const now = Date.now();
+  if (allowHistorical) {
+    // Offline replay: original GPS timestamps may be minutes/hours old.
+    // Only reject clocks that are unreasonably ahead of the server.
+    if (recordedMs - now > skewSeconds * 1000) {
+      throw new AppError(
+        'CLOCK_SKEW',
+        'Device time appears to be incorrect',
+        422
+      );
+    }
+    return;
+  }
+  const deltaMs = Math.abs(now - recordedMs);
   if (deltaMs > skewSeconds * 1000) {
     throw new AppError(
       'CLOCK_SKEW',
@@ -92,6 +113,13 @@ function assertClockSkew(recordedAt) {
       422
     );
   }
+}
+
+function isOfflineTimelineReplay(body = {}) {
+  // Flutter offline sync always resends the original client timeline fields.
+  return Boolean(
+    body.startedAt || body.endedAt || body.checkpointAt || body.durationSeconds
+  );
 }
 
 function mapStatusFilter(status) {
@@ -231,7 +259,9 @@ class OvertimeService {
     }
 
     const gps = buildGps(body);
-    assertClockSkew(gps.recordedAt);
+    assertClockSkew(gps.recordedAt, {
+      allowHistorical: isOfflineTimelineReplay(body),
+    });
     assertGpsAccuracy(gps);
 
     const photo = await uploadOvertimePhotoBuffer(file.buffer, {
@@ -385,7 +415,9 @@ class OvertimeService {
     }
 
     const gps = buildGps(body);
-    assertClockSkew(gps.recordedAt);
+    assertClockSkew(gps.recordedAt, {
+      allowHistorical: isOfflineTimelineReplay(body),
+    });
     assertGpsAccuracy(gps);
 
     const { startedAt: checkpointAt } = resolveSessionTimeline({
@@ -496,7 +528,9 @@ class OvertimeService {
     }
 
     const gps = buildGps(body);
-    assertClockSkew(gps.recordedAt);
+    assertClockSkew(gps.recordedAt, {
+      allowHistorical: isOfflineTimelineReplay(body),
+    });
     assertGpsAccuracy(gps);
 
     const {

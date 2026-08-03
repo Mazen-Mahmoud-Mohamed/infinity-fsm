@@ -4,6 +4,7 @@ import 'package:mobile/core/network/dio_client.dart';
 import 'package:mobile/features/attendance/data/models/gps_snapshot_model.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
 import 'package:mobile/features/overtime/data/models/overtime_session_model.dart';
+import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
@@ -41,6 +42,13 @@ class OvertimeRemoteDataSource {
     int? batteryLevel,
     String? networkStatus,
   }) async {
+    OvertimeOfflineTrace.step(
+      'HTTP_REQUEST',
+      status: 'entered',
+      objectId: clientRequestId,
+      detail:
+          'POST ${ApiConstants.overtimeStart} photoBytes=${photoBytes.length}',
+    );
     final formData = _buildForm(
       gps: gps,
       deviceId: deviceId,
@@ -63,6 +71,13 @@ class OvertimeRemoteDataSource {
     final response = await _client.post<Map<String, dynamic>>(
       ApiConstants.overtimeStart,
       data: formData,
+    );
+    OvertimeOfflineTrace.step(
+      'HTTP_RESPONSE',
+      status: 'success',
+      objectId: clientRequestId,
+      serverId: (response.data?['data'] as Map?)?['id']?.toString(),
+      detail: 'POST ${ApiConstants.overtimeStart} status=${response.statusCode}',
     );
     return OvertimeSessionModel.fromJson(
       response.data?['data'] as Map<String, dynamic>,

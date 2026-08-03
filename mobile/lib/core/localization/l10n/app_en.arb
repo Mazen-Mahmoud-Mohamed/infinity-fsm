@@ -972,6 +972,8 @@
   },
   "overtimeStatusRunning": "Running",
   "overtimeStatusPendingReview": "Pending review",
+  "overtimeStatusPendingSync": "Pending Sync",
+  "overtimeStatusSynced": "Synced",
   "overtimeStatusApproved": "Approved",
   "overtimeStatusRejected": "Rejected",
   "overtimeStatusCancelled": "Cancelled",

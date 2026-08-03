@@ -23,6 +23,7 @@ import 'package:mobile/features/overtime/domain/usecases/get_running_overtime_us
 import 'package:mobile/features/overtime/domain/usecases/record_overtime_checkpoint_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/start_overtime_usecase.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
+import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 
 GpsSnapshot _toGpsSnapshot(GpsReading reading, {DateTime? trustedUtc}) {
   return GpsSnapshot(
@@ -106,6 +107,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     required CheckpointTelemetryService checkpointTelemetryService,
     required SessionQueryCache sessionQueryCache,
     required OvertimeLocalDataSource localDataSource,
+    required OvertimeSyncCubit overtimeSyncCubit,
     OvertimeSessionReminderService? reminderService,
   })  : _getRunningOvertimeUseCase = getRunningOvertimeUseCase,
         _startOvertimeUseCase = startOvertimeUseCase,
@@ -121,6 +123,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
         _checkpointTelemetryService = checkpointTelemetryService,
         _sessionQueryCache = sessionQueryCache,
         _localDataSource = localDataSource,
+        _overtimeSyncCubit = overtimeSyncCubit,
         _reminderService = reminderService,
         super(const OvertimeState());
 
@@ -141,6 +144,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   final CheckpointTelemetryService _checkpointTelemetryService;
   final SessionQueryCache _sessionQueryCache;
   final OvertimeLocalDataSource _localDataSource;
+  final OvertimeSyncCubit _overtimeSyncCubit;
   final OvertimeSessionReminderService? _reminderService;
 
   Timer? _tickTimer;
@@ -371,6 +375,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
           );
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
+          if (offlineQueued) {
+            _kickPendingSync();
+          }
         case Failure(message: final message, code: final code):
           emit(
             state.copyWith(
@@ -483,6 +490,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
           );
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
+          if (offlineQueued) {
+            _kickPendingSync();
+          }
         case Failure(message: final message, code: final code):
           emit(
             state.copyWith(
@@ -701,6 +711,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
           _startTicker(session.startAt);
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
+          if (offlineQueued) {
+            _kickPendingSync();
+          }
         case Failure(message: final message, code: final code):
           final isConflict = code == 'CONFLICT' ||
               message.toLowerCase().contains('already have a running');
@@ -835,6 +848,11 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   Future<void> continueExistingSession() async {
     emit(state.copyWith(offerContinueSession: false, clearMessage: true));
     await initialize();
+  }
+
+  void _kickPendingSync() {
+    unawaited(_overtimeSyncCubit.refreshPendingCount());
+    unawaited(_overtimeSyncCubit.syncNow());
   }
 
   @override
