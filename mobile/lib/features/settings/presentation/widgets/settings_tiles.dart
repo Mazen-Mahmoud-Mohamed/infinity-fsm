@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 
@@ -40,6 +41,7 @@ class SettingsTile extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onTap,
+    this.onLongPress,
     this.trailing,
     this.enabled = true,
   });
@@ -48,49 +50,85 @@ class SettingsTile extends StatelessWidget {
   final String title;
   final String? subtitle;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final Widget? trailing;
   final bool enabled;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDesktop = AppBreakpoints.isDesktopOf(context);
 
-    return ListTile(
-      enabled: enabled,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.md,
-        vertical: AppSpacing.xs,
-      ),
-      leading: Container(
-        width: 40,
-        height: 40,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: colorScheme.primary.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(AppRadius.md),
-        ),
-        child: Icon(icon, size: 22, color: colorScheme.primary),
-      ),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: colorScheme.onSurface,
-            ),
-      ),
-      subtitle: subtitle == null
-          ? null
-          : Text(
-              subtitle!,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+    return Semantics(
+      button: onTap != null || onLongPress != null,
+      label: title,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: enabled ? onTap : null,
+          onLongPress: enabled ? onLongPress : null,
+          hoverColor: isDesktop
+              ? colorScheme.onSurface.withValues(alpha: 0.04)
+              : null,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 52),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.sm,
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Icon(icon, size: 22, color: colorScheme.primary),
                   ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          title,
+                          style:
+                              Theme.of(context).textTheme.titleSmall?.copyWith(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        if (subtitle != null) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle!,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  trailing ??
+                      Icon(
+                        Icons.chevron_right,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                ],
+              ),
             ),
-      trailing: trailing ??
-          Icon(
-            Icons.chevron_right,
-            color: colorScheme.onSurfaceVariant,
           ),
-      onTap: enabled ? onTap : null,
+        ),
+      ),
     );
   }
 }

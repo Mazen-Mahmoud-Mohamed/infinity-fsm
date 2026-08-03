@@ -64,4 +64,18 @@ class RoutePaths {
   static const String settingsTheme = '/settings/theme';
   static const String settingsNotifications = '/settings/notifications';
   static const String settingsAbout = '/settings/about';
+  static const String settingsServer = '/settings/server';
+  static const String settingsAccount = '/settings/account';
+  static const String settingsSync = '/settings/sync';
+  static const String settingsStorage = '/settings/storage';
+  static const String settingsSupport = '/settings/support';
+  static const String settingsSecurity = '/settings/security';
+  static const String settingsApplication = '/settings/application';
+  static const String settingsPerformance = '/settings/performance';
+  static const String settingsAccessibility = '/settings/accessibility';
+  static const String settingsBackup = '/settings/backup';
+  static const String settingsDanger = '/settings/danger';
+  static const String settingsUpdates = '/settings/updates';
+  static const String settingsLogs = '/settings/logs';
+  static const String settingsDeveloper = '/settings/developer';
 }

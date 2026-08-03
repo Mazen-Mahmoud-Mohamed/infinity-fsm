@@ -4,11 +4,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
 import androidx.core.view.WindowCompat
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
+// FlutterFragmentActivity is required by local_auth for biometric prompts.
+class MainActivity : FlutterFragmentActivity() {
     private val channelName = "com.infinity.fsm/monotonic_clock"
 
     override fun onCreate(savedInstanceState: Bundle?) {

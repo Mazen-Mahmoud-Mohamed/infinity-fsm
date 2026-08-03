@@ -15,6 +15,10 @@ class ConnectivityService {
 
   Future<bool> get isConnected async => _internetConnection.hasInternetAccess;
 
+  /// Active link types (wifi / mobile / ethernet / none / other).
+  Future<List<ConnectivityResult>> get connectionTypes =>
+      _connectivity.checkConnectivity();
+
   Stream<bool> get onConnectivityChanged =>
       _connectivity.onConnectivityChanged.asyncMap((_) => isConnected);
 }

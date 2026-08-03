@@ -1697,6 +1697,284 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsSave => 'حفظ الإعدادات';
 
   @override
+  String get serverMgmtTitle => 'إدارة الخادم';
+
+  @override
+  String get serverMgmtAccessDenied =>
+      'يمكن للمسؤولين فقط إدارة خادم الواجهة الخلفية.';
+
+  @override
+  String get serverMgmtConnectionSettings => 'إعدادات الاتصال';
+
+  @override
+  String get serverMgmtBackendUrl => 'عنوان خادم الواجهة الخلفية';
+
+  @override
+  String get serverMgmtUrlHelper =>
+      'يقبل https://host أو https://host/api/v1 — يُضاف /api/v1 تلقائياً.';
+
+  @override
+  String get serverMgmtInvalidUrl =>
+      'أدخل عنوان URL صالحاً يبدأ بـ http:// أو https://.';
+
+  @override
+  String get serverMgmtTestConnection => 'اختبار الاتصال';
+
+  @override
+  String get serverMgmtPingServer => 'فحص الخادم';
+
+  @override
+  String get serverMgmtSave => 'حفظ';
+
+  @override
+  String get serverMgmtRestoreDefault => 'استعادة الافتراضي';
+
+  @override
+  String get serverMgmtServerInformation => 'معلومات الخادم';
+
+  @override
+  String get serverMgmtCurrentServer => 'الخادم الحالي';
+
+  @override
+  String get serverMgmtStatus => 'الحالة';
+
+  @override
+  String get serverMgmtStatusConnected => 'متصل';
+
+  @override
+  String get serverMgmtStatusFailed => 'فشل الاتصال';
+
+  @override
+  String get serverMgmtStatusUnknown => 'لم يُختبر بعد';
+
+  @override
+  String get serverMgmtBackendVersion => 'إصدار الخادم';
+
+  @override
+  String get serverMgmtEnvironment => 'البيئة';
+
+  @override
+  String get serverMgmtResponseTime => 'زمن الاستجابة';
+
+  @override
+  String get serverMgmtConnectionQuality => 'جودة الاتصال';
+
+  @override
+  String get serverMgmtLastSuccessful => 'آخر اتصال ناجح';
+
+  @override
+  String get serverMgmtQualityExcellent => 'ممتاز (<100 مللي ثانية)';
+
+  @override
+  String get serverMgmtQualityGood => 'جيد (100–250 مللي ثانية)';
+
+  @override
+  String get serverMgmtQualityFair => 'مقبول (250–500 مللي ثانية)';
+
+  @override
+  String get serverMgmtQualityPoor => 'ضعيف (>1000 مللي ثانية)';
+
+  @override
+  String get serverMgmtQualityUnreachable => 'الخادم غير متاح';
+
+  @override
+  String get serverMgmtAdvancedDiagnostics => 'تشخيص متقدم';
+
+  @override
+  String get serverMgmtAppVersion => 'إصدار التطبيق';
+
+  @override
+  String get serverMgmtBuildNumber => 'رقم البناء';
+
+  @override
+  String get serverMgmtPlatform => 'المنصة';
+
+  @override
+  String get serverMgmtCurrentApiUrl => 'عنوان واجهة البرمجة الحالي';
+
+  @override
+  String get serverMgmtDeviceLocalTime => 'الوقت المحلي للجهاز';
+
+  @override
+  String get serverMgmtServerTime => 'وقت الخادم';
+
+  @override
+  String get serverMgmtClockDifference => 'فرق الساعة';
+
+  @override
+  String get serverMgmtOnlineStatus => 'حالة الاتصال';
+
+  @override
+  String get serverMgmtOnline => 'متصل';
+
+  @override
+  String get serverMgmtOffline => 'غير متصل';
+
+  @override
+  String get serverMgmtUserRole => 'دور المستخدم الحالي';
+
+  @override
+  String get serverMgmtLastSuccessfulSync => 'آخر مزامنة ناجحة';
+
+  @override
+  String get serverMgmtPendingSyncQueue => 'طابور المزامنة المعلقة';
+
+  @override
+  String get serverMgmtNetworkType => 'نوع الشبكة';
+
+  @override
+  String get serverMgmtBackendReachable => 'الخادم قابل للوصول';
+
+  @override
+  String get serverMgmtApiHealth => 'صحة واجهة البرمجة';
+
+  @override
+  String get serverMgmtDatabaseConnectivity => 'اتصال قاعدة البيانات';
+
+  @override
+  String get serverMgmtAvgLatency => 'متوسط زمن الاستجابة';
+
+  @override
+  String get serverMgmtMinLatency => 'أقل زمن استجابة';
+
+  @override
+  String get serverMgmtMaxLatency => 'أعلى زمن استجابة';
+
+  @override
+  String get serverMgmtRequestTimeout => 'مهلة الطلب';
+
+  @override
+  String get serverMgmtAppUptime => 'مدة تشغيل التطبيق';
+
+  @override
+  String get serverMgmtDeviceTimezone => 'المنطقة الزمنية للجهاز';
+
+  @override
+  String get serverMgmtServerTimezone => 'المنطقة الزمنية للخادم';
+
+  @override
+  String get serverMgmtHealthHealthy => 'سليم';
+
+  @override
+  String get serverMgmtHealthWarning => 'تحذير';
+
+  @override
+  String get serverMgmtHealthError => 'خطأ';
+
+  @override
+  String get serverMgmtTestSuccess => 'تم الاتصال بالخادم بنجاح.';
+
+  @override
+  String get serverMgmtTestFailed => 'فشل الاتصال. تحقق من العنوان والشبكة.';
+
+  @override
+  String get serverMgmtPingSuccess => 'اكتمل فحص الخادم.';
+
+  @override
+  String get serverMgmtPingFailed => 'الخادم غير متاح.';
+
+  @override
+  String get serverMgmtSaveSuccess =>
+      'تم حفظ عنوان الخادم. ستستخدم الطلبات الجديدة هذا الخادم فوراً.';
+
+  @override
+  String get serverMgmtSaveFailed => 'تعذر حفظ عنوان الخادم.';
+
+  @override
+  String get serverMgmtRestoreSuccess => 'تمت استعادة خادم الإنتاج الافتراضي.';
+
+  @override
+  String get serverMgmtFutureHint =>
+      'هذه الصفحة جاهزة لإعدادات مستقبلية مثل المهلات وإعادة المحاولة والتحويل التلقائي وميزات التجربة.';
+
+  @override
+  String get serverMgmtUnlockHint => 'تم فتح أدوات المسؤول';
+
+  @override
+  String get serverMgmtBiometricReason => 'قم بالمصادقة لفتح إدارة الخادم';
+
+  @override
+  String get serverMgmtBiometricUnavailable =>
+      'المصادقة على الجهاز غير متاحة على هذا الجهاز.';
+
+  @override
+  String get serverMgmtTimeout => 'انتهت مهلة الاتصال. حاول مرة أخرى.';
+
+  @override
+  String get serverMgmtExportSuccess => 'تم تصدير التشخيص.';
+
+  @override
+  String get serverMgmtExportFailed => 'تعذر تصدير التشخيص.';
+
+  @override
+  String get serverMgmtCopySuccess => 'تم نسخ معلومات الخادم.';
+
+  @override
+  String get serverMgmtExportDiagnostics => 'تصدير التشخيص';
+
+  @override
+  String get serverMgmtCopyServerInfo => 'نسخ معلومات الخادم';
+
+  @override
+  String get serverMgmtClearUrl => 'مسح';
+
+  @override
+  String get serverMgmtPasteUrl => 'لصق';
+
+  @override
+  String get serverMgmtCopyUrl => 'نسخ';
+
+  @override
+  String get serverMgmtRetry => 'إعادة المحاولة';
+
+  @override
+  String get serverMgmtServerUnreachable => 'الخادم غير متاح';
+
+  @override
+  String get serverMgmtUnknown => 'غير معروف';
+
+  @override
+  String get serverMgmtQualitySlow => 'بطيء (500–1000 مللي ثانية)';
+
+  @override
+  String get serverMgmtRegion => 'المنطقة';
+
+  @override
+  String get serverMgmtServerUptime => 'مدة التشغيل';
+
+  @override
+  String get serverMgmtDatabase => 'قاعدة البيانات';
+
+  @override
+  String get serverMgmtApiUrlLabel => 'عنوان واجهة البرمجة';
+
+  @override
+  String get serverMgmtLatency => 'زمن الاستجابة';
+
+  @override
+  String get serverMgmtVersion => 'الإصدار';
+
+  @override
+  String get serverMgmtHealth => 'الصحة';
+
+  @override
+  String get serverMgmtDeviceModel => 'طراز الجهاز';
+
+  @override
+  String get serverMgmtAndroidVersion => 'إصدار Android / النظام';
+
+  @override
+  String get serverMgmtLastSuccessfulPing => 'آخر فحص ناجح';
+
+  @override
+  String get serverMgmtConnectedBadge => 'متصل';
+
+  @override
+  String serverMgmtVersionLabel(String version, String build) {
+    return 'الإصدار $version ($build)';
+  }
+
+  @override
   String get livePhotoRequired => 'يلزم التقاط صورة مباشرة.';
 
   @override
@@ -2860,4 +3138,393 @@ class AppLocalizationsAr extends AppLocalizations {
   String eventFeedActorLine(String module, String actor) {
     return '$module · $actor';
   }
+
+  @override
+  String get settingsAccountOverview => 'الحساب';
+
+  @override
+  String get settingsChangePhoto => 'تغيير الصورة';
+
+  @override
+  String get settingsPhotoPreview => 'معاينة الصورة';
+
+  @override
+  String get settingsPhotoPreviewHint => 'سيتم حفظ صورتك كصورة ملف شخصي مربعة.';
+
+  @override
+  String get settingsPhotoUpdated => 'تم تحديث صورة الملف الشخصي';
+
+  @override
+  String get settingsPhotoUnsupportedFormat =>
+      'يرجى اختيار صورة JPG أو PNG أو WebP.';
+
+  @override
+  String get settingsPhotoDecodeFailed => 'تعذر قراءة الصورة المحددة.';
+
+  @override
+  String get settingsEmployeeId => 'الرقم الوظيفي';
+
+  @override
+  String get settingsBranch => 'الفرع';
+
+  @override
+  String get settingsDepartment => 'القسم';
+
+  @override
+  String get settingsAccountCreated => 'تاريخ إنشاء الحساب';
+
+  @override
+  String get settingsLastLogin => 'آخر تسجيل دخول';
+
+  @override
+  String get settingsNotAvailable => 'غير متاح';
+
+  @override
+  String get settingsEditablePrefs => 'تفضيلات قابلة للتعديل';
+
+  @override
+  String get settingsSyncTitle => 'المزامنة';
+
+  @override
+  String get settingsLastSuccessfulSync => 'آخر مزامنة ناجحة';
+
+  @override
+  String get settingsPendingUploads => 'عمليات الرفع المعلقة';
+
+  @override
+  String get settingsPendingDownloads => 'عمليات التنزيل المعلقة';
+
+  @override
+  String get settingsSyncStatus => 'حالة المزامنة';
+
+  @override
+  String get settingsAutoSync => 'مزامنة تلقائية';
+
+  @override
+  String get settingsWifiOnlySync => 'Wi‑Fi فقط';
+
+  @override
+  String get settingsSyncInterval => 'فاصل المزامنة';
+
+  @override
+  String get settingsManualSync => 'مزامنة الآن';
+
+  @override
+  String get settingsManualSyncDone => 'تم طلب المزامنة';
+
+  @override
+  String get settingsNetworkRequirement => 'متطلبات الشبكة';
+
+  @override
+  String get settingsStorageTitle => 'التخزين';
+
+  @override
+  String get settingsCacheSize => 'حجم التخزين المؤقت';
+
+  @override
+  String get settingsImagesSize => 'ذاكرة الصور';
+
+  @override
+  String get settingsTempFiles => 'الملفات المؤقتة';
+
+  @override
+  String get settingsManagedByOs => 'يديرها النظام';
+
+  @override
+  String get settingsClearCache => 'مسح التخزين المؤقت';
+
+  @override
+  String get settingsSupportTitle => 'الدعم';
+
+  @override
+  String get settingsContactSupport => 'التواصل مع الدعم';
+
+  @override
+  String get settingsReportBug => 'الإبلاغ عن خطأ';
+
+  @override
+  String get settingsRequestFeature => 'طلب ميزة';
+
+  @override
+  String get settingsFaq => 'الأسئلة الشائعة';
+
+  @override
+  String get settingsSecurityTitle => 'الأمان';
+
+  @override
+  String get settingsCurrentSession => 'الجلسة الحالية';
+
+  @override
+  String get settingsDeviceName => 'اسم الجهاز';
+
+  @override
+  String get settingsBiometricStatus => 'تسجيل الدخول البيومتري';
+
+  @override
+  String get settingsBiometricAvailable => 'متاح على هذا الجهاز';
+
+  @override
+  String get settingsBiometricUnavailable => 'غير متاح';
+
+  @override
+  String get settingsLogoutAllDevices => 'تسجيل الخروج من كل الأجهزة';
+
+  @override
+  String get settingsApplicationTitle => 'التطبيق';
+
+  @override
+  String get settingsPerformanceTitle => 'الأداء';
+
+  @override
+  String get settingsMemoryUsage => 'استخدام الذاكرة';
+
+  @override
+  String get settingsCacheUsage => 'استخدام التخزين المؤقت';
+
+  @override
+  String get settingsNetworkLatency => 'زمن استجابة الشبكة';
+
+  @override
+  String get settingsDatabaseConnection => 'اتصال قاعدة البيانات';
+
+  @override
+  String get settingsServerHealth => 'صحة الخادم';
+
+  @override
+  String get settingsUseServerMgmt => 'راجع إدارة الخادم';
+
+  @override
+  String get settingsAccessibilityTitle => 'إمكانية الوصول';
+
+  @override
+  String get settingsLargeText => 'نص كبير';
+
+  @override
+  String get settingsReduceAnimations => 'تقليل الحركات';
+
+  @override
+  String get settingsHighContrast => 'تباين عالٍ';
+
+  @override
+  String get settingsBackupUnavailable => 'النسخ الاحتياطي غير متاح بعد.';
+
+  @override
+  String get settingsRestoreUnavailable => 'الاستعادة غير متاحة بعد.';
+
+  @override
+  String get settingsDangerZone => 'منطقة الخطر';
+
+  @override
+  String get settingsDangerZoneHint =>
+      'هذه الإجراءات تعيد ضبط التفضيلات المحلية والتخزين المؤقت فقط. لا يتم حذف بيانات العمل.';
+
+  @override
+  String get settingsResetPreferences => 'إعادة ضبط التفضيلات';
+
+  @override
+  String get settingsResetPreferencesConfirm =>
+      'إعادة ضبط اللغة والمظهر والإشعارات والمزامنة وإمكانية الوصول؟';
+
+  @override
+  String get settingsClearCacheConfirm =>
+      'مسح ذاكرة الصور المحلية؟ لن يتم حذف بيانات المستخدم.';
+
+  @override
+  String get settingsRestoreDefaults => 'استعادة الإعدادات الافتراضية';
+
+  @override
+  String get settingsRestoreDefaultsConfirm =>
+      'استعادة كل التفضيلات الافتراضية ومسح التخزين المؤقت المحلي؟';
+
+  @override
+  String get settingsPrefsRestored => 'تمت استعادة التفضيلات';
+
+  @override
+  String get settingsConfirm => 'تأكيد';
+
+  @override
+  String get settingsUpdateCenter => 'مركز التحديثات';
+
+  @override
+  String get settingsLatestVersion => 'أحدث إصدار متاح';
+
+  @override
+  String get settingsReleaseChannel => 'قناة الإصدار';
+
+  @override
+  String get settingsReleaseDate => 'تاريخ الإصدار';
+
+  @override
+  String get settingsUpdateStatus => 'حالة التحديث';
+
+  @override
+  String get settingsUpdateIdle => 'لم يتم الفحص بعد';
+
+  @override
+  String get settingsUpdateChecking => 'جارٍ الفحص…';
+
+  @override
+  String get settingsUpdateUpToDate => 'محدَّث';
+
+  @override
+  String get settingsUpdateAvailable => 'يتوفر تحديث';
+
+  @override
+  String get settingsUpdateFailed => 'تعذر الفحص';
+
+  @override
+  String get settingsCheckForUpdates => 'التحقق من التحديثات';
+
+  @override
+  String get settingsViewReleaseNotes => 'عرض ملاحظات الإصدار';
+
+  @override
+  String get settingsDownloadUpdate => 'تنزيل التحديث';
+
+  @override
+  String get settingsDownloadUpdateSoon => 'سيتم توفير التنزيل لاحقاً.';
+
+  @override
+  String get settingsAdminLogs => 'سجلات التطبيق';
+
+  @override
+  String get settingsSearchLogs => 'بحث في السجلات';
+
+  @override
+  String get settingsLogAll => 'الكل';
+
+  @override
+  String get settingsLogCategoryAll => 'كل الفئات';
+
+  @override
+  String get settingsCopyLogs => 'نسخ السجلات';
+
+  @override
+  String get settingsExportLogs => 'تصدير السجلات';
+
+  @override
+  String get settingsClearLogs => 'مسح السجلات';
+
+  @override
+  String get settingsLogsCopied => 'تم نسخ السجلات';
+
+  @override
+  String get settingsLogEntries => 'إدخالات السجل';
+
+  @override
+  String get settingsNoLogs => 'لا توجد سجلات بعد';
+
+  @override
+  String get settingsDeveloperOptions => 'خيارات المطور';
+
+  @override
+  String get settingsFeatureFlags => 'أعلام الميزات';
+
+  @override
+  String get settingsReadOnly => 'للقراءة فقط';
+
+  @override
+  String get settingsNoFeatureFlags => 'لا توجد أعلام ميزات';
+
+  @override
+  String get settingsNotifAttendance => 'إشعارات الحضور';
+
+  @override
+  String get settingsNotifTasks => 'إشعارات المهام';
+
+  @override
+  String get settingsNotifOvertime => 'إشعارات الوقت الإضافي';
+
+  @override
+  String get settingsNotifSync => 'إشعارات المزامنة';
+
+  @override
+  String get settingsNotifUpdates => 'إشعارات التحديثات';
+
+  @override
+  String get settingsThemePreview => 'معاينة المظهر';
+
+  @override
+  String get settingsThemePreviewBody =>
+      'البطاقات والنصوص والعناصر تتبع المظهر المحدد فوراً.';
+
+  @override
+  String get settingsAboutApp => 'حول التطبيق';
+
+  @override
+  String get settingsDeveloper => 'المطور';
+
+  @override
+  String settingsCopyright(String year, String company) {
+    return 'حقوق النشر © $year $company. جميع الحقوق محفوظة.';
+  }
+
+  @override
+  String get settingsOpenSourcePackages => 'حزم مفتوحة المصدر';
+
+  @override
+  String get settingsSectionPreferences => 'التفضيلات';
+
+  @override
+  String get settingsSectionSecurity => 'الأمان والخصوصية';
+
+  @override
+  String get settingsSectionSupport => 'المساعدة والدعم';
+
+  @override
+  String get settingsSectionDeveloper => 'المطور';
+
+  @override
+  String get settingsDiagDevice => 'الجهاز';
+
+  @override
+  String get settingsDiagNetwork => 'الشبكة';
+
+  @override
+  String get settingsDiagServer => 'الخادم';
+
+  @override
+  String get settingsDiagApi => 'واجهة البرمجة';
+
+  @override
+  String get settingsDiagDatabase => 'قاعدة البيانات';
+
+  @override
+  String get settingsDiagAuth => 'المصادقة';
+
+  @override
+  String get settingsDiagPerformance => 'الأداء';
+
+  @override
+  String get serverMgmtBadgeHttps => 'HTTPS آمن';
+
+  @override
+  String get serverMgmtBadgeLocal => 'محلي';
+
+  @override
+  String get serverMgmtBadgeDevelopment => 'تطوير';
+
+  @override
+  String get serverMgmtBadgeProduction => 'إنتاج';
+
+  @override
+  String get settingsLogLevelDebug => 'تصحيح';
+
+  @override
+  String get settingsLogLevelInfo => 'معلومة';
+
+  @override
+  String get settingsLogLevelWarning => 'تحذير';
+
+  @override
+  String get settingsLogLevelError => 'خطأ';
+
+  @override
+  String get settingsLogCategoryNetwork => 'الشبكة';
+
+  @override
+  String get settingsLogCategoryAuth => 'المصادقة';
+
+  @override
+  String get settingsLogCategorySync => 'المزامنة';
 }

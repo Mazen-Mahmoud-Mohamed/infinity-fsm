@@ -1,12 +1,17 @@
 import 'package:get_it/get_it.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/cache/session_query_cache.dart';
+import 'package:mobile/core/config/api_endpoint_service.dart';
 import 'package:mobile/core/config/env_config.dart';
 import 'package:mobile/core/network/dio_client.dart';
 import 'package:mobile/core/router/app_router.dart';
 import 'package:mobile/core/router/auth_router_refresh.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
+import 'package:mobile/core/services/app_log_buffer.dart';
+import 'package:mobile/core/services/app_runtime_info.dart';
 import 'package:mobile/core/services/auth_session_service.dart';
+import 'package:mobile/core/services/biometric_auth_service.dart';
+import 'package:mobile/features/settings/presentation/utils/admin_settings_unlock_session.dart';
 import 'package:mobile/core/services/checkpoint_telemetry_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/services/device_time_guard_service.dart';
@@ -155,6 +160,8 @@ import 'package:mobile/features/settings/data/repositories/settings_repository_i
 import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
+import 'package:mobile/features/settings/presentation/cubit/server_management_cubit.dart';
+import 'package:mobile/features/settings/data/datasources/server_health_datasource.dart';
 import 'package:mobile/features/dashboard/data/datasources/dashboard_remote_datasource.dart';
 import 'package:mobile/features/dashboard/data/repositories/dashboard_repository_impl.dart';
 import 'package:mobile/features/dashboard/domain/repositories/dashboard_repository.dart';
@@ -173,12 +180,21 @@ Future<void> configureDependencies() async {
   final envConfig = EnvConfig.current;
   getIt.registerSingleton<EnvConfig>(envConfig);
 
-  final loggerService = LoggerService();
+  final logBuffer = AppLogBuffer();
+  getIt.registerSingleton<AppLogBuffer>(logBuffer);
+
+  final loggerService = LoggerService(logBuffer: logBuffer);
   getIt.registerSingleton<LoggerService>(loggerService);
 
   final sharedPreferences = await SharedPreferences.getInstance();
   final preferencesService = PreferencesService(sharedPreferences);
   getIt.registerSingleton<PreferencesService>(preferencesService);
+
+  getIt.registerSingleton<AppRuntimeInfo>(AppRuntimeInfo());
+  getIt.registerLazySingleton<BiometricAuthService>(BiometricAuthService.new);
+  getIt.registerSingleton<AdminSettingsUnlockSession>(
+    AdminSettingsUnlockSession(),
+  );
 
   final secureStorageService = SecureStorageService();
   getIt.registerSingleton<SecureStorageService>(secureStorageService);
@@ -204,6 +220,14 @@ Future<void> configureDependencies() async {
     authSessionService: authSessionService,
   );
   getIt.registerSingleton<DioClient>(dioClient);
+
+  final apiEndpointService = ApiEndpointService(
+    envConfig: envConfig,
+    dioClient: dioClient,
+    preferences: preferencesService,
+  );
+  getIt.registerSingleton<ApiEndpointService>(apiEndpointService);
+  await apiEndpointService.bootstrap();
 
   getIt.registerLazySingleton<AuthRemoteDataSource>(
     () => AuthRemoteDataSource(getIt<DioClient>()),
@@ -1227,6 +1251,18 @@ Future<void> configureDependencies() async {
     () => SystemInfoCubit(
       getSystemInfo: getIt<GetSystemInfoUseCase>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
+    ),
+  );
+  getIt.registerLazySingleton<ServerHealthDataSource>(
+    ServerHealthDataSource.new,
+  );
+  getIt.registerFactory<ServerManagementCubit>(
+    () => ServerManagementCubit(
+      apiEndpointService: getIt<ApiEndpointService>(),
+      healthDataSource: getIt<ServerHealthDataSource>(),
+      tokenManager: getIt<TokenManager>(),
+      connectivityService: getIt<ConnectivityService>(),
+      appRuntimeInfo: getIt<AppRuntimeInfo>(),
     ),
   );
 

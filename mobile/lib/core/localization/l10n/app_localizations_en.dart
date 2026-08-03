@@ -1702,6 +1702,285 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsSave => 'Save settings';
 
   @override
+  String get serverMgmtTitle => 'Server Management';
+
+  @override
+  String get serverMgmtAccessDenied =>
+      'Only administrators can manage the backend server.';
+
+  @override
+  String get serverMgmtConnectionSettings => 'Connection Settings';
+
+  @override
+  String get serverMgmtBackendUrl => 'Backend Server URL';
+
+  @override
+  String get serverMgmtUrlHelper =>
+      'Accepts https://host or https://host/api/v1 — /api/v1 is applied automatically.';
+
+  @override
+  String get serverMgmtInvalidUrl => 'Enter a valid http:// or https:// URL.';
+
+  @override
+  String get serverMgmtTestConnection => 'Test Connection';
+
+  @override
+  String get serverMgmtPingServer => 'Ping Server';
+
+  @override
+  String get serverMgmtSave => 'Save';
+
+  @override
+  String get serverMgmtRestoreDefault => 'Restore Default';
+
+  @override
+  String get serverMgmtServerInformation => 'Server Information';
+
+  @override
+  String get serverMgmtCurrentServer => 'Current Server';
+
+  @override
+  String get serverMgmtStatus => 'Status';
+
+  @override
+  String get serverMgmtStatusConnected => 'Connected';
+
+  @override
+  String get serverMgmtStatusFailed => 'Connection Failed';
+
+  @override
+  String get serverMgmtStatusUnknown => 'Not tested yet';
+
+  @override
+  String get serverMgmtBackendVersion => 'Backend Version';
+
+  @override
+  String get serverMgmtEnvironment => 'Environment';
+
+  @override
+  String get serverMgmtResponseTime => 'Response Time';
+
+  @override
+  String get serverMgmtConnectionQuality => 'Connection Quality';
+
+  @override
+  String get serverMgmtLastSuccessful => 'Last Successful Connection';
+
+  @override
+  String get serverMgmtQualityExcellent => 'Excellent (<100 ms)';
+
+  @override
+  String get serverMgmtQualityGood => 'Good (100–250 ms)';
+
+  @override
+  String get serverMgmtQualityFair => 'Fair (250–500 ms)';
+
+  @override
+  String get serverMgmtQualityPoor => 'Poor (>1000 ms)';
+
+  @override
+  String get serverMgmtQualityUnreachable => 'Server Unreachable';
+
+  @override
+  String get serverMgmtAdvancedDiagnostics => 'Advanced Diagnostics';
+
+  @override
+  String get serverMgmtAppVersion => 'Application Version';
+
+  @override
+  String get serverMgmtBuildNumber => 'Build Number';
+
+  @override
+  String get serverMgmtPlatform => 'Platform';
+
+  @override
+  String get serverMgmtCurrentApiUrl => 'Current API URL';
+
+  @override
+  String get serverMgmtDeviceLocalTime => 'Device Local Time';
+
+  @override
+  String get serverMgmtServerTime => 'Server Time';
+
+  @override
+  String get serverMgmtClockDifference => 'Clock Difference';
+
+  @override
+  String get serverMgmtOnlineStatus => 'Online / Offline Status';
+
+  @override
+  String get serverMgmtOnline => 'Online';
+
+  @override
+  String get serverMgmtOffline => 'Offline';
+
+  @override
+  String get serverMgmtUserRole => 'Current User Role';
+
+  @override
+  String get serverMgmtLastSuccessfulSync => 'Last Successful Sync';
+
+  @override
+  String get serverMgmtPendingSyncQueue => 'Pending Sync Queue';
+
+  @override
+  String get serverMgmtNetworkType => 'Network Type';
+
+  @override
+  String get serverMgmtBackendReachable => 'Backend Reachable';
+
+  @override
+  String get serverMgmtApiHealth => 'API Health';
+
+  @override
+  String get serverMgmtDatabaseConnectivity => 'Database Connectivity';
+
+  @override
+  String get serverMgmtAvgLatency => 'Average Latency';
+
+  @override
+  String get serverMgmtMinLatency => 'Minimum Latency';
+
+  @override
+  String get serverMgmtMaxLatency => 'Maximum Latency';
+
+  @override
+  String get serverMgmtRequestTimeout => 'Request Timeout';
+
+  @override
+  String get serverMgmtAppUptime => 'Application Uptime';
+
+  @override
+  String get serverMgmtDeviceTimezone => 'Device Timezone';
+
+  @override
+  String get serverMgmtServerTimezone => 'Server Timezone';
+
+  @override
+  String get serverMgmtHealthHealthy => 'Healthy';
+
+  @override
+  String get serverMgmtHealthWarning => 'Warning';
+
+  @override
+  String get serverMgmtHealthError => 'Error';
+
+  @override
+  String get serverMgmtTestSuccess => 'Connected to backend successfully.';
+
+  @override
+  String get serverMgmtTestFailed =>
+      'Connection failed. Check the URL and network.';
+
+  @override
+  String get serverMgmtPingSuccess => 'Ping completed.';
+
+  @override
+  String get serverMgmtPingFailed => 'Server unreachable.';
+
+  @override
+  String get serverMgmtSaveSuccess =>
+      'Backend URL saved. New requests use this server immediately.';
+
+  @override
+  String get serverMgmtSaveFailed => 'Could not save the backend URL.';
+
+  @override
+  String get serverMgmtRestoreSuccess => 'Default production backend restored.';
+
+  @override
+  String get serverMgmtFutureHint =>
+      'This page is ready for future options such as timeouts, retries, failover, and feature flags.';
+
+  @override
+  String get serverMgmtUnlockHint => 'Admin tools unlocked';
+
+  @override
+  String get serverMgmtBiometricReason =>
+      'Authenticate to open Server Management';
+
+  @override
+  String get serverMgmtBiometricUnavailable =>
+      'Device authentication is not available on this device.';
+
+  @override
+  String get serverMgmtTimeout => 'Connection timed out. Try again.';
+
+  @override
+  String get serverMgmtExportSuccess => 'Diagnostics exported.';
+
+  @override
+  String get serverMgmtExportFailed => 'Could not export diagnostics.';
+
+  @override
+  String get serverMgmtCopySuccess => 'Server info copied.';
+
+  @override
+  String get serverMgmtExportDiagnostics => 'Export Diagnostics';
+
+  @override
+  String get serverMgmtCopyServerInfo => 'Copy Server Info';
+
+  @override
+  String get serverMgmtClearUrl => 'Clear';
+
+  @override
+  String get serverMgmtPasteUrl => 'Paste';
+
+  @override
+  String get serverMgmtCopyUrl => 'Copy';
+
+  @override
+  String get serverMgmtRetry => 'Retry';
+
+  @override
+  String get serverMgmtServerUnreachable => 'Server Unreachable';
+
+  @override
+  String get serverMgmtUnknown => 'Unknown';
+
+  @override
+  String get serverMgmtQualitySlow => 'Slow (500–1000 ms)';
+
+  @override
+  String get serverMgmtRegion => 'Region';
+
+  @override
+  String get serverMgmtServerUptime => 'Uptime';
+
+  @override
+  String get serverMgmtDatabase => 'Database';
+
+  @override
+  String get serverMgmtApiUrlLabel => 'API URL';
+
+  @override
+  String get serverMgmtLatency => 'Latency';
+
+  @override
+  String get serverMgmtVersion => 'Version';
+
+  @override
+  String get serverMgmtHealth => 'Health';
+
+  @override
+  String get serverMgmtDeviceModel => 'Device Model';
+
+  @override
+  String get serverMgmtAndroidVersion => 'Android / OS Version';
+
+  @override
+  String get serverMgmtLastSuccessfulPing => 'Last Successful Ping';
+
+  @override
+  String get serverMgmtConnectedBadge => 'Connected';
+
+  @override
+  String serverMgmtVersionLabel(String version, String build) {
+    return 'Version $version ($build)';
+  }
+
+  @override
   String get livePhotoRequired => 'A live photo is required.';
 
   @override
@@ -2874,4 +3153,395 @@ class AppLocalizationsEn extends AppLocalizations {
   String eventFeedActorLine(String module, String actor) {
     return '$module · $actor';
   }
+
+  @override
+  String get settingsAccountOverview => 'Account';
+
+  @override
+  String get settingsChangePhoto => 'Change photo';
+
+  @override
+  String get settingsPhotoPreview => 'Preview photo';
+
+  @override
+  String get settingsPhotoPreviewHint =>
+      'Your photo will be saved as a square profile image.';
+
+  @override
+  String get settingsPhotoUpdated => 'Profile photo updated';
+
+  @override
+  String get settingsPhotoUnsupportedFormat =>
+      'Please choose a JPG, PNG, or WebP image.';
+
+  @override
+  String get settingsPhotoDecodeFailed => 'Could not read the selected image.';
+
+  @override
+  String get settingsEmployeeId => 'Employee ID';
+
+  @override
+  String get settingsBranch => 'Branch';
+
+  @override
+  String get settingsDepartment => 'Department';
+
+  @override
+  String get settingsAccountCreated => 'Account created';
+
+  @override
+  String get settingsLastLogin => 'Last login';
+
+  @override
+  String get settingsNotAvailable => 'Not available';
+
+  @override
+  String get settingsEditablePrefs => 'Editable preferences';
+
+  @override
+  String get settingsSyncTitle => 'Sync';
+
+  @override
+  String get settingsLastSuccessfulSync => 'Last successful sync';
+
+  @override
+  String get settingsPendingUploads => 'Pending uploads';
+
+  @override
+  String get settingsPendingDownloads => 'Pending downloads';
+
+  @override
+  String get settingsSyncStatus => 'Sync status';
+
+  @override
+  String get settingsAutoSync => 'Auto sync';
+
+  @override
+  String get settingsWifiOnlySync => 'Wi‑Fi only';
+
+  @override
+  String get settingsSyncInterval => 'Sync interval';
+
+  @override
+  String get settingsManualSync => 'Sync now';
+
+  @override
+  String get settingsManualSyncDone => 'Sync requested';
+
+  @override
+  String get settingsNetworkRequirement => 'Network requirement';
+
+  @override
+  String get settingsStorageTitle => 'Storage';
+
+  @override
+  String get settingsCacheSize => 'Cache size';
+
+  @override
+  String get settingsImagesSize => 'Images cache';
+
+  @override
+  String get settingsTempFiles => 'Temporary files';
+
+  @override
+  String get settingsManagedByOs => 'Managed by the system';
+
+  @override
+  String get settingsClearCache => 'Clear cache';
+
+  @override
+  String get settingsSupportTitle => 'Support';
+
+  @override
+  String get settingsContactSupport => 'Contact support';
+
+  @override
+  String get settingsReportBug => 'Report a bug';
+
+  @override
+  String get settingsRequestFeature => 'Request a feature';
+
+  @override
+  String get settingsFaq => 'FAQ';
+
+  @override
+  String get settingsSecurityTitle => 'Security';
+
+  @override
+  String get settingsCurrentSession => 'Current session';
+
+  @override
+  String get settingsDeviceName => 'Device name';
+
+  @override
+  String get settingsBiometricStatus => 'Biometric login';
+
+  @override
+  String get settingsBiometricAvailable => 'Available on this device';
+
+  @override
+  String get settingsBiometricUnavailable => 'Not available';
+
+  @override
+  String get settingsLogoutAllDevices => 'Log out all devices';
+
+  @override
+  String get settingsApplicationTitle => 'Application';
+
+  @override
+  String get settingsPerformanceTitle => 'Performance';
+
+  @override
+  String get settingsMemoryUsage => 'Memory usage';
+
+  @override
+  String get settingsCacheUsage => 'Cache usage';
+
+  @override
+  String get settingsNetworkLatency => 'Network latency';
+
+  @override
+  String get settingsDatabaseConnection => 'Database connection';
+
+  @override
+  String get settingsServerHealth => 'Server health';
+
+  @override
+  String get settingsUseServerMgmt => 'See Server Management';
+
+  @override
+  String get settingsAccessibilityTitle => 'Accessibility';
+
+  @override
+  String get settingsLargeText => 'Large text';
+
+  @override
+  String get settingsReduceAnimations => 'Reduce animations';
+
+  @override
+  String get settingsHighContrast => 'High contrast';
+
+  @override
+  String get settingsBackupUnavailable => 'Backup is not available yet.';
+
+  @override
+  String get settingsRestoreUnavailable => 'Restore is not available yet.';
+
+  @override
+  String get settingsDangerZone => 'Danger zone';
+
+  @override
+  String get settingsDangerZoneHint =>
+      'These actions only reset local preferences and cache. Business data is never deleted.';
+
+  @override
+  String get settingsResetPreferences => 'Reset preferences';
+
+  @override
+  String get settingsResetPreferencesConfirm =>
+      'Reset language, theme, notifications, sync, and accessibility preferences?';
+
+  @override
+  String get settingsClearCacheConfirm =>
+      'Clear the local image cache? User data will not be deleted.';
+
+  @override
+  String get settingsRestoreDefaults => 'Restore default settings';
+
+  @override
+  String get settingsRestoreDefaultsConfirm =>
+      'Restore all preference defaults and clear local cache?';
+
+  @override
+  String get settingsPrefsRestored => 'Preferences restored';
+
+  @override
+  String get settingsConfirm => 'Confirm';
+
+  @override
+  String get settingsUpdateCenter => 'Update center';
+
+  @override
+  String get settingsLatestVersion => 'Latest available version';
+
+  @override
+  String get settingsReleaseChannel => 'Release channel';
+
+  @override
+  String get settingsReleaseDate => 'Release date';
+
+  @override
+  String get settingsUpdateStatus => 'Update status';
+
+  @override
+  String get settingsUpdateIdle => 'Not checked yet';
+
+  @override
+  String get settingsUpdateChecking => 'Checking…';
+
+  @override
+  String get settingsUpdateUpToDate => 'Up to date';
+
+  @override
+  String get settingsUpdateAvailable => 'Update available';
+
+  @override
+  String get settingsUpdateFailed => 'Unable to check';
+
+  @override
+  String get settingsCheckForUpdates => 'Check for updates';
+
+  @override
+  String get settingsViewReleaseNotes => 'View release notes';
+
+  @override
+  String get settingsDownloadUpdate => 'Download update';
+
+  @override
+  String get settingsDownloadUpdateSoon =>
+      'OTA downloads will be available in a future release.';
+
+  @override
+  String get settingsAdminLogs => 'Application logs';
+
+  @override
+  String get settingsSearchLogs => 'Search logs';
+
+  @override
+  String get settingsLogAll => 'All';
+
+  @override
+  String get settingsLogCategoryAll => 'All categories';
+
+  @override
+  String get settingsCopyLogs => 'Copy logs';
+
+  @override
+  String get settingsExportLogs => 'Export logs';
+
+  @override
+  String get settingsClearLogs => 'Clear logs';
+
+  @override
+  String get settingsLogsCopied => 'Logs copied';
+
+  @override
+  String get settingsLogEntries => 'Log entries';
+
+  @override
+  String get settingsNoLogs => 'No log entries yet';
+
+  @override
+  String get settingsDeveloperOptions => 'Developer options';
+
+  @override
+  String get settingsFeatureFlags => 'Feature flags';
+
+  @override
+  String get settingsReadOnly => 'Read-only';
+
+  @override
+  String get settingsNoFeatureFlags => 'No feature flags configured';
+
+  @override
+  String get settingsNotifAttendance => 'Attendance notifications';
+
+  @override
+  String get settingsNotifTasks => 'Task notifications';
+
+  @override
+  String get settingsNotifOvertime => 'Overtime notifications';
+
+  @override
+  String get settingsNotifSync => 'Sync notifications';
+
+  @override
+  String get settingsNotifUpdates => 'Update notifications';
+
+  @override
+  String get settingsThemePreview => 'Theme preview';
+
+  @override
+  String get settingsThemePreviewBody =>
+      'Cards, text, and controls follow the selected theme instantly.';
+
+  @override
+  String get settingsAboutApp => 'About';
+
+  @override
+  String get settingsDeveloper => 'Developer';
+
+  @override
+  String settingsCopyright(String year, String company) {
+    return 'Copyright © $year $company. All rights reserved.';
+  }
+
+  @override
+  String get settingsOpenSourcePackages => 'Open source packages';
+
+  @override
+  String get settingsSectionPreferences => 'Preferences';
+
+  @override
+  String get settingsSectionSecurity => 'Security & privacy';
+
+  @override
+  String get settingsSectionSupport => 'Help & support';
+
+  @override
+  String get settingsSectionDeveloper => 'Developer';
+
+  @override
+  String get settingsDiagDevice => 'Device';
+
+  @override
+  String get settingsDiagNetwork => 'Network';
+
+  @override
+  String get settingsDiagServer => 'Server';
+
+  @override
+  String get settingsDiagApi => 'API';
+
+  @override
+  String get settingsDiagDatabase => 'Database';
+
+  @override
+  String get settingsDiagAuth => 'Authentication';
+
+  @override
+  String get settingsDiagPerformance => 'Performance';
+
+  @override
+  String get serverMgmtBadgeHttps => 'Secure HTTPS';
+
+  @override
+  String get serverMgmtBadgeLocal => 'Local';
+
+  @override
+  String get serverMgmtBadgeDevelopment => 'Development';
+
+  @override
+  String get serverMgmtBadgeProduction => 'Production';
+
+  @override
+  String get settingsLogLevelDebug => 'Debug';
+
+  @override
+  String get settingsLogLevelInfo => 'Info';
+
+  @override
+  String get settingsLogLevelWarning => 'Warning';
+
+  @override
+  String get settingsLogLevelError => 'Error';
+
+  @override
+  String get settingsLogCategoryNetwork => 'Network';
+
+  @override
+  String get settingsLogCategoryAuth => 'Authentication';
+
+  @override
+  String get settingsLogCategorySync => 'Synchronization';
 }

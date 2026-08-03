@@ -3416,6 +3416,546 @@ abstract class AppLocalizations {
   /// **'Save settings'**
   String get settingsSave;
 
+  /// No description provided for @serverMgmtTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Management'**
+  String get serverMgmtTitle;
+
+  /// No description provided for @serverMgmtAccessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Only administrators can manage the backend server.'**
+  String get serverMgmtAccessDenied;
+
+  /// No description provided for @serverMgmtConnectionSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Settings'**
+  String get serverMgmtConnectionSettings;
+
+  /// No description provided for @serverMgmtBackendUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend Server URL'**
+  String get serverMgmtBackendUrl;
+
+  /// No description provided for @serverMgmtUrlHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Accepts https://host or https://host/api/v1 — /api/v1 is applied automatically.'**
+  String get serverMgmtUrlHelper;
+
+  /// No description provided for @serverMgmtInvalidUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid http:// or https:// URL.'**
+  String get serverMgmtInvalidUrl;
+
+  /// No description provided for @serverMgmtTestConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Connection'**
+  String get serverMgmtTestConnection;
+
+  /// No description provided for @serverMgmtPingServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Ping Server'**
+  String get serverMgmtPingServer;
+
+  /// No description provided for @serverMgmtSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get serverMgmtSave;
+
+  /// No description provided for @serverMgmtRestoreDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Default'**
+  String get serverMgmtRestoreDefault;
+
+  /// No description provided for @serverMgmtServerInformation.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Information'**
+  String get serverMgmtServerInformation;
+
+  /// No description provided for @serverMgmtCurrentServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Current Server'**
+  String get serverMgmtCurrentServer;
+
+  /// No description provided for @serverMgmtStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get serverMgmtStatus;
+
+  /// No description provided for @serverMgmtStatusConnected.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get serverMgmtStatusConnected;
+
+  /// No description provided for @serverMgmtStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Failed'**
+  String get serverMgmtStatusFailed;
+
+  /// No description provided for @serverMgmtStatusUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not tested yet'**
+  String get serverMgmtStatusUnknown;
+
+  /// No description provided for @serverMgmtBackendVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend Version'**
+  String get serverMgmtBackendVersion;
+
+  /// No description provided for @serverMgmtEnvironment.
+  ///
+  /// In en, this message translates to:
+  /// **'Environment'**
+  String get serverMgmtEnvironment;
+
+  /// No description provided for @serverMgmtResponseTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Response Time'**
+  String get serverMgmtResponseTime;
+
+  /// No description provided for @serverMgmtConnectionQuality.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection Quality'**
+  String get serverMgmtConnectionQuality;
+
+  /// No description provided for @serverMgmtLastSuccessful.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Successful Connection'**
+  String get serverMgmtLastSuccessful;
+
+  /// No description provided for @serverMgmtQualityExcellent.
+  ///
+  /// In en, this message translates to:
+  /// **'Excellent (<100 ms)'**
+  String get serverMgmtQualityExcellent;
+
+  /// No description provided for @serverMgmtQualityGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Good (100–250 ms)'**
+  String get serverMgmtQualityGood;
+
+  /// No description provided for @serverMgmtQualityFair.
+  ///
+  /// In en, this message translates to:
+  /// **'Fair (250–500 ms)'**
+  String get serverMgmtQualityFair;
+
+  /// No description provided for @serverMgmtQualityPoor.
+  ///
+  /// In en, this message translates to:
+  /// **'Poor (>1000 ms)'**
+  String get serverMgmtQualityPoor;
+
+  /// No description provided for @serverMgmtQualityUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Unreachable'**
+  String get serverMgmtQualityUnreachable;
+
+  /// No description provided for @serverMgmtAdvancedDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced Diagnostics'**
+  String get serverMgmtAdvancedDiagnostics;
+
+  /// No description provided for @serverMgmtAppVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Version'**
+  String get serverMgmtAppVersion;
+
+  /// No description provided for @serverMgmtBuildNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Build Number'**
+  String get serverMgmtBuildNumber;
+
+  /// No description provided for @serverMgmtPlatform.
+  ///
+  /// In en, this message translates to:
+  /// **'Platform'**
+  String get serverMgmtPlatform;
+
+  /// No description provided for @serverMgmtCurrentApiUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Current API URL'**
+  String get serverMgmtCurrentApiUrl;
+
+  /// No description provided for @serverMgmtDeviceLocalTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Local Time'**
+  String get serverMgmtDeviceLocalTime;
+
+  /// No description provided for @serverMgmtServerTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Time'**
+  String get serverMgmtServerTime;
+
+  /// No description provided for @serverMgmtClockDifference.
+  ///
+  /// In en, this message translates to:
+  /// **'Clock Difference'**
+  String get serverMgmtClockDifference;
+
+  /// No description provided for @serverMgmtOnlineStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Online / Offline Status'**
+  String get serverMgmtOnlineStatus;
+
+  /// No description provided for @serverMgmtOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Online'**
+  String get serverMgmtOnline;
+
+  /// No description provided for @serverMgmtOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline'**
+  String get serverMgmtOffline;
+
+  /// No description provided for @serverMgmtUserRole.
+  ///
+  /// In en, this message translates to:
+  /// **'Current User Role'**
+  String get serverMgmtUserRole;
+
+  /// No description provided for @serverMgmtLastSuccessfulSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Successful Sync'**
+  String get serverMgmtLastSuccessfulSync;
+
+  /// No description provided for @serverMgmtPendingSyncQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Sync Queue'**
+  String get serverMgmtPendingSyncQueue;
+
+  /// No description provided for @serverMgmtNetworkType.
+  ///
+  /// In en, this message translates to:
+  /// **'Network Type'**
+  String get serverMgmtNetworkType;
+
+  /// No description provided for @serverMgmtBackendReachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend Reachable'**
+  String get serverMgmtBackendReachable;
+
+  /// No description provided for @serverMgmtApiHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'API Health'**
+  String get serverMgmtApiHealth;
+
+  /// No description provided for @serverMgmtDatabaseConnectivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Database Connectivity'**
+  String get serverMgmtDatabaseConnectivity;
+
+  /// No description provided for @serverMgmtAvgLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'Average Latency'**
+  String get serverMgmtAvgLatency;
+
+  /// No description provided for @serverMgmtMinLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum Latency'**
+  String get serverMgmtMinLatency;
+
+  /// No description provided for @serverMgmtMaxLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Latency'**
+  String get serverMgmtMaxLatency;
+
+  /// No description provided for @serverMgmtRequestTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Timeout'**
+  String get serverMgmtRequestTimeout;
+
+  /// No description provided for @serverMgmtAppUptime.
+  ///
+  /// In en, this message translates to:
+  /// **'Application Uptime'**
+  String get serverMgmtAppUptime;
+
+  /// No description provided for @serverMgmtDeviceTimezone.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Timezone'**
+  String get serverMgmtDeviceTimezone;
+
+  /// No description provided for @serverMgmtServerTimezone.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Timezone'**
+  String get serverMgmtServerTimezone;
+
+  /// No description provided for @serverMgmtHealthHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'Healthy'**
+  String get serverMgmtHealthHealthy;
+
+  /// No description provided for @serverMgmtHealthWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get serverMgmtHealthWarning;
+
+  /// No description provided for @serverMgmtHealthError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get serverMgmtHealthError;
+
+  /// No description provided for @serverMgmtTestSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected to backend successfully.'**
+  String get serverMgmtTestSuccess;
+
+  /// No description provided for @serverMgmtTestFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection failed. Check the URL and network.'**
+  String get serverMgmtTestFailed;
+
+  /// No description provided for @serverMgmtPingSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Ping completed.'**
+  String get serverMgmtPingSuccess;
+
+  /// No description provided for @serverMgmtPingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Server unreachable.'**
+  String get serverMgmtPingFailed;
+
+  /// No description provided for @serverMgmtSaveSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Backend URL saved. New requests use this server immediately.'**
+  String get serverMgmtSaveSuccess;
+
+  /// No description provided for @serverMgmtSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the backend URL.'**
+  String get serverMgmtSaveFailed;
+
+  /// No description provided for @serverMgmtRestoreSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Default production backend restored.'**
+  String get serverMgmtRestoreSuccess;
+
+  /// No description provided for @serverMgmtFutureHint.
+  ///
+  /// In en, this message translates to:
+  /// **'This page is ready for future options such as timeouts, retries, failover, and feature flags.'**
+  String get serverMgmtFutureHint;
+
+  /// No description provided for @serverMgmtUnlockHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Admin tools unlocked'**
+  String get serverMgmtUnlockHint;
+
+  /// No description provided for @serverMgmtBiometricReason.
+  ///
+  /// In en, this message translates to:
+  /// **'Authenticate to open Server Management'**
+  String get serverMgmtBiometricReason;
+
+  /// No description provided for @serverMgmtBiometricUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Device authentication is not available on this device.'**
+  String get serverMgmtBiometricUnavailable;
+
+  /// No description provided for @serverMgmtTimeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection timed out. Try again.'**
+  String get serverMgmtTimeout;
+
+  /// No description provided for @serverMgmtExportSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Diagnostics exported.'**
+  String get serverMgmtExportSuccess;
+
+  /// No description provided for @serverMgmtExportFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not export diagnostics.'**
+  String get serverMgmtExportFailed;
+
+  /// No description provided for @serverMgmtCopySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Server info copied.'**
+  String get serverMgmtCopySuccess;
+
+  /// No description provided for @serverMgmtExportDiagnostics.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Diagnostics'**
+  String get serverMgmtExportDiagnostics;
+
+  /// No description provided for @serverMgmtCopyServerInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy Server Info'**
+  String get serverMgmtCopyServerInfo;
+
+  /// No description provided for @serverMgmtClearUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get serverMgmtClearUrl;
+
+  /// No description provided for @serverMgmtPasteUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste'**
+  String get serverMgmtPasteUrl;
+
+  /// No description provided for @serverMgmtCopyUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get serverMgmtCopyUrl;
+
+  /// No description provided for @serverMgmtRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get serverMgmtRetry;
+
+  /// No description provided for @serverMgmtServerUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Server Unreachable'**
+  String get serverMgmtServerUnreachable;
+
+  /// No description provided for @serverMgmtUnknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown'**
+  String get serverMgmtUnknown;
+
+  /// No description provided for @serverMgmtQualitySlow.
+  ///
+  /// In en, this message translates to:
+  /// **'Slow (500–1000 ms)'**
+  String get serverMgmtQualitySlow;
+
+  /// No description provided for @serverMgmtRegion.
+  ///
+  /// In en, this message translates to:
+  /// **'Region'**
+  String get serverMgmtRegion;
+
+  /// No description provided for @serverMgmtServerUptime.
+  ///
+  /// In en, this message translates to:
+  /// **'Uptime'**
+  String get serverMgmtServerUptime;
+
+  /// No description provided for @serverMgmtDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Database'**
+  String get serverMgmtDatabase;
+
+  /// No description provided for @serverMgmtApiUrlLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'API URL'**
+  String get serverMgmtApiUrlLabel;
+
+  /// No description provided for @serverMgmtLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'Latency'**
+  String get serverMgmtLatency;
+
+  /// No description provided for @serverMgmtVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get serverMgmtVersion;
+
+  /// No description provided for @serverMgmtHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Health'**
+  String get serverMgmtHealth;
+
+  /// No description provided for @serverMgmtDeviceModel.
+  ///
+  /// In en, this message translates to:
+  /// **'Device Model'**
+  String get serverMgmtDeviceModel;
+
+  /// No description provided for @serverMgmtAndroidVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Android / OS Version'**
+  String get serverMgmtAndroidVersion;
+
+  /// No description provided for @serverMgmtLastSuccessfulPing.
+  ///
+  /// In en, this message translates to:
+  /// **'Last Successful Ping'**
+  String get serverMgmtLastSuccessfulPing;
+
+  /// No description provided for @serverMgmtConnectedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get serverMgmtConnectedBadge;
+
+  /// No description provided for @serverMgmtVersionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} ({build})'**
+  String serverMgmtVersionLabel(String version, String build);
+
   /// No description provided for @livePhotoRequired.
   ///
   /// In en, this message translates to:
@@ -5611,6 +6151,768 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{module} · {actor}'**
   String eventFeedActorLine(String module, String actor);
+
+  /// No description provided for @settingsAccountOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get settingsAccountOverview;
+
+  /// No description provided for @settingsChangePhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Change photo'**
+  String get settingsChangePhoto;
+
+  /// No description provided for @settingsPhotoPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview photo'**
+  String get settingsPhotoPreview;
+
+  /// No description provided for @settingsPhotoPreviewHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Your photo will be saved as a square profile image.'**
+  String get settingsPhotoPreviewHint;
+
+  /// No description provided for @settingsPhotoUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile photo updated'**
+  String get settingsPhotoUpdated;
+
+  /// No description provided for @settingsPhotoUnsupportedFormat.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a JPG, PNG, or WebP image.'**
+  String get settingsPhotoUnsupportedFormat;
+
+  /// No description provided for @settingsPhotoDecodeFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the selected image.'**
+  String get settingsPhotoDecodeFailed;
+
+  /// No description provided for @settingsEmployeeId.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee ID'**
+  String get settingsEmployeeId;
+
+  /// No description provided for @settingsBranch.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch'**
+  String get settingsBranch;
+
+  /// No description provided for @settingsDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get settingsDepartment;
+
+  /// No description provided for @settingsAccountCreated.
+  ///
+  /// In en, this message translates to:
+  /// **'Account created'**
+  String get settingsAccountCreated;
+
+  /// No description provided for @settingsLastLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Last login'**
+  String get settingsLastLogin;
+
+  /// No description provided for @settingsNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get settingsNotAvailable;
+
+  /// No description provided for @settingsEditablePrefs.
+  ///
+  /// In en, this message translates to:
+  /// **'Editable preferences'**
+  String get settingsEditablePrefs;
+
+  /// No description provided for @settingsSyncTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync'**
+  String get settingsSyncTitle;
+
+  /// No description provided for @settingsLastSuccessfulSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Last successful sync'**
+  String get settingsLastSuccessfulSync;
+
+  /// No description provided for @settingsPendingUploads.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending uploads'**
+  String get settingsPendingUploads;
+
+  /// No description provided for @settingsPendingDownloads.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending downloads'**
+  String get settingsPendingDownloads;
+
+  /// No description provided for @settingsSyncStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync status'**
+  String get settingsSyncStatus;
+
+  /// No description provided for @settingsAutoSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto sync'**
+  String get settingsAutoSync;
+
+  /// No description provided for @settingsWifiOnlySync.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi‑Fi only'**
+  String get settingsWifiOnlySync;
+
+  /// No description provided for @settingsSyncInterval.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync interval'**
+  String get settingsSyncInterval;
+
+  /// No description provided for @settingsManualSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync now'**
+  String get settingsManualSync;
+
+  /// No description provided for @settingsManualSyncDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync requested'**
+  String get settingsManualSyncDone;
+
+  /// No description provided for @settingsNetworkRequirement.
+  ///
+  /// In en, this message translates to:
+  /// **'Network requirement'**
+  String get settingsNetworkRequirement;
+
+  /// No description provided for @settingsStorageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage'**
+  String get settingsStorageTitle;
+
+  /// No description provided for @settingsCacheSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache size'**
+  String get settingsCacheSize;
+
+  /// No description provided for @settingsImagesSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Images cache'**
+  String get settingsImagesSize;
+
+  /// No description provided for @settingsTempFiles.
+  ///
+  /// In en, this message translates to:
+  /// **'Temporary files'**
+  String get settingsTempFiles;
+
+  /// No description provided for @settingsManagedByOs.
+  ///
+  /// In en, this message translates to:
+  /// **'Managed by the system'**
+  String get settingsManagedByOs;
+
+  /// No description provided for @settingsClearCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear cache'**
+  String get settingsClearCache;
+
+  /// No description provided for @settingsSupportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Support'**
+  String get settingsSupportTitle;
+
+  /// No description provided for @settingsContactSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact support'**
+  String get settingsContactSupport;
+
+  /// No description provided for @settingsReportBug.
+  ///
+  /// In en, this message translates to:
+  /// **'Report a bug'**
+  String get settingsReportBug;
+
+  /// No description provided for @settingsRequestFeature.
+  ///
+  /// In en, this message translates to:
+  /// **'Request a feature'**
+  String get settingsRequestFeature;
+
+  /// No description provided for @settingsFaq.
+  ///
+  /// In en, this message translates to:
+  /// **'FAQ'**
+  String get settingsFaq;
+
+  /// No description provided for @settingsSecurityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Security'**
+  String get settingsSecurityTitle;
+
+  /// No description provided for @settingsCurrentSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Current session'**
+  String get settingsCurrentSession;
+
+  /// No description provided for @settingsDeviceName.
+  ///
+  /// In en, this message translates to:
+  /// **'Device name'**
+  String get settingsDeviceName;
+
+  /// No description provided for @settingsBiometricStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Biometric login'**
+  String get settingsBiometricStatus;
+
+  /// No description provided for @settingsBiometricAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Available on this device'**
+  String get settingsBiometricAvailable;
+
+  /// No description provided for @settingsBiometricUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not available'**
+  String get settingsBiometricUnavailable;
+
+  /// No description provided for @settingsLogoutAllDevices.
+  ///
+  /// In en, this message translates to:
+  /// **'Log out all devices'**
+  String get settingsLogoutAllDevices;
+
+  /// No description provided for @settingsApplicationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Application'**
+  String get settingsApplicationTitle;
+
+  /// No description provided for @settingsPerformanceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get settingsPerformanceTitle;
+
+  /// No description provided for @settingsMemoryUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Memory usage'**
+  String get settingsMemoryUsage;
+
+  /// No description provided for @settingsCacheUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache usage'**
+  String get settingsCacheUsage;
+
+  /// No description provided for @settingsNetworkLatency.
+  ///
+  /// In en, this message translates to:
+  /// **'Network latency'**
+  String get settingsNetworkLatency;
+
+  /// No description provided for @settingsDatabaseConnection.
+  ///
+  /// In en, this message translates to:
+  /// **'Database connection'**
+  String get settingsDatabaseConnection;
+
+  /// No description provided for @settingsServerHealth.
+  ///
+  /// In en, this message translates to:
+  /// **'Server health'**
+  String get settingsServerHealth;
+
+  /// No description provided for @settingsUseServerMgmt.
+  ///
+  /// In en, this message translates to:
+  /// **'See Server Management'**
+  String get settingsUseServerMgmt;
+
+  /// No description provided for @settingsAccessibilityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Accessibility'**
+  String get settingsAccessibilityTitle;
+
+  /// No description provided for @settingsLargeText.
+  ///
+  /// In en, this message translates to:
+  /// **'Large text'**
+  String get settingsLargeText;
+
+  /// No description provided for @settingsReduceAnimations.
+  ///
+  /// In en, this message translates to:
+  /// **'Reduce animations'**
+  String get settingsReduceAnimations;
+
+  /// No description provided for @settingsHighContrast.
+  ///
+  /// In en, this message translates to:
+  /// **'High contrast'**
+  String get settingsHighContrast;
+
+  /// No description provided for @settingsBackupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Backup is not available yet.'**
+  String get settingsBackupUnavailable;
+
+  /// No description provided for @settingsRestoreUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore is not available yet.'**
+  String get settingsRestoreUnavailable;
+
+  /// No description provided for @settingsDangerZone.
+  ///
+  /// In en, this message translates to:
+  /// **'Danger zone'**
+  String get settingsDangerZone;
+
+  /// No description provided for @settingsDangerZoneHint.
+  ///
+  /// In en, this message translates to:
+  /// **'These actions only reset local preferences and cache. Business data is never deleted.'**
+  String get settingsDangerZoneHint;
+
+  /// No description provided for @settingsResetPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset preferences'**
+  String get settingsResetPreferences;
+
+  /// No description provided for @settingsResetPreferencesConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset language, theme, notifications, sync, and accessibility preferences?'**
+  String get settingsResetPreferencesConfirm;
+
+  /// No description provided for @settingsClearCacheConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear the local image cache? User data will not be deleted.'**
+  String get settingsClearCacheConfirm;
+
+  /// No description provided for @settingsRestoreDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore default settings'**
+  String get settingsRestoreDefaults;
+
+  /// No description provided for @settingsRestoreDefaultsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore all preference defaults and clear local cache?'**
+  String get settingsRestoreDefaultsConfirm;
+
+  /// No description provided for @settingsPrefsRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences restored'**
+  String get settingsPrefsRestored;
+
+  /// No description provided for @settingsConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get settingsConfirm;
+
+  /// No description provided for @settingsUpdateCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Update center'**
+  String get settingsUpdateCenter;
+
+  /// No description provided for @settingsLatestVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Latest available version'**
+  String get settingsLatestVersion;
+
+  /// No description provided for @settingsReleaseChannel.
+  ///
+  /// In en, this message translates to:
+  /// **'Release channel'**
+  String get settingsReleaseChannel;
+
+  /// No description provided for @settingsReleaseDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Release date'**
+  String get settingsReleaseDate;
+
+  /// No description provided for @settingsUpdateStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Update status'**
+  String get settingsUpdateStatus;
+
+  /// No description provided for @settingsUpdateIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked yet'**
+  String get settingsUpdateIdle;
+
+  /// No description provided for @settingsUpdateChecking.
+  ///
+  /// In en, this message translates to:
+  /// **'Checking…'**
+  String get settingsUpdateChecking;
+
+  /// No description provided for @settingsUpdateUpToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Up to date'**
+  String get settingsUpdateUpToDate;
+
+  /// No description provided for @settingsUpdateAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available'**
+  String get settingsUpdateAvailable;
+
+  /// No description provided for @settingsUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to check'**
+  String get settingsUpdateFailed;
+
+  /// No description provided for @settingsCheckForUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Check for updates'**
+  String get settingsCheckForUpdates;
+
+  /// No description provided for @settingsViewReleaseNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'View release notes'**
+  String get settingsViewReleaseNotes;
+
+  /// No description provided for @settingsDownloadUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Download update'**
+  String get settingsDownloadUpdate;
+
+  /// No description provided for @settingsDownloadUpdateSoon.
+  ///
+  /// In en, this message translates to:
+  /// **'OTA downloads will be available in a future release.'**
+  String get settingsDownloadUpdateSoon;
+
+  /// No description provided for @settingsAdminLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Application logs'**
+  String get settingsAdminLogs;
+
+  /// No description provided for @settingsSearchLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Search logs'**
+  String get settingsSearchLogs;
+
+  /// No description provided for @settingsLogAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get settingsLogAll;
+
+  /// No description provided for @settingsLogCategoryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All categories'**
+  String get settingsLogCategoryAll;
+
+  /// No description provided for @settingsCopyLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy logs'**
+  String get settingsCopyLogs;
+
+  /// No description provided for @settingsExportLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Export logs'**
+  String get settingsExportLogs;
+
+  /// No description provided for @settingsClearLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear logs'**
+  String get settingsClearLogs;
+
+  /// No description provided for @settingsLogsCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Logs copied'**
+  String get settingsLogsCopied;
+
+  /// No description provided for @settingsLogEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Log entries'**
+  String get settingsLogEntries;
+
+  /// No description provided for @settingsNoLogs.
+  ///
+  /// In en, this message translates to:
+  /// **'No log entries yet'**
+  String get settingsNoLogs;
+
+  /// No description provided for @settingsDeveloperOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer options'**
+  String get settingsDeveloperOptions;
+
+  /// No description provided for @settingsFeatureFlags.
+  ///
+  /// In en, this message translates to:
+  /// **'Feature flags'**
+  String get settingsFeatureFlags;
+
+  /// No description provided for @settingsReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Read-only'**
+  String get settingsReadOnly;
+
+  /// No description provided for @settingsNoFeatureFlags.
+  ///
+  /// In en, this message translates to:
+  /// **'No feature flags configured'**
+  String get settingsNoFeatureFlags;
+
+  /// No description provided for @settingsNotifAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance notifications'**
+  String get settingsNotifAttendance;
+
+  /// No description provided for @settingsNotifTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Task notifications'**
+  String get settingsNotifTasks;
+
+  /// No description provided for @settingsNotifOvertime.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime notifications'**
+  String get settingsNotifOvertime;
+
+  /// No description provided for @settingsNotifSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync notifications'**
+  String get settingsNotifSync;
+
+  /// No description provided for @settingsNotifUpdates.
+  ///
+  /// In en, this message translates to:
+  /// **'Update notifications'**
+  String get settingsNotifUpdates;
+
+  /// No description provided for @settingsThemePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Theme preview'**
+  String get settingsThemePreview;
+
+  /// No description provided for @settingsThemePreviewBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Cards, text, and controls follow the selected theme instantly.'**
+  String get settingsThemePreviewBody;
+
+  /// No description provided for @settingsAboutApp.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get settingsAboutApp;
+
+  /// No description provided for @settingsDeveloper.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer'**
+  String get settingsDeveloper;
+
+  /// No description provided for @settingsCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright © {year} {company}. All rights reserved.'**
+  String settingsCopyright(String year, String company);
+
+  /// No description provided for @settingsOpenSourcePackages.
+  ///
+  /// In en, this message translates to:
+  /// **'Open source packages'**
+  String get settingsOpenSourcePackages;
+
+  /// No description provided for @settingsSectionPreferences.
+  ///
+  /// In en, this message translates to:
+  /// **'Preferences'**
+  String get settingsSectionPreferences;
+
+  /// No description provided for @settingsSectionSecurity.
+  ///
+  /// In en, this message translates to:
+  /// **'Security & privacy'**
+  String get settingsSectionSecurity;
+
+  /// No description provided for @settingsSectionSupport.
+  ///
+  /// In en, this message translates to:
+  /// **'Help & support'**
+  String get settingsSectionSupport;
+
+  /// No description provided for @settingsSectionDeveloper.
+  ///
+  /// In en, this message translates to:
+  /// **'Developer'**
+  String get settingsSectionDeveloper;
+
+  /// No description provided for @settingsDiagDevice.
+  ///
+  /// In en, this message translates to:
+  /// **'Device'**
+  String get settingsDiagDevice;
+
+  /// No description provided for @settingsDiagNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get settingsDiagNetwork;
+
+  /// No description provided for @settingsDiagServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Server'**
+  String get settingsDiagServer;
+
+  /// No description provided for @settingsDiagApi.
+  ///
+  /// In en, this message translates to:
+  /// **'API'**
+  String get settingsDiagApi;
+
+  /// No description provided for @settingsDiagDatabase.
+  ///
+  /// In en, this message translates to:
+  /// **'Database'**
+  String get settingsDiagDatabase;
+
+  /// No description provided for @settingsDiagAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get settingsDiagAuth;
+
+  /// No description provided for @settingsDiagPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance'**
+  String get settingsDiagPerformance;
+
+  /// No description provided for @serverMgmtBadgeHttps.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure HTTPS'**
+  String get serverMgmtBadgeHttps;
+
+  /// No description provided for @serverMgmtBadgeLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get serverMgmtBadgeLocal;
+
+  /// No description provided for @serverMgmtBadgeDevelopment.
+  ///
+  /// In en, this message translates to:
+  /// **'Development'**
+  String get serverMgmtBadgeDevelopment;
+
+  /// No description provided for @serverMgmtBadgeProduction.
+  ///
+  /// In en, this message translates to:
+  /// **'Production'**
+  String get serverMgmtBadgeProduction;
+
+  /// No description provided for @settingsLogLevelDebug.
+  ///
+  /// In en, this message translates to:
+  /// **'Debug'**
+  String get settingsLogLevelDebug;
+
+  /// No description provided for @settingsLogLevelInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Info'**
+  String get settingsLogLevelInfo;
+
+  /// No description provided for @settingsLogLevelWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Warning'**
+  String get settingsLogLevelWarning;
+
+  /// No description provided for @settingsLogLevelError.
+  ///
+  /// In en, this message translates to:
+  /// **'Error'**
+  String get settingsLogLevelError;
+
+  /// No description provided for @settingsLogCategoryNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get settingsLogCategoryNetwork;
+
+  /// No description provided for @settingsLogCategoryAuth.
+  ///
+  /// In en, this message translates to:
+  /// **'Authentication'**
+  String get settingsLogCategoryAuth;
+
+  /// No description provided for @settingsLogCategorySync.
+  ///
+  /// In en, this message translates to:
+  /// **'Synchronization'**
+  String get settingsLogCategorySync;
 }
 
 class _AppLocalizationsDelegate

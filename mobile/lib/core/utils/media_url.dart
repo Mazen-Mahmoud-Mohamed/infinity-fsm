@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/config/env_config.dart';
 
 /// Resolves media URLs for network image widgets (avatars, selfies, logos).
@@ -20,7 +21,10 @@ String? resolveMediaUrl(String? raw, {EnvConfig? config}) {
   if (lower.startsWith('http://') || lower.startsWith('https://')) {
     absolute = value;
   } else {
-    final env = config ?? EnvConfig.current;
+    final env = config ??
+        (getIt.isRegistered<EnvConfig>()
+            ? getIt<EnvConfig>()
+            : EnvConfig.current);
     final origin = env.socketBaseUrl;
     absolute = value.startsWith('/') ? '$origin$value' : '$origin/$value';
   }

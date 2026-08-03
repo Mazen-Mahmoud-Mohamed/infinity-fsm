@@ -5,9 +5,9 @@ import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
-import 'package:mobile/core/widgets/app_refresh_bar.dart';
-import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
+import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class SystemSettingsPage extends StatefulWidget {
@@ -71,124 +71,100 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
         }
 
         final info = state.info;
-        return Column(
-          children: [
-            AppRefreshBar(visible: state.isRefreshing),
-            Expanded(
-              child: RefreshIndicator(
-                onRefresh: _cubit.load,
-                child: ListView(
-                  padding: AppScrollPadding.resolve(
-                    context,
-                    base: const EdgeInsets.all(AppSpacing.md),
-                    chrome: AppBottomChrome.system,
-                  ),
+        return RefreshIndicator(
+          onRefresh: _cubit.load,
+          child: SettingsPageBody(
+            embedded: widget.embedded,
+            children: [
+              if (state.isRefreshing)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: AppSpacing.sm),
+                  child: LinearProgressIndicator(minHeight: 2),
+                ),
+              SettingsCard(
+                title: l10n.settingsCacheManagement,
+                leading: const Icon(Icons.tune_outlined),
+                child: Column(
                   children: [
-                    Card(
-                      child: Column(
-                        children: [
-                          ListTile(
-                            leading: const Icon(Icons.backup_outlined),
-                            title: Text(l10n.settingsBackupRestore),
-                            subtitle: Text(l10n.settingsUiOnly),
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    l10n.settingsComingSoonAction,
-                                  ),
-                                ),
-                              );
-                            },
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.backup_outlined),
+                      title: Text(l10n.settingsBackupRestore),
+                      subtitle: Text(l10n.settingsUiOnly),
+                      onTap: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(l10n.settingsComingSoonAction),
                           ),
-                          const Divider(height: 1),
-                          ListTile(
-                            leading: const Icon(Icons.cached_outlined),
-                            title: Text(l10n.settingsCacheManagement),
-                            subtitle: Text(l10n.settingsUiOnly),
-                            onTap: () async {
-                              await context.read<AppCubit>().clearLocalCache();
-                              if (!context.mounted) return;
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.settingsCacheCleared),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      l10n.settingsSystemStatus,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Card(
-                      child: Column(
-                        children: [
-                          _row(
-                            l10n.settingsApiStatus,
-                            info?.apiStatus ?? '-',
-                          ),
-                          const Divider(height: 1),
-                          _row(
-                            l10n.settingsDatabaseStatus,
-                            info?.databaseStatus ?? '-',
-                          ),
-                          const Divider(height: 1),
-                          _row(
-                            l10n.settingsStorageUsage,
-                            info?.storageUsage.note ??
-                                info?.storageUsage.provider ??
-                                '-',
-                          ),
-                          const Divider(height: 1),
-                          _row(
-                            l10n.settingsApiVersion,
-                            info?.apiVersion ?? '-',
-                          ),
-                          const Divider(height: 1),
-                          _row(
-                            l10n.settingsBackendVersion,
-                            info?.backendVersion ?? '-',
-                          ),
-                          const Divider(height: 1),
-                          _row(
-                            l10n.settingsAppVersion,
-                            '${AppConfig.appName} 1.0.0',
-                          ),
-                          const Divider(height: 1),
-                          _row(
-                            l10n.settingsUptime,
-                            '${info?.uptimeSeconds ?? 0}s',
-                          ),
-                        ],
-                      ),
+                    const Divider(height: 1),
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: const Icon(Icons.cached_outlined),
+                      title: Text(l10n.settingsCacheManagement),
+                      subtitle: Text(l10n.settingsUiOnly),
+                      onTap: () async {
+                        final messenger = ScaffoldMessenger.of(context);
+                        await context.read<AppCubit>().clearLocalCache();
+                        messenger.showSnackBar(
+                          SnackBar(content: Text(l10n.settingsCacheCleared)),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: AppSpacing.md),
+              // Long-press System Status card → Server Management (admin gate).
+              GestureDetector(
+                onLongPress: () => openServerManagementSecurely(context),
+                child: SettingsCard(
+                  title: l10n.settingsSystemStatus,
+                  subtitle: l10n.serverMgmtUnlockHint,
+                  leading: const Icon(Icons.monitor_heart_outlined),
+                  child: Column(
+                    children: [
+                      SettingsInfoRow(
+                        label: l10n.settingsApiStatus,
+                        value: info?.apiStatus ?? '-',
+                      ),
+                      SettingsInfoRow(
+                        label: l10n.settingsDatabaseStatus,
+                        value: info?.databaseStatus ?? '-',
+                      ),
+                      SettingsInfoRow(
+                        label: l10n.settingsStorageUsage,
+                        value: info?.storageUsage.note ??
+                            info?.storageUsage.provider ??
+                            '-',
+                      ),
+                      SettingsInfoRow(
+                        label: l10n.settingsApiVersion,
+                        value: info?.apiVersion ?? '-',
+                      ),
+                      SettingsInfoRow(
+                        label: l10n.settingsBackendVersion,
+                        value: info?.backendVersion ?? '-',
+                      ),
+                      SettingsInfoRow(
+                        label: l10n.settingsAppVersion,
+                        value:
+                            '${AppConfig.appName} ${AppConfig.appVersion}',
+                      ),
+                      SettingsInfoRow(
+                        label: l10n.settingsUptime,
+                        value: '${info?.uptimeSeconds ?? 0}s',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       },
-    );
-  }
-
-  Widget _row(String label, String value) {
-    return ListTile(
-      title: Text(label),
-      trailing: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 180),
-        child: Text(
-          value,
-          textAlign: TextAlign.end,
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
-        ),
-      ),
     );
   }
 }

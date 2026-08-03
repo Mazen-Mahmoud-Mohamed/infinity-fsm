@@ -318,6 +318,30 @@ String localizeAppMessage(
       return l10n.overtimeNoRunningSession;
     case 'QR scanning will be available in a future release.':
       return l10n.assetsQrScannerNotReady;
+    case 'serverMgmtInvalidUrl':
+      return l10n.serverMgmtInvalidUrl;
+    case 'serverMgmtTestSuccess':
+      return l10n.serverMgmtTestSuccess;
+    case 'serverMgmtTestFailed':
+      return l10n.serverMgmtTestFailed;
+    case 'serverMgmtPingSuccess':
+      return l10n.serverMgmtPingSuccess;
+    case 'serverMgmtPingFailed':
+      return l10n.serverMgmtPingFailed;
+    case 'serverMgmtSaveSuccess':
+      return l10n.serverMgmtSaveSuccess;
+    case 'serverMgmtSaveFailed':
+      return l10n.serverMgmtSaveFailed;
+    case 'serverMgmtRestoreSuccess':
+      return l10n.serverMgmtRestoreSuccess;
+    case 'serverMgmtTimeout':
+      return l10n.serverMgmtTimeout;
+    case 'serverMgmtExportSuccess':
+      return l10n.serverMgmtExportSuccess;
+    case 'serverMgmtExportFailed':
+      return l10n.serverMgmtExportFailed;
+    case 'serverMgmtCopySuccess':
+      return l10n.serverMgmtCopySuccess;
     default:
       if (_looksLikeRawEnglishSentence(key)) {
         return l10n.errorGeneric;

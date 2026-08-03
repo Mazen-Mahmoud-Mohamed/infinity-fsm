@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
@@ -11,16 +12,30 @@ import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
+import 'package:mobile/features/settings/presentation/pages/settings_extra_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/system_settings_page.dart';
+import 'package:mobile/features/settings/presentation/utils/admin_settings_unlock_session.dart';
+import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_tiles.dart';
 
 enum _SettingsEmbedTarget {
+  account,
   organization,
   system,
   language,
   theme,
   notifications,
+  sync,
+  storage,
   about,
+  support,
+  security,
+  application,
+  performance,
+  accessibility,
+  backup,
+  danger,
+  updates,
 }
 
 class SettingsHubPage extends StatefulWidget {
@@ -66,6 +81,9 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
         authUser?.permissionChecker.canViewSettings() == true;
     final canManageSettings =
         authUser?.permissionChecker.canManageSettings() == true;
+    final isAdmin = authUser?.roles.any((r) => r.toUpperCase() == 'ADMIN') ==
+            true ||
+        canManageSettings;
 
     return <_SettingsSection>[
       _SettingsSection(
@@ -73,9 +91,16 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
         icon: Icons.person_outline,
         tiles: [
           _SettingsItem(
+            icon: Icons.manage_accounts_outlined,
+            title: l10n.settingsAccountOverview,
+            keywords: ['account', 'profile', 'photo', 'employee'],
+            onTap: () => context.push(RoutePaths.settingsAccount),
+            embedTarget: _SettingsEmbedTarget.account,
+          ),
+          _SettingsItem(
             icon: Icons.person_outline,
             title: l10n.settingsMyProfile,
-            keywords: ['profile', 'account'],
+            keywords: ['profile', 'edit'],
             onTap: () => context.go(RoutePaths.profile),
           ),
           _SettingsItem(
@@ -84,6 +109,23 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
             keywords: ['password', 'security'],
             onTap: () => context.push(RoutePaths.usersChangePassword),
           ),
+          _SettingsItem(
+            icon: Icons.logout,
+            title: l10n.logout,
+            keywords: ['logout', 'sign out'],
+            onTap: () async {
+              final navigator = GoRouter.of(context);
+              getIt<AdminSettingsUnlockSession>().clear();
+              await context.read<AuthCubit>().logout();
+              navigator.go(RoutePaths.login);
+            },
+          ),
+        ],
+      ),
+      _SettingsSection(
+        title: l10n.settingsSectionPreferences,
+        icon: Icons.tune_outlined,
+        tiles: [
           _SettingsItem(
             icon: Icons.language,
             title: l10n.settingsLanguage,
@@ -94,7 +136,7 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
           _SettingsItem(
             icon: Icons.brightness_6_outlined,
             title: l10n.settingsTheme,
-            keywords: ['theme', 'dark', 'light'],
+            keywords: ['theme', 'dark', 'light', 'appearance'],
             onTap: () => context.push(RoutePaths.settingsTheme),
             embedTarget: _SettingsEmbedTarget.theme,
           ),
@@ -106,14 +148,76 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
             embedTarget: _SettingsEmbedTarget.notifications,
           ),
           _SettingsItem(
-            icon: Icons.logout,
-            title: l10n.logout,
-            keywords: ['logout', 'sign out'],
-            onTap: () async {
-              final navigator = GoRouter.of(context);
-              await context.read<AuthCubit>().logout();
-              navigator.go(RoutePaths.login);
-            },
+            icon: Icons.accessibility_new_outlined,
+            title: l10n.settingsAccessibilityTitle,
+            keywords: ['accessibility', 'contrast', 'text', 'animation'],
+            onTap: () => context.push(RoutePaths.settingsAccessibility),
+            embedTarget: _SettingsEmbedTarget.accessibility,
+          ),
+        ],
+      ),
+      _SettingsSection(
+        title: l10n.settingsSectionSystem,
+        icon: Icons.settings_suggest_outlined,
+        tiles: [
+          _SettingsItem(
+            icon: Icons.sync_outlined,
+            title: l10n.settingsSyncTitle,
+            keywords: ['sync', 'offline', 'wifi'],
+            onTap: () => context.push(RoutePaths.settingsSync),
+            embedTarget: _SettingsEmbedTarget.sync,
+          ),
+          _SettingsItem(
+            icon: Icons.cached_outlined,
+            title: l10n.settingsStorageTitle,
+            keywords: ['cache', 'storage', 'images'],
+            onTap: () => context.push(RoutePaths.settingsStorage),
+            embedTarget: _SettingsEmbedTarget.storage,
+          ),
+          _SettingsItem(
+            icon: Icons.speed_outlined,
+            title: l10n.settingsPerformanceTitle,
+            keywords: ['performance', 'memory', 'latency'],
+            onTap: () => context.push(RoutePaths.settingsPerformance),
+            embedTarget: _SettingsEmbedTarget.performance,
+          ),
+          _SettingsItem(
+            icon: Icons.phone_android_outlined,
+            title: l10n.settingsApplicationTitle,
+            keywords: ['application', 'version', 'api', 'environment'],
+            onTap: () => context.push(RoutePaths.settingsApplication),
+            embedTarget: _SettingsEmbedTarget.application,
+          ),
+          _SettingsItem(
+            icon: Icons.system_update_alt,
+            title: l10n.settingsUpdateCenter,
+            keywords: ['update', 'version', 'release'],
+            onTap: () => context.push(RoutePaths.settingsUpdates),
+            embedTarget: _SettingsEmbedTarget.updates,
+          ),
+          if (canViewSettings)
+            _SettingsItem(
+              icon: Icons.monitor_heart_outlined,
+              title: l10n.settingsSystemStatus,
+              keywords: ['api', 'database', 'storage', 'version'],
+              onTap: () => context.push(RoutePaths.settingsSystem),
+              embedTarget: _SettingsEmbedTarget.system,
+              onLongPress: () => openServerManagementSecurely(context),
+            ),
+          _SettingsItem(
+            icon: Icons.backup_outlined,
+            title: l10n.settingsBackupRestore,
+            keywords: ['backup', 'restore'],
+            onTap: () => context.push(RoutePaths.settingsBackup),
+            embedTarget: _SettingsEmbedTarget.backup,
+            subtitle: l10n.settingsUiOnly,
+          ),
+          _SettingsItem(
+            icon: Icons.warning_amber_outlined,
+            title: l10n.settingsDangerZone,
+            keywords: ['reset', 'danger', 'defaults'],
+            onTap: () => context.push(RoutePaths.settingsDanger),
+            embedTarget: _SettingsEmbedTarget.danger,
           ),
         ],
       ),
@@ -131,40 +235,37 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
             ),
           ],
         ),
-      if (canViewSettings)
-        _SettingsSection(
-          title: l10n.settingsSectionSystem,
-          icon: Icons.settings_suggest_outlined,
-          tiles: [
-            _SettingsItem(
-              icon: Icons.backup_outlined,
-              title: l10n.settingsBackupRestore,
-              keywords: ['backup', 'restore'],
-              onTap: () => context.push(RoutePaths.settingsSystem),
-              embedTarget: _SettingsEmbedTarget.system,
-              subtitle: l10n.settingsUiOnly,
-            ),
-            _SettingsItem(
-              icon: Icons.cached_outlined,
-              title: l10n.settingsCacheManagement,
-              keywords: ['cache'],
-              onTap: () => context.push(RoutePaths.settingsSystem),
-              embedTarget: _SettingsEmbedTarget.system,
-              subtitle: l10n.settingsUiOnly,
-            ),
-            _SettingsItem(
-              icon: Icons.monitor_heart_outlined,
-              title: l10n.settingsSystemStatus,
-              keywords: ['api', 'database', 'storage', 'version'],
-              onTap: () => context.push(RoutePaths.settingsSystem),
-              embedTarget: _SettingsEmbedTarget.system,
-            ),
-          ],
-        ),
       _SettingsSection(
-        title: l10n.settingsSectionAbout,
-        icon: Icons.info_outline,
+        title: l10n.settingsSectionSecurity,
+        icon: Icons.shield_outlined,
         tiles: [
+          _SettingsItem(
+            icon: Icons.security_outlined,
+            title: l10n.settingsSecurityTitle,
+            keywords: ['security', 'biometric', 'session'],
+            onTap: () => context.push(RoutePaths.settingsSecurity),
+            embedTarget: _SettingsEmbedTarget.security,
+          ),
+        ],
+      ),
+      _SettingsSection(
+        title: l10n.settingsSectionSupport,
+        icon: Icons.help_outline,
+        tiles: [
+          _SettingsItem(
+            icon: Icons.support_agent_outlined,
+            title: l10n.settingsSupportTitle,
+            keywords: ['support', 'bug', 'faq', 'contact'],
+            onTap: () => context.push(RoutePaths.settingsSupport),
+            embedTarget: _SettingsEmbedTarget.support,
+          ),
+          _SettingsItem(
+            icon: Icons.info_outline,
+            title: l10n.settingsAboutApp,
+            keywords: ['about', 'version', 'licenses'],
+            onTap: () => context.push(RoutePaths.settingsAbout),
+            embedTarget: _SettingsEmbedTarget.about,
+          ),
           _SettingsItem(
             icon: Icons.privacy_tip_outlined,
             title: l10n.settingsPrivacyPolicy,
@@ -190,6 +291,26 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
           ),
         ],
       ),
+      if (isAdmin)
+        _SettingsSection(
+          title: l10n.settingsSectionDeveloper,
+          icon: Icons.developer_mode_outlined,
+          tiles: [
+            _SettingsItem(
+              icon: Icons.developer_mode_outlined,
+              title: l10n.settingsDeveloperOptions,
+              keywords: ['developer', 'debug', 'flags'],
+              onTap: () => openDeveloperOptionsSecurely(context),
+              subtitle: l10n.settingsReadOnly,
+            ),
+            _SettingsItem(
+              icon: Icons.article_outlined,
+              title: l10n.settingsAdminLogs,
+              keywords: ['logs', 'error', 'debug'],
+              onTap: () => openAdminLogsSecurely(context),
+            ),
+          ],
+        ),
     ];
   }
 
@@ -338,23 +459,40 @@ class _DesktopSettingsSplit extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           SizedBox(
-            width: 280,
+            width: 300,
             child: Card(
               clipBehavior: Clip.antiAlias,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                side: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
+                ),
+              ),
               child: ListView.builder(
-                padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                padding: const EdgeInsets.symmetric(
+                  vertical: AppSpacing.sm,
+                  horizontal: AppSpacing.xs,
+                ),
                 itemCount: sections.length,
                 itemBuilder: (context, index) {
                   final section = sections[index];
                   final selectedNav = index == selectedIndex;
-                  return ListTile(
-                    selected: selectedNav,
-                    leading: Icon(section.icon),
-                    title: Text(section.title),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+                  return MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: ListTile(
+                      selected: selectedNav,
+                      leading: Icon(section.icon),
+                      title: Text(section.title),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.xs,
+                      ),
+                      onTap: () => onSelect(index),
                     ),
-                    onTap: () => onSelect(index),
                   );
                 },
               ),
@@ -364,6 +502,13 @@ class _DesktopSettingsSplit extends StatelessWidget {
           Expanded(
             child: Card(
               clipBehavior: Clip.antiAlias,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                side: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
+                ),
+              ),
               child: embeddedTarget == null
                   ? ListView(
                       padding: const EdgeInsets.only(bottom: AppSpacing.lg),
@@ -389,6 +534,7 @@ class _DesktopSettingsSplit extends StatelessWidget {
                             title: selected.tiles[i].title,
                             subtitle: selected.tiles[i].subtitle,
                             onTap: () => onTileTap(selected.tiles[i]),
+                            onLongPress: selected.tiles[i].onLongPress,
                           ),
                         ],
                       ],
@@ -397,8 +543,8 @@ class _DesktopSettingsSplit extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (selected.tiles
-                            .where((t) => t.embedTarget != null)
-                            .length >
+                                .where((t) => t.embedTarget != null)
+                                .length >
                             1)
                           SingleChildScrollView(
                             scrollDirection: Axis.horizontal,
@@ -417,12 +563,15 @@ class _DesktopSettingsSplit extends StatelessWidget {
                                     padding: const EdgeInsetsDirectional.only(
                                       end: AppSpacing.sm,
                                     ),
-                                    child: ChoiceChip(
-                                      selected: embeddedTarget ==
-                                          tile.embedTarget,
-                                      avatar: Icon(tile.icon, size: 18),
-                                      label: Text(tile.title),
-                                      onSelected: (_) => onTileTap(tile),
+                                    child: GestureDetector(
+                                      onLongPress: tile.onLongPress,
+                                      child: ChoiceChip(
+                                        selected:
+                                            embeddedTarget == tile.embedTarget,
+                                        avatar: Icon(tile.icon, size: 18),
+                                        label: Text(tile.title),
+                                        onSelected: (_) => onTileTap(tile),
+                                      ),
                                     ),
                                   ),
                               ],
@@ -451,6 +600,8 @@ class _SettingsEmbeddedContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (target) {
+      _SettingsEmbedTarget.account =>
+        const AccountOverviewPage(embedded: true),
       _SettingsEmbedTarget.organization =>
         const OrganizationSettingsPage(embedded: true),
       _SettingsEmbedTarget.system => const SystemSettingsPage(embedded: true),
@@ -459,7 +610,23 @@ class _SettingsEmbeddedContent extends StatelessWidget {
       _SettingsEmbedTarget.theme => const ThemeSettingsPage(embedded: true),
       _SettingsEmbedTarget.notifications =>
         const NotificationPreferencesPage(embedded: true),
+      _SettingsEmbedTarget.sync => const SyncSettingsPage(embedded: true),
+      _SettingsEmbedTarget.storage =>
+        const StorageSettingsPage(embedded: true),
       _SettingsEmbedTarget.about => const AboutSettingsPage(embedded: true),
+      _SettingsEmbedTarget.support =>
+        const SupportSettingsPage(embedded: true),
+      _SettingsEmbedTarget.security =>
+        const SecuritySettingsPage(embedded: true),
+      _SettingsEmbedTarget.application =>
+        const ApplicationInfoPage(embedded: true),
+      _SettingsEmbedTarget.performance =>
+        const PerformanceSettingsPage(embedded: true),
+      _SettingsEmbedTarget.accessibility =>
+        const AccessibilitySettingsPage(embedded: true),
+      _SettingsEmbedTarget.backup => const BackupSettingsPage(embedded: true),
+      _SettingsEmbedTarget.danger => const DangerZonePage(embedded: true),
+      _SettingsEmbedTarget.updates => const UpdateCenterPage(embedded: true),
     };
   }
 }
@@ -495,6 +662,7 @@ class _MobileSettingsList extends StatelessWidget {
                     title: sections[s].tiles[i].title,
                     subtitle: sections[s].tiles[i].subtitle,
                     onTap: sections[s].tiles[i].onTap,
+                    onLongPress: sections[s].tiles[i].onLongPress,
                   ),
                 ],
               ],
@@ -523,6 +691,7 @@ class _SettingsItem {
     required this.title,
     required this.keywords,
     required this.onTap,
+    this.onLongPress,
     this.subtitle,
     this.embedTarget,
   });
@@ -532,5 +701,6 @@ class _SettingsItem {
   final String? subtitle;
   final List<String> keywords;
   final VoidCallback onTap;
+  final VoidCallback? onLongPress;
   final _SettingsEmbedTarget? embedTarget;
 }

@@ -1,6 +1,9 @@
 import { Router } from 'express';
 import authenticate from '../../../shared/middleware/authenticate.middleware.js';
-import { requirePermission } from '../../../shared/middleware/authorize.middleware.js';
+import {
+  requirePermission,
+  requireSelfOrPermission,
+} from '../../../shared/middleware/authorize.middleware.js';
 import { validate } from '../../../shared/middleware/validate.middleware.js';
 import { upload } from '../../../config/multer.config.js';
 import PERMISSIONS from '../../../shared/constants/permissions.constants.js';
@@ -90,7 +93,7 @@ router.post(
 
 router.post(
   '/:id/avatar',
-  requirePermission(PERMISSIONS.USERS_UPDATE),
+  requireSelfOrPermission('id', PERMISSIONS.USERS_UPDATE),
   upload.single('avatar'),
   validate(idValidator),
   usersController.uploadAvatar

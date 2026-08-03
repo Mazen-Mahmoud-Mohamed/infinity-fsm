@@ -5,8 +5,7 @@ import 'package:mobile/features/settings/domain/entities/settings_entities.dart'
 import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
 
 class SettingsRepositoryImpl implements SettingsRepository {
-  SettingsRepositoryImpl({required SettingsRemoteDataSource remote})
-      : _remote = remote;
+  SettingsRepositoryImpl({required this._remote});
 
   final SettingsRemoteDataSource _remote;
 

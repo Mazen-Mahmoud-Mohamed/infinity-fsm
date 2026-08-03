@@ -68,4 +68,40 @@ export function requireAnyPermission(...requiredPermissions) {
   };
 }
 
+/**
+ * Allow when the authenticated user is the resource owner (param match),
+ * or when they hold at least one of [requiredPermissions].
+ */
+export function requireSelfOrPermission(paramName, ...requiredPermissions) {
+  return (req, _res, next) => {
+    if (!req.auth) {
+      return next(new ForbiddenError('Authentication required'));
+    }
+
+    const targetId = req.params?.[paramName]?.toString?.() ?? req.params?.[paramName];
+    const selfId = req.auth.userId?.toString?.() ?? req.auth.userId;
+    const isSelf = Boolean(targetId && selfId && targetId === selfId);
+
+    if (isSelf) {
+      return next();
+    }
+
+    const hasPermission = requiredPermissions.some((permission) =>
+      req.auth.permissions.includes(permission)
+    );
+
+    if (!hasPermission) {
+      return next(
+        new ForbiddenError('You can only update your own avatar', {
+          requiredPermissions,
+          userPermissions: req.auth.permissions,
+          targetId,
+        })
+      );
+    }
+
+    return next();
+  };
+}
+
 export default requirePermission;

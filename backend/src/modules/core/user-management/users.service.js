@@ -16,6 +16,7 @@ import AppError, {
 import auditService from '../audit/audit.service.js';
 import { uploadUserAvatarBuffer } from './users.upload.js';
 import rbacService from '../rbac/rbac.service.js';
+import PERMISSIONS from '../../../shared/constants/permissions.constants.js';
 
 function escapeRegex(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -724,6 +725,17 @@ class UsersService {
   async uploadAvatar(user, auth, id, file) {
     if (!file?.buffer) {
       throw new AppError('AVATAR_REQUIRED', 'Avatar image is required', 422);
+    }
+
+    const targetId = toId(id);
+    const actorId = toId(auth.userId);
+    const isSelf = targetId && actorId && targetId === actorId;
+    const canUpdateOthers = Array.isArray(auth.permissions)
+      ? auth.permissions.includes(PERMISSIONS.USERS_UPDATE)
+      : false;
+
+    if (!isSelf && !canUpdateOthers) {
+      throw new ForbiddenError('You can only update your own avatar');
     }
 
     const doc = await this._getUserOrThrow(user.companyId, id);

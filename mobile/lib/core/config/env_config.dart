@@ -11,9 +11,9 @@
 /// ```
 class EnvConfig {
   EnvConfig({
-    required this.apiBaseUrl,
+    required String apiBaseUrl,
     required this.enableNetworkLogging,
-  });
+  }) : _apiBaseUrl = apiBaseUrl;
 
   /// Production Render API (includes `/api/v1`).
   static const String productionApiBaseUrl =
@@ -35,8 +35,17 @@ class EnvConfig {
         enableNetworkLogging: false,
       );
 
+  String _apiBaseUrl;
+
   /// REST API base URL, e.g. `https://host/api/v1`.
-  final String apiBaseUrl;
+  ///
+  /// Mutable so [ApiEndpointService] can switch hosts at runtime without
+  /// rebuilding Dio's interceptor stack.
+  String get apiBaseUrl => _apiBaseUrl;
+
+  void applyApiBaseUrl(String url) {
+    _apiBaseUrl = url;
+  }
 
   final bool enableNetworkLogging;
 

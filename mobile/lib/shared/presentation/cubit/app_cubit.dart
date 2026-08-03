@@ -21,6 +21,18 @@ class AppState extends Equatable {
     this.localeCode = 'en',
     this.notificationPushEnabled = true,
     this.notificationEmailEnabled = true,
+    this.notifAttendance = true,
+    this.notifTasks = true,
+    this.notifOvertime = true,
+    this.notifSync = true,
+    this.notifUpdates = true,
+    this.autoSync = true,
+    this.wifiOnlySync = false,
+    this.syncIntervalMinutes = 15,
+    this.largeText = false,
+    this.reduceAnimations = false,
+    this.highContrast = false,
+    this.releaseChannel = 'stable',
     this.message,
   });
 
@@ -30,6 +42,18 @@ class AppState extends Equatable {
   final String localeCode;
   final bool notificationPushEnabled;
   final bool notificationEmailEnabled;
+  final bool notifAttendance;
+  final bool notifTasks;
+  final bool notifOvertime;
+  final bool notifSync;
+  final bool notifUpdates;
+  final bool autoSync;
+  final bool wifiOnlySync;
+  final int syncIntervalMinutes;
+  final bool largeText;
+  final bool reduceAnimations;
+  final bool highContrast;
+  final String releaseChannel;
   final String? message;
 
   Locale get locale => Locale(localeCode);
@@ -41,7 +65,20 @@ class AppState extends Equatable {
     String? localeCode,
     bool? notificationPushEnabled,
     bool? notificationEmailEnabled,
+    bool? notifAttendance,
+    bool? notifTasks,
+    bool? notifOvertime,
+    bool? notifSync,
+    bool? notifUpdates,
+    bool? autoSync,
+    bool? wifiOnlySync,
+    int? syncIntervalMinutes,
+    bool? largeText,
+    bool? reduceAnimations,
+    bool? highContrast,
+    String? releaseChannel,
     String? message,
+    bool clearMessage = false,
   }) {
     return AppState(
       startupStatus: startupStatus ?? this.startupStatus,
@@ -52,7 +89,19 @@ class AppState extends Equatable {
           notificationPushEnabled ?? this.notificationPushEnabled,
       notificationEmailEnabled:
           notificationEmailEnabled ?? this.notificationEmailEnabled,
-      message: message,
+      notifAttendance: notifAttendance ?? this.notifAttendance,
+      notifTasks: notifTasks ?? this.notifTasks,
+      notifOvertime: notifOvertime ?? this.notifOvertime,
+      notifSync: notifSync ?? this.notifSync,
+      notifUpdates: notifUpdates ?? this.notifUpdates,
+      autoSync: autoSync ?? this.autoSync,
+      wifiOnlySync: wifiOnlySync ?? this.wifiOnlySync,
+      syncIntervalMinutes: syncIntervalMinutes ?? this.syncIntervalMinutes,
+      largeText: largeText ?? this.largeText,
+      reduceAnimations: reduceAnimations ?? this.reduceAnimations,
+      highContrast: highContrast ?? this.highContrast,
+      releaseChannel: releaseChannel ?? this.releaseChannel,
+      message: clearMessage ? null : (message ?? this.message),
     );
   }
 
@@ -64,6 +113,18 @@ class AppState extends Equatable {
         localeCode,
         notificationPushEnabled,
         notificationEmailEnabled,
+        notifAttendance,
+        notifTasks,
+        notifOvertime,
+        notifSync,
+        notifUpdates,
+        autoSync,
+        wifiOnlySync,
+        syncIntervalMinutes,
+        largeText,
+        reduceAnimations,
+        highContrast,
+        releaseChannel,
         message,
       ];
 }
@@ -86,6 +147,18 @@ class AppCubit extends Cubit<AppState> {
   static const _localeKey = 'app_locale_code';
   static const _pushKey = 'notif_push_enabled';
   static const _emailKey = 'notif_email_enabled';
+  static const _notifAttendanceKey = 'notif_attendance';
+  static const _notifTasksKey = 'notif_tasks';
+  static const _notifOvertimeKey = 'notif_overtime';
+  static const _notifSyncKey = 'notif_sync';
+  static const _notifUpdatesKey = 'notif_updates';
+  static const _autoSyncKey = 'pref_auto_sync';
+  static const _wifiOnlyKey = 'pref_wifi_only_sync';
+  static const _syncIntervalKey = 'pref_sync_interval_min';
+  static const _largeTextKey = 'pref_large_text';
+  static const _reduceAnimKey = 'pref_reduce_animations';
+  static const _highContrastKey = 'pref_high_contrast';
+  static const _channelKey = 'pref_release_channel';
 
   final ConnectivityService _connectivityService;
   final PreferencesService _preferences;
@@ -103,8 +176,6 @@ class AppCubit extends Cubit<AppState> {
         _ => ThemeMode.system,
       };
       final localeCode = _preferences.getString(_localeKey) ?? 'en';
-      final push = _preferences.getBool(_pushKey) ?? true;
-      final email = _preferences.getBool(_emailKey) ?? true;
 
       emit(
         state.copyWith(
@@ -112,8 +183,20 @@ class AppCubit extends Cubit<AppState> {
           isOnline: isOnline,
           themeMode: themeMode,
           localeCode: localeCode == 'ar' ? 'ar' : 'en',
-          notificationPushEnabled: push,
-          notificationEmailEnabled: email,
+          notificationPushEnabled: _preferences.getBool(_pushKey) ?? true,
+          notificationEmailEnabled: _preferences.getBool(_emailKey) ?? true,
+          notifAttendance: _preferences.getBool(_notifAttendanceKey) ?? true,
+          notifTasks: _preferences.getBool(_notifTasksKey) ?? true,
+          notifOvertime: _preferences.getBool(_notifOvertimeKey) ?? true,
+          notifSync: _preferences.getBool(_notifSyncKey) ?? true,
+          notifUpdates: _preferences.getBool(_notifUpdatesKey) ?? true,
+          autoSync: _preferences.getBool(_autoSyncKey) ?? true,
+          wifiOnlySync: _preferences.getBool(_wifiOnlyKey) ?? false,
+          syncIntervalMinutes: _preferences.getInt(_syncIntervalKey) ?? 15,
+          largeText: _preferences.getBool(_largeTextKey) ?? false,
+          reduceAnimations: _preferences.getBool(_reduceAnimKey) ?? false,
+          highContrast: _preferences.getBool(_highContrastKey) ?? false,
+          releaseChannel: _preferences.getString(_channelKey) ?? 'stable',
         ),
       );
     } on Object catch (error) {
@@ -145,6 +228,11 @@ class AppCubit extends Cubit<AppState> {
   Future<void> setNotificationPreferences({
     bool? pushEnabled,
     bool? emailEnabled,
+    bool? attendance,
+    bool? tasks,
+    bool? overtime,
+    bool? sync,
+    bool? updates,
   }) async {
     if (pushEnabled != null) {
       await _preferences.setBool(_pushKey, pushEnabled);
@@ -152,18 +240,110 @@ class AppCubit extends Cubit<AppState> {
     if (emailEnabled != null) {
       await _preferences.setBool(_emailKey, emailEnabled);
     }
+    if (attendance != null) {
+      await _preferences.setBool(_notifAttendanceKey, attendance);
+    }
+    if (tasks != null) {
+      await _preferences.setBool(_notifTasksKey, tasks);
+    }
+    if (overtime != null) {
+      await _preferences.setBool(_notifOvertimeKey, overtime);
+    }
+    if (sync != null) {
+      await _preferences.setBool(_notifSyncKey, sync);
+    }
+    if (updates != null) {
+      await _preferences.setBool(_notifUpdatesKey, updates);
+    }
     emit(
       state.copyWith(
         notificationPushEnabled: pushEnabled,
         notificationEmailEnabled: emailEnabled,
+        notifAttendance: attendance,
+        notifTasks: tasks,
+        notifOvertime: overtime,
+        notifSync: sync,
+        notifUpdates: updates,
       ),
     );
   }
 
+  Future<void> setSyncPreferences({
+    bool? autoSync,
+    bool? wifiOnly,
+    int? intervalMinutes,
+  }) async {
+    if (autoSync != null) {
+      await _preferences.setBool(_autoSyncKey, autoSync);
+    }
+    if (wifiOnly != null) {
+      await _preferences.setBool(_wifiOnlyKey, wifiOnly);
+    }
+    if (intervalMinutes != null) {
+      await _preferences.setInt(_syncIntervalKey, intervalMinutes);
+    }
+    emit(
+      state.copyWith(
+        autoSync: autoSync,
+        wifiOnlySync: wifiOnly,
+        syncIntervalMinutes: intervalMinutes,
+      ),
+    );
+  }
+
+  Future<void> setAccessibilityPreferences({
+    bool? largeText,
+    bool? reduceAnimations,
+    bool? highContrast,
+  }) async {
+    if (largeText != null) {
+      await _preferences.setBool(_largeTextKey, largeText);
+    }
+    if (reduceAnimations != null) {
+      await _preferences.setBool(_reduceAnimKey, reduceAnimations);
+    }
+    if (highContrast != null) {
+      await _preferences.setBool(_highContrastKey, highContrast);
+    }
+    emit(
+      state.copyWith(
+        largeText: largeText,
+        reduceAnimations: reduceAnimations,
+        highContrast: highContrast,
+      ),
+    );
+  }
+
+  /// Clears Flutter image cache only — never deletes user/business data.
   Future<void> clearLocalCache() async {
-    // UI-only Phase 1: preferences keys for offline queues are feature-owned.
-    // This marks a successful "cache clear" acknowledgement for the Settings UI.
-    emit(state.copyWith(message: null));
+    PaintingBinding.instance.imageCache.clear();
+    PaintingBinding.instance.imageCache.clearLiveImages();
+    emit(state.copyWith(clearMessage: true));
+  }
+
+  /// Restores preference defaults (theme/locale/notifications/sync/a11y).
+  Future<void> restoreDefaultPreferences() async {
+    await setThemeMode(ThemeMode.system);
+    await setLocaleCode('en');
+    await setNotificationPreferences(
+      pushEnabled: true,
+      emailEnabled: true,
+      attendance: true,
+      tasks: true,
+      overtime: true,
+      sync: true,
+      updates: true,
+    );
+    await setSyncPreferences(
+      autoSync: true,
+      wifiOnly: false,
+      intervalMinutes: 15,
+    );
+    await setAccessibilityPreferences(
+      largeText: false,
+      reduceAnimations: false,
+      highContrast: false,
+    );
   }
 
   @override

@@ -48,6 +48,11 @@ class DioClient {
 
   Dio get instance => _dio;
 
+  /// Hot-swap the API base URL for all subsequent requests.
+  void applyBaseUrl(String baseUrl) {
+    _dio.options.baseUrl = baseUrl;
+  }
+
   Future<Response<T>> get<T>(
     String path, {
     Map<String, dynamic>? queryParameters,

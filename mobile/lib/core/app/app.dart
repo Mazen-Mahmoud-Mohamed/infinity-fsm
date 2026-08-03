@@ -59,7 +59,10 @@ class InfinityApp extends StatelessWidget {
         child: BlocBuilder<AppCubit, AppState>(
           buildWhen: (previous, current) =>
               previous.themeMode != current.themeMode ||
-              previous.localeCode != current.localeCode,
+              previous.localeCode != current.localeCode ||
+              previous.largeText != current.largeText ||
+              previous.reduceAnimations != current.reduceAnimations ||
+              previous.highContrast != current.highContrast,
           builder: (context, appState) {
             return MaterialApp.router(
               scaffoldMessengerKey: scaffoldMessengerKey,
@@ -79,9 +82,20 @@ class InfinityApp extends StatelessWidget {
               builder: (context, child) {
                 final theme = Theme.of(context);
                 AppSystemUi.apply(theme);
-                return AnnotatedRegion(
-                  value: AppSystemUi.overlayFor(theme),
-                  child: child ?? const SizedBox.shrink(),
+                final media = MediaQuery.of(context);
+                final scaled = media.copyWith(
+                  textScaler: TextScaler.linear(
+                    appState.largeText ? 1.2 : media.textScaler.scale(1),
+                  ),
+                  disableAnimations: appState.reduceAnimations,
+                  boldText: appState.highContrast ? true : media.boldText,
+                );
+                return MediaQuery(
+                  data: scaled,
+                  child: AnnotatedRegion(
+                    value: AppSystemUi.overlayFor(theme),
+                    child: child ?? const SizedBox.shrink(),
+                  ),
                 );
               },
             );

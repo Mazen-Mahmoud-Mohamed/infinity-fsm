@@ -44,6 +44,8 @@ import 'package:mobile/features/service_reports/presentation/pages/service_repor
 import 'package:mobile/features/service_reports/presentation/pages/service_reports_list_page.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
+import 'package:mobile/features/settings/presentation/pages/server_management_page.dart';
+import 'package:mobile/features/settings/presentation/pages/settings_extra_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/system_settings_page.dart';
 import 'package:mobile/features/users/domain/entities/user_management_entities.dart';
 import 'package:mobile/features/users/presentation/pages/change_password_page.dart';
@@ -484,6 +486,74 @@ GoRouter createAppRouter({
                     path: 'about',
                     builder: (context, state) =>
                         const AboutSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'server',
+                    builder: (context, state) =>
+                        const ServerManagementPage(),
+                  ),
+                  GoRoute(
+                    path: 'account',
+                    builder: (context, state) =>
+                        const AccountOverviewPage(),
+                  ),
+                  GoRoute(
+                    path: 'sync',
+                    builder: (context, state) =>
+                        const SyncSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'storage',
+                    builder: (context, state) =>
+                        const StorageSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'support',
+                    builder: (context, state) =>
+                        const SupportSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'security',
+                    builder: (context, state) =>
+                        const SecuritySettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'application',
+                    builder: (context, state) =>
+                        const ApplicationInfoPage(),
+                  ),
+                  GoRoute(
+                    path: 'performance',
+                    builder: (context, state) =>
+                        const PerformanceSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'accessibility',
+                    builder: (context, state) =>
+                        const AccessibilitySettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'backup',
+                    builder: (context, state) =>
+                        const BackupSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'danger',
+                    builder: (context, state) => const DangerZonePage(),
+                  ),
+                  GoRoute(
+                    path: 'updates',
+                    builder: (context, state) =>
+                        const UpdateCenterPage(),
+                  ),
+                  GoRoute(
+                    path: 'logs',
+                    builder: (context, state) => const AdminLogsPage(),
+                  ),
+                  GoRoute(
+                    path: 'developer',
+                    builder: (context, state) =>
+                        const DeveloperOptionsPage(),
                   ),
                 ],
               ),
