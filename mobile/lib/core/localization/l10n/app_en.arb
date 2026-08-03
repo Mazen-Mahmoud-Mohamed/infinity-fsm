@@ -886,6 +886,8 @@
   "overtimeMapLoadFailed": "Unable to load map tiles",
   "overtimeMapCheckConnection": "Check your connection and try again.",
   "overtimeOpenInGoogleMaps": "Open in Google Maps",
+  "overtimeOpenLiveLocation": "Open Live Location",
+  "overtimeLocationUnavailable": "Location unavailable",
   "overtimeUnableOpenGoogleMaps": "Unable to open Google Maps.",
 
   "workOrderSaved": "Saved",

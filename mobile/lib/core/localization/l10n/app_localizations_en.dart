@@ -2348,6 +2348,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeOpenInGoogleMaps => 'Open in Google Maps';
 
   @override
+  String get overtimeOpenLiveLocation => 'Open Live Location';
+
+  @override
+  String get overtimeLocationUnavailable => 'Location unavailable';
+
+  @override
   String get overtimeUnableOpenGoogleMaps => 'Unable to open Google Maps.';
 
   @override

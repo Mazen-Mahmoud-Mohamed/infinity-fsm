@@ -4634,6 +4634,18 @@ abstract class AppLocalizations {
   /// **'Open in Google Maps'**
   String get overtimeOpenInGoogleMaps;
 
+  /// No description provided for @overtimeOpenLiveLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Live Location'**
+  String get overtimeOpenLiveLocation;
+
+  /// No description provided for @overtimeLocationUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Location unavailable'**
+  String get overtimeLocationUnavailable;
+
   /// No description provided for @overtimeUnableOpenGoogleMaps.
   ///
   /// In en, this message translates to:

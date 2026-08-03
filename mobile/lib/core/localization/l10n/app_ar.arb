@@ -886,6 +886,8 @@
   "overtimeMapLoadFailed": "تعذر تحميل خريطة البلاط",
   "overtimeMapCheckConnection": "تحقق من اتصالك وأعد المحاولة.",
   "overtimeOpenInGoogleMaps": "فتح في خرائط Google",
+  "overtimeOpenLiveLocation": "فتح الموقع المباشر",
+  "overtimeLocationUnavailable": "الموقع غير متاح",
   "overtimeUnableOpenGoogleMaps": "تعذر فتح خرائط Google.",
 
   "workOrderSaved": "تم الحفظ",

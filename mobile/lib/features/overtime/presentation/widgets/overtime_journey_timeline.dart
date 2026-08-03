@@ -9,6 +9,7 @@ import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_maps_launcher.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_fullscreen_image.dart';
 
 enum _SyncBadge { synced, pending, failed, offline }
@@ -383,7 +384,11 @@ class _TimelineStageTile extends StatelessWidget {
                       ),
                     if (!compact) ...[
                       const SizedBox(height: AppSpacing.sm),
-                      _LazyMapSection(gps: checkpoint!.gps),
+                      _LazyMapSection(
+                        gps: checkpoint!.gps,
+                        label: title,
+                        address: checkpoint!.address,
+                      ),
                       if (checkpoint!.photoUrl != null &&
                           checkpoint!.photoUrl!.isNotEmpty) ...[
                         const SizedBox(height: AppSpacing.sm),
@@ -560,10 +565,17 @@ class _ProgressGlyph extends StatelessWidget {
 
 /// Map is only built when the user expands "Show map" — avoids paying tile
 /// loading cost for every checkpoint up front.
+/// "Open Live Location" opens Google Maps at the checkpoint coordinates.
 class _LazyMapSection extends StatefulWidget {
-  const _LazyMapSection({required this.gps});
+  const _LazyMapSection({
+    required this.gps,
+    required this.label,
+    this.address,
+  });
 
   final GpsSnapshot gps;
+  final String label;
+  final String? address;
 
   @override
   State<_LazyMapSection> createState() => _LazyMapSectionState();
@@ -572,22 +584,101 @@ class _LazyMapSection extends StatefulWidget {
 class _LazyMapSectionState extends State<_LazyMapSection> {
   bool _expanded = false;
 
+  bool get _hasValidCoordinates {
+    final lat = widget.gps.latitude;
+    final lng = widget.gps.longitude;
+    return lat.isFinite &&
+        lng.isFinite &&
+        !(lat == 0 && lng == 0) &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180;
+  }
+
+  Future<void> _openLiveLocation() async {
+    if (!_hasValidCoordinates) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.overtimeLocationUnavailable),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      return;
+    }
+
+    final opened = await OvertimeMapsLauncher.openCoordinates(
+      latitude: widget.gps.latitude,
+      longitude: widget.gps.longitude,
+      label: (widget.address?.trim().isNotEmpty == true)
+          ? widget.address!.trim()
+          : widget.label,
+    );
+    if (!mounted) {
+      return;
+    }
+    if (!opened) {
+      final l10n = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(l10n.overtimeUnableOpenGoogleMaps),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final canOpen = _hasValidCoordinates;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextButton.icon(
-          onPressed: () => setState(() => _expanded = !_expanded),
-          icon: Icon(_expanded ? Icons.map : Icons.map_outlined, size: 18),
-          label: Text(_expanded ? l10n.overtimeHideMap : l10n.overtimeShowMap),
-          style: TextButton.styleFrom(
-            padding: EdgeInsets.zero,
-            minimumSize: const Size(0, 32),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            alignment: Alignment.centerLeft,
-          ),
+        Wrap(
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.xs,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            TextButton.icon(
+              onPressed: () => setState(() => _expanded = !_expanded),
+              icon: Icon(
+                _expanded ? Icons.map : Icons.map_outlined,
+                size: 18,
+              ),
+              label: Text(
+                _expanded ? l10n.overtimeHideMap : l10n.overtimeShowMap,
+              ),
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                alignment: Alignment.centerLeft,
+              ),
+            ),
+            Tooltip(
+              message: canOpen
+                  ? l10n.overtimeOpenLiveLocation
+                  : l10n.overtimeLocationUnavailable,
+              child: TextButton.icon(
+                onPressed: canOpen ? _openLiveLocation : null,
+                icon: const Icon(Icons.location_on_outlined, size: 18),
+                label: Text(l10n.overtimeOpenLiveLocation),
+                style: TextButton.styleFrom(
+                  padding: EdgeInsets.zero,
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  alignment: Alignment.centerLeft,
+                ),
+              ),
+            ),
+          ],
         ),
         if (_expanded) ...[
           const SizedBox(height: AppSpacing.xs),

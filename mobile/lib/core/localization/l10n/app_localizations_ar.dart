@@ -2338,6 +2338,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeOpenInGoogleMaps => 'فتح في خرائط Google';
 
   @override
+  String get overtimeOpenLiveLocation => 'فتح الموقع المباشر';
+
+  @override
+  String get overtimeLocationUnavailable => 'الموقع غير متاح';
+
+  @override
   String get overtimeUnableOpenGoogleMaps => 'تعذر فتح خرائط Google.';
 
   @override
