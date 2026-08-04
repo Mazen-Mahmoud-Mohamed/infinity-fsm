@@ -9,6 +9,7 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -705,7 +706,10 @@ class _AdvancedDiagnosticsCard extends StatelessWidget {
                   icon: Icons.verified_user_outlined,
                   title: l10n.settingsDiagAuth,
                   rows: [
-                    _DiagRow(l10n.serverMgmtUserRole, d.userRole),
+                    _DiagRow(
+                      l10n.serverMgmtUserRole,
+                      localizeRoleLabel(l10n, d.userRole),
+                    ),
                   ],
                 ),
                 _DiagGroup(

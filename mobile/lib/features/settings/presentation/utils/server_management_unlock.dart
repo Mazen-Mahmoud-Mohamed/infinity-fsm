@@ -61,7 +61,7 @@ Future<void> openAdminSettingsSecurely(
 
   final ok = await biometric.authenticate(
     reason: l10n.serverMgmtBiometricReason,
-    cancelButton: l10n.inventoryCancel,
+    cancelButton: l10n.cancel,
     signInTitle: signInTitle ?? l10n.serverMgmtTitle,
   );
   if (!context.mounted || !ok) {
@@ -127,7 +127,7 @@ Future<bool> ensureAdminSettingsUnlocked(BuildContext context) async {
 
   final ok = await biometric.authenticate(
     reason: l10n.serverMgmtBiometricReason,
-    cancelButton: l10n.inventoryCancel,
+    cancelButton: l10n.cancel,
     signInTitle: l10n.serverMgmtTitle,
   );
   if (!ok) return false;

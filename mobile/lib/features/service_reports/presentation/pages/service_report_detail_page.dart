@@ -96,7 +96,11 @@ class _ServiceReportDetailPageState extends State<ServiceReportDetailPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(state.message ?? l10n.reportsLoadFailed),
+                    Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.reportsLoadFailed,
+                        ),
                     FilledButton(
                       onPressed: _cubit.load,
                       child: Text(l10n.retry),

@@ -7,6 +7,7 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
@@ -175,7 +176,11 @@ class _UserDetailPageState extends State<UserDetailPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(state.message ?? l10n.usersLoadFailed),
+                      Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.usersLoadFailed,
+                        ),
                       FilledButton(
                         onPressed: _cubit.load,
                         child: Text(l10n.retry),
@@ -249,7 +254,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     _row(l10n.usersEmail, user.email),
                     _row(l10n.usersPhone, user.phone),
                     _row(l10n.usersJobTitle, user.jobTitle),
-                    _row(l10n.usersRole, user.primaryRole),
+                    _row(
+                      l10n.usersRole,
+                      localizeRoleLabel(l10n, user.primaryRole),
+                    ),
                     _row(
                       l10n.usersLastLogin,
                       user.lastLoginAt != null

@@ -5,6 +5,7 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
@@ -85,7 +86,11 @@ class _UsersDashboardView extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(state.message ?? l10n.usersLoadFailed),
+                  Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.usersLoadFailed,
+                        ),
                   const SizedBox(height: AppSpacing.md),
                   FilledButton(
                     onPressed: () =>

@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -158,7 +159,7 @@ class _StockHistoryViewState extends State<_StockHistoryView> {
                 if ((state.status == StockHistoryStatus.loading ||
                         state.status == StockHistoryStatus.initial) &&
                     state.items.isEmpty) {
-                  return const AppLoader();
+                  return AppLoader(message: l10n.inventoryLoading);
                 }
                 if (state.status == StockHistoryStatus.failure &&
                     state.items.isEmpty) {
@@ -166,7 +167,11 @@ class _StockHistoryViewState extends State<_StockHistoryView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(state.message ?? l10n.inventoryLoadFailed),
+                        Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.inventoryLoadFailed,
+                        ),
                         const SizedBox(height: AppSpacing.md),
                         FilledButton(
                           onPressed: () => context

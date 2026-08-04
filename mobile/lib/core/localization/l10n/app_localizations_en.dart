@@ -105,6 +105,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get comingSoon => 'Coming soon';
 
   @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get create => 'Create';
+
+  @override
+  String get add => 'Add';
+
+  @override
+  String get back => 'Back';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get reject => 'Reject';
+
+  @override
   String get retry => 'Retry';
 
   @override
@@ -136,7 +160,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workOrderLoadFailed => 'Failed to load work orders';
 
   @override
-  String get workOrderJobTitle => 'Job title';
+  String get workOrderLoading => 'Loading work orders...';
+
+  @override
+  String get workOrderJobTitle => 'Work order title';
 
   @override
   String get workOrderCustomer => 'Customer';
@@ -1207,6 +1234,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get rolesNoPermissions => 'No permissions selected';
 
   @override
+  String get rolesPermissionsSearchEmpty =>
+      'No permissions match your search. Try a different title or description.';
+
+  @override
+  String get rolesPermissionsCatalogEmpty =>
+      'No permissions are available in the catalog.';
+
+  @override
   String get rolesSave => 'Save role';
 
   @override
@@ -1244,6 +1279,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String rolesSelectedPermissions(int count) {
     return '$count selected';
   }
+
+  @override
+  String get dashboardLoadFailed => 'Unable to load the dashboard.';
 
   @override
   String get dashboardLoading => 'Loading dashboard...';
@@ -1457,7 +1495,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardKpiMonthlyTravelOt => 'Period travel OT';
 
   @override
-  String get dashboardKpiCompletedJobs => 'Completed jobs';
+  String get dashboardKpiCompletedJobs => 'Completed work orders';
 
   @override
   String get dashboardKpiAvgCompletionHours => 'Avg completion hours';
@@ -2200,6 +2238,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeJourneyTimeline => 'Journey timeline';
 
   @override
+  String get overtimeJourneyOverview => 'Journey Overview';
+
+  @override
   String get overtimeArrivedAtWorkSiteRecorded =>
       'Arrived at work site recorded.';
 
@@ -2469,7 +2510,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get orgNoCachedData => 'No cached data yet.';
 
   @override
-  String get usersRoleAdmin => 'Admin';
+  String get usersRoleAdmin => 'Administrator';
 
   @override
   String get usersRoleSupervisor => 'Supervisor';
@@ -2479,6 +2520,63 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get usersRoleHr => 'HR';
+
+  @override
+  String get usersRoleWarehouse => 'Warehouse';
+
+  @override
+  String get usersRoleViewer => 'Viewer';
+
+  @override
+  String get usersRoleManager => 'Manager';
+
+  @override
+  String get permGroupDashboard => 'Dashboard';
+
+  @override
+  String get permGroupUsers => 'Users';
+
+  @override
+  String get permGroupRoles => 'Roles & Permissions';
+
+  @override
+  String get permGroupAttendance => 'Attendance';
+
+  @override
+  String get permGroupOvertime => 'Overtime';
+
+  @override
+  String get permGroupInventory => 'Inventory';
+
+  @override
+  String get permGroupAssets => 'Assets';
+
+  @override
+  String get permGroupMaintenance => 'Maintenance';
+
+  @override
+  String get permGroupServiceReports => 'Service Reports';
+
+  @override
+  String get permGroupWorkOrders => 'Work Orders';
+
+  @override
+  String get permGroupSettings => 'Settings';
+
+  @override
+  String get permGroupProfile => 'Profile';
+
+  @override
+  String get permGroupNotifications => 'Notifications';
+
+  @override
+  String get permGroupOrganization => 'Organization';
+
+  @override
+  String get permGroupAudit => 'Audit';
+
+  @override
+  String get permGroupGeneral => 'General';
 
   @override
   String get rolesNotLoaded => 'Role not loaded';
@@ -3093,16 +3191,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get navDashboard => 'Home';
+  String get navDashboard => 'Dashboard';
 
   @override
-  String get navAttendance => 'Time';
+  String get navAttendance => 'Attendance';
 
   @override
-  String get navWorkOrders => 'Jobs';
+  String get navWorkOrders => 'Work Orders';
 
   @override
-  String get navOvertime => 'OT';
+  String get navOvertime => 'Overtime';
 
   @override
   String get navProfile => 'Me';
@@ -3453,7 +3551,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsNotifAttendance => 'Attendance notifications';
 
   @override
-  String get settingsNotifTasks => 'Task notifications';
+  String get settingsNotifTasks => 'Work order notifications';
 
   @override
   String get settingsNotifOvertime => 'Overtime notifications';
@@ -3550,4 +3648,565 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLogCategorySync => 'Synchronization';
+
+  @override
+  String get permGroupDashboardDesc =>
+      'Permissions for viewing system statistics and key performance indicators.';
+
+  @override
+  String get permGroupUsersDesc =>
+      'Permissions for managing user accounts across the organization.';
+
+  @override
+  String get permGroupRolesDesc =>
+      'Permissions for managing roles and assigning access rights.';
+
+  @override
+  String get permGroupAttendanceDesc =>
+      'Permissions for reviewing and managing employee attendance records.';
+
+  @override
+  String get permGroupOvertimeDesc =>
+      'Permissions for creating, approving, and managing overtime sessions.';
+
+  @override
+  String get permGroupInventoryDesc =>
+      'Permissions for managing inventory items and stock quantities.';
+
+  @override
+  String get permGroupAssetsDesc =>
+      'Permissions for managing and tracking organization assets.';
+
+  @override
+  String get permGroupMaintenanceDesc =>
+      'Permissions for maintenance plans and related operations.';
+
+  @override
+  String get permGroupServiceReportsDesc =>
+      'Permissions for viewing, generating, and downloading service reports.';
+
+  @override
+  String get permGroupWorkOrdersDesc =>
+      'Permissions for creating, managing, and completing work orders.';
+
+  @override
+  String get permGroupSettingsDesc =>
+      'Permissions for system and organization configuration settings.';
+
+  @override
+  String get permGroupProfileDesc =>
+      'Permissions for managing the signed-in user personal profile.';
+
+  @override
+  String get permGroupNotificationsDesc =>
+      'Permissions for sending, receiving, and managing notifications.';
+
+  @override
+  String get permGroupOrganizationDesc =>
+      'Permissions for managing company structure, branches, and departments.';
+
+  @override
+  String get permGroupAuditDesc =>
+      'Permissions for reviewing activity history and system change logs.';
+
+  @override
+  String get permGroupGeneralDesc =>
+      'General platform permissions not tied to a specific module.';
+
+  @override
+  String get permOrganizationView => 'View organization';
+
+  @override
+  String get permOrganizationViewDesc =>
+      'Allows browsing company structure, branches, and directory screens.';
+
+  @override
+  String get permOrganizationManageBranches => 'Manage branches';
+
+  @override
+  String get permOrganizationManageBranchesDesc =>
+      'Allows creating and editing company branches used across the organization.';
+
+  @override
+  String get permOrganizationManageRegions => 'Manage regions';
+
+  @override
+  String get permOrganizationManageRegionsDesc =>
+      'Allows creating and editing geographic regions used for organization mapping.';
+
+  @override
+  String get permOrganizationManageCities => 'Manage cities';
+
+  @override
+  String get permOrganizationManageCitiesDesc =>
+      'Allows creating and editing cities linked to branches and field operations.';
+
+  @override
+  String get permOrganizationManageDepartments => 'Manage departments';
+
+  @override
+  String get permOrganizationManageDepartmentsDesc =>
+      'Allows creating and editing departments that organize users and teams.';
+
+  @override
+  String get permOrganizationManageTeams => 'Manage teams';
+
+  @override
+  String get permOrganizationManageTeamsDesc =>
+      'Allows creating and editing operational teams and their membership.';
+
+  @override
+  String get permOrganizationManageUsers => 'Manage organization users';
+
+  @override
+  String get permOrganizationManageUsersDesc =>
+      'Allows placing users into branches, departments, and teams.';
+
+  @override
+  String get permSettingsView => 'View settings';
+
+  @override
+  String get permSettingsViewDesc =>
+      'Allows opening system settings screens without changing any values.';
+
+  @override
+  String get permSettingsManage => 'Manage system settings';
+
+  @override
+  String get permSettingsManageDesc =>
+      'Allows changing general settings that affect all system users.';
+
+  @override
+  String get permSettingsUpdate => 'Update system settings';
+
+  @override
+  String get permSettingsUpdateDesc =>
+      'Allows saving changes to system configuration values organization-wide.';
+
+  @override
+  String get permSettingsManageHolidays => 'Manage holidays';
+
+  @override
+  String get permSettingsManageHolidaysDesc =>
+      'Allows defining company holidays that affect attendance and overtime.';
+
+  @override
+  String get permAuditView => 'View audit log';
+
+  @override
+  String get permAuditViewDesc =>
+      'Allows reviewing activity and security change logs across the organization.';
+
+  @override
+  String get permDashboardView => 'View dashboard';
+
+  @override
+  String get permDashboardViewDesc =>
+      'Allows viewing system statistics and key performance indicators.';
+
+  @override
+  String get permRbacManageRoles => 'Manage roles & permissions';
+
+  @override
+  String get permRbacManageRolesDesc =>
+      'Allows full control of roles and which permissions each role receives.';
+
+  @override
+  String get permRbacManagePermissions => 'Manage permissions';
+
+  @override
+  String get permRbacManagePermissionsDesc =>
+      'Allows controlling how permissions are assigned from the access catalog.';
+
+  @override
+  String get permRolesView => 'View roles';
+
+  @override
+  String get permRolesViewDesc =>
+      'Allows opening the roles list and reviewing existing role definitions.';
+
+  @override
+  String get permRolesCreate => 'Create roles';
+
+  @override
+  String get permRolesCreateDesc =>
+      'Allows creating new roles and choosing the permissions they include.';
+
+  @override
+  String get permRolesUpdate => 'Update roles';
+
+  @override
+  String get permRolesUpdateDesc =>
+      'Allows changing names and permissions of existing roles.';
+
+  @override
+  String get permRolesDelete => 'Delete roles';
+
+  @override
+  String get permRolesDeleteDesc =>
+      'Allows permanently removing roles that are no longer needed.';
+
+  @override
+  String get permRolesManage => 'Manage roles & permissions';
+
+  @override
+  String get permRolesManageDesc =>
+      'Allows creating, editing, and assigning roles and their permission sets.';
+
+  @override
+  String get permAttendanceViewOwn => 'View own attendance';
+
+  @override
+  String get permAttendanceViewOwnDesc =>
+      'Allows reviewing only personal attendance records.';
+
+  @override
+  String get permAttendanceViewTeam => 'View team attendance';
+
+  @override
+  String get permAttendanceViewTeamDesc =>
+      'Allows viewing attendance records for members of the assigned team.';
+
+  @override
+  String get permAttendanceViewAll => 'View all attendance';
+
+  @override
+  String get permAttendanceViewAllDesc =>
+      'Allows viewing every attendance record across the organization.';
+
+  @override
+  String get permAttendanceManageOwn => 'Manage own attendance';
+
+  @override
+  String get permAttendanceManageOwnDesc =>
+      'Allows creating and updating only personal attendance punches.';
+
+  @override
+  String get permAttendanceView => 'View attendance';
+
+  @override
+  String get permAttendanceViewDesc =>
+      'Allows opening attendance screens for records within the granted access scope.';
+
+  @override
+  String get permAttendanceUpdate => 'Manage attendance';
+
+  @override
+  String get permAttendanceUpdateDesc =>
+      'Allows creating, editing, approving, and managing attendance records.';
+
+  @override
+  String get permAttendanceApprove => 'Approve attendance';
+
+  @override
+  String get permAttendanceApproveDesc =>
+      'Allows approving attendance records before they are finalized.';
+
+  @override
+  String get permOvertimeViewOwn => 'View own overtime';
+
+  @override
+  String get permOvertimeViewOwnDesc =>
+      'Allows reviewing only personal overtime sessions and status.';
+
+  @override
+  String get permOvertimeViewTeam => 'View team overtime';
+
+  @override
+  String get permOvertimeViewTeamDesc =>
+      'Allows viewing overtime sessions belonging to assigned team members.';
+
+  @override
+  String get permOvertimeViewAll => 'View all overtime';
+
+  @override
+  String get permOvertimeViewAllDesc =>
+      'Allows viewing every overtime session across the organization.';
+
+  @override
+  String get permOvertimeCreate => 'Create overtime';
+
+  @override
+  String get permOvertimeCreateDesc =>
+      'Allows creating new overtime requests for employees.';
+
+  @override
+  String get permOvertimeStart => 'Start overtime';
+
+  @override
+  String get permOvertimeStartDesc =>
+      'Allows starting an overtime session and recording its start time and location.';
+
+  @override
+  String get permOvertimeEnd => 'End overtime';
+
+  @override
+  String get permOvertimeEndDesc =>
+      'Allows finishing an active overtime session and submitting its end details.';
+
+  @override
+  String get permOvertimeCancel => 'Cancel overtime';
+
+  @override
+  String get permOvertimeCancelDesc =>
+      'Allows canceling an overtime session so it is not counted as worked time.';
+
+  @override
+  String get permOvertimeApprove => 'Approve overtime';
+
+  @override
+  String get permOvertimeApproveDesc =>
+      'Allows approving overtime requests before they are counted.';
+
+  @override
+  String get permOvertimeReject => 'Reject overtime';
+
+  @override
+  String get permOvertimeRejectDesc =>
+      'Allows rejecting overtime requests while keeping a record of the decision.';
+
+  @override
+  String get permOvertimeArchive => 'Archive overtime';
+
+  @override
+  String get permOvertimeArchiveDesc =>
+      'Allows archiving completed overtime records to keep active lists focused.';
+
+  @override
+  String get permWorkOrdersViewOwn => 'View own work orders';
+
+  @override
+  String get permWorkOrdersViewOwnDesc =>
+      'Allows viewing only work orders assigned to the signed-in user.';
+
+  @override
+  String get permWorkOrdersViewTeam => 'View team work orders';
+
+  @override
+  String get permWorkOrdersViewTeamDesc =>
+      'Allows viewing work orders belonging to the assigned team.';
+
+  @override
+  String get permWorkOrdersViewAll => 'View all work orders';
+
+  @override
+  String get permWorkOrdersViewAllDesc =>
+      'Allows viewing every work order across the organization.';
+
+  @override
+  String get permWorkOrdersCreate => 'Create work orders';
+
+  @override
+  String get permWorkOrdersCreateDesc =>
+      'Allows creating new work orders and assigning them to staff.';
+
+  @override
+  String get permWorkOrdersUpdate => 'Update work orders';
+
+  @override
+  String get permWorkOrdersUpdateDesc =>
+      'Allows editing details of existing work orders within allowed scope.';
+
+  @override
+  String get permWorkOrdersAssign => 'Assign work orders';
+
+  @override
+  String get permWorkOrdersAssignDesc =>
+      'Allows assigning or reassigning technicians on work order screens.';
+
+  @override
+  String get permWorkOrdersComplete => 'Complete work orders';
+
+  @override
+  String get permWorkOrdersCompleteDesc =>
+      'Allows marking a work order as completed after the job is finished.';
+
+  @override
+  String get permWorkOrdersCancel => 'Cancel work orders';
+
+  @override
+  String get permWorkOrdersCancelDesc =>
+      'Allows canceling work orders so they are no longer active for field staff.';
+
+  @override
+  String get permWorkOrdersDelete => 'Delete work orders';
+
+  @override
+  String get permWorkOrdersDeleteDesc =>
+      'Allows permanently deleting work orders from the organization records.';
+
+  @override
+  String get permInventoryView => 'View inventory';
+
+  @override
+  String get permInventoryViewDesc =>
+      'Allows browsing inventory items and available stock quantities.';
+
+  @override
+  String get permInventoryCreate => 'Create inventory items';
+
+  @override
+  String get permInventoryCreateDesc =>
+      'Allows registering new inventory items in the stock catalog.';
+
+  @override
+  String get permInventoryUpdate => 'Update inventory';
+
+  @override
+  String get permInventoryUpdateDesc =>
+      'Allows editing inventory item details such as names and attributes.';
+
+  @override
+  String get permInventoryDelete => 'Delete inventory';
+
+  @override
+  String get permInventoryDeleteDesc =>
+      'Allows removing inventory items from the organization catalog.';
+
+  @override
+  String get permInventoryStockManage => 'Manage stock quantities';
+
+  @override
+  String get permInventoryStockManageDesc =>
+      'Allows updating available quantities and stock movements for items.';
+
+  @override
+  String get permAssetsView => 'View assets';
+
+  @override
+  String get permAssetsViewDesc =>
+      'Allows browsing registered asset records in the system.';
+
+  @override
+  String get permAssetsCreate => 'Create assets';
+
+  @override
+  String get permAssetsCreateDesc =>
+      'Allows registering new company assets in the asset register.';
+
+  @override
+  String get permAssetsUpdate => 'Update assets';
+
+  @override
+  String get permAssetsUpdateDesc =>
+      'Allows editing asset details such as status, location, and attributes.';
+
+  @override
+  String get permAssetsDelete => 'Delete assets';
+
+  @override
+  String get permAssetsDeleteDesc =>
+      'Allows permanently removing assets from the organization register.';
+
+  @override
+  String get permAssetsAssign => 'Assign assets';
+
+  @override
+  String get permAssetsAssignDesc =>
+      'Allows assigning assets to users or locations within the organization.';
+
+  @override
+  String get permPmView => 'View maintenance';
+
+  @override
+  String get permPmViewDesc =>
+      'Allows opening preventive maintenance plans and schedule screens.';
+
+  @override
+  String get permPmCreate => 'Create maintenance plans';
+
+  @override
+  String get permPmCreateDesc =>
+      'Allows creating periodic maintenance schedules and plans for assets.';
+
+  @override
+  String get permPmUpdate => 'Update maintenance';
+
+  @override
+  String get permPmUpdateDesc =>
+      'Allows editing existing maintenance plans, dates, and related details.';
+
+  @override
+  String get permPmDelete => 'Delete maintenance';
+
+  @override
+  String get permPmDeleteDesc =>
+      'Allows deleting maintenance plans that are no longer required.';
+
+  @override
+  String get permPmManage => 'Manage maintenance';
+
+  @override
+  String get permPmManageDesc =>
+      'Allows full management of preventive maintenance plans and schedules.';
+
+  @override
+  String get permMaintenanceManage => 'Manage maintenance operations';
+
+  @override
+  String get permMaintenanceManageDesc =>
+      'Allows managing maintenance operations and related work schedules.';
+
+  @override
+  String get permReportsView => 'View service reports';
+
+  @override
+  String get permReportsViewDesc =>
+      'Allows opening and reading completed service reports in the system.';
+
+  @override
+  String get permReportsGenerate => 'Generate service reports';
+
+  @override
+  String get permReportsGenerateDesc =>
+      'Allows generating new service reports from completed field work.';
+
+  @override
+  String get permReportsDownload => 'Download service reports';
+
+  @override
+  String get permReportsDownloadDesc =>
+      'Allows downloading service reports in shareable or printable formats.';
+
+  @override
+  String get permUsersView => 'View users';
+
+  @override
+  String get permUsersViewDesc =>
+      'Allows opening the users list and viewing account details organization-wide.';
+
+  @override
+  String get permUsersCreate => 'Create users';
+
+  @override
+  String get permUsersCreateDesc =>
+      'Allows creating new user accounts inside the organization.';
+
+  @override
+  String get permUsersUpdate => 'Update users';
+
+  @override
+  String get permUsersUpdateDesc =>
+      'Allows editing user profile, contact, and account details.';
+
+  @override
+  String get permUsersDelete => 'Delete users';
+
+  @override
+  String get permUsersDeleteDesc =>
+      'Allows permanently removing user accounts from the organization.';
+
+  @override
+  String get permUsersRead => 'View users';
+
+  @override
+  String get permUsersReadDesc =>
+      'Allows opening the users list and viewing account details organization-wide.';
+
+  @override
+  String get permUsersResetPassword => 'Reset password';
+
+  @override
+  String get permUsersResetPasswordDesc =>
+      'Allows resetting any user\'s password without knowing the current one.';
 }

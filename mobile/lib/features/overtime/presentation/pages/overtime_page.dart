@@ -145,7 +145,9 @@ class _OvertimeTrackingView extends StatelessWidget {
             return _ErrorView(
               message: localizeAppMessage(
                 l10n,
-                state.message ?? 'overtimeLoadFailed',
+                state.message != null
+                ? localizeAppMessage(l10n, state.message)
+                : l10n.overtimeLoadFailed,
               ),
               onRetry: () => context.read<OvertimeCubit>().initialize(),
             );

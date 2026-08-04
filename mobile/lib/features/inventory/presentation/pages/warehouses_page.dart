@@ -252,7 +252,7 @@ class _WarehousesViewState extends State<_WarehousesView> {
                 if ((state.status == WarehousesListStatus.loading ||
                         state.status == WarehousesListStatus.initial) &&
                     state.items.isEmpty) {
-                  return const AppLoader();
+                  return AppLoader(message: l10n.inventoryLoading);
                 }
                 if (state.status == WarehousesListStatus.failure &&
                     state.items.isEmpty) {
@@ -260,7 +260,11 @@ class _WarehousesViewState extends State<_WarehousesView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(state.message ?? l10n.inventoryLoadFailed),
+                        Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.inventoryLoadFailed,
+                        ),
                         const SizedBox(height: AppSpacing.md),
                         FilledButton(
                           onPressed: () => context
@@ -356,7 +360,7 @@ class _WarehousesViewState extends State<_WarehousesView> {
                                               ScaffoldMessenger.of(context)
                                                   .showSnackBar(
                                                 SnackBar(
-                                                  content: Text(message),
+                                                  content: Text(localizeAppMessage(l10n, message)),
                                                 ),
                                               );
                                           }

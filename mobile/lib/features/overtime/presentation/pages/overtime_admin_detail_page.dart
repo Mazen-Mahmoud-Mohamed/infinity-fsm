@@ -6,10 +6,10 @@ import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
-import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_detail_cubit.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
@@ -33,8 +33,21 @@ class OvertimeAdminDetailPage extends StatelessWidget {
   }
 }
 
-class _OvertimeDetailView extends StatelessWidget {
+class _OvertimeDetailView extends StatefulWidget {
   const _OvertimeDetailView();
+
+  @override
+  State<_OvertimeDetailView> createState() => _OvertimeDetailViewState();
+}
+
+class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
+  final OvertimeJourneyFocus _journeyFocus = OvertimeJourneyFocus();
+
+  @override
+  void dispose() {
+    _journeyFocus.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +133,10 @@ class _OvertimeDetailView extends StatelessWidget {
                 ),
                 _DetailRow(
                   label: l10n.roleLabel,
-                  value: session.technician?.primaryRole ?? '-',
+                  value: localizeRoleLabel(
+                    l10n,
+                    session.technician?.primaryRole,
+                  ),
                 ),
               ],
             ),
@@ -206,7 +222,13 @@ class _OvertimeDetailView extends StatelessWidget {
               children: [
                 OvertimeJourneyProgressStrip(session: session),
                 const SizedBox(height: AppSpacing.md),
-                OvertimeJourneyTimeline(session: session),
+                OvertimeJourneyTimeline(
+                  session: session,
+                  // Desktop places Journey Overview full-width below the split.
+                  includeJourneyOverview: !isDesktop,
+                  focus: isDesktop ? _journeyFocus : null,
+                  desktopCompactPhotos: isDesktop,
+                ),
               ],
             ),
             if (!session.isV2Workflow) ...[
@@ -264,7 +286,7 @@ class _OvertimeDetailView extends StatelessWidget {
                       : AppBottomChrome.system,
                   children: [
                     if (isDesktop)
-                      AppDesktopSplitView(
+                      _DesktopOvertimeDetailLayout(
                         start: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: leftSections,
@@ -273,10 +295,15 @@ class _OvertimeDetailView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: rightSections,
                         ),
+                        footer: OvertimeJourneyOverview(
+                          session: session,
+                          mapHeight: OvertimeJourneyOverview.desktopMapHeight,
+                          topSpacing: 14,
+                          focus: _journeyFocus,
+                        ),
                       )
-                    else
+                    else ...[
                       ...leftSections,
-                    if (!isDesktop) ...[
                       const SizedBox(height: AppSpacing.lg),
                       ...rightSections,
                     ],
@@ -364,7 +391,7 @@ class _OvertimeDetailView extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.usersCancel),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(dialogContext).pop(true),
@@ -420,7 +447,7 @@ class _OvertimeDetailView extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(dialogContext).pop(),
-              child: Text(l10n.usersCancel),
+              child: Text(l10n.cancel),
             ),
             ElevatedButton(
               onPressed: () =>
@@ -679,6 +706,96 @@ class _PhotoTile extends StatelessWidget {
                   ),
                 ),
         ),
+      ],
+    );
+  }
+}
+
+/// Desktop-only shell: shrink-wraps the two-column row to the left column
+/// height (timeline scrolls internally), then places [footer] immediately
+/// below with no empty Expanded whitespace.
+class _DesktopOvertimeDetailLayout extends StatefulWidget {
+  const _DesktopOvertimeDetailLayout({
+    required this.start,
+    required this.end,
+    required this.footer,
+  });
+
+  final Widget start;
+  final Widget end;
+  final Widget footer;
+
+  @override
+  State<_DesktopOvertimeDetailLayout> createState() =>
+      _DesktopOvertimeDetailLayoutState();
+}
+
+class _DesktopOvertimeDetailLayoutState
+    extends State<_DesktopOvertimeDetailLayout> {
+  final GlobalKey _startKey = GlobalKey();
+  double? _startHeight;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureStart());
+  }
+
+  @override
+  void didUpdateWidget(covariant _DesktopOvertimeDetailLayout oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureStart());
+  }
+
+  void _measureStart() {
+    final box = _startKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) {
+      return;
+    }
+    final height = box.size.height;
+    if (_startHeight != null && (height - _startHeight!).abs() < 0.5) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _startHeight = height);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final timelineMaxHeight = _startHeight;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              flex: 3,
+              child: KeyedSubtree(
+                key: _startKey,
+                child: widget.start,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.lg),
+            Expanded(
+              flex: 2,
+              child: timelineMaxHeight == null
+                  ? widget.end
+                  : SizedBox(
+                      height: timelineMaxHeight,
+                      child: SingleChildScrollView(
+                        primary: false,
+                        child: widget.end,
+                      ),
+                    ),
+            ),
+          ],
+        ),
+        widget.footer,
       ],
     );
   }

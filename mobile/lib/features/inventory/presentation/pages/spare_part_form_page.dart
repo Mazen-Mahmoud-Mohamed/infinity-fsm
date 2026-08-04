@@ -161,7 +161,7 @@ class _SparePartFormPageState extends State<SparePartFormPage> {
             if (state.status == SparePartFormStatus.loading ||
                 (isEditing &&
                     state.status == SparePartFormStatus.initial)) {
-              return const AppLoader();
+              return AppLoader(message: l10n.inventoryLoading);
             }
             if (state.status == SparePartFormStatus.failure &&
                 state.part == null &&
@@ -170,7 +170,11 @@ class _SparePartFormPageState extends State<SparePartFormPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(state.message ?? l10n.inventoryLoadFailed),
+                    Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.inventoryLoadFailed,
+                        ),
                     const SizedBox(height: AppSpacing.md),
                     FilledButton(
                       onPressed: () => _cubit.load(),

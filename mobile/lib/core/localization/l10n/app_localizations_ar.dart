@@ -105,6 +105,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get comingSoon => 'قريباً';
 
   @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get create => 'إنشاء';
+
+  @override
+  String get add => 'إضافة';
+
+  @override
+  String get back => 'رجوع';
+
+  @override
+  String get update => 'تحديث';
+
+  @override
+  String get reject => 'رفض';
+
+  @override
   String get retry => 'إعادة المحاولة';
 
   @override
@@ -135,7 +159,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workOrderLoadFailed => 'فشل تحميل أوامر العمل';
 
   @override
-  String get workOrderJobTitle => 'عنوان المهمة';
+  String get workOrderLoading => 'جاري تحميل أوامر العمل...';
+
+  @override
+  String get workOrderJobTitle => 'عنوان أمر العمل';
 
   @override
   String get workOrderCustomer => 'العميل';
@@ -1203,6 +1230,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get rolesNoPermissions => 'لا توجد صلاحيات محددة';
 
   @override
+  String get rolesPermissionsSearchEmpty =>
+      'لا توجد صلاحيات مطابقة لبحثك. جرّب عنواناً أو وصفاً مختلفاً.';
+
+  @override
+  String get rolesPermissionsCatalogEmpty =>
+      'لا توجد صلاحيات متاحة في الكتالوج.';
+
+  @override
   String get rolesSave => 'حفظ الدور';
 
   @override
@@ -1240,6 +1275,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String rolesSelectedPermissions(int count) {
     return '$count محددة';
   }
+
+  @override
+  String get dashboardLoadFailed => 'تعذر تحميل لوحة التحكم.';
 
   @override
   String get dashboardLoading => 'جاري تحميل لوحة التحكم...';
@@ -1303,7 +1341,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardSectionAttendance => 'الحضور';
 
   @override
-  String get dashboardSectionOvertime => 'الوقت الإضافي';
+  String get dashboardSectionOvertime => 'العمل الإضافي';
 
   @override
   String get dashboardSectionWorkOrders => 'أوامر العمل';
@@ -1330,7 +1368,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardSectionTeamAttendance => 'حضور الفريق';
 
   @override
-  String get dashboardSectionTeamOvertime => 'وقت إضافي للفريق';
+  String get dashboardSectionTeamOvertime => 'عمل إضافي للفريق';
 
   @override
   String get dashboardSectionTeamWorkOrders => 'أوامر عمل الفريق';
@@ -1363,7 +1401,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardKpiCurrentlyWorking => 'يعملون حالياً';
 
   @override
-  String get dashboardKpiOnOvertime => 'في وقت إضافي';
+  String get dashboardKpiOnOvertime => 'في عمل إضافي';
 
   @override
   String get dashboardKpiOnTravelOt => 'في وقت سفر';
@@ -1378,13 +1416,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardKpiAttendanceRate => 'نسبة الحضور';
 
   @override
-  String get dashboardKpiOtHours => 'ساعات الوقت الإضافي';
+  String get dashboardKpiOtHours => 'ساعات العمل الإضافي';
 
   @override
   String get dashboardKpiTravelOtHours => 'ساعات وقت السفر';
 
   @override
-  String get dashboardKpiAvgOtPerEmployee => 'متوسط الوقت الإضافي للموظف';
+  String get dashboardKpiAvgOtPerEmployee => 'متوسط العمل الإضافي للموظف';
 
   @override
   String get dashboardKpiWoTotal => 'إجمالي أوامر العمل';
@@ -1447,13 +1485,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardKpiMonthlyWorkingHours => 'ساعات العمل للفترة';
 
   @override
-  String get dashboardKpiMonthlyOtHours => 'ساعات الوقت الإضافي للفترة';
+  String get dashboardKpiMonthlyOtHours => 'ساعات العمل الإضافي للفترة';
 
   @override
   String get dashboardKpiMonthlyTravelOt => 'ساعات وقت السفر للفترة';
 
   @override
-  String get dashboardKpiCompletedJobs => 'المهام المكتملة';
+  String get dashboardKpiCompletedJobs => 'أوامر العمل المكتملة';
 
   @override
   String get dashboardKpiAvgCompletionHours => 'متوسط ساعات الإنجاز';
@@ -1486,7 +1524,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardChartAttendance => 'اتجاه الحضور';
 
   @override
-  String get dashboardChartOvertime => 'اتجاه الوقت الإضافي';
+  String get dashboardChartOvertime => 'اتجاه العمل الإضافي';
 
   @override
   String get dashboardChartWorkOrders => 'اتجاه أوامر العمل';
@@ -2004,25 +2042,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get overtimeEnded =>
-      'انتهى الوقت الإضافي. تم احتساب الوقت الإضافي المؤهل تلقائياً.';
+      'انتهى العمل الإضافي. تم احتساب العمل الإضافي المؤهل تلقائياً.';
 
   @override
-  String get normalOvertimeStarted => 'بدأ الوقت الإضافي العادي.';
+  String get normalOvertimeStarted => 'بدأ العمل الإضافي العادي.';
 
   @override
-  String get travelOvertimeStarted => 'بدأ الوقت الإضافي للسفر.';
+  String get travelOvertimeStarted => 'بدأ العمل الإضافي للسفر.';
 
   @override
-  String get overtimeLoading => 'جاري تحميل الوقت الإضافي...';
+  String get overtimeLoading => 'جاري تحميل العمل الإضافي...';
 
   @override
-  String get overtimeLoadFailed => 'تعذر تحميل الوقت الإضافي.';
+  String get overtimeLoadFailed => 'تعذر تحميل العمل الإضافي.';
 
   @override
   String get overtimeMyTooltip => 'وقتي الإضافي';
 
   @override
-  String get overtimeManageTooltip => 'إدارة الوقت الإضافي';
+  String get overtimeManageTooltip => 'إدارة العمل الإضافي';
 
   @override
   String get attendanceClockIn => 'تسجيل حضور';
@@ -2139,13 +2177,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get attendanceDate => 'التاريخ';
 
   @override
-  String get attendanceOvertimeHours => 'ساعات الوقت الإضافي';
+  String get attendanceOvertimeHours => 'ساعات العمل الإضافي';
 
   @override
   String get attendanceRoleAll => 'كل الأدوار';
 
   @override
-  String get overtimeStartTitle => 'بدء رحلة الوقت الإضافي';
+  String get overtimeStartTitle => 'بدء رحلة العمل الإضافي';
 
   @override
   String get overtimeStartHint =>
@@ -2189,6 +2227,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get overtimeJourneyTimeline => 'الجدول الزمني للرحلة';
+
+  @override
+  String get overtimeJourneyOverview => 'نظرة عامة على الرحلة';
 
   @override
   String get overtimeArrivedAtWorkSiteRecorded =>
@@ -2241,24 +2282,24 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeLastSessionSummary => 'ملخص آخر جلسة';
 
   @override
-  String get overtimeEligible => 'الوقت الإضافي المؤهل';
+  String get overtimeEligible => 'العمل الإضافي المؤهل';
 
   @override
-  String get overtimeTypeNormal => 'وقت إضافي عادي';
+  String get overtimeTypeNormal => 'عمل إضافي عادي';
 
   @override
-  String get overtimeTypeTravel => 'وقت إضافي للسفر';
+  String get overtimeTypeTravel => 'عمل إضافي للسفر';
 
   @override
   String get overtimeContinueExistingSession =>
-      'لديك بالفعل جلسة وقت إضافي قيد التشغيل.';
+      'لديك بالفعل جلسة عمل إضافي قيد التشغيل.';
 
   @override
   String get overtimeContinueSession => 'متابعة الجلسة الحالية';
 
   @override
   String get overtimeActiveSessionReminder =>
-      'جلسة الوقت الإضافي ما زالت قيد التشغيل. لا تنسَ إنهاءها عند الانتهاء.';
+      'جلسة العمل الإضافي ما زالت قيد التشغيل. لا تنسَ إنهاءها عند الانتهاء.';
 
   @override
   String overtimeProgressOf(int current, int total) {
@@ -2339,13 +2380,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get filterPending => 'قيد المراجعة';
 
   @override
-  String get filterApproved => 'موافق عليه';
+  String get filterApproved => 'معتمد';
 
   @override
   String get filterRejected => 'مرفوض';
 
   @override
-  String get approve => 'موافقة';
+  String get approve => 'اعتماد';
 
   @override
   String get deviceRegistrationFailed => 'فشل تسجيل الجهاز. أعد تشغيل التطبيق.';
@@ -2393,7 +2434,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get profileNoPermissions => 'لا توجد صلاحيات معينة';
 
   @override
-  String get orgTitle => 'الهيكل التنظيمي';
+  String get orgTitle => 'المؤسسة';
 
   @override
   String get orgCompanies => 'الشركات';
@@ -2459,7 +2500,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get orgNoCachedData => 'لا توجد بيانات مخزنة بعد.';
 
   @override
-  String get usersRoleAdmin => 'مدير';
+  String get usersRoleAdmin => 'مدير النظام';
 
   @override
   String get usersRoleSupervisor => 'مشرف';
@@ -2471,6 +2512,63 @@ class AppLocalizationsAr extends AppLocalizations {
   String get usersRoleHr => 'موارد بشرية';
 
   @override
+  String get usersRoleWarehouse => 'المخازن';
+
+  @override
+  String get usersRoleViewer => 'مشاهد';
+
+  @override
+  String get usersRoleManager => 'مدير';
+
+  @override
+  String get permGroupDashboard => 'لوحة التحكم';
+
+  @override
+  String get permGroupUsers => 'المستخدمون';
+
+  @override
+  String get permGroupRoles => 'الأدوار والصلاحيات';
+
+  @override
+  String get permGroupAttendance => 'الحضور';
+
+  @override
+  String get permGroupOvertime => 'العمل الإضافي';
+
+  @override
+  String get permGroupInventory => 'المخزون';
+
+  @override
+  String get permGroupAssets => 'الأصول';
+
+  @override
+  String get permGroupMaintenance => 'الصيانة';
+
+  @override
+  String get permGroupServiceReports => 'تقارير الخدمة';
+
+  @override
+  String get permGroupWorkOrders => 'أوامر العمل';
+
+  @override
+  String get permGroupSettings => 'الإعدادات';
+
+  @override
+  String get permGroupProfile => 'الملف الشخصي';
+
+  @override
+  String get permGroupNotifications => 'الإشعارات';
+
+  @override
+  String get permGroupOrganization => 'المؤسسة';
+
+  @override
+  String get permGroupAudit => 'التدقيق';
+
+  @override
+  String get permGroupGeneral => 'عام';
+
+  @override
   String get rolesNotLoaded => 'لم يتم تحميل الدور';
 
   @override
@@ -2480,25 +2578,25 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeMyHistory => 'وقتي الإضافي';
 
   @override
-  String get overtimeManagement => 'إدارة الوقت الإضافي';
+  String get overtimeManagement => 'إدارة العمل الإضافي';
 
   @override
-  String get overtimeDetails => 'تفاصيل الوقت الإضافي';
+  String get overtimeDetails => 'تفاصيل العمل الإضافي';
 
   @override
   String get overtimeDetailsLoading => 'جاري تحميل التفاصيل...';
 
   @override
-  String get overtimeDetailsLoadFailed => 'تعذر تحميل تفاصيل الوقت الإضافي.';
+  String get overtimeDetailsLoadFailed => 'تعذر تحميل تفاصيل العمل الإضافي.';
 
   @override
-  String get overtimeHistoryLoadFailed => 'تعذر تحميل سجل الوقت الإضافي.';
+  String get overtimeHistoryLoadFailed => 'تعذر تحميل سجل العمل الإضافي.';
 
   @override
-  String get overtimeHistoryEmpty => 'لا يوجد سجل وقت إضافي بعد.';
+  String get overtimeHistoryEmpty => 'لا يوجد سجل عمل إضافي بعد.';
 
   @override
-  String get overtimeAdminEmpty => 'لم يتم العثور على جلسات وقت إضافي.';
+  String get overtimeAdminEmpty => 'لم يتم العثور على جلسات عمل إضافي.';
 
   @override
   String get overtimeSearchTechnician => 'بحث باسم الفني أو البريد الإلكتروني';
@@ -2560,16 +2658,16 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeNoPhotoAvailable => 'لا توجد صورة';
 
   @override
-  String get overtimeRejectDialogTitle => 'رفض الوقت الإضافي';
+  String get overtimeRejectDialogTitle => 'رفض العمل الإضافي';
 
   @override
   String get overtimeRejectReasonHint => 'سبب الرفض (اختياري)';
 
   @override
-  String get overtimeApprovedMessage => 'تمت الموافقة على الوقت الإضافي.';
+  String get overtimeApprovedMessage => 'تمت الموافقة على العمل الإضافي.';
 
   @override
-  String get overtimeRejectedMessage => 'تم رفض الوقت الإضافي.';
+  String get overtimeRejectedMessage => 'تم رفض العمل الإضافي.';
 
   @override
   String overtimeDurationLine(String duration) {
@@ -2589,7 +2687,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeStatusSynced => 'تمت المزامنة';
 
   @override
-  String get overtimeStatusApproved => 'موافق عليه';
+  String get overtimeStatusApproved => 'معتمد';
 
   @override
   String get overtimeStatusRejected => 'مرفوض';
@@ -3078,16 +3176,16 @@ class AppLocalizationsAr extends AppLocalizations {
   }
 
   @override
-  String get navDashboard => 'الرئيسية';
+  String get navDashboard => 'لوحة التحكم';
 
   @override
-  String get navAttendance => 'الوقت';
+  String get navAttendance => 'الحضور';
 
   @override
-  String get navWorkOrders => 'المهام';
+  String get navWorkOrders => 'أوامر العمل';
 
   @override
-  String get navOvertime => 'إضافي';
+  String get navOvertime => 'العمل الإضافي';
 
   @override
   String get navProfile => 'أنا';
@@ -3111,7 +3209,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get eventAttendanceGeneric => 'تحديث الحضور';
 
   @override
-  String get eventOvertimeGeneric => 'تحديث الوقت الإضافي';
+  String get eventOvertimeGeneric => 'تحديث العمل الإضافي';
 
   @override
   String get eventWorkOrderGeneric => 'تحديث أمر العمل';
@@ -3436,10 +3534,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsNotifAttendance => 'إشعارات الحضور';
 
   @override
-  String get settingsNotifTasks => 'إشعارات المهام';
+  String get settingsNotifTasks => 'إشعارات أوامر العمل';
 
   @override
-  String get settingsNotifOvertime => 'إشعارات الوقت الإضافي';
+  String get settingsNotifOvertime => 'إشعارات العمل الإضافي';
 
   @override
   String get settingsNotifSync => 'إشعارات المزامنة';
@@ -3533,4 +3631,562 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsLogCategorySync => 'المزامنة';
+
+  @override
+  String get permGroupDashboardDesc =>
+      'الصلاحيات الخاصة بعرض إحصائيات النظام والمؤشرات الرئيسية.';
+
+  @override
+  String get permGroupUsersDesc => 'الصلاحيات الخاصة بإدارة حسابات المستخدمين.';
+
+  @override
+  String get permGroupRolesDesc =>
+      'الصلاحيات الخاصة بإدارة الأدوار وتوزيع الصلاحيات.';
+
+  @override
+  String get permGroupAttendanceDesc =>
+      'الصلاحيات الخاصة بإدارة ومراجعة سجلات حضور الموظفين.';
+
+  @override
+  String get permGroupOvertimeDesc =>
+      'الصلاحيات الخاصة بإنشاء واعتماد وإدارة جلسات العمل الإضافي.';
+
+  @override
+  String get permGroupInventoryDesc =>
+      'الصلاحيات الخاصة بإدارة الأصناف والكميات داخل المخزون.';
+
+  @override
+  String get permGroupAssetsDesc =>
+      'الصلاحيات الخاصة بإدارة وتتبع أصول المؤسسة.';
+
+  @override
+  String get permGroupMaintenanceDesc =>
+      'الصلاحيات الخاصة بخطط الصيانة والعمليات المرتبطة بها.';
+
+  @override
+  String get permGroupServiceReportsDesc =>
+      'الصلاحيات الخاصة بعرض وإنشاء وتنزيل تقارير الخدمة.';
+
+  @override
+  String get permGroupWorkOrdersDesc =>
+      'الصلاحيات الخاصة بإنشاء وإدارة وتنفيذ أوامر العمل.';
+
+  @override
+  String get permGroupSettingsDesc =>
+      'الصلاحيات الخاصة بإعدادات النظام والمؤسسة.';
+
+  @override
+  String get permGroupProfileDesc =>
+      'الصلاحيات الخاصة بإدارة الملف الشخصي للمستخدم.';
+
+  @override
+  String get permGroupNotificationsDesc =>
+      'الصلاحيات الخاصة بالإشعارات وإرسالها واستقبالها.';
+
+  @override
+  String get permGroupOrganizationDesc =>
+      'الصلاحيات الخاصة بإدارة هيكل المؤسسة والفروع والأقسام.';
+
+  @override
+  String get permGroupAuditDesc =>
+      'الصلاحيات الخاصة بمراجعة سجل الأنشطة والتغييرات.';
+
+  @override
+  String get permGroupGeneralDesc =>
+      'صلاحيات عامة في المنصة غير مرتبطة بوحدة محددة.';
+
+  @override
+  String get permOrganizationView => 'عرض المؤسسة';
+
+  @override
+  String get permOrganizationViewDesc =>
+      'يسمح بالاطلاع على هيكل المؤسسة والفروع وشاشات الدليل.';
+
+  @override
+  String get permOrganizationManageBranches => 'إدارة الفروع';
+
+  @override
+  String get permOrganizationManageBranchesDesc =>
+      'يسمح بإنشاء وتعديل فروع الشركة المستخدمة على مستوى المؤسسة.';
+
+  @override
+  String get permOrganizationManageRegions => 'إدارة المناطق';
+
+  @override
+  String get permOrganizationManageRegionsDesc =>
+      'يسمح بإنشاء وتعديل المناطق الجغرافية المستخدمة في هيكل المؤسسة.';
+
+  @override
+  String get permOrganizationManageCities => 'إدارة المدن';
+
+  @override
+  String get permOrganizationManageCitiesDesc =>
+      'يسمح بإنشاء وتعديل المدن المرتبطة بالفروع والعمليات الميدانية.';
+
+  @override
+  String get permOrganizationManageDepartments => 'إدارة الأقسام';
+
+  @override
+  String get permOrganizationManageDepartmentsDesc =>
+      'يسمح بإنشاء وتعديل الأقسام التي تنظّم المستخدمين والفرق.';
+
+  @override
+  String get permOrganizationManageTeams => 'إدارة الفرق';
+
+  @override
+  String get permOrganizationManageTeamsDesc =>
+      'يسمح بإنشاء وتعديل فرق العمل وأعضائها التشغيليين.';
+
+  @override
+  String get permOrganizationManageUsers => 'إدارة مستخدمي المؤسسة';
+
+  @override
+  String get permOrganizationManageUsersDesc =>
+      'يسمح بتعيين المستخدمين ضمن الفروع والأقسام والفرق.';
+
+  @override
+  String get permSettingsView => 'عرض الإعدادات';
+
+  @override
+  String get permSettingsViewDesc =>
+      'يسمح بفتح شاشات إعدادات النظام دون تعديل أي قيم.';
+
+  @override
+  String get permSettingsManage => 'إدارة إعدادات النظام';
+
+  @override
+  String get permSettingsManageDesc =>
+      'يسمح بتعديل الإعدادات العامة التي تؤثر على جميع مستخدمي النظام.';
+
+  @override
+  String get permSettingsUpdate => 'تعديل إعدادات النظام';
+
+  @override
+  String get permSettingsUpdateDesc =>
+      'يسمح بحفظ تعديلات قيم إعدادات النظام على مستوى المؤسسة.';
+
+  @override
+  String get permSettingsManageHolidays => 'إدارة العطل';
+
+  @override
+  String get permSettingsManageHolidaysDesc =>
+      'يسمح بتعريف عطل الشركة التي تؤثر على الحضور والعمل الإضافي.';
+
+  @override
+  String get permAuditView => 'عرض سجل التدقيق';
+
+  @override
+  String get permAuditViewDesc =>
+      'يسمح بمراجعة سجل الأنشطة والتغييرات الأمنية على مستوى المؤسسة.';
+
+  @override
+  String get permDashboardView => 'عرض لوحة التحكم';
+
+  @override
+  String get permDashboardViewDesc =>
+      'يسمح بمشاهدة الإحصائيات والمؤشرات الرئيسية الخاصة بالنظام.';
+
+  @override
+  String get permRbacManageRoles => 'إدارة الأدوار والصلاحيات';
+
+  @override
+  String get permRbacManageRolesDesc =>
+      'يسمح بالتحكم الكامل في الأدوار والصلاحيات المعينة لكل دور.';
+
+  @override
+  String get permRbacManagePermissions => 'إدارة الصلاحيات';
+
+  @override
+  String get permRbacManagePermissionsDesc =>
+      'يسمح بالتحكم في كيفية تعيين الصلاحيات من كتالوج الوصول.';
+
+  @override
+  String get permRolesView => 'عرض الأدوار';
+
+  @override
+  String get permRolesViewDesc =>
+      'يسمح بفتح قائمة الأدوار ومراجعة تعريفات الأدوار الحالية.';
+
+  @override
+  String get permRolesCreate => 'إضافة الأدوار';
+
+  @override
+  String get permRolesCreateDesc =>
+      'يسمح بإنشاء أدوار جديدة وتحديد الصلاحيات الخاصة بها.';
+
+  @override
+  String get permRolesUpdate => 'تعديل الأدوار';
+
+  @override
+  String get permRolesUpdateDesc =>
+      'يسمح بتعديل صلاحيات وأسماء الأدوار الموجودة.';
+
+  @override
+  String get permRolesDelete => 'حذف الأدوار';
+
+  @override
+  String get permRolesDeleteDesc =>
+      'يسمح بحذف الأدوار التي لم يعد هناك حاجة إليها بشكل دائم.';
+
+  @override
+  String get permRolesManage => 'إدارة الأدوار والصلاحيات';
+
+  @override
+  String get permRolesManageDesc =>
+      'يسمح بإنشاء وتعديل وتعيين الأدوار ومجموعات صلاحياتها.';
+
+  @override
+  String get permAttendanceViewOwn => 'عرض الحضور الخاص';
+
+  @override
+  String get permAttendanceViewOwnDesc =>
+      'يسمح بمراجعة سجلات حضوره الشخصي فقط.';
+
+  @override
+  String get permAttendanceViewTeam => 'عرض حضور الفريق';
+
+  @override
+  String get permAttendanceViewTeamDesc =>
+      'يسمح بالاطلاع على سجلات حضور أعضاء الفريق التابع له.';
+
+  @override
+  String get permAttendanceViewAll => 'عرض كل الحضور';
+
+  @override
+  String get permAttendanceViewAllDesc =>
+      'يسمح بعرض جميع سجلات الحضور داخل المؤسسة.';
+
+  @override
+  String get permAttendanceManageOwn => 'إدارة الحضور الخاص';
+
+  @override
+  String get permAttendanceManageOwnDesc =>
+      'يسمح بإنشاء وتعديل سجلات الحضور الشخصية للمستخدم فقط.';
+
+  @override
+  String get permAttendanceView => 'عرض الحضور';
+
+  @override
+  String get permAttendanceViewDesc =>
+      'يسمح بفتح شاشات الحضور للسجلات ضمن نطاق صلاحية المستخدم.';
+
+  @override
+  String get permAttendanceUpdate => 'إدارة الحضور';
+
+  @override
+  String get permAttendanceUpdateDesc =>
+      'يسمح بإنشاء وتعديل واعتماد وإدارة سجلات الحضور.';
+
+  @override
+  String get permAttendanceApprove => 'اعتماد الحضور';
+
+  @override
+  String get permAttendanceApproveDesc =>
+      'يسمح باعتماد سجلات الحضور قبل تثبيتها بشكل نهائي.';
+
+  @override
+  String get permOvertimeViewOwn => 'عرض العمل الإضافي الخاص';
+
+  @override
+  String get permOvertimeViewOwnDesc =>
+      'يسمح بمراجعة جلسات العمل الإضافي الخاصة بالمستخدم وحالتها فقط.';
+
+  @override
+  String get permOvertimeViewTeam => 'عرض العمل الإضافي للفريق';
+
+  @override
+  String get permOvertimeViewTeamDesc =>
+      'يسمح بالاطلاع على جلسات العمل الإضافي الخاصة بأعضاء الفريق.';
+
+  @override
+  String get permOvertimeViewAll => 'عرض كل العمل الإضافي';
+
+  @override
+  String get permOvertimeViewAllDesc =>
+      'يسمح بعرض جميع جلسات العمل الإضافي داخل المؤسسة.';
+
+  @override
+  String get permOvertimeCreate => 'إنشاء العمل الإضافي';
+
+  @override
+  String get permOvertimeCreateDesc =>
+      'يسمح بإنشاء طلبات عمل إضافي جديدة للموظفين.';
+
+  @override
+  String get permOvertimeStart => 'بدء العمل الإضافي';
+
+  @override
+  String get permOvertimeStartDesc =>
+      'يسمح ببدء جلسة عمل إضافي وتسجيل وقت وموقع البداية.';
+
+  @override
+  String get permOvertimeEnd => 'إنهاء العمل الإضافي';
+
+  @override
+  String get permOvertimeEndDesc =>
+      'يسمح بإنهاء جلسة عمل إضافي نشطة وتسليم تفاصيل الإغلاق.';
+
+  @override
+  String get permOvertimeCancel => 'إلغاء العمل الإضافي';
+
+  @override
+  String get permOvertimeCancelDesc =>
+      'يسمح بإلغاء جلسة عمل إضافي حتى لا تُحتسب ضمن وقت العمل.';
+
+  @override
+  String get permOvertimeApprove => 'اعتماد العمل الإضافي';
+
+  @override
+  String get permOvertimeApproveDesc =>
+      'يسمح بالموافقة على طلبات العمل الإضافي قبل احتسابها.';
+
+  @override
+  String get permOvertimeReject => 'رفض العمل الإضافي';
+
+  @override
+  String get permOvertimeRejectDesc =>
+      'يسمح برفض طلبات العمل الإضافي مع الاحتفاظ بسجل القرار.';
+
+  @override
+  String get permOvertimeArchive => 'أرشفة العمل الإضافي';
+
+  @override
+  String get permOvertimeArchiveDesc =>
+      'يسمح بأرشفة سجلات العمل الإضافي المكتملة لإبقاء القوائم النشطة مرتبة.';
+
+  @override
+  String get permWorkOrdersViewOwn => 'عرض أوامر العمل الخاصة';
+
+  @override
+  String get permWorkOrdersViewOwnDesc =>
+      'يسمح بعرض أوامر العمل المعينة للمستخدم فقط.';
+
+  @override
+  String get permWorkOrdersViewTeam => 'عرض أوامر عمل الفريق';
+
+  @override
+  String get permWorkOrdersViewTeamDesc =>
+      'يسمح بالاطلاع على أوامر العمل الخاصة بالفريق التابع للمستخدم.';
+
+  @override
+  String get permWorkOrdersViewAll => 'عرض كل أوامر العمل';
+
+  @override
+  String get permWorkOrdersViewAllDesc =>
+      'يسمح بعرض جميع أوامر العمل داخل المؤسسة.';
+
+  @override
+  String get permWorkOrdersCreate => 'إنشاء أوامر العمل';
+
+  @override
+  String get permWorkOrdersCreateDesc =>
+      'يسمح بإنشاء أوامر عمل جديدة وتعيينها للموظفين.';
+
+  @override
+  String get permWorkOrdersUpdate => 'تعديل أوامر العمل';
+
+  @override
+  String get permWorkOrdersUpdateDesc =>
+      'يسمح بتعديل تفاصيل أوامر العمل الحالية ضمن النطاق المسموح.';
+
+  @override
+  String get permWorkOrdersAssign => 'تعيين أوامر العمل';
+
+  @override
+  String get permWorkOrdersAssignDesc =>
+      'يسمح بتعيين أو إعادة تعيين الفنيين من شاشات أوامر العمل.';
+
+  @override
+  String get permWorkOrdersComplete => 'إكمال أوامر العمل';
+
+  @override
+  String get permWorkOrdersCompleteDesc =>
+      'يسمح بتغيير حالة أمر العمل إلى مكتمل بعد الانتهاء منه.';
+
+  @override
+  String get permWorkOrdersCancel => 'إلغاء أوامر العمل';
+
+  @override
+  String get permWorkOrdersCancelDesc =>
+      'يسمح بإلغاء أوامر العمل حتى تتوقف عن الظهور كنشيطة للفريق الميداني.';
+
+  @override
+  String get permWorkOrdersDelete => 'حذف أوامر العمل';
+
+  @override
+  String get permWorkOrdersDeleteDesc =>
+      'يسمح بحذف أوامر العمل نهائياً من سجلات المؤسسة.';
+
+  @override
+  String get permInventoryView => 'عرض المخزون';
+
+  @override
+  String get permInventoryViewDesc =>
+      'يسمح بالاطلاع على أصناف المخزون والكميات المتوفرة.';
+
+  @override
+  String get permInventoryCreate => 'إضافة المخزون';
+
+  @override
+  String get permInventoryCreateDesc =>
+      'يسمح بتسجيل أصناف مخزون جديدة في دليل المخزون.';
+
+  @override
+  String get permInventoryUpdate => 'تعديل المخزون';
+
+  @override
+  String get permInventoryUpdateDesc =>
+      'يسمح بتعديل تفاصيل أصناف المخزون مثل الأسماء والخصائص.';
+
+  @override
+  String get permInventoryDelete => 'حذف المخزون';
+
+  @override
+  String get permInventoryDeleteDesc =>
+      'يسمح بحذف أصناف المخزون من دليل المؤسسة.';
+
+  @override
+  String get permInventoryStockManage => 'إدارة المخزون والكميات';
+
+  @override
+  String get permInventoryStockManageDesc =>
+      'يسمح بتحديث الكميات المتوفرة وحركة الأصناف داخل المخزون.';
+
+  @override
+  String get permAssetsView => 'عرض الأصول';
+
+  @override
+  String get permAssetsViewDesc =>
+      'يسمح بالاطلاع على بيانات الأصول المسجلة في النظام.';
+
+  @override
+  String get permAssetsCreate => 'إضافة الأصول';
+
+  @override
+  String get permAssetsCreateDesc =>
+      'يسمح بتسجيل أصول جديدة للشركة في سجل الأصول.';
+
+  @override
+  String get permAssetsUpdate => 'تعديل الأصول';
+
+  @override
+  String get permAssetsUpdateDesc =>
+      'يسمح بتعديل بيانات الأصول مثل الحالة والموقع والخصائص.';
+
+  @override
+  String get permAssetsDelete => 'حذف الأصول';
+
+  @override
+  String get permAssetsDeleteDesc => 'يسمح بحذف الأصول نهائياً من سجل المؤسسة.';
+
+  @override
+  String get permAssetsAssign => 'تخصيص الأصول';
+
+  @override
+  String get permAssetsAssignDesc =>
+      'يسمح بتخصيص الأصول للمستخدمين أو المواقع داخل المؤسسة.';
+
+  @override
+  String get permPmView => 'عرض الصيانة';
+
+  @override
+  String get permPmViewDesc => 'يسمح بفتح شاشات خطط وجداول الصيانة الوقائية.';
+
+  @override
+  String get permPmCreate => 'إنشاء خطط الصيانة';
+
+  @override
+  String get permPmCreateDesc =>
+      'يسمح بإنشاء جداول وخطط الصيانة الدورية للأصول.';
+
+  @override
+  String get permPmUpdate => 'تعديل الصيانة';
+
+  @override
+  String get permPmUpdateDesc =>
+      'يسمح بتعديل خطط الصيانة الحالية ومواعيدها وتفاصيلها.';
+
+  @override
+  String get permPmDelete => 'حذف الصيانة';
+
+  @override
+  String get permPmDeleteDesc =>
+      'يسمح بحذف خطط الصيانة التي لم يعد هناك حاجة إليها.';
+
+  @override
+  String get permPmManage => 'إدارة الصيانة';
+
+  @override
+  String get permPmManageDesc =>
+      'يسمح بالإدارة الكاملة لخطط وجداول الصيانة الوقائية.';
+
+  @override
+  String get permMaintenanceManage => 'إدارة عمليات الصيانة';
+
+  @override
+  String get permMaintenanceManageDesc =>
+      'يسمح بإدارة عمليات الصيانة والجداول المرتبطة بها.';
+
+  @override
+  String get permReportsView => 'عرض تقارير الخدمة';
+
+  @override
+  String get permReportsViewDesc =>
+      'يسمح بفتح وقراءة تقارير الخدمة المكتملة داخل النظام.';
+
+  @override
+  String get permReportsGenerate => 'إنشاء تقارير الخدمة';
+
+  @override
+  String get permReportsGenerateDesc =>
+      'يسمح بإنشاء تقارير خدمة جديدة من الأعمال الميدانية المكتملة.';
+
+  @override
+  String get permReportsDownload => 'تنزيل تقارير الخدمة';
+
+  @override
+  String get permReportsDownloadDesc =>
+      'يسمح بتنزيل تقارير الخدمة بصيغ قابلة للمشاركة أو الطباعة.';
+
+  @override
+  String get permUsersView => 'عرض المستخدمين';
+
+  @override
+  String get permUsersViewDesc =>
+      'يسمح بفتح قائمة المستخدمين وعرض تفاصيل الحسابات على مستوى المؤسسة.';
+
+  @override
+  String get permUsersCreate => 'إضافة المستخدمين';
+
+  @override
+  String get permUsersCreateDesc =>
+      'يسمح بإنشاء حسابات مستخدمين جديدة داخل المؤسسة.';
+
+  @override
+  String get permUsersUpdate => 'تعديل المستخدمين';
+
+  @override
+  String get permUsersUpdateDesc =>
+      'يسمح بتعديل بيانات الملف الشخصي والاتصال وحساب المستخدم.';
+
+  @override
+  String get permUsersDelete => 'حذف المستخدمين';
+
+  @override
+  String get permUsersDeleteDesc =>
+      'يسمح بحذف حسابات المستخدمين نهائياً من المؤسسة.';
+
+  @override
+  String get permUsersRead => 'عرض المستخدمين';
+
+  @override
+  String get permUsersReadDesc =>
+      'يسمح بفتح قائمة المستخدمين وعرض تفاصيل الحسابات على مستوى المؤسسة.';
+
+  @override
+  String get permUsersResetPassword => 'إعادة تعيين كلمة المرور';
+
+  @override
+  String get permUsersResetPasswordDesc =>
+      'يسمح بإعادة تعيين كلمة مرور أي مستخدم دون معرفة كلمة المرور الحالية.';
 }

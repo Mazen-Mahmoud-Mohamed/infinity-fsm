@@ -80,7 +80,11 @@ class _AssignUsersDialogState extends State<AssignUsersDialog> {
                     if (state.status == AssignUsersStatus.failure &&
                         state.candidates.isEmpty) {
                       return Center(
-                        child: Text(state.message ?? l10n.rolesLoadFailed),
+                        child: Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.rolesLoadFailed,
+                        ),
                       );
                     }
                     return Column(

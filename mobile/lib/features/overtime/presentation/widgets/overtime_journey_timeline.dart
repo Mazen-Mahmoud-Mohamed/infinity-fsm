@@ -15,6 +15,46 @@ import 'package:mobile/features/overtime/presentation/widgets/overtime_fullscree
 
 enum _SyncBadge { synced, pending, failed, offline }
 
+/// Presentation-only link between Journey Timeline stages and Journey Overview.
+///
+/// Desktop Overtime Details uses this so timeline taps focus the map and
+/// marker taps highlight the matching timeline card. No business logic.
+class OvertimeJourneyFocus extends ChangeNotifier {
+  OvertimeCheckpointStage? _stage;
+  int _generation = 0;
+  bool _fromMap = false;
+
+  OvertimeCheckpointStage? get stage => _stage;
+  int get generation => _generation;
+
+  /// True when the latest selection came from a map marker tap.
+  bool get fromMap => _fromMap;
+
+  void selectFromTimeline(OvertimeCheckpointStage stage) {
+    _stage = stage;
+    _fromMap = false;
+    _generation++;
+    notifyListeners();
+  }
+
+  void selectFromMap(OvertimeCheckpointStage stage) {
+    _stage = stage;
+    _fromMap = true;
+    _generation++;
+    notifyListeners();
+  }
+
+  void clear() {
+    if (_stage == null) {
+      return;
+    }
+    _stage = null;
+    _fromMap = false;
+    _generation++;
+    notifyListeners();
+  }
+}
+
 /// Vertical journey timeline — v2 four stages, or legacy start/end.
 class OvertimeJourneyTimeline extends StatelessWidget {
   const OvertimeJourneyTimeline({
@@ -23,6 +63,9 @@ class OvertimeJourneyTimeline extends StatelessWidget {
     this.compact = false,
     this.pendingActions = const [],
     this.isOffline = false,
+    this.includeJourneyOverview = true,
+    this.focus,
+    this.desktopCompactPhotos = false,
   });
 
   final OvertimeSession session;
@@ -32,6 +75,16 @@ class OvertimeJourneyTimeline extends StatelessWidget {
   /// sync badges (pending / failed / offline).
   final List<PendingOvertimeAction> pendingActions;
   final bool isOffline;
+
+  /// When false, the Journey Overview map is omitted so a parent layout can
+  /// place it full-width (desktop Overtime Details).
+  final bool includeJourneyOverview;
+
+  /// Optional desktop focus controller for timeline ↔ map interaction.
+  final OvertimeJourneyFocus? focus;
+
+  /// Desktop Overtime Details: shorter checkpoint photos (lightbox unchanged).
+  final bool desktopCompactPhotos;
 
   @override
   Widget build(BuildContext context) {
@@ -43,41 +96,72 @@ class OvertimeJourneyTimeline extends StatelessWidget {
             OvertimeCheckpointStage.endJourney,
           ];
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (session.requiresManualReview) ...[
-          _ManualReviewChip(reason: session.reviewReason),
-          const SizedBox(height: AppSpacing.md),
-        ],
-        for (var i = 0; i < stages.length; i++) ...[
-          _TimelineStageTile(
-            stage: stages[i],
-            checkpoint: _checkpointFor(session, stages[i]),
-            isNext: session.isRunning &&
-                session.effectiveNextCheckpoint == stages[i],
-            compact: compact,
-            title: _stageTitle(l10n, stages[i], legacy: !session.isV2Workflow),
-            syncBadge: _syncBadgeFor(stages[i]),
-          ),
-          if (i < stages.length - 1)
-            Padding(
-              // Align connector to the center of the 28px indicator.
-              padding: const EdgeInsetsDirectional.only(start: 13),
-              child: SizedBox(
-                height: AppSpacing.md,
-                child: VerticalDivider(
-                  width: 2,
-                  thickness: 2,
-                  color: Theme.of(context)
-                      .colorScheme
-                      .outlineVariant
-                      .withValues(alpha: 0.7),
+    final legacy = !session.isV2Workflow;
+    final focusListenable = focus;
+
+    Widget buildTimeline() {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (session.requiresManualReview) ...[
+            _ManualReviewChip(reason: session.reviewReason),
+            const SizedBox(height: AppSpacing.md),
+          ],
+          for (var i = 0; i < stages.length; i++) ...[
+            _TimelineStageTile(
+              stage: stages[i],
+              checkpoint: _checkpointFor(session, stages[i]),
+              isNext: session.isRunning &&
+                  session.effectiveNextCheckpoint == stages[i],
+              compact: compact,
+              title: _stageTitle(l10n, stages[i], legacy: legacy),
+              syncBadge: _syncBadgeFor(stages[i]),
+              highlighted: focusListenable?.stage == stages[i],
+              desktopCompactPhotos: desktopCompactPhotos,
+              onSelect: focusListenable == null
+                  ? null
+                  : () {
+                      final checkpoint = _checkpointFor(session, stages[i]);
+                      if (checkpoint == null) {
+                        return;
+                      }
+                      focusListenable.selectFromTimeline(stages[i]);
+                    },
+            ),
+            if (i < stages.length - 1)
+              Padding(
+                // Align connector to the center of the 28px indicator.
+                padding: const EdgeInsetsDirectional.only(start: 13),
+                child: SizedBox(
+                  height: AppSpacing.md,
+                  child: VerticalDivider(
+                    width: 2,
+                    thickness: 2,
+                    color: Theme.of(context)
+                        .colorScheme
+                        .outlineVariant
+                        .withValues(alpha: 0.7),
+                  ),
                 ),
               ),
+          ],
+          if (includeJourneyOverview)
+            OvertimeJourneyOverview(
+              session: session,
+              mapHeight: OvertimeJourneyOverview.compactMapHeight,
+              focus: focusListenable,
             ),
         ],
-      ],
+      );
+    }
+
+    if (focusListenable == null) {
+      return buildTimeline();
+    }
+
+    return ListenableBuilder(
+      listenable: focusListenable,
+      builder: (context, _) => buildTimeline(),
     );
   }
 
@@ -159,6 +243,66 @@ class OvertimeJourneyTimeline extends StatelessWidget {
       case OvertimeCheckpointStage.endJourney:
         return l10n.overtimeStageEndJourney;
     }
+  }
+}
+
+/// Journey Overview map — markers, polyline, popups, and legend.
+///
+/// Used inline after the timeline on mobile/tablet, or full-width below the
+/// desktop split on Overtime Details.
+class OvertimeJourneyOverview extends StatelessWidget {
+  const OvertimeJourneyOverview({
+    super.key,
+    required this.session,
+    this.mapHeight = compactMapHeight,
+    this.topSpacing = AppSpacing.lg,
+    this.focus,
+  });
+
+  /// Default height when nested under the timeline (phone / tablet stack).
+  static const double compactMapHeight = 280;
+
+  /// Desktop full-width map height.
+  static const double desktopMapHeight = 560;
+
+  /// Tighter top gap when overview sits under the desktop split.
+  static const double desktopTopSpacing = AppSpacing.sm;
+
+  final OvertimeSession session;
+  final double mapHeight;
+  final double topSpacing;
+  final OvertimeJourneyFocus? focus;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final stages = session.isV2Workflow
+        ? OvertimeCheckpointStage.ordered
+        : const [
+            OvertimeCheckpointStage.startJourney,
+            OvertimeCheckpointStage.endJourney,
+          ];
+    final legacy = !session.isV2Workflow;
+    final points = _JourneyOverviewCard.pointsFor(
+      session: session,
+      stages: stages,
+      l10n: l10n,
+      legacy: legacy,
+    );
+    if (points.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: EdgeInsets.only(top: topSpacing),
+      child: _JourneyOverviewCard(
+        points: points,
+        legendStages: stages,
+        legacy: legacy,
+        mapHeight: mapHeight,
+        focus: focus,
+      ),
+    );
   }
 }
 
@@ -266,9 +410,13 @@ class _TimelineStageTile extends StatelessWidget {
     required this.compact,
     required this.title,
     this.syncBadge,
+    this.highlighted = false,
+    this.desktopCompactPhotos = false,
+    this.onSelect,
   });
 
   static const double _indicatorSize = 28;
+  static const double _desktopPhotoHeight = 200;
 
   final OvertimeCheckpointStage stage;
   final OvertimeCheckpoint? checkpoint;
@@ -276,6 +424,9 @@ class _TimelineStageTile extends StatelessWidget {
   final bool compact;
   final String title;
   final _SyncBadge? syncBadge;
+  final bool highlighted;
+  final bool desktopCompactPhotos;
+  final VoidCallback? onSelect;
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +442,47 @@ class _TimelineStageTile extends StatelessWidget {
         : (isNext
             ? l10n.overtimeCheckpointNext
             : l10n.overtimeCheckpointPending);
+
+    final photo = (!compact &&
+            checkpoint != null &&
+            checkpoint!.photoUrl != null &&
+            checkpoint!.photoUrl!.isNotEmpty)
+        ? ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: desktopCompactPhotos
+                ? SizedBox(
+                    height: _desktopPhotoHeight,
+                    width: double.infinity,
+                    child: InkWell(
+                      onTap: () => openOvertimeFullscreenImage(
+                        context,
+                        imageUrl: checkpoint!.photoUrl!,
+                        title: title,
+                      ),
+                      child: AppCachedNetworkImage(
+                        imageUrl: checkpoint!.photoUrl!,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 800,
+                      ),
+                    ),
+                  )
+                : AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: InkWell(
+                      onTap: () => openOvertimeFullscreenImage(
+                        context,
+                        imageUrl: checkpoint!.photoUrl!,
+                        title: title,
+                      ),
+                      child: AppCachedNetworkImage(
+                        imageUrl: checkpoint!.photoUrl!,
+                        fit: BoxFit.cover,
+                        memCacheWidth: 800,
+                      ),
+                    ),
+                  ),
+          )
+        : null;
 
     // Do NOT use IntrinsicHeight + Expanded here — that breaks inside ListView
     // (unbounded height) and blanks the entire detail scroll body.
@@ -319,112 +511,122 @@ class _TimelineStageTile extends StatelessWidget {
         Expanded(
           child: Card(
             margin: EdgeInsets.zero,
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Wrap(
-                    spacing: AppSpacing.sm,
-                    runSpacing: AppSpacing.xs,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      Text(title, style: theme.textTheme.titleSmall),
-                      if (syncBadge != null)
-                        _SyncBadgeChip(badge: syncBadge!),
-                      Text(
-                        statusLabel,
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: statusColor,
+            elevation: highlighted ? 1 : null,
+            color: highlighted
+                ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+                : null,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: highlighted
+                    ? colorScheme.primary.withValues(alpha: 0.55)
+                    : colorScheme.outlineVariant.withValues(alpha: 0.35),
+                width: highlighted ? 1.5 : 1,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                InkWell(
+                  onTap: onSelect,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Wrap(
+                          spacing: AppSpacing.sm,
+                          runSpacing: AppSpacing.xs,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(title, style: theme.textTheme.titleSmall),
+                            if (syncBadge != null)
+                              _SyncBadgeChip(badge: syncBadge!),
+                            Text(
+                              statusLabel,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: statusColor,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        if (checkpoint != null) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Text(
+                            AppFormatters.mediumDateTime(context)
+                                .format(checkpoint!.at.toLocal()),
+                            style: theme.textTheme.bodySmall,
+                          ),
+                          const SizedBox(height: AppSpacing.sm),
+                          Text(
+                            checkpoint!.address?.isNotEmpty == true
+                                ? checkpoint!.address!
+                                : _coords(checkpoint!.gps),
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                          if (checkpoint!.address?.isNotEmpty == true) ...[
+                            const SizedBox(height: AppSpacing.xs),
+                            Text(
+                              _coords(checkpoint!.gps),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: AppSpacing.md),
+                          _CheckpointMetaChip(
+                            label: l10n.overtimeGpsAccuracy,
+                            value:
+                                '${checkpoint!.gps.accuracy.toStringAsFixed(0)} m',
+                          ),
+                          if (checkpoint!.deviceId != null &&
+                              checkpoint!.deviceId!.isNotEmpty)
+                            _CheckpointMetaChip(
+                              label: l10n.overtimeDeviceId,
+                              value: checkpoint!.deviceId!,
+                            ),
+                          if (checkpoint!.batteryLevel != null)
+                            _CheckpointMetaChip(
+                              label: l10n.overtimeBatteryLevel,
+                              value: '${checkpoint!.batteryLevel}%',
+                            ),
+                          if (checkpoint!.networkStatus != null &&
+                              checkpoint!.networkStatus!.isNotEmpty)
+                            _CheckpointMetaChip(
+                              label: l10n.overtimeNetworkStatus,
+                              value: checkpoint!.networkStatus!,
+                            ),
+                          if (checkpoint!.notes != null &&
+                              checkpoint!.notes!.isNotEmpty)
+                            _CheckpointMetaChip(
+                              label: l10n.overtimeNotes,
+                              value: checkpoint!.notes!,
+                            ),
+                          if (photo != null) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            photo,
+                          ],
+                        ],
+                      ],
+                    ),
                   ),
-                  if (checkpoint != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      AppFormatters.mediumDateTime(context)
-                          .format(checkpoint!.at.toLocal()),
-                      style: theme.textTheme.bodySmall,
+                ),
+                if (checkpoint != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      0,
+                      AppSpacing.md,
+                      AppSpacing.md,
                     ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      checkpoint!.address?.isNotEmpty == true
-                          ? checkpoint!.address!
-                          : _coords(checkpoint!.gps),
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                    if (checkpoint!.address?.isNotEmpty == true) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        _coords(checkpoint!.gps),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.md),
-                    _CheckpointMetaChip(
-                      label: l10n.overtimeGpsAccuracy,
-                      value:
-                          '${checkpoint!.gps.accuracy.toStringAsFixed(0)} m',
-                    ),
-                    if (checkpoint!.deviceId != null &&
-                        checkpoint!.deviceId!.isNotEmpty)
-                      _CheckpointMetaChip(
-                        label: l10n.overtimeDeviceId,
-                        value: checkpoint!.deviceId!,
-                      ),
-                    if (checkpoint!.batteryLevel != null)
-                      _CheckpointMetaChip(
-                        label: l10n.overtimeBatteryLevel,
-                        value: '${checkpoint!.batteryLevel}%',
-                      ),
-                    if (checkpoint!.networkStatus != null &&
-                        checkpoint!.networkStatus!.isNotEmpty)
-                      _CheckpointMetaChip(
-                        label: l10n.overtimeNetworkStatus,
-                        value: checkpoint!.networkStatus!,
-                      ),
-                    if (checkpoint!.notes != null &&
-                        checkpoint!.notes!.isNotEmpty)
-                      _CheckpointMetaChip(
-                        label: l10n.overtimeNotes,
-                        value: checkpoint!.notes!,
-                      ),
-                    // 1) Info  2) Actions  3) Interactive map  4) Selfie
-                    const SizedBox(height: AppSpacing.md),
-                    _CheckpointMapActions(
+                    child: _OpenLiveLocationButton(
                       gps: checkpoint!.gps,
                       label: title,
                       address: checkpoint!.address,
                     ),
-                    if (!compact &&
-                        checkpoint!.photoUrl != null &&
-                        checkpoint!.photoUrl!.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        child: AspectRatio(
-                          aspectRatio: 16 / 9,
-                          child: InkWell(
-                            onTap: () => openOvertimeFullscreenImage(
-                              context,
-                              imageUrl: checkpoint!.photoUrl!,
-                              title: title,
-                            ),
-                            child: AppCachedNetworkImage(
-                              imageUrl: checkpoint!.photoUrl!,
-                              fit: BoxFit.cover,
-                              memCacheWidth: 800,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         ),
@@ -573,9 +775,10 @@ class _ProgressGlyph extends StatelessWidget {
   }
 }
 
-/// Show Map (interactive embedded preview) + Open Live Location (Google Maps).
-class _CheckpointMapActions extends StatefulWidget {
-  const _CheckpointMapActions({
+/// Open Live Location only — embedded per-stage maps were removed in favor of
+/// a single Journey Overview map after the timeline.
+class _OpenLiveLocationButton extends StatelessWidget {
+  const _OpenLiveLocationButton({
     required this.gps,
     required this.label,
     this.address,
@@ -585,17 +788,9 @@ class _CheckpointMapActions extends StatefulWidget {
   final String label;
   final String? address;
 
-  @override
-  State<_CheckpointMapActions> createState() => _CheckpointMapActionsState();
-}
-
-class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
-  bool _expanded = false;
-  bool _markerSelected = false;
-
   bool get _hasValidCoordinates {
-    final lat = widget.gps.latitude;
-    final lng = widget.gps.longitude;
+    final lat = gps.latitude;
+    final lng = gps.longitude;
     return lat.isFinite &&
         lng.isFinite &&
         lat >= -90 &&
@@ -604,7 +799,7 @@ class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
         lng <= 180;
   }
 
-  Future<void> _openLiveLocation() async {
+  Future<void> _openLiveLocation(BuildContext context) async {
     if (!_hasValidCoordinates) {
       final l10n = AppLocalizations.of(context);
       ScaffoldMessenger.of(context)
@@ -619,13 +814,11 @@ class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
     }
 
     final opened = await OvertimeMapsLauncher.openCoordinates(
-      latitude: widget.gps.latitude,
-      longitude: widget.gps.longitude,
-      label: (widget.address?.trim().isNotEmpty == true)
-          ? widget.address!.trim()
-          : widget.label,
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+      label: (address?.trim().isNotEmpty == true) ? address!.trim() : label,
     );
-    if (!mounted) {
+    if (!context.mounted) {
       return;
     }
     if (!opened) {
@@ -644,205 +837,610 @@ class _CheckpointMapActionsState extends State<_CheckpointMapActions> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
     final canOpen = _hasValidCoordinates;
-    final mapLabel = _expanded ? l10n.overtimeHideMap : l10n.overtimeShowMap;
     final liveLabel = l10n.overtimeOpenLiveLocation;
-    final buttonShape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-    );
-    const buttonPadding = EdgeInsets.symmetric(
-      horizontal: AppSpacing.md,
-      vertical: 12,
-    );
 
-    final showMapButton = OutlinedButton.icon(
-      onPressed: () => setState(() => _expanded = !_expanded),
-      style: OutlinedButton.styleFrom(
-        minimumSize: const Size.fromHeight(48),
-        padding: buttonPadding,
-        shape: buttonShape,
-        alignment: Alignment.center,
-      ),
-      icon: Icon(
-        _expanded ? Icons.map : Icons.map_outlined,
-        size: 20,
-      ),
-      label: Text(
-        mapLabel,
-        textAlign: TextAlign.center,
-        softWrap: true,
-      ),
-    );
-
-    final liveLocationButton = Tooltip(
-      message: canOpen
-          ? liveLabel
-          : l10n.overtimeLocationUnavailable,
-      child: FilledButton.tonalIcon(
-        onPressed: canOpen ? _openLiveLocation : null,
-        style: FilledButton.styleFrom(
-          minimumSize: const Size.fromHeight(48),
-          padding: buttonPadding,
-          shape: buttonShape,
-          alignment: Alignment.center,
-        ),
-        icon: const Icon(Icons.location_on_outlined, size: 20),
-        label: Text(
-          liveLabel,
-          textAlign: TextAlign.center,
-          softWrap: true,
-        ),
-      ),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        LayoutBuilder(
-          builder: (context, constraints) {
-            // Side-by-side only when both full labels fit comfortably.
-            const minSideBySideWidth = 420.0;
-            final stackVertically = constraints.maxWidth < minSideBySideWidth;
-
-            if (stackVertically) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  showMapButton,
-                  const SizedBox(height: AppSpacing.sm),
-                  liveLocationButton,
-                ],
-              );
-            }
-
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: showMapButton),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(child: liveLocationButton),
-              ],
-            );
-          },
-        ),
-        if (_expanded) ...[
-          const SizedBox(height: AppSpacing.md),
-          if (!_hasValidCoordinates)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-              child: Text(
-                l10n.overtimeLocationUnavailable,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-            )
-          else
-            // Real interactive FlutterMap — same interaction model as legacy OT map.
-            // Do not wrap with IgnorePointer / AbsorbPointer / EagerGestureRecognizer.
-            _InteractiveCheckpointMap(
-              gps: widget.gps,
-              markerSelected: _markerSelected,
-              onMarkerTap: () =>
-                  setState(() => _markerSelected = !_markerSelected),
-              onMapTap: () {
-                if (_markerSelected) {
-                  setState(() => _markerSelected = false);
-                }
-              },
+    return SizedBox(
+      width: double.infinity,
+      child: Tooltip(
+        message: canOpen ? liveLabel : l10n.overtimeLocationUnavailable,
+        child: FilledButton.tonalIcon(
+          onPressed: canOpen ? () => _openLiveLocation(context) : null,
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(48),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.md,
+              vertical: 12,
             ),
-        ],
-      ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            alignment: Alignment.center,
+          ),
+          icon: const Icon(Icons.location_on_outlined, size: 20),
+          label: Text(
+            liveLabel,
+            textAlign: TextAlign.center,
+            softWrap: true,
+          ),
+        ),
+      ),
     );
   }
 }
 
-/// Interactive FlutterMap — pan, zoom, pinch, double-tap, marker tap.
-class _InteractiveCheckpointMap extends StatefulWidget {
-  const _InteractiveCheckpointMap({
-    required this.gps,
-    required this.markerSelected,
-    required this.onMarkerTap,
-    required this.onMapTap,
+class _JourneyMapPoint {
+  const _JourneyMapPoint({
+    required this.stage,
+    required this.title,
+    required this.checkpoint,
+    required this.color,
   });
 
-  final GpsSnapshot gps;
-  final bool markerSelected;
-  final VoidCallback onMarkerTap;
-  final VoidCallback onMapTap;
+  final OvertimeCheckpointStage stage;
+  final String title;
+  final OvertimeCheckpoint checkpoint;
+  final Color color;
 
-  @override
-  State<_InteractiveCheckpointMap> createState() =>
-      _InteractiveCheckpointMapState();
+  LatLng get latLng =>
+      LatLng(checkpoint.gps.latitude, checkpoint.gps.longitude);
+
+  bool get hasValidCoordinates {
+    final lat = checkpoint.gps.latitude;
+    final lng = checkpoint.gps.longitude;
+    return lat.isFinite &&
+        lng.isFinite &&
+        lat >= -90 &&
+        lat <= 90 &&
+        lng >= -180 &&
+        lng <= 180;
+  }
 }
 
-class _InteractiveCheckpointMapState extends State<_InteractiveCheckpointMap> {
+/// Single journey map shown after the last timeline stage.
+class _JourneyOverviewCard extends StatefulWidget {
+  const _JourneyOverviewCard({
+    required this.points,
+    required this.legendStages,
+    required this.legacy,
+    this.mapHeight = OvertimeJourneyOverview.compactMapHeight,
+    this.focus,
+  });
+
+  final List<_JourneyMapPoint> points;
+  final List<OvertimeCheckpointStage> legendStages;
+  final bool legacy;
+  final double mapHeight;
+  final OvertimeJourneyFocus? focus;
+
+  static const Color startColor = Color(0xFF16A34A);
+  static const Color arrivedColor = Color(0xFF2563EB);
+  static const Color finishedColor = Color(0xFF9333EA);
+  static const Color endColor = Color(0xFFDC2626);
+  static const Color routeColor = Color(0xFF64748B);
+
+  static Color colorFor(OvertimeCheckpointStage stage) {
+    switch (stage) {
+      case OvertimeCheckpointStage.startJourney:
+        return startColor;
+      case OvertimeCheckpointStage.arrivedAtWorkSite:
+        return arrivedColor;
+      case OvertimeCheckpointStage.finishedWork:
+        return finishedColor;
+      case OvertimeCheckpointStage.endJourney:
+        return endColor;
+    }
+  }
+
+  static List<_JourneyMapPoint> pointsFor({
+    required OvertimeSession session,
+    required List<OvertimeCheckpointStage> stages,
+    required AppLocalizations l10n,
+    required bool legacy,
+  }) {
+    final points = <_JourneyMapPoint>[];
+    for (final stage in stages) {
+      final checkpoint =
+          OvertimeJourneyTimeline._checkpointFor(session, stage);
+      if (checkpoint == null) {
+        continue;
+      }
+      final point = _JourneyMapPoint(
+        stage: stage,
+        title: OvertimeJourneyTimeline._stageTitle(
+          l10n,
+          stage,
+          legacy: legacy,
+        ),
+        checkpoint: checkpoint,
+        color: colorFor(stage),
+      );
+      if (point.hasValidCoordinates) {
+        points.add(point);
+      }
+    }
+    return points;
+  }
+
+  @override
+  State<_JourneyOverviewCard> createState() => _JourneyOverviewCardState();
+}
+
+class _JourneyOverviewCardState extends State<_JourneyOverviewCard>
+    with SingleTickerProviderStateMixin {
   static const String _tileUserAgent = 'com.infinitytech.fsm.mobile';
+  static const double _markerSize = 30;
+  static const double _markerSelectedSize = 34;
 
   final MapController _mapController = MapController();
+  int? _selectedIndex;
+  bool _didFitCamera = false;
+  int _lastFocusGeneration = -1;
+  AnimationController? _cameraAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focus?.addListener(_onFocusChanged);
+  }
 
   @override
   void dispose() {
+    widget.focus?.removeListener(_onFocusChanged);
+    _cameraAnim?.dispose();
     _mapController.dispose();
     super.dispose();
   }
 
   @override
+  void didUpdateWidget(covariant _JourneyOverviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.focus != widget.focus) {
+      oldWidget.focus?.removeListener(_onFocusChanged);
+      widget.focus?.addListener(_onFocusChanged);
+      _lastFocusGeneration = -1;
+    }
+    if (!_samePoints(oldWidget.points, widget.points) ||
+        oldWidget.mapHeight != widget.mapHeight) {
+      _didFitCamera = false;
+      _selectedIndex = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _fitCamera();
+        }
+      });
+    }
+  }
+
+  void _onFocusChanged() {
+    final focus = widget.focus;
+    if (focus == null || !mounted) {
+      return;
+    }
+    if (focus.generation == _lastFocusGeneration) {
+      return;
+    }
+    _lastFocusGeneration = focus.generation;
+    final stage = focus.stage;
+    if (stage == null) {
+      if (_selectedIndex != null) {
+        setState(() => _selectedIndex = null);
+      }
+      return;
+    }
+    final index = widget.points.indexWhere((p) => p.stage == stage);
+    if (index < 0) {
+      return;
+    }
+    setState(() => _selectedIndex = index);
+    if (!focus.fromMap) {
+      _animateToPoint(widget.points[index].latLng);
+    }
+  }
+
+  bool _samePoints(List<_JourneyMapPoint> a, List<_JourneyMapPoint> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].stage != b[i].stage ||
+          a[i].checkpoint.gps.latitude != b[i].checkpoint.gps.latitude ||
+          a[i].checkpoint.gps.longitude != b[i].checkpoint.gps.longitude) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _fitCamera() {
+    if (_didFitCamera || widget.points.isEmpty) {
+      return;
+    }
+    _didFitCamera = true;
+    final points = widget.points.map((p) => p.latLng).toList(growable: false);
+    if (points.length == 1) {
+      _mapController.move(points.first, 15);
+      return;
+    }
+    final bounds = LatLngBounds.fromPoints(points);
+    final isTallMap = widget.mapHeight >= 500;
+    _mapController.fitCamera(
+      CameraFit.bounds(
+        bounds: bounds,
+        padding: EdgeInsets.fromLTRB(
+          isTallMap ? 72 : 48,
+          isTallMap ? 80 : 56,
+          isTallMap ? 72 : 48,
+          isTallMap ? 72 : 48,
+        ),
+        maxZoom: 15.5,
+        minZoom: 11,
+      ),
+    );
+  }
+
+  void _animateToPoint(LatLng target, {double zoom = 16}) {
+    LatLng startCenter;
+    double startZoom;
+    try {
+      startCenter = _mapController.camera.center;
+      startZoom = _mapController.camera.zoom;
+    } catch (_) {
+      _mapController.move(target, zoom);
+      return;
+    }
+
+    _cameraAnim?.dispose();
+    final controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    _cameraAnim = controller;
+    controller.addListener(() {
+      if (!mounted) {
+        return;
+      }
+      final t = Curves.easeInOutCubic.transform(controller.value);
+      final lat =
+          startCenter.latitude + (target.latitude - startCenter.latitude) * t;
+      final lng =
+          startCenter.longitude + (target.longitude - startCenter.longitude) * t;
+      final z = startZoom + (zoom - startZoom) * t;
+      _mapController.move(LatLng(lat, lng), z);
+    });
+    controller.forward();
+  }
+
+  void _selectMarker(int index) {
+    final point = widget.points[index];
+    final already = _selectedIndex == index;
+    setState(() => _selectedIndex = already ? null : index);
+    final focus = widget.focus;
+    if (focus == null) {
+      return;
+    }
+    if (already) {
+      focus.clear();
+    } else {
+      focus.selectFromMap(point.stage);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final point = LatLng(widget.gps.latitude, widget.gps.longitude);
-    final pinColor = theme.colorScheme.primary;
+    final l10n = AppLocalizations.of(context);
+    final points = widget.points;
+    final center = points.length == 1
+        ? points.first.latLng
+        : LatLng(
+            points.map((p) => p.latLng.latitude).reduce((a, b) => a + b) /
+                points.length,
+            points.map((p) => p.latLng.longitude).reduce((a, b) => a + b) /
+                points.length,
+          );
+    final selected =
+        _selectedIndex != null && _selectedIndex! < points.length
+            ? points[_selectedIndex!]
+            : null;
+    final routeColor =
+        _JourneyOverviewCard.routeColor.withValues(alpha: 0.72);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: SizedBox(
-        height: 220,
-        width: double.infinity,
-        child: ColoredBox(
-          color: theme.colorScheme.surfaceContainerHighest,
-          child: FlutterMap(
-            mapController: _mapController,
-            options: MapOptions(
-              initialCenter: point,
-              initialZoom: 16,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-              ),
-              onTap: (_, _) => widget.onMapTap(),
+    final legend = Wrap(
+      spacing: AppSpacing.sm,
+      runSpacing: AppSpacing.sm,
+      children: [
+        for (final stage in widget.legendStages)
+          _JourneyLegendChip(
+            color: _JourneyOverviewCard.colorFor(stage),
+            label: OvertimeJourneyTimeline._stageTitle(
+              l10n,
+              stage,
+              legacy: widget.legacy,
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                fallbackUrl: 'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
-                userAgentPackageName: _tileUserAgent,
-                maxNativeZoom: 19,
-                maxZoom: 20,
-                keepBuffer: 2,
-                panBuffer: 1,
+          ),
+      ],
+    );
+
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.md),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.overtimeJourneyOverview,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
               ),
-              MarkerLayer(
-                markers: [
-                  Marker(
-                    point: point,
-                    width: 44,
-                    height: 44,
-                    alignment: Alignment.topCenter,
-                    child: GestureDetector(
-                      onTap: widget.onMarkerTap,
-                      child: Icon(
-                        Icons.location_on,
-                        size: widget.markerSelected ? 44 : 36,
-                        color: pinColor,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            legend,
+            const SizedBox(height: AppSpacing.md),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: SizedBox(
+                height: widget.mapHeight,
+                width: double.infinity,
+                child: ColoredBox(
+                  color: theme.colorScheme.surfaceContainerHighest,
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      FlutterMap(
+                        mapController: _mapController,
+                        options: MapOptions(
+                          initialCenter: center,
+                          initialZoom: points.length == 1 ? 15 : 12,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerHighest,
+                          interactionOptions: const InteractionOptions(
+                            flags:
+                                InteractiveFlag.all & ~InteractiveFlag.rotate,
+                          ),
+                          onMapReady: () {
+                            _fitCamera();
+                            _onFocusChanged();
+                          },
+                          onTap: (_, _) {
+                            if (_selectedIndex != null) {
+                              setState(() => _selectedIndex = null);
+                              widget.focus?.clear();
+                            }
+                          },
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            fallbackUrl:
+                                'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
+                            userAgentPackageName: _tileUserAgent,
+                            maxNativeZoom: 19,
+                            maxZoom: 20,
+                            keepBuffer: 2,
+                            panBuffer: 1,
+                          ),
+                          if (points.length >= 2)
+                            PolylineLayer(
+                              polylines: [
+                                Polyline(
+                                  points: points
+                                      .map((p) => p.latLng)
+                                      .toList(growable: false),
+                                  color: routeColor,
+                                  strokeWidth: 4.5,
+                                  strokeCap: StrokeCap.round,
+                                  strokeJoin: StrokeJoin.round,
+                                ),
+                              ],
+                            ),
+                          MarkerLayer(
+                            markers: [
+                              for (var i = 0; i < points.length; i++)
+                                Marker(
+                                  point: points[i].latLng,
+                                  width: 40,
+                                  height: 40,
+                                  alignment: Alignment.topCenter,
+                                  child: GestureDetector(
+                                    onTap: () => _selectMarker(i),
+                                    child: Icon(
+                                      Icons.location_on,
+                                      size: _selectedIndex == i
+                                          ? _markerSelectedSize
+                                          : _markerSize,
+                                      color: points[i].color,
+                                      shadows: const [
+                                        Shadow(
+                                          color: Color(0x73000000),
+                                          blurRadius: 5,
+                                          offset: Offset(0, 1.5),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          SimpleAttributionWidget(
+                            source: Text(
+                              'OpenStreetMap',
+                              style: theme.textTheme.labelSmall,
+                            ),
+                            alignment: Alignment.bottomRight,
+                            backgroundColor: theme.colorScheme.surface
+                                .withValues(alpha: 0.85),
+                          ),
+                        ],
                       ),
+                      if (selected != null)
+                        Positioned(
+                          left: 12,
+                          right: 12,
+                          top: 12,
+                          child: _JourneyMarkerPopup(
+                            point: selected,
+                            onClose: () {
+                              setState(() => _selectedIndex = null);
+                              widget.focus?.clear();
+                            },
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _JourneyMarkerPopup extends StatelessWidget {
+  const _JourneyMarkerPopup({
+    required this.point,
+    required this.onClose,
+  });
+
+  final _JourneyMapPoint point;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = AppLocalizations.of(context);
+    final checkpoint = point.checkpoint;
+    final address = checkpoint.address?.trim();
+    final rows = <(String, String)>[
+      (
+        l10n.overtimeGpsAccuracy,
+        '${checkpoint.gps.accuracy.toStringAsFixed(0)} m',
+      ),
+      if (checkpoint.batteryLevel != null)
+        (l10n.overtimeBatteryLevel, '${checkpoint.batteryLevel}%'),
+      if (checkpoint.networkStatus != null &&
+          checkpoint.networkStatus!.isNotEmpty)
+        (l10n.overtimeNetworkStatus, checkpoint.networkStatus!),
+      (
+        l10n.overtimeLocation,
+        (address != null && address.isNotEmpty)
+            ? address
+            : '${checkpoint.gps.latitude.toStringAsFixed(5)}, ${checkpoint.gps.longitude.toStringAsFixed(5)}',
+      ),
+    ];
+
+    return Material(
+      elevation: 2,
+      shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.2),
+      borderRadius: BorderRadius.circular(12),
+      color: theme.colorScheme.surface,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(Icons.place, color: point.color, size: 20),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    point.title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    AppFormatters.mediumDateTime(context)
+                        .format(checkpoint.at.toLocal()),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  for (final row in rows) ...[
+                    Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${row.$1}: ',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          TextSpan(
+                            text: row.$2,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ],
+                      ),
+                      maxLines: row.$1 == l10n.overtimeLocation ? 3 : 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                  ],
                 ],
               ),
-            ],
-          ),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+              onPressed: onClose,
+              icon: const Icon(Icons.close, size: 18),
+            ),
+          ],
         ),
+      ),
+    );
+  }
+}
+
+class _JourneyLegendChip extends StatelessWidget {
+  const _JourneyLegendChip({
+    required this.color,
+    required this.label,
+  });
+
+  final Color color;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.sm,
+        vertical: AppSpacing.xs,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.35)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(color: color),
+          ),
+        ],
       ),
     );
   }

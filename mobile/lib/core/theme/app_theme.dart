@@ -287,8 +287,10 @@ class AppTheme {
       navigationRailTheme: NavigationRailThemeData(
         backgroundColor: navigationBackground,
         elevation: 0,
+        // Compact (tablet) rail width — unchanged.
         minWidth: 72,
-        minExtendedWidth: 220,
+        // Extended (desktop) rail: slightly wider for long labels.
+        minExtendedWidth: 248,
         groupAlignment: -0.95,
         indicatorColor: colorScheme.primary.withValues(alpha: 0.14),
         indicatorShape: RoundedRectangleBorder(

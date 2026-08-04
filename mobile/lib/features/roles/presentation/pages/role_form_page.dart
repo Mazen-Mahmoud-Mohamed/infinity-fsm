@@ -5,11 +5,13 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/roles/domain/entities/role_entities.dart';
 import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
+import 'package:mobile/features/roles/presentation/widgets/role_permission_tiles.dart';
 
 class RoleFormPage extends StatefulWidget {
   const RoleFormPage({super.key, this.roleId});
@@ -90,6 +92,24 @@ class _RoleFormPageState extends State<RoleFormPage> {
     }
   }
 
+  bool _matchesPermissionSearch(
+    AppLocalizations l10n,
+    PermissionCatalogItem item,
+    String query,
+  ) {
+    if (query.isEmpty) return true;
+    final label = localizePermissionKey(l10n, item.key).toLowerCase();
+    final description =
+        localizePermissionDescription(l10n, item.key).toLowerCase();
+    final groupLabel = localizePermissionGroup(l10n, item.module).toLowerCase();
+    final groupDescription =
+        localizePermissionGroupDescription(l10n, item.module).toLowerCase();
+    return label.contains(query) ||
+        description.contains(query) ||
+        groupLabel.contains(query) ||
+        groupDescription.contains(query);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -111,15 +131,9 @@ class _RoleFormPageState extends State<RoleFormPage> {
           final saving = state.status == RoleFormStatus.saving;
           final catalog = state.catalog;
           final query = _permissionSearch.text.trim().toLowerCase();
-          final filtered = query.isEmpty
-              ? catalog
-              : catalog
-                  .where(
-                    (p) =>
-                        p.key.toLowerCase().contains(query) ||
-                        p.module.toLowerCase().contains(query),
-                  )
-                  .toList();
+          final filtered = catalog
+              .where((p) => _matchesPermissionSearch(l10n, p, query))
+              .toList();
 
           final modules = <String, List<PermissionCatalogItem>>{};
           for (final item in filtered) {
@@ -139,7 +153,11 @@ class _RoleFormPageState extends State<RoleFormPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(state.message ?? l10n.rolesLoadFailed),
+                            Text(
+                              state.message != null
+                                  ? localizeAppMessage(l10n, state.message)
+                                  : l10n.rolesLoadFailed,
+                            ),
                             FilledButton(
                               onPressed: () =>
                                   _cubit.load(roleId: widget.roleId),
@@ -190,7 +208,9 @@ class _RoleFormPageState extends State<RoleFormPage> {
                             const SizedBox(height: AppSpacing.lg),
                             Text(
                               l10n.rolesPermissions,
-                              style: theme.textTheme.titleMedium,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                             const SizedBox(height: AppSpacing.sm),
                             TextField(
@@ -199,6 +219,18 @@ class _RoleFormPageState extends State<RoleFormPage> {
                                 hintText: l10n.rolesSearchPermissions,
                                 prefixIcon: const Icon(Icons.search),
                                 border: const OutlineInputBorder(),
+                                suffixIcon: query.isEmpty
+                                    ? null
+                                    : IconButton(
+                                        tooltip: MaterialLocalizations.of(
+                                          context,
+                                        ).deleteButtonTooltip,
+                                        icon: const Icon(Icons.clear),
+                                        onPressed: () {
+                                          _permissionSearch.clear();
+                                          setState(() {});
+                                        },
+                                      ),
                               ),
                               onChanged: (_) => setState(() {}),
                             ),
@@ -211,46 +243,46 @@ class _RoleFormPageState extends State<RoleFormPage> {
                             ),
                             const SizedBox(height: AppSpacing.md),
                             if (modules.isEmpty)
-                              Text(l10n.rolesNoPermissions)
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: AppSpacing.lg,
+                                ),
+                                child: Text(
+                                  catalog.isEmpty
+                                      ? l10n.rolesPermissionsCatalogEmpty
+                                      : query.isNotEmpty
+                                          ? l10n.rolesPermissionsSearchEmpty
+                                          : l10n.rolesNoPermissions,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              )
                             else
                               ...modules.entries.map((entry) {
-                                final children = entry.value;
-                                return Card(
-                                  margin: const EdgeInsets.only(
-                                    bottom: AppSpacing.md,
-                                  ),
-                                  child: ExpansionTile(
-                                    initiallyExpanded: isWide,
-                                    title: Text(
-                                      '${entry.key} (${children.length})',
-                                    ),
-                                    children: children
-                                        .map(
-                                          (item) => CheckboxListTile(
-                                            value: _selectedPermissions
-                                                .contains(item.key),
-                                            onChanged: saving
-                                                ? null
-                                                : (checked) {
-                                                    setState(() {
-                                                      if (checked == true) {
-                                                        _selectedPermissions
-                                                            .add(item.key);
-                                                      } else {
-                                                        _selectedPermissions
-                                                            .remove(item.key);
-                                                      }
-                                                    });
-                                                  },
-                                            title: Text(item.key),
-                                            subtitle: Text(item.action),
-                                            dense: true,
-                                            controlAffinity:
-                                                ListTileControlAffinity.leading,
-                                          ),
-                                        )
-                                        .toList(),
-                                  ),
+                                return RolePermissionGroupCard(
+                                  module: entry.key,
+                                  count: entry.value.length,
+                                  initiallyExpanded: isWide,
+                                  children: [
+                                    for (final item in entry.value)
+                                      RolePermissionTile(
+                                        permissionKey: item.key,
+                                        selected: _selectedPermissions
+                                            .contains(item.key),
+                                        enabled: !saving,
+                                        onChanged: (checked) {
+                                          setState(() {
+                                            if (checked == true) {
+                                              _selectedPermissions.add(item.key);
+                                            } else {
+                                              _selectedPermissions
+                                                  .remove(item.key);
+                                            }
+                                          });
+                                        },
+                                      ),
+                                  ],
                                 );
                               }),
                             const SizedBox(height: AppSpacing.lg),

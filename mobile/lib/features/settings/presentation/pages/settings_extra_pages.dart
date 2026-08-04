@@ -11,6 +11,7 @@ import 'package:mobile/core/config/env_config.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/services/app_log_buffer.dart';
 import 'package:mobile/core/services/app_runtime_info.dart';
@@ -88,7 +89,7 @@ class _AccountOverviewPageState extends State<AccountOverviewPage> {
               SettingsInfoRow(label: l10n.email, value: user?.email ?? '-'),
               SettingsInfoRow(
                 label: l10n.roleLabel,
-                value: user?.primaryRole ?? '-',
+                value: localizeRoleLabel(l10n, user?.primaryRole),
               ),
               SettingsInfoRow(
                 label: l10n.settingsEmployeeId,
@@ -719,7 +720,7 @@ class DangerZonePage extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text(l10n.inventoryCancel),
+            child: Text(l10n.cancel),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),

@@ -6,6 +6,7 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -151,7 +152,11 @@ class _PmPlansPageState extends State<PmPlansPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(state.message ?? l10n.pmLoadFailed),
+                          Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.pmLoadFailed,
+                        ),
                           FilledButton(
                             onPressed: () => _cubit.loadFirstPage(),
                             child: Text(l10n.retry),

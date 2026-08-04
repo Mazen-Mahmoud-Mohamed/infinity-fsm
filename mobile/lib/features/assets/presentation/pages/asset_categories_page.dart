@@ -193,7 +193,7 @@ class _AssetCategoriesPageState extends State<AssetCategoriesPage> {
                   if ((state.status == AssetCategoriesStatus.loading ||
                           state.status == AssetCategoriesStatus.initial) &&
                       state.items.isEmpty) {
-                    return const AppLoader();
+                    return AppLoader(message: l10n.assetsLoading);
                   }
                   if (state.status == AssetCategoriesStatus.failure &&
                       state.items.isEmpty) {
@@ -201,7 +201,11 @@ class _AssetCategoriesPageState extends State<AssetCategoriesPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(state.message ?? l10n.assetsLoadFailed),
+                          Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.assetsLoadFailed,
+                        ),
                           FilledButton(
                             onPressed: () => context
                                 .read<AssetCategoriesCubit>()
@@ -292,7 +296,7 @@ class _AssetCategoriesPageState extends State<AssetCategoriesPage> {
                                                 ScaffoldMessenger.of(context)
                                                     .showSnackBar(
                                                   SnackBar(
-                                                    content: Text(message),
+                                                    content: Text(localizeAppMessage(l10n, message)),
                                                   ),
                                                 );
                                             }

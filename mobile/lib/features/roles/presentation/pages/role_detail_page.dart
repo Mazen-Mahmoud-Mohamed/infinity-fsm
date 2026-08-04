@@ -6,6 +6,7 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -13,6 +14,7 @@ import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
 import 'package:mobile/features/roles/presentation/widgets/assign_users_dialog.dart';
+import 'package:mobile/features/roles/presentation/widgets/role_permission_tiles.dart';
 import 'package:mobile/features/roles/presentation/widgets/role_status_chip.dart';
 
 class RoleDetailPage extends StatefulWidget {
@@ -191,7 +193,7 @@ class _RoleDetailPageState extends State<RoleDetailPage> {
                         children: [
                           Expanded(
                             child: Text(
-                              role.name,
+                              localizeRoleLabel(l10n, role.name),
                               style: theme.textTheme.headlineSmall?.copyWith(
                                 fontWeight: FontWeight.w600,
                               ),
@@ -202,7 +204,7 @@ class _RoleDetailPageState extends State<RoleDetailPage> {
                       ),
                       const SizedBox(height: AppSpacing.sm),
                       Text(
-                        role.slug,
+                        localizeRoleLabel(l10n, role.slug),
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                         ),
@@ -240,12 +242,21 @@ class _RoleDetailPageState extends State<RoleDetailPage> {
                       if (role.permissions.isEmpty)
                         Text(l10n.rolesNoPermissions)
                       else
-                        Wrap(
-                          spacing: AppSpacing.sm,
-                          runSpacing: AppSpacing.sm,
-                          children: role.permissions
-                              .map((p) => Chip(label: Text(p)))
-                              .toList(),
+                        ..._groupPermissionKeys(role.permissions).entries.map(
+                          (entry) {
+                            return RolePermissionGroupCard(
+                              module: entry.key,
+                              count: entry.value.length,
+                              initiallyExpanded: true,
+                              children: [
+                                for (final key in entry.value)
+                                  RolePermissionTile(
+                                    permissionKey: key,
+                                    showCheckbox: false,
+                                  ),
+                              ],
+                            );
+                          },
                         ),
                       const SizedBox(height: AppSpacing.lg),
                       Text(
@@ -352,5 +363,15 @@ class _RoleDetailPageState extends State<RoleDetailPage> {
         },
       ),
     );
+  }
+
+  /// Groups permission keys by module prefix for presentation only.
+  Map<String, List<String>> _groupPermissionKeys(List<String> keys) {
+    final modules = <String, List<String>>{};
+    for (final key in keys) {
+      final module = key.contains(':') ? key.split(':').first : 'general';
+      modules.putIfAbsent(module, () => []).add(key);
+    }
+    return modules;
   }
 }

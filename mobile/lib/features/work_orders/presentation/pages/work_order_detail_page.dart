@@ -161,7 +161,7 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
               ],
             ),
             body: showInitialLoader
-                ? const AppLoader()
+                ? AppLoader(message: l10n.workOrderLoading)
                 : workOrder == null
                     ? Center(
                         child: Padding(

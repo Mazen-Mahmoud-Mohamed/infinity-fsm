@@ -194,7 +194,11 @@ class _PmChecklistBuilderPageState extends State<PmChecklistBuilderPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(state.message ?? l10n.pmLoadFailed),
+                      Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.pmLoadFailed,
+                        ),
                       FilledButton(
                         onPressed: _cubit.load,
                         child: Text(l10n.retry),

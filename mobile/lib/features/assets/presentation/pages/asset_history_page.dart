@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -118,7 +119,7 @@ class _AssetHistoryPageState extends State<AssetHistoryPage> {
                   if ((state.status == AssetHistoryStatus.loading ||
                           state.status == AssetHistoryStatus.initial) &&
                       state.items.isEmpty) {
-                    return const AppLoader();
+                    return AppLoader(message: l10n.assetsLoading);
                   }
                   if (state.status == AssetHistoryStatus.failure &&
                       state.items.isEmpty) {
@@ -126,7 +127,11 @@ class _AssetHistoryPageState extends State<AssetHistoryPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(state.message ?? l10n.assetsLoadFailed),
+                          Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.assetsLoadFailed,
+                        ),
                           FilledButton(
                             onPressed: () => _cubit.loadFirstPage(),
                             child: Text(l10n.retry),

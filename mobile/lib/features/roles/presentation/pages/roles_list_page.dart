@@ -5,6 +5,8 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -134,7 +136,11 @@ class _RolesListPageState extends State<RolesListPage> {
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(state.message ?? l10n.rolesLoadFailed),
+                            Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.rolesLoadFailed,
+                        ),
                             const SizedBox(height: AppSpacing.md),
                             FilledButton(
                               onPressed: () => _cubit.loadFirstPage(),
@@ -234,7 +240,7 @@ class _RoleListTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      role.name,
+                      localizeRoleLabel(l10n, role.name),
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.w600,
                       ),
@@ -243,7 +249,7 @@ class _RoleListTile extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      role.slug,
+                      localizeRoleLabel(l10n, role.slug),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),

@@ -64,7 +64,7 @@ Future<bool> changeOwnProfilePhoto(BuildContext context) async {
     builder: (ctx) => _ProfilePhotoPreviewDialog(
       bytes: cropped,
       title: l10n.settingsPhotoPreview,
-      cancelLabel: l10n.inventoryCancel,
+      cancelLabel: l10n.cancel,
       saveLabel: l10n.inventorySave,
     ),
   );

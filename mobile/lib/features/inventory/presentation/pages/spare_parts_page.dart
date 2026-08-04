@@ -5,6 +5,7 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
@@ -193,7 +194,7 @@ class _SparePartsViewState extends State<_SparePartsView> {
                 if ((state.status == SparePartsListStatus.loading ||
                         state.status == SparePartsListStatus.initial) &&
                     state.items.isEmpty) {
-                  return const AppLoader();
+                  return AppLoader(message: l10n.inventoryLoading);
                 }
                 if (state.status == SparePartsListStatus.failure &&
                     state.items.isEmpty) {
@@ -201,7 +202,11 @@ class _SparePartsViewState extends State<_SparePartsView> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(state.message ?? l10n.inventoryLoadFailed),
+                        Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.inventoryLoadFailed,
+                        ),
                         const SizedBox(height: AppSpacing.md),
                         FilledButton(
                           onPressed: () => context

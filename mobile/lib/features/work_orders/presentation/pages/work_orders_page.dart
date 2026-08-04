@@ -220,7 +220,7 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                     if ((state.status == WorkOrdersListStatus.loading ||
                             state.status == WorkOrdersListStatus.initial) &&
                         state.items.isEmpty) {
-                      return const AppLoader();
+                      return AppLoader(message: l10n.workOrderLoading);
                     }
 
                     if (state.status == WorkOrdersListStatus.failure &&
@@ -232,7 +232,9 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                state.message ?? l10n.workOrderLoadFailed,
+                                state.message != null
+                          ? localizeAppMessage(l10n, state.message)
+                          : l10n.workOrderLoadFailed,
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: AppSpacing.md),

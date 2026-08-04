@@ -6,6 +6,7 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -83,7 +84,9 @@ class _PmDashboardView extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      state.message ?? l10n.pmLoadFailed,
+                      state.message != null
+                          ? localizeAppMessage(l10n, state.message)
+                          : l10n.pmLoadFailed,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.md),

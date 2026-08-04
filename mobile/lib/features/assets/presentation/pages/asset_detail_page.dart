@@ -218,7 +218,7 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
             builder: (context, state) {
               if (state.status == AssetDetailStatus.loading ||
                   state.status == AssetDetailStatus.initial) {
-                return const AppLoader();
+                return AppLoader(message: l10n.assetsLoading);
               }
               if (state.status == AssetDetailStatus.failure ||
                   state.asset == null) {
@@ -226,7 +226,11 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(state.message ?? l10n.assetsLoadFailed),
+                      Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.assetsLoadFailed,
+                        ),
                       FilledButton(
                         onPressed: _cubit.load,
                         child: Text(l10n.retry),

@@ -234,7 +234,7 @@ class _AssetFormPageState extends State<AssetFormPage> {
           builder: (context, state) {
             if (state.status == AssetFormStatus.loading ||
                 (isEditing && state.status == AssetFormStatus.initial)) {
-              return const AppLoader();
+              return AppLoader(message: l10n.assetsLoading);
             }
             if (state.status == AssetFormStatus.failure &&
                 state.asset == null &&
@@ -243,7 +243,11 @@ class _AssetFormPageState extends State<AssetFormPage> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(state.message ?? l10n.assetsLoadFailed),
+                    Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.assetsLoadFailed,
+                        ),
                     FilledButton(
                       onPressed: _cubit.load,
                       child: Text(l10n.retry),

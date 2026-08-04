@@ -4,6 +4,7 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
 import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
@@ -60,7 +61,11 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(state.message ?? l10n.settingsLoadFailed),
+                Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.settingsLoadFailed,
+                        ),
                 FilledButton(
                   onPressed: _cubit.load,
                   child: Text(l10n.retry),

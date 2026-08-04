@@ -290,6 +290,54 @@ abstract class AppLocalizations {
   /// **'Coming soon'**
   String get comingSoon;
 
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @create.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get create;
+
+  /// No description provided for @add.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get add;
+
+  /// No description provided for @back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get back;
+
+  /// No description provided for @update.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// No description provided for @reject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject'**
+  String get reject;
+
   /// No description provided for @retry.
   ///
   /// In en, this message translates to:
@@ -350,10 +398,16 @@ abstract class AppLocalizations {
   /// **'Failed to load work orders'**
   String get workOrderLoadFailed;
 
+  /// No description provided for @workOrderLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading work orders...'**
+  String get workOrderLoading;
+
   /// No description provided for @workOrderJobTitle.
   ///
   /// In en, this message translates to:
-  /// **'Job title'**
+  /// **'Work order title'**
   String get workOrderJobTitle;
 
   /// No description provided for @workOrderCustomer.
@@ -2468,6 +2522,18 @@ abstract class AppLocalizations {
   /// **'No permissions selected'**
   String get rolesNoPermissions;
 
+  /// No description provided for @rolesPermissionsSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions match your search. Try a different title or description.'**
+  String get rolesPermissionsSearchEmpty;
+
+  /// No description provided for @rolesPermissionsCatalogEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No permissions are available in the catalog.'**
+  String get rolesPermissionsCatalogEmpty;
+
   /// No description provided for @rolesSave.
   ///
   /// In en, this message translates to:
@@ -2533,6 +2599,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} selected'**
   String rolesSelectedPermissions(int count);
+
+  /// No description provided for @dashboardLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load the dashboard.'**
+  String get dashboardLoadFailed;
 
   /// No description provided for @dashboardLoading.
   ///
@@ -2951,7 +3023,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardKpiCompletedJobs.
   ///
   /// In en, this message translates to:
-  /// **'Completed jobs'**
+  /// **'Completed work orders'**
   String get dashboardKpiCompletedJobs;
 
   /// No description provided for @dashboardKpiAvgCompletionHours.
@@ -4382,6 +4454,12 @@ abstract class AppLocalizations {
   /// **'Journey timeline'**
   String get overtimeJourneyTimeline;
 
+  /// No description provided for @overtimeJourneyOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Journey Overview'**
+  String get overtimeJourneyOverview;
+
   /// No description provided for @overtimeArrivedAtWorkSiteRecorded.
   ///
   /// In en, this message translates to:
@@ -4871,7 +4949,7 @@ abstract class AppLocalizations {
   /// No description provided for @usersRoleAdmin.
   ///
   /// In en, this message translates to:
-  /// **'Admin'**
+  /// **'Administrator'**
   String get usersRoleAdmin;
 
   /// No description provided for @usersRoleSupervisor.
@@ -4891,6 +4969,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'HR'**
   String get usersRoleHr;
+
+  /// No description provided for @usersRoleWarehouse.
+  ///
+  /// In en, this message translates to:
+  /// **'Warehouse'**
+  String get usersRoleWarehouse;
+
+  /// No description provided for @usersRoleViewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewer'**
+  String get usersRoleViewer;
+
+  /// No description provided for @usersRoleManager.
+  ///
+  /// In en, this message translates to:
+  /// **'Manager'**
+  String get usersRoleManager;
+
+  /// No description provided for @permGroupDashboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Dashboard'**
+  String get permGroupDashboard;
+
+  /// No description provided for @permGroupUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Users'**
+  String get permGroupUsers;
+
+  /// No description provided for @permGroupRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'Roles & Permissions'**
+  String get permGroupRoles;
+
+  /// No description provided for @permGroupAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'Attendance'**
+  String get permGroupAttendance;
+
+  /// No description provided for @permGroupOvertime.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime'**
+  String get permGroupOvertime;
+
+  /// No description provided for @permGroupInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'Inventory'**
+  String get permGroupInventory;
+
+  /// No description provided for @permGroupAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'Assets'**
+  String get permGroupAssets;
+
+  /// No description provided for @permGroupMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Maintenance'**
+  String get permGroupMaintenance;
+
+  /// No description provided for @permGroupServiceReports.
+  ///
+  /// In en, this message translates to:
+  /// **'Service Reports'**
+  String get permGroupServiceReports;
+
+  /// No description provided for @permGroupWorkOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'Work Orders'**
+  String get permGroupWorkOrders;
+
+  /// No description provided for @permGroupSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get permGroupSettings;
+
+  /// No description provided for @permGroupProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Profile'**
+  String get permGroupProfile;
+
+  /// No description provided for @permGroupNotifications.
+  ///
+  /// In en, this message translates to:
+  /// **'Notifications'**
+  String get permGroupNotifications;
+
+  /// No description provided for @permGroupOrganization.
+  ///
+  /// In en, this message translates to:
+  /// **'Organization'**
+  String get permGroupOrganization;
+
+  /// No description provided for @permGroupAudit.
+  ///
+  /// In en, this message translates to:
+  /// **'Audit'**
+  String get permGroupAudit;
+
+  /// No description provided for @permGroupGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get permGroupGeneral;
 
   /// No description provided for @rolesNotLoaded.
   ///
@@ -6035,25 +6227,25 @@ abstract class AppLocalizations {
   /// No description provided for @navDashboard.
   ///
   /// In en, this message translates to:
-  /// **'Home'**
+  /// **'Dashboard'**
   String get navDashboard;
 
   /// No description provided for @navAttendance.
   ///
   /// In en, this message translates to:
-  /// **'Time'**
+  /// **'Attendance'**
   String get navAttendance;
 
   /// No description provided for @navWorkOrders.
   ///
   /// In en, this message translates to:
-  /// **'Jobs'**
+  /// **'Work Orders'**
   String get navWorkOrders;
 
   /// No description provided for @navOvertime.
   ///
   /// In en, this message translates to:
-  /// **'OT'**
+  /// **'Overtime'**
   String get navOvertime;
 
   /// No description provided for @navProfile.
@@ -6737,7 +6929,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNotifTasks.
   ///
   /// In en, this message translates to:
-  /// **'Task notifications'**
+  /// **'Work order notifications'**
   String get settingsNotifTasks;
 
   /// No description provided for @settingsNotifOvertime.
@@ -6925,6 +7117,954 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Synchronization'**
   String get settingsLogCategorySync;
+
+  /// No description provided for @permGroupDashboardDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for viewing system statistics and key performance indicators.'**
+  String get permGroupDashboardDesc;
+
+  /// No description provided for @permGroupUsersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for managing user accounts across the organization.'**
+  String get permGroupUsersDesc;
+
+  /// No description provided for @permGroupRolesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for managing roles and assigning access rights.'**
+  String get permGroupRolesDesc;
+
+  /// No description provided for @permGroupAttendanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for reviewing and managing employee attendance records.'**
+  String get permGroupAttendanceDesc;
+
+  /// No description provided for @permGroupOvertimeDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for creating, approving, and managing overtime sessions.'**
+  String get permGroupOvertimeDesc;
+
+  /// No description provided for @permGroupInventoryDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for managing inventory items and stock quantities.'**
+  String get permGroupInventoryDesc;
+
+  /// No description provided for @permGroupAssetsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for managing and tracking organization assets.'**
+  String get permGroupAssetsDesc;
+
+  /// No description provided for @permGroupMaintenanceDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for maintenance plans and related operations.'**
+  String get permGroupMaintenanceDesc;
+
+  /// No description provided for @permGroupServiceReportsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for viewing, generating, and downloading service reports.'**
+  String get permGroupServiceReportsDesc;
+
+  /// No description provided for @permGroupWorkOrdersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for creating, managing, and completing work orders.'**
+  String get permGroupWorkOrdersDesc;
+
+  /// No description provided for @permGroupSettingsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for system and organization configuration settings.'**
+  String get permGroupSettingsDesc;
+
+  /// No description provided for @permGroupProfileDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for managing the signed-in user personal profile.'**
+  String get permGroupProfileDesc;
+
+  /// No description provided for @permGroupNotificationsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for sending, receiving, and managing notifications.'**
+  String get permGroupNotificationsDesc;
+
+  /// No description provided for @permGroupOrganizationDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for managing company structure, branches, and departments.'**
+  String get permGroupOrganizationDesc;
+
+  /// No description provided for @permGroupAuditDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions for reviewing activity history and system change logs.'**
+  String get permGroupAuditDesc;
+
+  /// No description provided for @permGroupGeneralDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'General platform permissions not tied to a specific module.'**
+  String get permGroupGeneralDesc;
+
+  /// No description provided for @permOrganizationView.
+  ///
+  /// In en, this message translates to:
+  /// **'View organization'**
+  String get permOrganizationView;
+
+  /// No description provided for @permOrganizationViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows browsing company structure, branches, and directory screens.'**
+  String get permOrganizationViewDesc;
+
+  /// No description provided for @permOrganizationManageBranches.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage branches'**
+  String get permOrganizationManageBranches;
+
+  /// No description provided for @permOrganizationManageBranchesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating and editing company branches used across the organization.'**
+  String get permOrganizationManageBranchesDesc;
+
+  /// No description provided for @permOrganizationManageRegions.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage regions'**
+  String get permOrganizationManageRegions;
+
+  /// No description provided for @permOrganizationManageRegionsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating and editing geographic regions used for organization mapping.'**
+  String get permOrganizationManageRegionsDesc;
+
+  /// No description provided for @permOrganizationManageCities.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage cities'**
+  String get permOrganizationManageCities;
+
+  /// No description provided for @permOrganizationManageCitiesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating and editing cities linked to branches and field operations.'**
+  String get permOrganizationManageCitiesDesc;
+
+  /// No description provided for @permOrganizationManageDepartments.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage departments'**
+  String get permOrganizationManageDepartments;
+
+  /// No description provided for @permOrganizationManageDepartmentsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating and editing departments that organize users and teams.'**
+  String get permOrganizationManageDepartmentsDesc;
+
+  /// No description provided for @permOrganizationManageTeams.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage teams'**
+  String get permOrganizationManageTeams;
+
+  /// No description provided for @permOrganizationManageTeamsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating and editing operational teams and their membership.'**
+  String get permOrganizationManageTeamsDesc;
+
+  /// No description provided for @permOrganizationManageUsers.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage organization users'**
+  String get permOrganizationManageUsers;
+
+  /// No description provided for @permOrganizationManageUsersDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows placing users into branches, departments, and teams.'**
+  String get permOrganizationManageUsersDesc;
+
+  /// No description provided for @permSettingsView.
+  ///
+  /// In en, this message translates to:
+  /// **'View settings'**
+  String get permSettingsView;
+
+  /// No description provided for @permSettingsViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows opening system settings screens without changing any values.'**
+  String get permSettingsViewDesc;
+
+  /// No description provided for @permSettingsManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage system settings'**
+  String get permSettingsManage;
+
+  /// No description provided for @permSettingsManageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows changing general settings that affect all system users.'**
+  String get permSettingsManageDesc;
+
+  /// No description provided for @permSettingsUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update system settings'**
+  String get permSettingsUpdate;
+
+  /// No description provided for @permSettingsUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows saving changes to system configuration values organization-wide.'**
+  String get permSettingsUpdateDesc;
+
+  /// No description provided for @permSettingsManageHolidays.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage holidays'**
+  String get permSettingsManageHolidays;
+
+  /// No description provided for @permSettingsManageHolidaysDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows defining company holidays that affect attendance and overtime.'**
+  String get permSettingsManageHolidaysDesc;
+
+  /// No description provided for @permAuditView.
+  ///
+  /// In en, this message translates to:
+  /// **'View audit log'**
+  String get permAuditView;
+
+  /// No description provided for @permAuditViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows reviewing activity and security change logs across the organization.'**
+  String get permAuditViewDesc;
+
+  /// No description provided for @permDashboardView.
+  ///
+  /// In en, this message translates to:
+  /// **'View dashboard'**
+  String get permDashboardView;
+
+  /// No description provided for @permDashboardViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing system statistics and key performance indicators.'**
+  String get permDashboardViewDesc;
+
+  /// No description provided for @permRbacManageRoles.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage roles & permissions'**
+  String get permRbacManageRoles;
+
+  /// No description provided for @permRbacManageRolesDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows full control of roles and which permissions each role receives.'**
+  String get permRbacManageRolesDesc;
+
+  /// No description provided for @permRbacManagePermissions.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage permissions'**
+  String get permRbacManagePermissions;
+
+  /// No description provided for @permRbacManagePermissionsDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows controlling how permissions are assigned from the access catalog.'**
+  String get permRbacManagePermissionsDesc;
+
+  /// No description provided for @permRolesView.
+  ///
+  /// In en, this message translates to:
+  /// **'View roles'**
+  String get permRolesView;
+
+  /// No description provided for @permRolesViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows opening the roles list and reviewing existing role definitions.'**
+  String get permRolesViewDesc;
+
+  /// No description provided for @permRolesCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create roles'**
+  String get permRolesCreate;
+
+  /// No description provided for @permRolesCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating new roles and choosing the permissions they include.'**
+  String get permRolesCreateDesc;
+
+  /// No description provided for @permRolesUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update roles'**
+  String get permRolesUpdate;
+
+  /// No description provided for @permRolesUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows changing names and permissions of existing roles.'**
+  String get permRolesUpdateDesc;
+
+  /// No description provided for @permRolesDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete roles'**
+  String get permRolesDelete;
+
+  /// No description provided for @permRolesDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows permanently removing roles that are no longer needed.'**
+  String get permRolesDeleteDesc;
+
+  /// No description provided for @permRolesManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage roles & permissions'**
+  String get permRolesManage;
+
+  /// No description provided for @permRolesManageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating, editing, and assigning roles and their permission sets.'**
+  String get permRolesManageDesc;
+
+  /// No description provided for @permAttendanceViewOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'View own attendance'**
+  String get permAttendanceViewOwn;
+
+  /// No description provided for @permAttendanceViewOwnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows reviewing only personal attendance records.'**
+  String get permAttendanceViewOwnDesc;
+
+  /// No description provided for @permAttendanceViewTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'View team attendance'**
+  String get permAttendanceViewTeam;
+
+  /// No description provided for @permAttendanceViewTeamDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing attendance records for members of the assigned team.'**
+  String get permAttendanceViewTeamDesc;
+
+  /// No description provided for @permAttendanceViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all attendance'**
+  String get permAttendanceViewAll;
+
+  /// No description provided for @permAttendanceViewAllDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing every attendance record across the organization.'**
+  String get permAttendanceViewAllDesc;
+
+  /// No description provided for @permAttendanceManageOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage own attendance'**
+  String get permAttendanceManageOwn;
+
+  /// No description provided for @permAttendanceManageOwnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating and updating only personal attendance punches.'**
+  String get permAttendanceManageOwnDesc;
+
+  /// No description provided for @permAttendanceView.
+  ///
+  /// In en, this message translates to:
+  /// **'View attendance'**
+  String get permAttendanceView;
+
+  /// No description provided for @permAttendanceViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows opening attendance screens for records within the granted access scope.'**
+  String get permAttendanceViewDesc;
+
+  /// No description provided for @permAttendanceUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage attendance'**
+  String get permAttendanceUpdate;
+
+  /// No description provided for @permAttendanceUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating, editing, approving, and managing attendance records.'**
+  String get permAttendanceUpdateDesc;
+
+  /// No description provided for @permAttendanceApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve attendance'**
+  String get permAttendanceApprove;
+
+  /// No description provided for @permAttendanceApproveDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows approving attendance records before they are finalized.'**
+  String get permAttendanceApproveDesc;
+
+  /// No description provided for @permOvertimeViewOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'View own overtime'**
+  String get permOvertimeViewOwn;
+
+  /// No description provided for @permOvertimeViewOwnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows reviewing only personal overtime sessions and status.'**
+  String get permOvertimeViewOwnDesc;
+
+  /// No description provided for @permOvertimeViewTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'View team overtime'**
+  String get permOvertimeViewTeam;
+
+  /// No description provided for @permOvertimeViewTeamDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing overtime sessions belonging to assigned team members.'**
+  String get permOvertimeViewTeamDesc;
+
+  /// No description provided for @permOvertimeViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all overtime'**
+  String get permOvertimeViewAll;
+
+  /// No description provided for @permOvertimeViewAllDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing every overtime session across the organization.'**
+  String get permOvertimeViewAllDesc;
+
+  /// No description provided for @permOvertimeCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create overtime'**
+  String get permOvertimeCreate;
+
+  /// No description provided for @permOvertimeCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating new overtime requests for employees.'**
+  String get permOvertimeCreateDesc;
+
+  /// No description provided for @permOvertimeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start overtime'**
+  String get permOvertimeStart;
+
+  /// No description provided for @permOvertimeStartDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows starting an overtime session and recording its start time and location.'**
+  String get permOvertimeStartDesc;
+
+  /// No description provided for @permOvertimeEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End overtime'**
+  String get permOvertimeEnd;
+
+  /// No description provided for @permOvertimeEndDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows finishing an active overtime session and submitting its end details.'**
+  String get permOvertimeEndDesc;
+
+  /// No description provided for @permOvertimeCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel overtime'**
+  String get permOvertimeCancel;
+
+  /// No description provided for @permOvertimeCancelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows canceling an overtime session so it is not counted as worked time.'**
+  String get permOvertimeCancelDesc;
+
+  /// No description provided for @permOvertimeApprove.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve overtime'**
+  String get permOvertimeApprove;
+
+  /// No description provided for @permOvertimeApproveDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows approving overtime requests before they are counted.'**
+  String get permOvertimeApproveDesc;
+
+  /// No description provided for @permOvertimeReject.
+  ///
+  /// In en, this message translates to:
+  /// **'Reject overtime'**
+  String get permOvertimeReject;
+
+  /// No description provided for @permOvertimeRejectDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows rejecting overtime requests while keeping a record of the decision.'**
+  String get permOvertimeRejectDesc;
+
+  /// No description provided for @permOvertimeArchive.
+  ///
+  /// In en, this message translates to:
+  /// **'Archive overtime'**
+  String get permOvertimeArchive;
+
+  /// No description provided for @permOvertimeArchiveDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows archiving completed overtime records to keep active lists focused.'**
+  String get permOvertimeArchiveDesc;
+
+  /// No description provided for @permWorkOrdersViewOwn.
+  ///
+  /// In en, this message translates to:
+  /// **'View own work orders'**
+  String get permWorkOrdersViewOwn;
+
+  /// No description provided for @permWorkOrdersViewOwnDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing only work orders assigned to the signed-in user.'**
+  String get permWorkOrdersViewOwnDesc;
+
+  /// No description provided for @permWorkOrdersViewTeam.
+  ///
+  /// In en, this message translates to:
+  /// **'View team work orders'**
+  String get permWorkOrdersViewTeam;
+
+  /// No description provided for @permWorkOrdersViewTeamDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing work orders belonging to the assigned team.'**
+  String get permWorkOrdersViewTeamDesc;
+
+  /// No description provided for @permWorkOrdersViewAll.
+  ///
+  /// In en, this message translates to:
+  /// **'View all work orders'**
+  String get permWorkOrdersViewAll;
+
+  /// No description provided for @permWorkOrdersViewAllDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows viewing every work order across the organization.'**
+  String get permWorkOrdersViewAllDesc;
+
+  /// No description provided for @permWorkOrdersCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create work orders'**
+  String get permWorkOrdersCreate;
+
+  /// No description provided for @permWorkOrdersCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating new work orders and assigning them to staff.'**
+  String get permWorkOrdersCreateDesc;
+
+  /// No description provided for @permWorkOrdersUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update work orders'**
+  String get permWorkOrdersUpdate;
+
+  /// No description provided for @permWorkOrdersUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows editing details of existing work orders within allowed scope.'**
+  String get permWorkOrdersUpdateDesc;
+
+  /// No description provided for @permWorkOrdersAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign work orders'**
+  String get permWorkOrdersAssign;
+
+  /// No description provided for @permWorkOrdersAssignDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows assigning or reassigning technicians on work order screens.'**
+  String get permWorkOrdersAssignDesc;
+
+  /// No description provided for @permWorkOrdersComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete work orders'**
+  String get permWorkOrdersComplete;
+
+  /// No description provided for @permWorkOrdersCompleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows marking a work order as completed after the job is finished.'**
+  String get permWorkOrdersCompleteDesc;
+
+  /// No description provided for @permWorkOrdersCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel work orders'**
+  String get permWorkOrdersCancel;
+
+  /// No description provided for @permWorkOrdersCancelDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows canceling work orders so they are no longer active for field staff.'**
+  String get permWorkOrdersCancelDesc;
+
+  /// No description provided for @permWorkOrdersDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete work orders'**
+  String get permWorkOrdersDelete;
+
+  /// No description provided for @permWorkOrdersDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows permanently deleting work orders from the organization records.'**
+  String get permWorkOrdersDeleteDesc;
+
+  /// No description provided for @permInventoryView.
+  ///
+  /// In en, this message translates to:
+  /// **'View inventory'**
+  String get permInventoryView;
+
+  /// No description provided for @permInventoryViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows browsing inventory items and available stock quantities.'**
+  String get permInventoryViewDesc;
+
+  /// No description provided for @permInventoryCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create inventory items'**
+  String get permInventoryCreate;
+
+  /// No description provided for @permInventoryCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows registering new inventory items in the stock catalog.'**
+  String get permInventoryCreateDesc;
+
+  /// No description provided for @permInventoryUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update inventory'**
+  String get permInventoryUpdate;
+
+  /// No description provided for @permInventoryUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows editing inventory item details such as names and attributes.'**
+  String get permInventoryUpdateDesc;
+
+  /// No description provided for @permInventoryDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete inventory'**
+  String get permInventoryDelete;
+
+  /// No description provided for @permInventoryDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows removing inventory items from the organization catalog.'**
+  String get permInventoryDeleteDesc;
+
+  /// No description provided for @permInventoryStockManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage stock quantities'**
+  String get permInventoryStockManage;
+
+  /// No description provided for @permInventoryStockManageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows updating available quantities and stock movements for items.'**
+  String get permInventoryStockManageDesc;
+
+  /// No description provided for @permAssetsView.
+  ///
+  /// In en, this message translates to:
+  /// **'View assets'**
+  String get permAssetsView;
+
+  /// No description provided for @permAssetsViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows browsing registered asset records in the system.'**
+  String get permAssetsViewDesc;
+
+  /// No description provided for @permAssetsCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create assets'**
+  String get permAssetsCreate;
+
+  /// No description provided for @permAssetsCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows registering new company assets in the asset register.'**
+  String get permAssetsCreateDesc;
+
+  /// No description provided for @permAssetsUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update assets'**
+  String get permAssetsUpdate;
+
+  /// No description provided for @permAssetsUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows editing asset details such as status, location, and attributes.'**
+  String get permAssetsUpdateDesc;
+
+  /// No description provided for @permAssetsDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete assets'**
+  String get permAssetsDelete;
+
+  /// No description provided for @permAssetsDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows permanently removing assets from the organization register.'**
+  String get permAssetsDeleteDesc;
+
+  /// No description provided for @permAssetsAssign.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign assets'**
+  String get permAssetsAssign;
+
+  /// No description provided for @permAssetsAssignDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows assigning assets to users or locations within the organization.'**
+  String get permAssetsAssignDesc;
+
+  /// No description provided for @permPmView.
+  ///
+  /// In en, this message translates to:
+  /// **'View maintenance'**
+  String get permPmView;
+
+  /// No description provided for @permPmViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows opening preventive maintenance plans and schedule screens.'**
+  String get permPmViewDesc;
+
+  /// No description provided for @permPmCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create maintenance plans'**
+  String get permPmCreate;
+
+  /// No description provided for @permPmCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating periodic maintenance schedules and plans for assets.'**
+  String get permPmCreateDesc;
+
+  /// No description provided for @permPmUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update maintenance'**
+  String get permPmUpdate;
+
+  /// No description provided for @permPmUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows editing existing maintenance plans, dates, and related details.'**
+  String get permPmUpdateDesc;
+
+  /// No description provided for @permPmDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete maintenance'**
+  String get permPmDelete;
+
+  /// No description provided for @permPmDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows deleting maintenance plans that are no longer required.'**
+  String get permPmDeleteDesc;
+
+  /// No description provided for @permPmManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage maintenance'**
+  String get permPmManage;
+
+  /// No description provided for @permPmManageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows full management of preventive maintenance plans and schedules.'**
+  String get permPmManageDesc;
+
+  /// No description provided for @permMaintenanceManage.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage maintenance operations'**
+  String get permMaintenanceManage;
+
+  /// No description provided for @permMaintenanceManageDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows managing maintenance operations and related work schedules.'**
+  String get permMaintenanceManageDesc;
+
+  /// No description provided for @permReportsView.
+  ///
+  /// In en, this message translates to:
+  /// **'View service reports'**
+  String get permReportsView;
+
+  /// No description provided for @permReportsViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows opening and reading completed service reports in the system.'**
+  String get permReportsViewDesc;
+
+  /// No description provided for @permReportsGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate service reports'**
+  String get permReportsGenerate;
+
+  /// No description provided for @permReportsGenerateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows generating new service reports from completed field work.'**
+  String get permReportsGenerateDesc;
+
+  /// No description provided for @permReportsDownload.
+  ///
+  /// In en, this message translates to:
+  /// **'Download service reports'**
+  String get permReportsDownload;
+
+  /// No description provided for @permReportsDownloadDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows downloading service reports in shareable or printable formats.'**
+  String get permReportsDownloadDesc;
+
+  /// No description provided for @permUsersView.
+  ///
+  /// In en, this message translates to:
+  /// **'View users'**
+  String get permUsersView;
+
+  /// No description provided for @permUsersViewDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows opening the users list and viewing account details organization-wide.'**
+  String get permUsersViewDesc;
+
+  /// No description provided for @permUsersCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create users'**
+  String get permUsersCreate;
+
+  /// No description provided for @permUsersCreateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows creating new user accounts inside the organization.'**
+  String get permUsersCreateDesc;
+
+  /// No description provided for @permUsersUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update users'**
+  String get permUsersUpdate;
+
+  /// No description provided for @permUsersUpdateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows editing user profile, contact, and account details.'**
+  String get permUsersUpdateDesc;
+
+  /// No description provided for @permUsersDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete users'**
+  String get permUsersDelete;
+
+  /// No description provided for @permUsersDeleteDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows permanently removing user accounts from the organization.'**
+  String get permUsersDeleteDesc;
+
+  /// No description provided for @permUsersRead.
+  ///
+  /// In en, this message translates to:
+  /// **'View users'**
+  String get permUsersRead;
+
+  /// No description provided for @permUsersReadDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows opening the users list and viewing account details organization-wide.'**
+  String get permUsersReadDesc;
+
+  /// No description provided for @permUsersResetPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset password'**
+  String get permUsersResetPassword;
+
+  /// No description provided for @permUsersResetPasswordDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows resetting any user\'s password without knowing the current one.'**
+  String get permUsersResetPasswordDesc;
 }
 
 class _AppLocalizationsDelegate

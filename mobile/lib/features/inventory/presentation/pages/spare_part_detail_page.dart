@@ -363,7 +363,7 @@ class _SparePartDetailPageState extends State<SparePartDetailPage> {
             builder: (context, state) {
               if (state.status == SparePartDetailStatus.loading ||
                   state.status == SparePartDetailStatus.initial) {
-                return const AppLoader();
+                return AppLoader(message: l10n.inventoryLoading);
               }
               if (state.status == SparePartDetailStatus.failure ||
                   state.part == null) {
@@ -371,7 +371,11 @@ class _SparePartDetailPageState extends State<SparePartDetailPage> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(state.message ?? l10n.inventoryLoadFailed),
+                      Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.inventoryLoadFailed,
+                        ),
                       const SizedBox(height: AppSpacing.md),
                       FilledButton(
                         onPressed: () => _cubit.load(),

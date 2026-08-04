@@ -240,7 +240,11 @@ class _PmSchedulesPageState extends State<PmSchedulesPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(state.message ?? l10n.pmLoadFailed),
+                          Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.pmLoadFailed,
+                        ),
                           FilledButton(
                             onPressed: () => _cubit.loadFirstPage(),
                             child: Text(l10n.retry),

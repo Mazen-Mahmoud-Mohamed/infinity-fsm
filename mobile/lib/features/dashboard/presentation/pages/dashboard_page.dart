@@ -5,6 +5,7 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -123,7 +124,9 @@ class _DashboardViewState extends State<_DashboardView> {
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      state.message ?? l10n.errorGeneric,
+                      state.message != null
+                          ? localizeAppMessage(l10n, state.message)
+                          : l10n.errorGeneric,
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -274,10 +277,43 @@ class MainNavigationShell extends StatelessWidget {
   /// Phone bottom bar only exposes the first five shell branches.
   static const int _phoneDestinationCount = 5;
 
+  /// Desktop extended rail width (+28 vs previous 220). Tablet [minWidth] unchanged.
+  static const double _desktopExtendedRailWidth = 248;
+
   void _onDestinationSelected(int index) {
     navigationShell.goBranch(
       index,
       initialLocation: index == navigationShell.currentIndex,
+    );
+  }
+
+  /// Builds a rail destination. Extra horizontal padding / icon–label gap
+  /// apply only when the rail is extended (large desktop).
+  static NavigationRailDestination _railDestination({
+    required IconData icon,
+    required IconData selectedIcon,
+    required String label,
+    required bool extended,
+  }) {
+    return NavigationRailDestination(
+      icon: Icon(icon),
+      selectedIcon: Icon(selectedIcon),
+      // Material default horizontal padding is 8; give desktop tiles more air.
+      padding: extended
+          ? const EdgeInsets.symmetric(horizontal: 12)
+          : null,
+      label: Padding(
+        // Adds ~4px to Material's icon↔label gap on desktop only.
+        padding: extended
+            ? const EdgeInsetsDirectional.only(start: 4)
+            : EdgeInsets.zero,
+        child: Text(
+          label,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
     );
   }
 
@@ -311,7 +347,7 @@ class MainNavigationShell extends StatelessWidget {
           children: [
             NavigationRail(
               extended: extendedRail,
-              minExtendedWidth: 220,
+              minExtendedWidth: _desktopExtendedRailWidth,
               useIndicator: true,
               selectedIndex: navigationShell.currentIndex,
               onDestinationSelected: _onDestinationSelected,
@@ -320,14 +356,17 @@ class MainNavigationShell extends StatelessWidget {
                   : NavigationRailLabelType.all,
               leading: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  AppSpacing.md,
+                  extendedRail ? 20 : AppSpacing.md,
                   AppSpacing.lg,
-                  AppSpacing.md,
+                  extendedRail ? 20 : AppSpacing.md,
                   extendedRail ? AppSpacing.md : AppSpacing.sm,
                 ),
                 child: extendedRail
                     ? Text(
                         l10n.dashboard,
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w700,
                             ),
@@ -338,66 +377,78 @@ class MainNavigationShell extends StatelessWidget {
                       ),
               ),
               destinations: [
-                NavigationRailDestination(
-                  icon: const Icon(Icons.dashboard_outlined),
-                  selectedIcon: const Icon(Icons.dashboard),
-                  label: Text(l10n.dashboard),
+                _railDestination(
+                  icon: Icons.dashboard_outlined,
+                  selectedIcon: Icons.dashboard,
+                  label: l10n.dashboard,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.access_time_outlined),
-                  selectedIcon: const Icon(Icons.access_time),
-                  label: Text(l10n.attendance),
+                _railDestination(
+                  icon: Icons.access_time_outlined,
+                  selectedIcon: Icons.access_time,
+                  label: l10n.attendance,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.assignment_outlined),
-                  selectedIcon: const Icon(Icons.assignment),
-                  label: Text(l10n.workOrders),
+                _railDestination(
+                  icon: Icons.assignment_outlined,
+                  selectedIcon: Icons.assignment,
+                  label: l10n.workOrders,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.more_time_outlined),
-                  selectedIcon: const Icon(Icons.more_time),
-                  label: Text(l10n.overtime),
+                _railDestination(
+                  icon: Icons.more_time_outlined,
+                  selectedIcon: Icons.more_time,
+                  label: l10n.overtime,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.person_outline),
-                  selectedIcon: const Icon(Icons.person),
-                  label: Text(l10n.profile),
+                _railDestination(
+                  icon: Icons.person_outline,
+                  selectedIcon: Icons.person,
+                  label: l10n.profile,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.inventory_2_outlined),
-                  selectedIcon: const Icon(Icons.inventory_2),
-                  label: Text(l10n.inventory),
+                _railDestination(
+                  icon: Icons.inventory_2_outlined,
+                  selectedIcon: Icons.inventory_2,
+                  label: l10n.inventory,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.precision_manufacturing_outlined),
-                  selectedIcon: const Icon(Icons.precision_manufacturing),
-                  label: Text(l10n.assets),
+                _railDestination(
+                  icon: Icons.precision_manufacturing_outlined,
+                  selectedIcon: Icons.precision_manufacturing,
+                  label: l10n.assets,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.build_circle_outlined),
-                  selectedIcon: const Icon(Icons.build_circle),
+                _railDestination(
+                  icon: Icons.build_circle_outlined,
+                  selectedIcon: Icons.build_circle,
                   // Short desktop rail label ("Maintenance" / "صيانة").
-                  label: Text(l10n.assetsStatusMaintenance),
+                  label: l10n.assetsStatusMaintenance,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.description_outlined),
-                  selectedIcon: const Icon(Icons.description),
-                  label: Text(l10n.reportsTitle),
+                _railDestination(
+                  icon: Icons.description_outlined,
+                  selectedIcon: Icons.description,
+                  label: l10n.reportsTitle,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.manage_accounts_outlined),
-                  selectedIcon: const Icon(Icons.manage_accounts),
-                  label: Text(l10n.usersTitle),
+                _railDestination(
+                  icon: Icons.manage_accounts_outlined,
+                  selectedIcon: Icons.manage_accounts,
+                  label: l10n.usersTitle,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.admin_panel_settings_outlined),
-                  selectedIcon: const Icon(Icons.admin_panel_settings),
-                  label: Text(l10n.rolesTitle),
+                _railDestination(
+                  icon: Icons.admin_panel_settings_outlined,
+                  selectedIcon: Icons.admin_panel_settings,
+                  label: l10n.rolesTitle,
+                  extended: extendedRail,
                 ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.settings_outlined),
-                  selectedIcon: const Icon(Icons.settings),
-                  label: Text(l10n.settings),
+                _railDestination(
+                  icon: Icons.settings_outlined,
+                  selectedIcon: Icons.settings,
+                  label: l10n.settings,
+                  extended: extendedRail,
                 ),
               ],
             ),

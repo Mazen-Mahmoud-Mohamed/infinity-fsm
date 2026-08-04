@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
@@ -141,7 +142,7 @@ class _AssetsListPageState extends State<AssetsListPage> {
                   if ((state.status == AssetsListStatus.loading ||
                           state.status == AssetsListStatus.initial) &&
                       state.items.isEmpty) {
-                    return const AppLoader();
+                    return AppLoader(message: l10n.assetsLoading);
                   }
                   if (state.status == AssetsListStatus.failure &&
                       state.items.isEmpty) {
@@ -149,7 +150,11 @@ class _AssetsListPageState extends State<AssetsListPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(state.message ?? l10n.assetsLoadFailed),
+                          Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.assetsLoadFailed,
+                        ),
                           FilledButton(
                             onPressed: () => _cubit.loadFirstPage(),
                             child: Text(l10n.retry),

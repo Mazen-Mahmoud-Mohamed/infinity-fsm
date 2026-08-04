@@ -6,6 +6,7 @@ import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
@@ -18,6 +19,7 @@ import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/features/organization/presentation/cubit/profile_cubit.dart';
+import 'package:mobile/features/roles/presentation/widgets/role_permission_tiles.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -89,7 +91,10 @@ class _ProfileView extends StatelessWidget {
                           imageUrl: user?.profilePhotoUrl,
                           name: user?.fullName ?? l10n.profile,
                           email: user?.email ?? '-',
-                          role: user?.primaryRole ?? '-',
+                          role: localizeRoleLabel(
+                            l10n,
+                            user?.primaryRole ?? '',
+                          ),
                           fallbackLabel:
                               user?.fullName ?? user?.email ?? '?',
                         ),
@@ -108,7 +113,10 @@ class _ProfileView extends StatelessWidget {
                               ),
                               _ProfileRow(
                                 label: l10n.roleLabel,
-                                value: user?.primaryRole ?? '-',
+                                value: localizeRoleLabel(
+                                  l10n,
+                                  user?.primaryRole ?? '',
+                                ),
                               ),
                               _ProfileRow(
                                 label: l10n.companyLabel,
@@ -131,7 +139,7 @@ class _ProfileView extends StatelessWidget {
                                 .map(
                                   (role) => Chip(
                                     avatar: const Icon(Icons.badge_outlined, size: 16),
-                                    label: Text(role),
+                                    label: Text(localizeRoleLabel(l10n, role)),
                                     visualDensity: VisualDensity.compact,
                                   ),
                                 )
@@ -152,78 +160,22 @@ class _ProfileView extends StatelessWidget {
                                 ),
                           )
                         else
-                          AppListCard(
-                            padding: EdgeInsets.zero,
-                            child: Column(
-                              children: [
-                                for (final entry in groups.entries)
-                                  Theme(
-                                    data: Theme.of(context).copyWith(
-                                      dividerColor: Colors.transparent,
-                                    ),
-                                    child: ExpansionTile(
-                                      tilePadding: const EdgeInsets.symmetric(
-                                        horizontal: AppSpacing.md,
-                                        vertical: AppSpacing.xs,
+                          Column(
+                            children: [
+                              for (final entry in groups.entries)
+                                RolePermissionGroupCard(
+                                  module: entry.key,
+                                  count: entry.value.length,
+                                  initiallyExpanded: groups.length <= 3,
+                                  children: [
+                                    for (final permission in entry.value)
+                                      RolePermissionTile(
+                                        permissionKey: permission,
+                                        showCheckbox: false,
                                       ),
-                                      childrenPadding: EdgeInsets.zero,
-                                      initiallyExpanded: groups.length <= 3,
-                                      title: Text(
-                                        _moduleLabel(l10n, entry.key),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleSmall
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                      subtitle: Text(
-                                        '${entry.value.length}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
-                                            ),
-                                      ),
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.fromLTRB(
-                                            AppSpacing.md,
-                                            0,
-                                            AppSpacing.md,
-                                            AppSpacing.md,
-                                          ),
-                                          child: Align(
-                                            alignment: AlignmentDirectional
-                                                .centerStart,
-                                            child: Wrap(
-                                              spacing: AppSpacing.sm,
-                                              runSpacing: AppSpacing.sm,
-                                              children: entry.value
-                                                  .map(
-                                                    (permission) => Chip(
-                                                      label: Text(
-                                                        _actionLabel(
-                                                          permission,
-                                                        ),
-                                                      ),
-                                                      visualDensity:
-                                                          VisualDensity
-                                                              .compact,
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
+                                  ],
+                                ),
+                            ],
                           ),
                         if (state.message != null &&
                             !isUserFacingNetworkNoise(state.message)) ...[
@@ -305,30 +257,6 @@ class _ProfileView extends StatelessWidget {
     }
     final keys = groups.keys.toList()..sort();
     return {for (final key in keys) key: (groups[key]!..sort())};
-  }
-
-  static String _moduleLabel(AppLocalizations l10n, String module) {
-    return switch (module) {
-      'overtime' => l10n.overtime,
-      'work_orders' => l10n.workOrders,
-      'attendance' => l10n.attendance,
-      'inventory' => l10n.inventory,
-      'assets' => l10n.assets,
-      'reports' => l10n.reportsTitle,
-      'settings' => l10n.settings,
-      'dashboard' => l10n.dashboard,
-      'users' => l10n.usersTitle,
-      'organization' => l10n.companyLabel,
-      'pm' => l10n.pmTitle,
-      'roles' => l10n.roleLabel,
-      _ => module.replaceAll('_', ' '),
-    };
-  }
-
-  static String _actionLabel(String permission) {
-    final sep = permission.indexOf(':');
-    if (sep < 0 || sep >= permission.length - 1) return permission;
-    return permission.substring(sep + 1).replaceAll('_', ' ');
   }
 }
 

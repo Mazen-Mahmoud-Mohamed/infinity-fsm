@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
@@ -149,7 +151,11 @@ class _UsersListPageState extends State<UsersListPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(state.message ?? l10n.usersLoadFailed),
+                          Text(
+                          state.message != null
+                              ? localizeAppMessage(l10n, state.message)
+                              : l10n.usersLoadFailed,
+                        ),
                           FilledButton(
                             onPressed: () => _cubit.loadFirstPage(),
                             child: Text(l10n.retry),
@@ -198,7 +204,10 @@ class _UsersListPageState extends State<UsersListPage> {
                                   [
                                     if (user.username != null) user.username!,
                                     if (user.primaryRole != null)
-                                      user.primaryRole!,
+                                      localizeRoleLabel(
+                                        l10n,
+                                        user.primaryRole,
+                                      ),
                                     if (user.jobTitle != null) user.jobTitle!,
                                   ].join(' · '),
                                 ),

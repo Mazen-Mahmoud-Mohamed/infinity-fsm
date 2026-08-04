@@ -1,4 +1,5 @@
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
 
 String attendanceManagementStatusLabel(
@@ -18,18 +19,10 @@ String attendanceManagementStatusLabel(
 }
 
 String attendanceRoleLabel(AppLocalizations l10n, String? role) {
-  switch ((role ?? '').toUpperCase()) {
-    case 'ADMIN':
-      return l10n.usersRoleAdmin;
-    case 'SUPERVISOR':
-      return l10n.usersRoleSupervisor;
-    case 'TECHNICIAN':
-      return l10n.usersRoleTechnician;
-    case '':
-      return l10n.valueNotSet;
-    default:
-      return role!;
+  if ((role ?? '').trim().isEmpty) {
+    return l10n.valueNotSet;
   }
+  return localizeRoleLabel(l10n, role);
 }
 
 String attendanceAddressSnippet(String? fullAddress, {String fallback = '—'}) {

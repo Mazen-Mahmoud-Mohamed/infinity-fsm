@@ -175,7 +175,7 @@ class _WorkOrderFormViewState extends State<_WorkOrderFormView> {
                 widget.isEditing ? l10n.workOrderEdit : l10n.workOrderCreate,
               ),
             ),
-            body: const AppLoader(),
+            body: AppLoader(message: l10n.workOrderLoading),
           );
         }
 
