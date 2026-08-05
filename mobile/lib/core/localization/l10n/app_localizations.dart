@@ -4892,6 +4892,210 @@ abstract class AppLocalizations {
   /// **'Microphone permission is required to record a voice note.'**
   String get overtimeVoicePermissionDenied;
 
+  /// No description provided for @overtimeVoiceRecording.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording...'**
+  String get overtimeVoiceRecording;
+
+  /// No description provided for @overtimeVoiceRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Recorded'**
+  String get overtimeVoiceRecorded;
+
+  /// No description provided for @overtimeVoiceMaxReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum recording length reached.'**
+  String get overtimeVoiceMaxReached;
+
+  /// No description provided for @overtimeVoiceUploaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploaded'**
+  String get overtimeVoiceUploaded;
+
+  /// No description provided for @overtimeVoiceWaitingSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for synchronization'**
+  String get overtimeVoiceWaitingSync;
+
+  /// No description provided for @overtimeVoiceUploading.
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading voice note…'**
+  String get overtimeVoiceUploading;
+
+  /// No description provided for @overtimeExportExcel.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Excel'**
+  String get overtimeExportExcel;
+
+  /// No description provided for @overtimeExportDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Only administrators and supervisors can export overtime reports.'**
+  String get overtimeExportDenied;
+
+  /// No description provided for @overtimeExportFiltersHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional filters for the Excel report. Leave blank to export all accessible sessions.'**
+  String get overtimeExportFiltersHint;
+
+  /// No description provided for @overtimeExportStartDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get overtimeExportStartDate;
+
+  /// No description provided for @overtimeExportEndDate.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get overtimeExportEndDate;
+
+  /// No description provided for @overtimeExportAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get overtimeExportAll;
+
+  /// No description provided for @overtimeExportEmployeeId.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee user ID'**
+  String get overtimeExportEmployeeId;
+
+  /// No description provided for @overtimeExportDepartmentId.
+  ///
+  /// In en, this message translates to:
+  /// **'Department ID'**
+  String get overtimeExportDepartmentId;
+
+  /// No description provided for @overtimeExportBranchId.
+  ///
+  /// In en, this message translates to:
+  /// **'Branch ID'**
+  String get overtimeExportBranchId;
+
+  /// No description provided for @overtimeExportOptionalIdHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional MongoDB ObjectId'**
+  String get overtimeExportOptionalIdHint;
+
+  /// No description provided for @overtimeExportModeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Export type'**
+  String get overtimeExportModeLabel;
+
+  /// No description provided for @overtimeExportModeSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Summary'**
+  String get overtimeExportModeSummary;
+
+  /// No description provided for @overtimeExportModeSummaryHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Statistics only — no GPS, photos, voice, or journey details.'**
+  String get overtimeExportModeSummaryHint;
+
+  /// No description provided for @overtimeExportModeDetailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Export Detailed Report'**
+  String get overtimeExportModeDetailed;
+
+  /// No description provided for @overtimeExportModeDetailedHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Complete overtime dataset with maps, voice, photos, and device info.'**
+  String get overtimeExportModeDetailedHint;
+
+  /// No description provided for @overtimeExportGenerate.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Excel'**
+  String get overtimeExportGenerate;
+
+  /// No description provided for @overtimeExportPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing export…'**
+  String get overtimeExportPreparing;
+
+  /// No description provided for @overtimeExportDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Generating Excel report…'**
+  String get overtimeExportDownloading;
+
+  /// No description provided for @overtimeExportSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Saving file…'**
+  String get overtimeExportSaving;
+
+  /// No description provided for @overtimeExportReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Export ready'**
+  String get overtimeExportReady;
+
+  /// No description provided for @overtimeExportRowCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sessions exported'**
+  String overtimeExportRowCount(int count);
+
+  /// No description provided for @overtimeExportOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get overtimeExportOpen;
+
+  /// No description provided for @overtimeExportOpenFile.
+  ///
+  /// In en, this message translates to:
+  /// **'Open File'**
+  String get overtimeExportOpenFile;
+
+  /// No description provided for @overtimeExportOpenFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Open Containing Folder'**
+  String get overtimeExportOpenFolder;
+
+  /// No description provided for @overtimeExportSaveAs.
+  ///
+  /// In en, this message translates to:
+  /// **'Save As'**
+  String get overtimeExportSaveAs;
+
+  /// No description provided for @overtimeExportSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get overtimeExportSave;
+
+  /// No description provided for @overtimeExportShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share'**
+  String get overtimeExportShare;
+
+  /// No description provided for @overtimeExportSavedTo.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to {path}'**
+  String overtimeExportSavedTo(String path);
+
   /// No description provided for @overtimeRequiresManualReview.
   ///
   /// In en, this message translates to:

@@ -2478,6 +2478,116 @@ class AppLocalizationsEn extends AppLocalizations {
       'Microphone permission is required to record a voice note.';
 
   @override
+  String get overtimeVoiceRecording => 'Recording...';
+
+  @override
+  String get overtimeVoiceRecorded => 'Voice Recorded';
+
+  @override
+  String get overtimeVoiceMaxReached => 'Maximum recording length reached.';
+
+  @override
+  String get overtimeVoiceUploaded => 'Uploaded';
+
+  @override
+  String get overtimeVoiceWaitingSync => 'Waiting for synchronization';
+
+  @override
+  String get overtimeVoiceUploading => 'Uploading voice note…';
+
+  @override
+  String get overtimeExportExcel => 'Export Excel';
+
+  @override
+  String get overtimeExportDenied =>
+      'Only administrators and supervisors can export overtime reports.';
+
+  @override
+  String get overtimeExportFiltersHint =>
+      'Optional filters for the Excel report. Leave blank to export all accessible sessions.';
+
+  @override
+  String get overtimeExportStartDate => 'Start date';
+
+  @override
+  String get overtimeExportEndDate => 'End date';
+
+  @override
+  String get overtimeExportAll => 'All';
+
+  @override
+  String get overtimeExportEmployeeId => 'Employee user ID';
+
+  @override
+  String get overtimeExportDepartmentId => 'Department ID';
+
+  @override
+  String get overtimeExportBranchId => 'Branch ID';
+
+  @override
+  String get overtimeExportOptionalIdHint => 'Optional MongoDB ObjectId';
+
+  @override
+  String get overtimeExportModeLabel => 'Export type';
+
+  @override
+  String get overtimeExportModeSummary => 'Export Summary';
+
+  @override
+  String get overtimeExportModeSummaryHint =>
+      'Statistics only — no GPS, photos, voice, or journey details.';
+
+  @override
+  String get overtimeExportModeDetailed => 'Export Detailed Report';
+
+  @override
+  String get overtimeExportModeDetailedHint =>
+      'Complete overtime dataset with maps, voice, photos, and device info.';
+
+  @override
+  String get overtimeExportGenerate => 'Generate Excel';
+
+  @override
+  String get overtimeExportPreparing => 'Preparing export…';
+
+  @override
+  String get overtimeExportDownloading => 'Generating Excel report…';
+
+  @override
+  String get overtimeExportSaving => 'Saving file…';
+
+  @override
+  String get overtimeExportReady => 'Export ready';
+
+  @override
+  String overtimeExportRowCount(int count) {
+    return '$count sessions exported';
+  }
+
+  @override
+  String get overtimeExportOpen => 'Open';
+
+  @override
+  String get overtimeExportOpenFile => 'Open File';
+
+  @override
+  String get overtimeExportOpenFolder => 'Open Containing Folder';
+
+  @override
+  String get overtimeExportSaveAs => 'Save As';
+
+  @override
+  String get overtimeExportSave => 'Save';
+
+  @override
+  String get overtimeExportShare => 'Share';
+
+  @override
+  String overtimeExportSavedTo(String path) {
+    return 'Saved to $path';
+  }
+
+  @override
   String get overtimeRequiresManualReview => 'Requires manual review';
 
   @override

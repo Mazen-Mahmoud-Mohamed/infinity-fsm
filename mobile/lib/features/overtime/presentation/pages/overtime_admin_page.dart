@@ -18,9 +18,12 @@ import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_admin_cubit.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_excel_export_flow.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
+import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_export_filters.dart';
 
 class OvertimeAdminPage extends StatelessWidget {
   const OvertimeAdminPage({super.key});
@@ -71,9 +74,47 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final dateFormat = AppFormatters.mediumDateTime(context);
+    final canExport = canExportOvertimeExcel(
+      context.watch<AuthCubit>().state.user,
+    );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.overtimeManagement)),
+      appBar: AppBar(
+        title: Text(l10n.overtimeManagement),
+        actions: [
+          if (canExport)
+            IconButton(
+              tooltip: l10n.overtimeExportExcel,
+              onPressed: () {
+                final state = context.read<OvertimeAdminCubit>().state;
+                showOvertimeExcelExportFlow(
+                  context,
+                  initialFilters: OvertimeExportFilters(
+                    status: state.filterStatus,
+                    search: state.search.isEmpty ? null : state.search,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.file_download_outlined),
+            ),
+        ],
+      ),
+      floatingActionButton: canExport
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                final state = context.read<OvertimeAdminCubit>().state;
+                showOvertimeExcelExportFlow(
+                  context,
+                  initialFilters: OvertimeExportFilters(
+                    status: state.filterStatus,
+                    search: state.search.isEmpty ? null : state.search,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.table_view_outlined),
+              label: Text(l10n.overtimeExportExcel),
+            )
+          : null,
       body: AppPageFrame(
         maxWidth: AppBreakpoints.contentWideMax,
         child: Column(

@@ -17,6 +17,18 @@ import AppError, {
 } from '../../../shared/errors/AppError.js';
 import auditService from '../../core/audit/audit.service.js';
 import { resolveSessionTimeline } from './overtime.timeline.js';
+import {
+  buildOvertimeExcelWorkbook,
+  buildOvertimeExportFileName,
+  EXPORT_MODE,
+  MAX_EXPORT_ROWS,
+} from './overtime.excel.export.js';
+import User from '../../core/organization/models/user.model.js';
+import Company from '../../core/organization/models/company.model.js';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../../../../package.json');
 
 const WORKFLOW_V2 = 'v2';
 const WORKFLOW_V1 = 'v1';
@@ -745,6 +757,205 @@ class OvertimeService {
     };
   }
 
+  /**
+   * Admin/Supervisor Excel export — reporting only (does not alter overtime data).
+   */
+  async exportExcel(user, auth, query = {}) {
+    this._assertCanExport(user, auth);
+
+    const {
+      status,
+      search,
+      type,
+      userId,
+      departmentId,
+      branchId,
+      startDate,
+      endDate,
+      mode: modeRaw,
+    } = query;
+
+    const exportMode =
+      String(modeRaw || '').trim().toLowerCase() === EXPORT_MODE.SUMMARY
+        ? EXPORT_MODE.SUMMARY
+        : EXPORT_MODE.DETAILED;
+
+    const filter = { companyId: auth.companyId };
+    const statusFilter = mapStatusFilter(status);
+    if (statusFilter) {
+      filter.status = statusFilter;
+    }
+
+    const normalizedType = type ? String(type).trim().toUpperCase() : '';
+    if (normalizedType === 'NORMAL' || normalizedType === 'TRAVEL') {
+      filter.type = normalizedType;
+    }
+
+    if (branchId && mongoose.isValidObjectId(branchId)) {
+      filter.branchId = branchId;
+    }
+
+    if (startDate || endDate) {
+      filter.startAt = {};
+      if (startDate) {
+        const from = new Date(startDate);
+        if (!Number.isNaN(from.getTime())) {
+          filter.startAt.$gte = from;
+        }
+      }
+      if (endDate) {
+        const to = new Date(endDate);
+        if (!Number.isNaN(to.getTime())) {
+          // Inclusive end-of-day when date-only string.
+          if (/^\d{4}-\d{2}-\d{2}$/.test(String(endDate).trim())) {
+            to.setUTCHours(23, 59, 59, 999);
+          }
+          filter.startAt.$lte = to;
+        }
+      }
+      if (Object.keys(filter.startAt).length === 0) {
+        delete filter.startAt;
+      }
+    }
+
+    let userIds = null;
+    if (userId && mongoose.isValidObjectId(userId)) {
+      userIds = [userId];
+    }
+
+    if (departmentId && mongoose.isValidObjectId(departmentId)) {
+      const deptUsers = await User.find({
+        companyId: auth.companyId,
+        departmentId,
+      }).select('_id');
+      const deptIds = deptUsers.map((u) => u._id.toString());
+      userIds = userIds
+        ? userIds.filter((id) => deptIds.includes(String(id)))
+        : deptIds;
+    }
+
+    if (search && String(search).trim()) {
+      const term = escapeRegex(String(search).trim());
+      const matchingUsers = await User.find({
+        companyId: auth.companyId,
+        $or: [
+          { firstName: { $regex: term, $options: 'i' } },
+          { lastName: { $regex: term, $options: 'i' } },
+          { email: { $regex: term, $options: 'i' } },
+          { employeeId: { $regex: term, $options: 'i' } },
+        ],
+      }).select('_id');
+      const searchIds = matchingUsers.map((item) => item._id.toString());
+      userIds = userIds
+        ? userIds.filter((id) => searchIds.includes(String(id)))
+        : searchIds;
+    }
+
+    if (userIds) {
+      filter.userId = { $in: userIds };
+    }
+
+    const records = await OvertimeRecord.find(filter)
+      .populate({
+        path: 'userId',
+        select: 'firstName lastName email roles employeeId departmentId',
+        populate: { path: 'departmentId', select: 'name' },
+      })
+      .populate('approvedBy', 'firstName lastName email')
+      .populate('rejectedBy', 'firstName lastName email')
+      .sort({ createdAt: -1 })
+      .limit(MAX_EXPORT_ROWS)
+      .lean();
+
+    const dateRange =
+      startDate || endDate
+        ? `${startDate || '…'} → ${endDate || '…'}`
+        : 'All';
+
+    const generatedBy = [user.firstName, user.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim() || user.email || user._id?.toString?.();
+
+    const generatedAt = new Date();
+    const [company, employeeForName] = await Promise.all([
+      Company.findById(auth.companyId).select('name').lean(),
+      userId && mongoose.isValidObjectId(userId)
+        ? User.findById(userId).select('firstName lastName').lean()
+        : Promise.resolve(null),
+    ]);
+
+    const employeeName = employeeForName
+      ? [employeeForName.firstName, employeeForName.lastName]
+          .filter(Boolean)
+          .join(' ')
+          .trim()
+      : '';
+
+    const filterMeta = {
+      dateRange,
+      status: status || 'ALL',
+      type: normalizedType || 'ALL',
+      search: search || '',
+      userId: userId || '',
+      departmentId: departmentId || '',
+      branchId: branchId || '',
+      startDate: startDate || '',
+      endDate: endDate || '',
+      mode: exportMode,
+    };
+
+    const buffer = await buildOvertimeExcelWorkbook({
+      records,
+      generatedBy,
+      generatedAt,
+      companyName: company?.name || '',
+      appVersion: pkg.version || '1.0.0',
+      mode: exportMode,
+      filters: filterMeta,
+    });
+
+    const fileName = buildOvertimeExportFileName({
+      mode: exportMode,
+      filters: filterMeta,
+      generatedAt,
+      employeeName,
+    });
+
+    await auditService.log({
+      companyId: user.companyId,
+      actorId: user._id,
+      actorRole: user.roles?.[0],
+      action: 'overtime.export_excel',
+      module: 'overtime',
+      resourceType: 'overtime_export',
+      resourceId: null,
+      metadata: {
+        rowCount: records.length,
+        mode: exportMode,
+        fileName,
+        filters: {
+          status: status || 'ALL',
+          type: normalizedType || 'ALL',
+          search: search || null,
+          userId: userId || null,
+          departmentId: departmentId || null,
+          branchId: branchId || null,
+          startDate: startDate || null,
+          endDate: endDate || null,
+        },
+      },
+    });
+
+    return {
+      buffer,
+      fileName,
+      mimeType:
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      rowCount: records.length,
+    };
+  }
+
   async listMine(user, { page = 1, limit = 20, status } = {}) {
     const filter = {
       companyId: user.companyId,
@@ -1006,6 +1217,27 @@ class OvertimeService {
   _assertCanViewAll(auth) {
     if (!auth.permissions.includes(PERMISSIONS.OVERTIME_VIEW_ALL)) {
       throw new ForbiddenError('You do not have permission to view all overtime sessions');
+    }
+  }
+
+  /** Excel export: Administrators and Supervisors only. */
+  _assertCanExport(user, auth) {
+    const roles = (user?.roles || []).map((role) => String(role).toUpperCase());
+    const isAdminOrSupervisor =
+      roles.includes('ADMIN') || roles.includes('SUPERVISOR');
+    if (!isAdminOrSupervisor) {
+      throw new ForbiddenError(
+        'Only administrators and supervisors can export overtime reports'
+      );
+    }
+    if (
+      !auth.permissions.includes(PERMISSIONS.OVERTIME_VIEW_ALL) &&
+      !auth.permissions.includes(PERMISSIONS.OVERTIME_APPROVE) &&
+      !auth.permissions.includes(PERMISSIONS.OVERTIME_VIEW_TEAM)
+    ) {
+      throw new ForbiddenError(
+        'You do not have permission to export overtime reports'
+      );
     }
   }
 

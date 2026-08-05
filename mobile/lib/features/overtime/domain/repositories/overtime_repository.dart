@@ -4,6 +4,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dar
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_export_filters.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 
 abstract class OvertimeRepository {
@@ -78,6 +79,11 @@ abstract class OvertimeRepository {
     String? rejectionReason,
     String? reviewNotes,
   });
+
+  /// Admin/Supervisor Excel export (reporting only).
+  Future<Result<OvertimeExcelExportResult>> exportExcel(
+    OvertimeExportFilters filters,
+  );
 
   Future<List<PendingOvertimeAction>> getPendingActions();
 

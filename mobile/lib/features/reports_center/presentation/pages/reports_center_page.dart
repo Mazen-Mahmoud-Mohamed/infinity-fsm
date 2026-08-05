@@ -15,6 +15,9 @@ import 'package:mobile/features/reports_center/domain/entities/reports_center_mo
 import 'package:mobile/features/reports_center/presentation/cubit/reports_center_cubit.dart';
 import 'package:mobile/features/reports_center/presentation/utils/reports_center_labels.dart';
 import 'package:mobile/features/reports_center/presentation/widgets/reports_center_widgets.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_export_filters.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_excel_export_flow.dart';
 
 class ReportsCenterPage extends StatefulWidget {
   const ReportsCenterPage({super.key});
@@ -64,6 +67,9 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
     final canGenerate = context.select(
       (AuthCubit c) =>
           c.state.user?.permissionChecker.canGenerateReports() == true,
+    );
+    final canExportOvertime = context.select(
+      (AuthCubit c) => canExportOvertimeExcel(c.state.user),
     );
 
     return BlocProvider.value(
@@ -170,6 +176,44 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
                             ),
                           ],
                         ],
+                      ),
+                    ),
+                  ),
+                if (state.module == ReportsCenterModule.overtime &&
+                    canExportOvertime)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                      0,
+                    ),
+                    child: Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: FilledButton.tonalIcon(
+                        onPressed: () {
+                          final statusKey = state.statusKey;
+                          OvertimeStatus? status;
+                          if (statusKey != null &&
+                              statusKey.isNotEmpty &&
+                              statusKey.toUpperCase() != 'ALL') {
+                            status = OvertimeStatus.fromApi(statusKey);
+                          }
+                          showOvertimeExcelExportFlow(
+                            context,
+                            initialFilters: OvertimeExportFilters(
+                              status: status,
+                              search: state.search.isEmpty
+                                  ? null
+                                  : state.search,
+                              startDate: state.rangeFrom,
+                              endDate: state.rangeTo,
+                              userId: state.employeeId,
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.file_download_outlined),
+                        label: Text(l10n.overtimeExportExcel),
                       ),
                     ),
                   ),

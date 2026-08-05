@@ -2473,6 +2473,116 @@ class AppLocalizationsAr extends AppLocalizations {
       'يلزم إذن الميكروفون لتسجيل ملاحظة صوتية.';
 
   @override
+  String get overtimeVoiceRecording => 'جاري التسجيل...';
+
+  @override
+  String get overtimeVoiceRecorded => 'تم تسجيل الصوت';
+
+  @override
+  String get overtimeVoiceMaxReached => 'تم بلوغ الحد الأقصى لمدة التسجيل.';
+
+  @override
+  String get overtimeVoiceUploaded => 'تم الرفع';
+
+  @override
+  String get overtimeVoiceWaitingSync => 'في انتظار المزامنة';
+
+  @override
+  String get overtimeVoiceUploading => 'جاري رفع الملاحظة الصوتية…';
+
+  @override
+  String get overtimeExportExcel => 'تصدير Excel';
+
+  @override
+  String get overtimeExportDenied =>
+      'يمكن للمسؤولين والمشرفين فقط تصدير تقارير العمل الإضافي.';
+
+  @override
+  String get overtimeExportFiltersHint =>
+      'مرشحات اختيارية لتقرير Excel. اتركها فارغة لتصدير جميع الجلسات المتاحة.';
+
+  @override
+  String get overtimeExportStartDate => 'تاريخ البدء';
+
+  @override
+  String get overtimeExportEndDate => 'تاريخ الانتهاء';
+
+  @override
+  String get overtimeExportAll => 'الكل';
+
+  @override
+  String get overtimeExportEmployeeId => 'معرّف المستخدم للموظف';
+
+  @override
+  String get overtimeExportDepartmentId => 'معرّف القسم';
+
+  @override
+  String get overtimeExportBranchId => 'معرّف الفرع';
+
+  @override
+  String get overtimeExportOptionalIdHint => 'معرّف MongoDB اختياري';
+
+  @override
+  String get overtimeExportModeLabel => 'نوع التصدير';
+
+  @override
+  String get overtimeExportModeSummary => 'تصدير الملخص';
+
+  @override
+  String get overtimeExportModeSummaryHint =>
+      'إحصائيات فقط — بدون GPS أو صور أو صوت أو تفاصيل الرحلة.';
+
+  @override
+  String get overtimeExportModeDetailed => 'تصدير التقرير التفصيلي';
+
+  @override
+  String get overtimeExportModeDetailedHint =>
+      'مجموعة بيانات العمل الإضافي الكاملة مع الخرائط والصوت والصور ومعلومات الجهاز.';
+
+  @override
+  String get overtimeExportGenerate => 'إنشاء Excel';
+
+  @override
+  String get overtimeExportPreparing => 'جاري التحضير للتصدير…';
+
+  @override
+  String get overtimeExportDownloading => 'جاري إنشاء تقرير Excel…';
+
+  @override
+  String get overtimeExportSaving => 'جاري حفظ الملف…';
+
+  @override
+  String get overtimeExportReady => 'التصدير جاهز';
+
+  @override
+  String overtimeExportRowCount(int count) {
+    return 'تم تصدير $count جلسة';
+  }
+
+  @override
+  String get overtimeExportOpen => 'فتح';
+
+  @override
+  String get overtimeExportOpenFile => 'فتح الملف';
+
+  @override
+  String get overtimeExportOpenFolder => 'فتح المجلد المحتوي';
+
+  @override
+  String get overtimeExportSaveAs => 'حفظ باسم';
+
+  @override
+  String get overtimeExportSave => 'حفظ';
+
+  @override
+  String get overtimeExportShare => 'مشاركة';
+
+  @override
+  String overtimeExportSavedTo(String path) {
+    return 'تم الحفظ في $path';
+  }
+
+  @override
   String get overtimeRequiresManualReview => 'يتطلب مراجعة يدوية';
 
   @override

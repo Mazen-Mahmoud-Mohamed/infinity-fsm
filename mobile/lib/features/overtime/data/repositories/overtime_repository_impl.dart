@@ -9,6 +9,7 @@ import 'package:mobile/features/overtime/data/datasources/overtime_remote_dataso
 import 'package:mobile/features/overtime/data/models/overtime_session_model.dart';
 import 'package:mobile/features/overtime/data/models/pending_overtime_action_model.dart';
 import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_export_filters.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
@@ -914,6 +915,24 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         status: status,
         search: search,
       );
+      return Success(result);
+    } on Object catch (error) {
+      return NetworkErrorMapper.map(error);
+    }
+  }
+
+  @override
+  Future<Result<OvertimeExcelExportResult>> exportExcel(
+    OvertimeExportFilters filters,
+  ) async {
+    try {
+      if (!await _connectivity.isConnected) {
+        return const Failure(
+          'errorNoInternet',
+          code: 'OFFLINE',
+        );
+      }
+      final result = await _remote.exportExcel(filters);
       return Success(result);
     } on Object catch (error) {
       return NetworkErrorMapper.map(error);

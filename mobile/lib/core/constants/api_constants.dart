@@ -32,6 +32,7 @@ class ApiConstants {
   static const String overtimeMine = '/overtime/mine';
   static const String overtimeStats = '/overtime/stats';
   static const String overtimeStart = '/overtime/start';
+  static const String overtimeExport = '/overtime/export';
 
   static String overtimeArrivedAtWorkSite(String id) =>
       '/overtime/$id/arrived-at-work-site';

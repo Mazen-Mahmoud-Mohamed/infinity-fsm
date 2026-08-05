@@ -13,6 +13,7 @@ import {
   endOvertimeValidator,
   checkpointOvertimeValidator,
   listOvertimeValidator,
+  exportOvertimeValidator,
   rejectOvertimeValidator,
   approveOvertimeValidator,
   overtimeIdValidator,
@@ -51,6 +52,17 @@ router.get(
   requirePermission(PERMISSIONS.OVERTIME_VIEW_ALL),
   validate(listOvertimeValidator),
   overtimeController.listSessions
+);
+
+router.get(
+  '/export',
+  requireAnyPermission(
+    PERMISSIONS.OVERTIME_VIEW_ALL,
+    PERMISSIONS.OVERTIME_APPROVE,
+    PERMISSIONS.OVERTIME_VIEW_TEAM
+  ),
+  validate(exportOvertimeValidator),
+  overtimeController.exportExcel
 );
 
 router.post(

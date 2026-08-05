@@ -68,6 +68,7 @@ class OvertimeJourneyTimeline extends StatelessWidget {
     this.focus,
     this.desktopCompactPhotos = false,
     this.onPendingVoiceChanged,
+    this.isSyncing = false,
   });
 
   final OvertimeSession session;
@@ -93,6 +94,9 @@ class OvertimeJourneyTimeline extends StatelessWidget {
     OvertimeCheckpointStage stage,
     OvertimeVoiceDraft? draft,
   )? onPendingVoiceChanged;
+
+  /// True while the offline overtime queue is actively uploading.
+  final bool isSyncing;
 
   @override
   Widget build(BuildContext context) {
@@ -127,6 +131,7 @@ class OvertimeJourneyTimeline extends StatelessWidget {
               highlighted: focusListenable?.stage == stages[i],
               desktopCompactPhotos: desktopCompactPhotos,
               pendingAction: _pendingFor(stages[i]),
+              isSyncing: isSyncing,
               onPendingVoiceChanged: onPendingVoiceChanged == null
                   ? null
                   : (draft) => onPendingVoiceChanged!(stages[i], draft),
@@ -434,6 +439,7 @@ class _TimelineStageTile extends StatelessWidget {
     this.highlighted = false,
     this.desktopCompactPhotos = false,
     this.pendingAction,
+    this.isSyncing = false,
     this.onPendingVoiceChanged,
     this.onSelect,
   });
@@ -450,6 +456,7 @@ class _TimelineStageTile extends StatelessWidget {
   final bool highlighted;
   final bool desktopCompactPhotos;
   final PendingOvertimeAction? pendingAction;
+  final bool isSyncing;
   final ValueChanged<OvertimeVoiceDraft?>? onPendingVoiceChanged;
   final VoidCallback? onSelect;
 
@@ -648,6 +655,12 @@ class _TimelineStageTile extends StatelessWidget {
                                   pendingAction != null &&
                                   _remoteVoiceUrl(checkpoint!.voiceNote) ==
                                       null),
+                              compact: true,
+                              syncBadge: _voiceSyncBadge(
+                                checkpoint: checkpoint!,
+                                pendingAction: pendingAction,
+                                isSyncing: isSyncing,
+                              ),
                               onDraftChanged: onPendingVoiceChanged,
                             ),
                           ],
@@ -693,6 +706,28 @@ class _TimelineStageTile extends StatelessWidget {
       return url;
     }
     return null;
+  }
+
+  static OvertimeVoiceSyncBadge _voiceSyncBadge({
+    required OvertimeCheckpoint checkpoint,
+    required PendingOvertimeAction? pendingAction,
+    required bool isSyncing,
+  }) {
+    if (_remoteVoiceUrl(checkpoint.voiceNote) != null) {
+      return OvertimeVoiceSyncBadge.uploaded;
+    }
+    final hasPendingVoice = pendingAction != null &&
+        (pendingAction.voiceBytes.isNotEmpty ||
+            checkpoint.voiceNote?.url == 'local-pending');
+    if (!hasPendingVoice && checkpoint.voiceNote == null) {
+      return OvertimeVoiceSyncBadge.none;
+    }
+    if (hasPendingVoice || checkpoint.voiceNote?.url == 'local-pending') {
+      return isSyncing
+          ? OvertimeVoiceSyncBadge.uploading
+          : OvertimeVoiceSyncBadge.pendingSync;
+    }
+    return OvertimeVoiceSyncBadge.none;
   }
 
   static bool _shouldShowVoiceSection({

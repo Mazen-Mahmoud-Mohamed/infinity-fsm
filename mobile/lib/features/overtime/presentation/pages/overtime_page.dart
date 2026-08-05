@@ -506,6 +506,8 @@ class _RunningSessionCard extends StatelessWidget {
           session: session,
           pendingActions: pendingActions,
           isOffline: isOffline,
+          isSyncing: context.watch<OvertimeSyncCubit>().state.status ==
+              OvertimeSyncStatus.syncing,
           onPendingVoiceChanged: (stage, draft) {
             context.read<OvertimeCubit>().updatePendingStageVoice(
                   stage: stage,

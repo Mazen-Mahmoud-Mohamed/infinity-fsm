@@ -122,6 +122,42 @@ export const listOvertimeValidator = [
   query('search').optional().isString().trim().isLength({ max: 120 }),
 ];
 
+export const exportOvertimeValidator = [
+  query('status')
+    .optional()
+    .isString()
+    .trim()
+    .isIn([
+      'ALL',
+      'PENDING',
+      'PENDING_REVIEW',
+      'APPROVED',
+      'REJECTED',
+      'RUNNING',
+      'CANCELLED',
+      'all',
+      'pending',
+      'approved',
+      'rejected',
+    ]),
+  query('search').optional().isString().trim().isLength({ max: 120 }),
+  query('type')
+    .optional()
+    .isString()
+    .trim()
+    .isIn(['NORMAL', 'TRAVEL', 'normal', 'travel', 'ALL', 'all']),
+  query('userId').optional().isMongoId(),
+  query('departmentId').optional().isMongoId(),
+  query('branchId').optional().isMongoId(),
+  query('startDate').optional().isISO8601(),
+  query('endDate').optional().isISO8601(),
+  query('mode')
+    .optional()
+    .isString()
+    .trim()
+    .isIn(['summary', 'detailed', 'SUMMARY', 'DETAILED']),
+];
+
 export const rejectOvertimeValidator = [
   body('rejectionReason')
     .optional({ values: 'falsy' })

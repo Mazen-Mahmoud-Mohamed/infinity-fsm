@@ -69,6 +69,17 @@ export const listSessions = asyncHandler(async (req, res) => {
   sendSuccess(res, result.items, 200, { pagination: result.pagination });
 });
 
+export const exportExcel = asyncHandler(async (req, res) => {
+  const result = await overtimeService.exportExcel(req.user, req.auth, req.query);
+  res.setHeader('Content-Type', result.mimeType);
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${result.fileName}"`
+  );
+  res.setHeader('X-Export-Row-Count', String(result.rowCount));
+  res.status(200).send(result.buffer);
+});
+
 export const listMine = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, status } = req.query;
   const result = await overtimeService.listMine(req.user, {

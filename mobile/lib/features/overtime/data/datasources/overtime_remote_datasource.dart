@@ -5,6 +5,7 @@ import 'package:mobile/features/attendance/data/models/gps_snapshot_model.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
 import 'package:mobile/features/overtime/data/models/overtime_session_model.dart';
 import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_export_filters.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
@@ -251,6 +252,35 @@ class OvertimeRemoteDataSource {
       },
     );
     return _mapPage(response.data);
+  }
+
+  Future<OvertimeExcelExportResult> exportExcel(
+    OvertimeExportFilters filters,
+  ) async {
+    final response = await _client.get<List<int>>(
+      ApiConstants.overtimeExport,
+      queryParameters: filters.toQueryParameters(),
+      options: Options(
+        responseType: ResponseType.bytes,
+        receiveTimeout: const Duration(minutes: 3),
+      ),
+    );
+    final raw = response.data;
+    final bytes = raw is List<int> ? raw : <int>[];
+    final disposition = response.headers.value('content-disposition');
+    var fileName = 'overtime-export.xlsx';
+    if (disposition != null) {
+      final match = RegExp(r'filename="?([^"]+)"?').firstMatch(disposition);
+      if (match != null) {
+        fileName = match.group(1) ?? fileName;
+      }
+    }
+    final rowHeader = response.headers.value('x-export-row-count');
+    return OvertimeExcelExportResult(
+      bytes: bytes,
+      fileName: fileName,
+      rowCount: int.tryParse(rowHeader ?? ''),
+    );
   }
 
   Future<OvertimeSessionPage> listMine({

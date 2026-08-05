@@ -68,6 +68,7 @@ import 'package:mobile/features/overtime/domain/usecases/end_overtime_usecase.da
 import 'package:mobile/features/overtime/domain/usecases/get_overtime_by_id_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_running_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/list_admin_overtime_usecase.dart';
+import 'package:mobile/features/overtime/domain/usecases/export_overtime_excel_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/list_my_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/reject_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/record_overtime_checkpoint_usecase.dart';
@@ -477,6 +478,9 @@ Future<void> configureDependencies() async {
   );
   getIt.registerLazySingleton(
     () => ListAdminOvertimeUseCase(getIt<OvertimeRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => ExportOvertimeExcelUseCase(getIt<OvertimeRepository>()),
   );
   getIt.registerLazySingleton(
     () => ListMyOvertimeUseCase(getIt<OvertimeRepository>()),
