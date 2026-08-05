@@ -858,9 +858,14 @@ class OvertimeService {
     const records = await OvertimeRecord.find(filter)
       .populate({
         path: 'userId',
-        select: 'firstName lastName email roles employeeId departmentId',
-        populate: { path: 'departmentId', select: 'name' },
+        select:
+          'firstName lastName email roles employeeId departmentId branchId jobTitle',
+        populate: [
+          { path: 'departmentId', select: 'name' },
+          { path: 'branchId', select: 'name' },
+        ],
       })
+      .populate('branchId', 'name')
       .populate('approvedBy', 'firstName lastName email')
       .populate('rejectedBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
@@ -879,7 +884,7 @@ class OvertimeService {
 
     const generatedAt = new Date();
     const [company, employeeForName] = await Promise.all([
-      Company.findById(auth.companyId).select('name').lean(),
+      Company.findById(auth.companyId).select('name logoUrl').lean(),
       userId && mongoose.isValidObjectId(userId)
         ? User.findById(userId).select('firstName lastName').lean()
         : Promise.resolve(null),
@@ -910,6 +915,7 @@ class OvertimeService {
       generatedBy,
       generatedAt,
       companyName: company?.name || '',
+      companyLogoUrl: company?.logoUrl || '',
       appVersion: pkg.version || '1.0.0',
       mode: exportMode,
       filters: filterMeta,

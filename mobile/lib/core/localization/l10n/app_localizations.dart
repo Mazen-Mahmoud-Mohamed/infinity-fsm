@@ -4928,6 +4928,12 @@ abstract class AppLocalizations {
   /// **'Uploading voice note…'**
   String get overtimeVoiceUploading;
 
+  /// No description provided for @overtimeVoicePlaybackFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to play this recording.'**
+  String get overtimeVoicePlaybackFailed;
+
   /// No description provided for @overtimeExportExcel.
   ///
   /// In en, this message translates to:

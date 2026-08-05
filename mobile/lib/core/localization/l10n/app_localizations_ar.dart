@@ -2491,6 +2491,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeVoiceUploading => 'جاري رفع الملاحظة الصوتية…';
 
   @override
+  String get overtimeVoicePlaybackFailed => 'تعذر تشغيل هذا التسجيل.';
+
+  @override
   String get overtimeExportExcel => 'تصدير Excel';
 
   @override

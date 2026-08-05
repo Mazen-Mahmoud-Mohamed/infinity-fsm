@@ -914,6 +914,7 @@
   "overtimeVoiceUploaded": "تم الرفع",
   "overtimeVoiceWaitingSync": "في انتظار المزامنة",
   "overtimeVoiceUploading": "جاري رفع الملاحظة الصوتية…",
+  "overtimeVoicePlaybackFailed": "تعذر تشغيل هذا التسجيل.",
   "overtimeExportExcel": "تصدير Excel",
   "overtimeExportDenied": "يمكن للمسؤولين والمشرفين فقط تصدير تقارير العمل الإضافي.",
   "overtimeExportFiltersHint": "مرشحات اختيارية لتقرير Excel. اتركها فارغة لتصدير جميع الجلسات المتاحة.",

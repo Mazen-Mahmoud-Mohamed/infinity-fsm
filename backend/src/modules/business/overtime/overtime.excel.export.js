@@ -5,31 +5,37 @@ const require = createRequire(import.meta.url);
 const pkg = require('../../../../package.json');
 
 const MAX_EXPORT_ROWS = 10000;
-/** Excel practical page size — split detailed data across sheets. */
-const ROWS_PER_SHEET = 5000;
+/** One detailed printable sheet per session; beyond this use overflow table. */
+const MAX_SESSION_SHEETS = 100;
+const THUMB_WIDTH = 140;
+const THUMB_HEIGHT = 105;
+const IMAGE_FETCH_CONCURRENCY = 6;
+const IMAGE_FETCH_TIMEOUT_MS = 12000;
 
-const HEADER_FILL = {
-  type: 'pattern',
-  pattern: 'solid',
-  fgColor: { argb: 'FF1E3A5F' },
+export const EXPORT_MODE = Object.freeze({
+  SUMMARY: 'summary',
+  DETAILED: 'detailed',
+});
+
+const COLORS = {
+  navy: 'FF1E3A5F',
+  navySoft: 'FFE8EEF7',
+  surface: 'FFF8FAFC',
+  border: 'FFCBD5E1',
+  muted: 'FF64748B',
+  white: 'FFFFFFFF',
+  link: 'FF0563C1',
+  start: 'FF16A34A',
+  startBg: 'FFF0FDF4',
+  arrived: 'FF2563EB',
+  arrivedBg: 'FFEFF6FF',
+  finished: 'FF7C3AED',
+  finishedBg: 'FFF5F3FF',
+  end: 'FFDC2626',
+  endBg: 'FFFEF2F2',
+  kpiBg: 'FFFFFFFF',
+  altRow: 'FFF1F5F9',
 };
-const HEADER_FONT = { bold: true, color: { argb: 'FFFFFFFF' }, size: 11 };
-const ALT_ROW_FILL = {
-  type: 'pattern',
-  pattern: 'solid',
-  fgColor: { argb: 'FFF3F6FA' },
-};
-const CARD_TITLE_FILL = {
-  type: 'pattern',
-  pattern: 'solid',
-  fgColor: { argb: 'FFE8EEF7' },
-};
-const CARD_VALUE_FILL = {
-  type: 'pattern',
-  pattern: 'solid',
-  fgColor: { argb: 'FFF8FAFC' },
-};
-const LINK_FONT = { color: { argb: 'FF0563C1' }, underline: true, size: 10 };
 
 const STATUS_FILLS = {
   APPROVED: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDCFCE7' } },
@@ -49,91 +55,77 @@ const STATUS_FILLS = {
     pattern: 'solid',
     fgColor: { argb: 'FFE0F2FE' },
   },
+  CANCELLED: {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFF1F5F9' },
+  },
 };
 
-const DETAILED_HEADERS = [
-  'Session ID',
-  'Employee Name',
-  'Employee ID',
-  'Department',
-  'Overtime Type',
-  'Status',
-  'Created Date',
-  'Approved Date',
-  'Reviewer',
-  'Review Notes',
-  'Start Date',
-  'Start Time',
-  'Start Latitude',
-  'Start Longitude',
-  'Start Address',
-  'Start GPS Accuracy (m)',
-  'Start Google Maps',
-  'Arrived Date',
-  'Arrived Time',
-  'Arrived Latitude',
-  'Arrived Longitude',
-  'Arrived Address',
-  'Arrived GPS Accuracy (m)',
-  'Arrived Google Maps',
-  'Finished Work Date',
-  'Finished Work Time',
-  'Finished Work Latitude',
-  'Finished Work Longitude',
-  'Finished Work Address',
-  'Finished Work GPS Accuracy (m)',
-  'Finished Work Google Maps',
-  'End Date',
-  'End Time',
-  'End Latitude',
-  'End Longitude',
-  'End Address',
-  'End GPS Accuracy (m)',
-  'End Google Maps',
-  'Calculated Hours',
-  'Working Hours',
-  'Travel Hours',
-  'Total Hours',
-  'Approved Hours',
-  'Voice Start',
-  'Voice Arrived',
-  'Voice Finished',
-  'Voice End',
-  'Photo Count',
-  'Photo URLs',
-  'Start Device ID',
-  'Start Battery %',
-  'Start Network',
-  'End Device ID',
-  'End Battery %',
-  'End Network',
-  'Platform',
-  'Device Model',
-  'App Version',
-  'Branch ID',
+const STAGE_META = [
+  {
+    key: 'startJourney',
+    title: '🟢  START',
+    voiceLabel: 'Start Voice',
+    headerArgb: COLORS.start,
+    bodyArgb: COLORS.startBg,
+    legacyPhoto: 'startPhoto',
+    legacyGps: 'startGps',
+    legacyAt: 'startAt',
+    legacyAddress: 'startAddress',
+    legacyDevice: 'startDeviceId',
+  },
+  {
+    key: 'arrivedAtWorkSite',
+    title: '🔵  ARRIVED',
+    voiceLabel: 'Arrived Voice',
+    headerArgb: COLORS.arrived,
+    bodyArgb: COLORS.arrivedBg,
+  },
+  {
+    key: 'finishedWork',
+    title: '🟣  FINISHED WORK',
+    voiceLabel: 'Finished Voice',
+    headerArgb: COLORS.finished,
+    bodyArgb: COLORS.finishedBg,
+  },
+  {
+    key: 'endJourney',
+    title: '🔴  END',
+    voiceLabel: 'End Voice',
+    headerArgb: COLORS.end,
+    bodyArgb: COLORS.endBg,
+    legacyPhoto: 'endPhoto',
+    legacyGps: 'endGps',
+    legacyAt: 'endAt',
+    legacyAddress: 'endAddress',
+    legacyDevice: 'endDeviceId',
+  },
 ];
-
-export const EXPORT_MODE = Object.freeze({
-  SUMMARY: 'summary',
-  DETAILED: 'detailed',
-});
 
 function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
 function formatDate(value) {
-  if (!value) return '';
+  if (!value) return '—';
   const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
+  if (Number.isNaN(d.getTime())) return '—';
   return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
 }
 
 function formatTime(value) {
-  if (!value) return '';
+  if (!value) return '—';
   const d = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(d.getTime())) return '';
+  if (Number.isNaN(d.getTime())) return '—';
   return `${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}`;
+}
+
+function formatDateTime(value) {
+  if (!value) return '—';
+  const d = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  return `${formatDate(d)} ${formatTime(d)} UTC`;
 }
 
 function formatDateTimeStamp(value) {
@@ -149,9 +141,9 @@ function minutesToHours(minutes) {
   return Math.round((n / 60) * 100) / 100;
 }
 
-function hoursOrBlank(minutes) {
+function hoursLabel(minutes) {
   const h = minutesToHours(minutes);
-  return h === null ? '' : h;
+  return h === null ? '—' : h;
 }
 
 function formatVoiceDuration(seconds) {
@@ -163,10 +155,10 @@ function formatVoiceDuration(seconds) {
 }
 
 function userDisplayName(user) {
-  if (!user) return '';
+  if (!user) return '—';
   if (typeof user === 'string') return user;
   const full = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
-  return full || user.email || user._id?.toString?.() || '';
+  return full || user.email || user._id?.toString?.() || '—';
 }
 
 function safeFileToken(value) {
@@ -188,33 +180,6 @@ function mapsUrl(lat, lng) {
   return `https://maps.google.com/?q=${a},${b}`;
 }
 
-function stageFromRecord(record, key) {
-  return record?.checkpoints?.[key] || null;
-}
-
-function stageGps(stage, legacyGps) {
-  return stage?.gps || legacyGps || null;
-}
-
-function stageAt(stage, legacyAt) {
-  return stage?.at || legacyAt || null;
-}
-
-function collectPhotoUrls(record) {
-  const urls = [];
-  const push = (url) => {
-    if (url && String(url).trim()) urls.push(String(url).trim());
-  };
-  push(record.startPhoto?.url);
-  push(record.endPhoto?.url);
-  const cp = record.checkpoints || {};
-  push(cp.startJourney?.photo?.url);
-  push(cp.arrivedAtWorkSite?.photo?.url);
-  push(cp.finishedWork?.photo?.url);
-  push(cp.endJourney?.photo?.url);
-  return [...new Set(urls)];
-}
-
 function travelMinutes(record) {
   const type = String(record.type || '').toUpperCase();
   if (type !== 'TRAVEL') return 0;
@@ -225,58 +190,185 @@ function travelMinutes(record) {
 
 function voiceHttpUrl(voiceNote) {
   const url = voiceNote?.url;
-  if (url && (String(url).startsWith('http://') || String(url).startsWith('https://'))) {
-    return String(url);
-  }
+  if (url && /^https?:\/\//i.test(String(url))) return String(url);
   return '';
 }
 
-function voiceDisplay(voiceNote) {
-  const url = voiceHttpUrl(voiceNote);
-  const duration = formatVoiceDuration(voiceNote?.duration);
-  if (!url && !duration) return { text: '—', hyperlink: null };
-  const text = duration || 'Available';
-  return { text, hyperlink: url || null };
-}
-
 function linkCell(text, url) {
-  if (!url) return text || '';
+  if (!url) return text || '—';
   return { text: text || url, hyperlink: url };
 }
 
 function applyWorksheetFooter(sheet, generatedAt) {
-  const stamp = `${formatDate(generatedAt)} ${formatTime(generatedAt)} UTC`;
+  const stamp = formatDateTime(generatedAt);
   sheet.headerFooter = {
-    oddFooter: `&LInfinity FSM — Generated automatically&C${stamp}&RPage &P of &N`,
-    evenFooter: `&LInfinity FSM — Generated automatically&C${stamp}&RPage &P of &N`,
+    oddFooter: `&LInfinity FSM — Automatically Generated Report&C${stamp}&RPage &P of &N`,
+    evenFooter: `&LInfinity FSM — Automatically Generated Report&C${stamp}&RPage &P of &N`,
   };
 }
 
-function applyHeaderStyle(row) {
-  row.eachCell((cell) => {
-    cell.fill = HEADER_FILL;
-    cell.font = HEADER_FONT;
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    cell.border = {
-      bottom: { style: 'thin', color: { argb: 'FFCBD5E1' } },
-    };
-  });
-  row.height = 30;
+function applyPrintSetup(sheet) {
+  sheet.pageSetup = {
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    paperSize: 9,
+    margins: {
+      left: 0.5,
+      right: 0.5,
+      top: 0.6,
+      bottom: 0.7,
+      header: 0.3,
+      footer: 0.3,
+    },
+  };
 }
 
-function autoWidth(sheet, headers, sampleRows = []) {
-  headers.forEach((header, index) => {
-    let maxLen = String(header).length;
-    for (const row of sampleRows.slice(0, 40)) {
-      const raw = row[index];
-      const text =
-        raw && typeof raw === 'object' && raw.text != null
-          ? String(raw.text)
-          : String(raw ?? '');
-      maxLen = Math.max(maxLen, Math.min(48, text.length));
+function solidFill(argb) {
+  return { type: 'pattern', pattern: 'solid', fgColor: { argb } };
+}
+
+function thinBorder() {
+  const edge = { style: 'thin', color: { argb: COLORS.border } };
+  return { top: edge, left: edge, bottom: edge, right: edge };
+}
+
+function styleStatusBadge(cell, status) {
+  const key = String(status || '').toUpperCase();
+  const fill = STATUS_FILLS[key];
+  if (fill) cell.fill = fill;
+  cell.font = { bold: true, size: 11 };
+  cell.alignment = { vertical: 'middle', horizontal: 'center' };
+}
+
+function buildFilterLines(filters) {
+  return Object.entries(filters || {})
+    .filter(
+      ([k, v]) =>
+        k !== 'mode' &&
+        v !== undefined &&
+        v !== null &&
+        String(v).trim() !== '' &&
+        String(v).toUpperCase() !== 'ALL'
+    )
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('  |  ');
+}
+
+function departmentName(record) {
+  const tech = record.userId;
+  const dept = tech?.departmentId;
+  if (dept && typeof dept === 'object' && dept.name) return dept.name;
+  return '—';
+}
+
+function branchName(record) {
+  const fromRecord = record.branchId;
+  if (fromRecord && typeof fromRecord === 'object' && fromRecord.name) {
+    return fromRecord.name;
+  }
+  const fromUser = record.userId?.branchId;
+  if (fromUser && typeof fromUser === 'object' && fromUser.name) {
+    return fromUser.name;
+  }
+  return '—';
+}
+
+function jobTitle(record) {
+  return record.userId?.jobTitle || '—';
+}
+
+function syncStatusLabel(record) {
+  const st = String(record.status || '').toUpperCase();
+  if (st === 'RUNNING') return 'Active Session';
+  return 'Synced';
+}
+
+function stagePhotos(record, stageMeta) {
+  const urls = [];
+  const push = (url) => {
+    if (url && String(url).trim() && /^https?:\/\//i.test(String(url))) {
+      const u = String(url).trim();
+      if (!urls.includes(u)) urls.push(u);
     }
-    sheet.getColumn(index + 1).width = Math.min(44, Math.max(12, maxLen + 2));
-  });
+  };
+  const cp = record.checkpoints?.[stageMeta.key];
+  push(cp?.photo?.url);
+  if (stageMeta.legacyPhoto) {
+    push(record[stageMeta.legacyPhoto]?.url);
+  }
+  return urls;
+}
+
+function resolveStage(record, stageMeta) {
+  const cp = record.checkpoints?.[stageMeta.key] || null;
+  const gps = cp?.gps || (stageMeta.legacyGps ? record[stageMeta.legacyGps] : null);
+  const at = cp?.at || (stageMeta.legacyAt ? record[stageMeta.legacyAt] : null);
+  const address =
+    cp?.address ||
+    (stageMeta.legacyAddress ? record[stageMeta.legacyAddress] : null) ||
+    gps?.fullAddress ||
+    '';
+  return {
+    at,
+    gps,
+    address: address || '—',
+    battery: cp?.batteryLevel ?? null,
+    network: cp?.networkStatus || '—',
+    deviceId: cp?.deviceId || (stageMeta.legacyDevice ? record[stageMeta.legacyDevice] : '') || '—',
+    notes: cp?.notes || '—',
+    voiceNote: cp?.voiceNote || null,
+    photos: stagePhotos(record, stageMeta),
+  };
+}
+
+function toCloudinaryThumbUrl(url, width = THUMB_WIDTH, height = THUMB_HEIGHT) {
+  if (!url || !url.includes('/upload/')) return url;
+  // Avoid double-transforming.
+  if (/\/upload\/[^/]*w_\d+/.test(url)) return url;
+  return url.replace(
+    '/upload/',
+    `/upload/c_fill,w_${width},h_${height},q_auto:eco,f_jpg/`
+  );
+}
+
+async function fetchImageBuffer(url, { width, height } = {}) {
+  if (!url) return null;
+  const target =
+    width && height ? toCloudinaryThumbUrl(url, width, height) : url;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), IMAGE_FETCH_TIMEOUT_MS);
+    const res = await fetch(target, {
+      signal: controller.signal,
+      headers: { Accept: 'image/*' },
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    return buf.length > 0 ? buf : null;
+  } catch {
+    return null;
+  }
+}
+
+async function mapPool(items, concurrency, mapper) {
+  const results = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    while (next < items.length) {
+      const i = next;
+      next += 1;
+      results[i] = await mapper(items[i], i);
+    }
+  }
+  const workers = Array.from(
+    { length: Math.min(concurrency, Math.max(1, items.length)) },
+    () => worker()
+  );
+  await Promise.all(workers);
+  return results;
 }
 
 function computeStats(records) {
@@ -298,7 +390,6 @@ function computeStats(records) {
   for (const record of records) {
     const st = String(record.status || '').toUpperCase();
     if (statusCounts[st] !== undefined) statusCounts[st] += 1;
-
     const type = String(record.type || '').toUpperCase();
     if (type === 'TRAVEL') travelCount += 1;
     else normalCount += 1;
@@ -335,178 +426,6 @@ function computeStats(records) {
   };
 }
 
-function buildDetailedRow(record, departmentNameById, appVersion) {
-  const tech = record.userId;
-  const startCp = stageFromRecord(record, 'startJourney');
-  const arrivedCp = stageFromRecord(record, 'arrivedAtWorkSite');
-  const finishedCp = stageFromRecord(record, 'finishedWork');
-  const endCp = stageFromRecord(record, 'endJourney');
-
-  const startGps = stageGps(startCp, record.startGps);
-  const arrivedGps = stageGps(arrivedCp, null);
-  const finishedGps = stageGps(finishedCp, null);
-  const endGps = stageGps(endCp, record.endGps);
-
-  const startAt = stageAt(startCp, record.startAt);
-  const arrivedAt = stageAt(arrivedCp, null);
-  const finishedAt = stageAt(finishedCp, null);
-  const endAt = stageAt(endCp, record.endAt);
-
-  const photoUrls = collectPhotoUrls(record);
-  const deptId =
-    tech?.departmentId?._id?.toString?.() ||
-    tech?.departmentId?.toString?.() ||
-    tech?.departmentId ||
-    '';
-  const departmentName =
-    (typeof tech?.departmentId === 'object' && tech.departmentId?.name) ||
-    departmentNameById.get(String(deptId)) ||
-    '';
-
-  const reviewer =
-    record.status === 'REJECTED'
-      ? userDisplayName(record.rejectedBy)
-      : userDisplayName(record.approvedBy);
-  const approvedDate =
-    record.status === 'REJECTED' ? record.rejectedAt : record.approvedAt;
-
-  const startMap = mapsUrl(startGps?.latitude, startGps?.longitude);
-  const arrivedMap = mapsUrl(arrivedGps?.latitude, arrivedGps?.longitude);
-  const finishedMap = mapsUrl(finishedGps?.latitude, finishedGps?.longitude);
-  const endMap = mapsUrl(endGps?.latitude, endGps?.longitude);
-
-  const vStart = voiceDisplay(startCp?.voiceNote);
-  const vArrived = voiceDisplay(arrivedCp?.voiceNote);
-  const vFinished = voiceDisplay(finishedCp?.voiceNote);
-  const vEnd = voiceDisplay(endCp?.voiceNote);
-
-  const firstPhoto = photoUrls[0] || '';
-
-  return [
-    record._id?.toString?.() || '',
-    userDisplayName(tech),
-    tech?.employeeId || '',
-    departmentName,
-    record.type || '',
-    record.status || '',
-    formatDate(record.createdAt),
-    formatDate(approvedDate),
-    reviewer,
-    record.reviewNotes || record.rejectionReason || '',
-    formatDate(startAt),
-    formatTime(startAt),
-    startGps?.latitude ?? '',
-    startGps?.longitude ?? '',
-    startCp?.address || record.startAddress || startGps?.fullAddress || '',
-    startGps?.accuracy ?? '',
-    linkCell(startMap ? 'Open Map' : '', startMap),
-    formatDate(arrivedAt),
-    formatTime(arrivedAt),
-    arrivedGps?.latitude ?? '',
-    arrivedGps?.longitude ?? '',
-    arrivedCp?.address || arrivedGps?.fullAddress || '',
-    arrivedGps?.accuracy ?? '',
-    linkCell(arrivedMap ? 'Open Map' : '', arrivedMap),
-    formatDate(finishedAt),
-    formatTime(finishedAt),
-    finishedGps?.latitude ?? '',
-    finishedGps?.longitude ?? '',
-    finishedCp?.address || finishedGps?.fullAddress || '',
-    finishedGps?.accuracy ?? '',
-    linkCell(finishedMap ? 'Open Map' : '', finishedMap),
-    formatDate(endAt),
-    formatTime(endAt),
-    endGps?.latitude ?? '',
-    endGps?.longitude ?? '',
-    endCp?.address || record.endAddress || endGps?.fullAddress || '',
-    endGps?.accuracy ?? '',
-    linkCell(endMap ? 'Open Map' : '', endMap),
-    hoursOrBlank(record.eligibleOvertimeMinutes),
-    hoursOrBlank(record.workingDurationMinutes),
-    hoursOrBlank(travelMinutes(record)),
-    hoursOrBlank(record.totalDurationMinutes),
-    String(record.status).toUpperCase() === 'APPROVED'
-      ? hoursOrBlank(record.eligibleOvertimeMinutes)
-      : '',
-    linkCell(vStart.text, vStart.hyperlink),
-    linkCell(vArrived.text, vArrived.hyperlink),
-    linkCell(vFinished.text, vFinished.hyperlink),
-    linkCell(vEnd.text, vEnd.hyperlink),
-    photoUrls.length,
-    firstPhoto
-      ? linkCell(
-          photoUrls.length <= 1
-            ? firstPhoto
-            : `${firstPhoto}\n(+${photoUrls.length - 1} more)`,
-          firstPhoto
-        )
-      : '—',
-    startCp?.deviceId || record.startDeviceId || '',
-    startCp?.batteryLevel ?? endCp?.batteryLevel ?? '',
-    startCp?.networkStatus || endCp?.networkStatus || '',
-    endCp?.deviceId || record.endDeviceId || '',
-    endCp?.batteryLevel ?? '',
-    endCp?.networkStatus || '',
-    '', // Platform — not stored on overtime documents yet
-    '', // Device Model — not stored on overtime documents yet
-    appVersion || '',
-    record.branchId?.toString?.() || record.branchId || '',
-  ];
-}
-
-function styleDataRow(row, status) {
-  row.alignment = { vertical: 'middle', wrapText: true };
-  row.eachCell((cell) => {
-    if (cell.value && typeof cell.value === 'object' && cell.value.hyperlink) {
-      cell.font = LINK_FONT;
-    }
-  });
-  const statusCell = row.getCell(6);
-  const fill = STATUS_FILLS[String(status || '').toUpperCase()];
-  if (fill) {
-    statusCell.fill = fill;
-    statusCell.font = { bold: true };
-  }
-}
-
-function addSummarySection(sheet, title, rows, startRow) {
-  let r = startRow;
-  const titleRow = sheet.getRow(r);
-  titleRow.getCell(1).value = title;
-  titleRow.getCell(1).font = { bold: true, size: 12, color: { argb: 'FF1E3A5F' } };
-  titleRow.getCell(1).fill = CARD_TITLE_FILL;
-  titleRow.getCell(2).fill = CARD_TITLE_FILL;
-  sheet.mergeCells(r, 1, r, 2);
-  r += 1;
-  for (const [label, value] of rows) {
-    const row = sheet.getRow(r);
-    row.getCell(1).value = label;
-    row.getCell(1).font = { bold: true };
-    row.getCell(1).fill = CARD_VALUE_FILL;
-    row.getCell(2).value = value;
-    row.getCell(2).fill = CARD_VALUE_FILL;
-    row.getCell(1).border = {
-      top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-      bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-      left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-    };
-    row.getCell(2).border = {
-      top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-      bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-      right: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-    };
-    r += 1;
-  }
-  return r + 1;
-}
-
-function buildFilterLines(filters) {
-  return Object.entries(filters || {})
-    .filter(([, v]) => v !== undefined && v !== null && String(v).trim() !== '')
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('; ');
-}
-
 /**
  * Smart enterprise filename for overtime exports.
  */
@@ -539,15 +458,11 @@ export function buildOvertimeExportFileName({
       'December',
     ];
     const idx = Number(m[2]) - 1;
-    return { year: m[1], month: months[idx] || m[2] };
+    return { year: m[1], month: months[idx] || m[2], monthNum: m[2] };
   })();
 
   if (safeEmployee && monthLabel) {
-    return `Overtime_Employee_${safeEmployee}_${monthLabel.year}-${pad2(
-      Number(
-        String(filters.startDate || formatDate(generatedAt)).slice(5, 7)
-      ) || 1
-    )}.xlsx`;
+    return `Overtime_Employee_${safeEmployee}_${monthLabel.year}-${monthLabel.monthNum}.xlsx`;
   }
   if (String(mode).toLowerCase() === EXPORT_MODE.SUMMARY) {
     return `Overtime_Summary_${stamp}.xlsx`;
@@ -558,9 +473,141 @@ export function buildOvertimeExportFileName({
   return `Overtime_Report_${stamp}.xlsx`;
 }
 
+function sessionSheetName(index) {
+  // Excel sheet name max 31 chars; keep stable & linkable.
+  return `Session ${index}`;
+}
+
+function sessionHyperlink(sheetName) {
+  const escaped = String(sheetName).replace(/'/g, "''");
+  return `#'${escaped}'!A1`;
+}
+
+async function buildImageCache(urls) {
+  const unique = [...new Set(urls.filter(Boolean))];
+  const cache = new Map();
+  await mapPool(unique, IMAGE_FETCH_CONCURRENCY, async (url) => {
+    const buf = await fetchImageBuffer(url, {
+      width: THUMB_WIDTH,
+      height: THUMB_HEIGHT,
+    });
+    if (buf) cache.set(url, buf);
+  });
+  return cache;
+}
+
+function writeKvRow(sheet, row, label1, value1, label2, value2) {
+  const r = sheet.getRow(row);
+  r.getCell(1).value = label1;
+  r.getCell(1).font = { bold: true, color: { argb: COLORS.muted } };
+  r.getCell(2).value = value1 ?? '—';
+  r.getCell(2).alignment = { vertical: 'middle', wrapText: true };
+  if (label2 !== undefined) {
+    r.getCell(3).value = label2;
+    r.getCell(3).font = { bold: true, color: { argb: COLORS.muted } };
+    r.getCell(4).value = value2 ?? '—';
+    r.getCell(4).alignment = { vertical: 'middle', wrapText: true };
+  }
+  for (let c = 1; c <= 4; c += 1) {
+    r.getCell(c).border = thinBorder();
+    r.getCell(c).fill = solidFill(COLORS.surface);
+  }
+  r.height = Math.max(22, estimateWrapHeight(String(value1 ?? ''), 40));
+  return row + 1;
+}
+
+function estimateWrapHeight(text, charsPerLine) {
+  const lines = Math.max(1, Math.ceil(String(text || '').length / charsPerLine));
+  return Math.min(90, 18 + (lines - 1) * 14);
+}
+
+function writeSectionHeader(sheet, row, title, fillArgb = COLORS.navy) {
+  sheet.mergeCells(row, 1, row, 6);
+  const cell = sheet.getRow(row).getCell(1);
+  cell.value = title;
+  cell.font = { bold: true, color: { argb: COLORS.white }, size: 12 };
+  cell.fill = solidFill(fillArgb);
+  cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
+  sheet.getRow(row).height = 26;
+  for (let c = 1; c <= 6; c += 1) {
+    sheet.getRow(row).getCell(c).fill = solidFill(fillArgb);
+    sheet.getRow(row).getCell(c).border = thinBorder();
+  }
+  return row + 1;
+}
+
+function writeSummaryKpiGrid(sheet, startRow, kpis) {
+  let row = startRow;
+  const cols = 4;
+  for (let i = 0; i < kpis.length; i += cols) {
+    const slice = kpis.slice(i, i + cols);
+    const labelRow = sheet.getRow(row);
+    const valueRow = sheet.getRow(row + 1);
+    slice.forEach((kpi, idx) => {
+      const col = idx + 1;
+      labelRow.getCell(col).value = kpi.label;
+      labelRow.getCell(col).font = {
+        bold: true,
+        size: 9,
+        color: { argb: COLORS.muted },
+      };
+      labelRow.getCell(col).fill = solidFill(COLORS.navySoft);
+      labelRow.getCell(col).alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+      };
+      labelRow.getCell(col).border = thinBorder();
+
+      valueRow.getCell(col).value = kpi.value;
+      valueRow.getCell(col).font = {
+        bold: true,
+        size: 16,
+        color: { argb: COLORS.navy },
+      };
+      valueRow.getCell(col).fill = solidFill(COLORS.kpiBg);
+      valueRow.getCell(col).alignment = {
+        horizontal: 'center',
+        vertical: 'middle',
+      };
+      valueRow.getCell(col).border = thinBorder();
+    });
+    labelRow.height = 20;
+    valueRow.height = 32;
+    row += 3;
+  }
+  return row;
+}
+
+async function addEmbeddedImage(workbook, sheet, buffer, {
+  col,
+  row,
+  width = THUMB_WIDTH,
+  height = THUMB_HEIGHT,
+  hyperlink,
+}) {
+  if (!buffer) return;
+  const imageId = workbook.addImage({
+    buffer,
+    extension: 'jpeg',
+  });
+  const opts = {
+    tl: { col: col - 0.1, row: row - 1 + 0.15 },
+    ext: { width, height },
+    editAs: 'oneCell',
+  };
+  if (hyperlink) {
+    opts.hyperlinks = {
+      hyperlink,
+      tooltip: 'Open original image',
+    };
+  }
+  sheet.addImage(imageId, opts);
+}
+
 /**
  * Builds a polished enterprise overtime workbook.
- * @returns {Promise<Buffer>}
+ * Summary mode → Summary sheet only.
+ * Detailed mode → Summary + Sessions Index + one sheet per session.
  */
 export async function buildOvertimeExcelWorkbook({
   records,
@@ -568,6 +615,7 @@ export async function buildOvertimeExcelWorkbook({
   generatedAt = new Date(),
   filters = {},
   companyName = '',
+  companyLogoUrl = '',
   appVersion = pkg.version || '1.0.0',
   mode = EXPORT_MODE.DETAILED,
 } = {}) {
@@ -585,166 +633,635 @@ export async function buildOvertimeExcelWorkbook({
       ? EXPORT_MODE.SUMMARY
       : EXPORT_MODE.DETAILED;
 
-  const departmentNameById = new Map();
-  for (const record of limited) {
-    const tech = record.userId;
-    const dept = tech?.departmentId;
-    if (dept && typeof dept === 'object' && dept.name) {
-      departmentNameById.set(
-        dept._id?.toString?.() || String(dept._id),
-        dept.name
-      );
-    }
+  // Pre-fetch thumbnails only for detailed session sheets (capped).
+  const sheetable = limited.slice(0, MAX_SESSION_SHEETS);
+  const overflow = limited.slice(MAX_SESSION_SHEETS);
+  let imageCache = new Map();
+  let logoBuffer = null;
+
+  if (companyLogoUrl) {
+    logoBuffer = await fetchImageBuffer(companyLogoUrl, {
+      width: 220,
+      height: 80,
+    });
   }
 
-  // ——— Summary sheet ———
+  if (exportMode === EXPORT_MODE.DETAILED && sheetable.length > 0) {
+    const photoUrls = [];
+    for (const record of sheetable) {
+      for (const stage of STAGE_META) {
+        photoUrls.push(...stagePhotos(record, stage));
+      }
+    }
+    imageCache = await buildImageCache(photoUrls);
+  }
+
+  // ——— Summary ———
   const summary = workbook.addWorksheet('Summary', {
-    views: [{ state: 'frozen', ySplit: 1 }],
+    views: [{ state: 'frozen', ySplit: 3 }],
     properties: { defaultRowHeight: 18 },
   });
   summary.columns = [
-    { width: 32 },
-    { width: 56 },
+    { width: 28 },
+    { width: 28 },
+    { width: 28 },
+    { width: 28 },
+    { width: 18 },
+    { width: 18 },
   ];
-  summary.getRow(1).values = ['Infinity FSM — Overtime Report', ''];
-  summary.mergeCells(1, 1, 1, 2);
-  summary.getRow(1).font = { bold: true, size: 16, color: { argb: 'FF1E3A5F' } };
-  summary.getRow(1).height = 28;
-
-  let cursor = 3;
-  cursor = addSummarySection(
-    summary,
-    'Report Metadata',
-    [
-      ['Company Name', companyName || '—'],
-      ['Generated By', generatedBy || '—'],
-      [
-        'Generated At',
-        `${formatDate(generatedAt)} ${formatTime(generatedAt)} UTC`,
-      ],
-      ['Application Version', appVersion || '—'],
-      ['Export Type', exportMode === EXPORT_MODE.SUMMARY ? 'Summary' : 'Detailed'],
-      ['Date Range', filters.dateRange || 'All'],
-      ['Applied Filters', filterLines || 'None'],
-    ],
-    cursor
-  );
-
-  cursor = addSummarySection(
-    summary,
-    'Session Statistics',
-    [
-      ['Total Sessions', limited.length],
-      ['Approved', stats.statusCounts.APPROVED],
-      ['Rejected', stats.statusCounts.REJECTED],
-      ['Pending', stats.statusCounts.PENDING_REVIEW],
-      ['Travel Overtime', stats.travelCount],
-      ['Normal Overtime', stats.normalCount],
-    ],
-    cursor
-  );
-
-  cursor = addSummarySection(
-    summary,
-    'Hours Overview',
-    [
-      ['Average Hours', stats.averageHours],
-      ['Maximum Hours', stats.maximumHours],
-      ['Minimum Hours', stats.minimumHours],
-      ['Total Approved Hours', stats.totalApprovedHours],
-      ['Total Working Hours', stats.totalWorkingHours],
-      ['Total Travel Hours', stats.totalTravelHours],
-      ['Total Calculated Hours', stats.totalEligibleHours],
-    ],
-    cursor
-  );
-
+  applyPrintSetup(summary);
   applyWorksheetFooter(summary, generatedAt);
+
+  if (logoBuffer) {
+    await addEmbeddedImage(workbook, summary, logoBuffer, {
+      col: 1,
+      row: 1,
+      width: 160,
+      height: 58,
+      hyperlink: companyLogoUrl || undefined,
+    });
+    summary.getRow(1).height = 62;
+  }
+
+  summary.mergeCells(2, 1, 2, 4);
+  const titleCell = summary.getRow(2).getCell(1);
+  titleCell.value = 'Infinity FSM — Overtime Executive Report';
+  titleCell.font = { bold: true, size: 18, color: { argb: COLORS.navy } };
+  summary.getRow(2).height = 28;
+
+  summary.mergeCells(3, 1, 3, 4);
+  summary.getRow(3).getCell(1).value =
+    companyName || 'Enterprise Field Service Management';
+  summary.getRow(3).getCell(1).font = {
+    size: 12,
+    color: { argb: COLORS.muted },
+  };
+
+  let cursor = 5;
+  cursor = writeSectionHeader(summary, cursor, 'Report Metadata', COLORS.navy);
+  cursor = writeKvRow(
+    summary,
+    cursor,
+    'Company Name',
+    companyName || '—',
+    'Generated By',
+    generatedBy || '—'
+  );
+  cursor = writeKvRow(
+    summary,
+    cursor,
+    'Generated At',
+    formatDateTime(generatedAt),
+    'Application Version',
+    appVersion || '—'
+  );
+  cursor = writeKvRow(
+    summary,
+    cursor,
+    'Export Type',
+    exportMode === EXPORT_MODE.SUMMARY ? 'Summary' : 'Detailed Report',
+    'Date Range',
+    filters.dateRange || 'All'
+  );
+  cursor = writeKvRow(
+    summary,
+    cursor,
+    'Applied Filters',
+    filterLines || 'None',
+    'Sessions in Export',
+    limited.length
+  );
+  cursor += 1;
+
+  cursor = writeSectionHeader(
+    summary,
+    cursor,
+    'Key Performance Indicators',
+    COLORS.navy
+  );
+  cursor = writeSummaryKpiGrid(summary, cursor, [
+    { label: 'Total Sessions', value: limited.length },
+    { label: 'Approved', value: stats.statusCounts.APPROVED },
+    { label: 'Pending', value: stats.statusCounts.PENDING_REVIEW },
+    { label: 'Rejected', value: stats.statusCounts.REJECTED },
+    { label: 'Travel Overtime', value: stats.travelCount },
+    { label: 'Normal Overtime', value: stats.normalCount },
+    { label: 'Average Hours', value: stats.averageHours },
+    { label: 'Maximum Hours', value: stats.maximumHours },
+    { label: 'Minimum Hours', value: stats.minimumHours },
+    { label: 'Total Approved Hours', value: stats.totalApprovedHours },
+    { label: 'Total Working Hours', value: stats.totalWorkingHours },
+    { label: 'Total Travel Hours', value: stats.totalTravelHours },
+    { label: 'Total Calculated Hours', value: stats.totalEligibleHours },
+  ]);
 
   if (exportMode === EXPORT_MODE.SUMMARY) {
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
   }
 
-  // ——— Detailed data sheets (split when large) ———
-  const dataRows = limited.map((record) =>
-    buildDetailedRow(record, departmentNameById, appVersion)
-  );
-  const chunks = [];
-  for (let i = 0; i < dataRows.length; i += ROWS_PER_SHEET) {
-    chunks.push({
-      rows: dataRows.slice(i, i + ROWS_PER_SHEET),
-      records: limited.slice(i, i + ROWS_PER_SHEET),
-      index: Math.floor(i / ROWS_PER_SHEET) + 1,
+  // ——— Sessions Index ———
+  const indexSheet = workbook.addWorksheet('Sessions Index', {
+    views: [{ state: 'frozen', ySplit: 1 }],
+  });
+  applyPrintSetup(indexSheet);
+  applyWorksheetFooter(indexSheet, generatedAt);
+  indexSheet.columns = [
+    { width: 26 },
+    { width: 22 },
+    { width: 14 },
+    { width: 18 },
+    { width: 16 },
+    { width: 12 },
+    { width: 16 },
+    { width: 12 },
+    { width: 14 },
+    { width: 18 },
+  ];
+
+  const indexHeaders = [
+    'Session ID',
+    'Employee Name',
+    'Employee ID',
+    'Department',
+    'Branch',
+    'Date',
+    'Status',
+    'Type',
+    'Approved Hours',
+    'Worksheet',
+  ];
+  const headerRow = indexSheet.getRow(1);
+  indexHeaders.forEach((h, i) => {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = h;
+    cell.font = { bold: true, color: { argb: COLORS.white } };
+    cell.fill = solidFill(COLORS.navy);
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cell.border = thinBorder();
+  });
+  headerRow.height = 28;
+
+  const indexRows = [];
+  limited.forEach((record, i) => {
+    const seq = i + 1;
+    const hasSheet = i < MAX_SESSION_SHEETS;
+    const sheetName = hasSheet ? sessionSheetName(seq) : 'Additional Sessions';
+    const approvedHours =
+      String(record.status).toUpperCase() === 'APPROVED'
+        ? hoursLabel(record.eligibleOvertimeMinutes)
+        : '—';
+    const rowValues = [
+      record._id?.toString?.() || '',
+      userDisplayName(record.userId),
+      record.userId?.employeeId || '—',
+      departmentName(record),
+      branchName(record),
+      formatDate(record.startAt || record.createdAt),
+      record.status || '—',
+      record.type || '—',
+      approvedHours,
+      hasSheet
+        ? linkCell(`Open ${sheetName}`, sessionHyperlink(sheetName))
+        : linkCell('See Additional Sessions', "#'Additional Sessions'!A1"),
+    ];
+    indexRows.push(rowValues);
+  });
+
+  if (indexRows.length === 0) {
+    indexHeaders.forEach((h, i) => {
+      const cell = headerRow.getCell(i + 1);
+      cell.value = h;
     });
-  }
-  if (chunks.length === 0) {
-    chunks.push({ rows: [], records: [], index: 1 });
-  }
-
-  for (const chunk of chunks) {
-    const sheetName =
-      chunks.length === 1 ? 'Overtime' : `Overtime (${chunk.index})`;
-    const sheet = workbook.addWorksheet(sheetName, {
-      views: [{ state: 'frozen', ySplit: 1 }],
-      properties: { defaultRowHeight: 18 },
-    });
-
-    if (chunk.rows.length === 0) {
-      sheet.addRow(DETAILED_HEADERS);
-      applyHeaderStyle(sheet.getRow(1));
-      autoWidth(sheet, DETAILED_HEADERS, []);
-      applyWorksheetFooter(sheet, generatedAt);
-      continue;
-    }
-
-    const tableRows = chunk.rows.map((row) =>
-      row.map((cell) => {
-        if (cell && typeof cell === 'object' && cell.hyperlink) {
-          return cell.text;
-        }
-        return cell;
-      })
-    );
-
-    // Prefer Excel Table for professional filtering/sorting.
-    sheet.addTable({
-      name: `OvertimeTable${chunk.index}`,
+    indexSheet.getRow(2).getCell(1).value = 'No overtime sessions matched the selected filters.';
+    indexSheet.mergeCells(2, 1, 2, 10);
+  } else {
+    indexSheet.addTable({
+      name: 'SessionsIndexTable',
       ref: 'A1',
       headerRow: true,
-      totalsRow: false,
-      style: {
-        theme: 'TableStyleMedium2',
-        showRowStripes: true,
-      },
-      columns: DETAILED_HEADERS.map((name) => ({
-        name,
-        filterButton: true,
-      })),
-      rows: tableRows,
+      style: { theme: 'TableStyleMedium2', showRowStripes: true },
+      columns: indexHeaders.map((name) => ({ name, filterButton: true })),
+      rows: indexRows.map((row) =>
+        row.map((cell) =>
+          cell && typeof cell === 'object' && cell.hyperlink ? cell.text : cell
+        )
+      ),
     });
 
-    // Re-apply hyperlinks & status colors on the real cells.
-    for (let i = 0; i < chunk.rows.length; i += 1) {
-      const excelRow = sheet.getRow(i + 2);
-      const source = chunk.rows[i];
+    for (let i = 0; i < indexRows.length; i += 1) {
+      const excelRow = indexSheet.getRow(i + 2);
+      const source = indexRows[i];
       source.forEach((value, colIdx) => {
         const cell = excelRow.getCell(colIdx + 1);
         if (value && typeof value === 'object' && value.hyperlink) {
           cell.value = { text: value.text, hyperlink: value.hyperlink };
-          cell.font = LINK_FONT;
+          cell.font = {
+            color: { argb: COLORS.link },
+            underline: true,
+            size: 10,
+          };
         }
       });
-      styleDataRow(excelRow, chunk.records[i]?.status);
+      styleStatusBadge(excelRow.getCell(7), limited[i]?.status);
+      excelRow.alignment = { vertical: 'middle', wrapText: true };
+    }
+  }
+
+  if (overflow.length > 0) {
+    const noteRow = indexSheet.getRow(indexRows.length + 3);
+    noteRow.getCell(1).value = `Note: ${overflow.length} additional session(s) appear in “Additional Sessions” (export exceeded ${MAX_SESSION_SHEETS} detailed sheets for performance).`;
+    indexSheet.mergeCells(noteRow.number, 1, noteRow.number, 10);
+    noteRow.getCell(1).font = { italic: true, color: { argb: COLORS.muted } };
+  }
+
+  // ——— Per-session sheets ———
+  for (let i = 0; i < sheetable.length; i += 1) {
+    const record = sheetable[i];
+    const seq = i + 1;
+    const sheet = workbook.addWorksheet(sessionSheetName(seq), {
+      views: [{ state: 'frozen', ySplit: 2 }],
+    });
+    applyPrintSetup(sheet);
+    applyWorksheetFooter(sheet, generatedAt);
+    sheet.columns = [
+      { width: 24 },
+      { width: 36 },
+      { width: 24 },
+      { width: 28 },
+      { width: 18 },
+      { width: 18 },
+    ];
+
+    sheet.mergeCells(1, 1, 1, 6);
+    sheet.getRow(1).getCell(1).value = `Overtime Session Report — ${seq}`;
+    sheet.getRow(1).getCell(1).font = {
+      bold: true,
+      size: 16,
+      color: { argb: COLORS.navy },
+    };
+    sheet.getRow(1).height = 28;
+
+    sheet.mergeCells(2, 1, 2, 6);
+    sheet.getRow(2).getCell(1).value = `Session ID: ${record._id?.toString?.() || '—'}`;
+    sheet.getRow(2).getCell(1).font = { size: 10, color: { argb: COLORS.muted } };
+
+    let r = 4;
+    r = writeSectionHeader(sheet, r, 'Employee Information', COLORS.navy);
+    r = writeKvRow(
+      sheet,
+      r,
+      'Employee Name',
+      userDisplayName(record.userId),
+      'Employee ID',
+      record.userId?.employeeId || '—'
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      'Department',
+      departmentName(record),
+      'Branch',
+      branchName(record)
+    );
+    r = writeKvRow(sheet, r, 'Job Title', jobTitle(record), '', '');
+    r += 1;
+
+    const reviewer =
+      String(record.status).toUpperCase() === 'REJECTED'
+        ? userDisplayName(record.rejectedBy)
+        : userDisplayName(record.approvedBy);
+    const reviewedAt =
+      String(record.status).toUpperCase() === 'REJECTED'
+        ? record.rejectedAt
+        : record.approvedAt;
+    const approvedHours =
+      String(record.status).toUpperCase() === 'APPROVED'
+        ? hoursLabel(record.eligibleOvertimeMinutes)
+        : '—';
+
+    r = writeSectionHeader(sheet, r, 'Overtime Information', COLORS.navy);
+    const statusRow = r;
+    r = writeKvRow(
+      sheet,
+      r,
+      'Status',
+      record.status || '—',
+      'Type',
+      record.type || '—'
+    );
+    styleStatusBadge(sheet.getRow(statusRow).getCell(2), record.status);
+
+    r = writeKvRow(
+      sheet,
+      r,
+      'Created At',
+      formatDateTime(record.createdAt),
+      'Approved / Reviewed By',
+      reviewer
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      'Approved / Reviewed At',
+      formatDateTime(reviewedAt),
+      'Sync Status',
+      syncStatusLabel(record)
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      'Calculated Hours',
+      hoursLabel(record.eligibleOvertimeMinutes),
+      'Approved Hours',
+      approvedHours
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      'Working Hours',
+      hoursLabel(record.workingDurationMinutes),
+      'Travel Hours',
+      hoursLabel(travelMinutes(record))
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      'Review Notes',
+      record.reviewNotes || '—',
+      'Rejection Reason',
+      record.rejectionReason || '—'
+    );
+    // Expand review notes row for long text.
+    sheet.getRow(r - 1).height = Math.max(
+      28,
+      estimateWrapHeight(
+        `${record.reviewNotes || ''} ${record.rejectionReason || ''}`,
+        50
+      )
+    );
+    r += 1;
+
+    r = writeSectionHeader(sheet, r, 'Journey Timeline', COLORS.navy);
+
+    for (const stageMeta of STAGE_META) {
+      const stage = resolveStage(record, stageMeta);
+      r = writeSectionHeader(sheet, r, stageMeta.title, stageMeta.headerArgb);
+
+      const map = mapsUrl(stage.gps?.latitude, stage.gps?.longitude);
+      const voiceUrl = voiceHttpUrl(stage.voiceNote);
+      const voiceDur = formatVoiceDuration(stage.voiceNote?.duration);
+      const voiceDisplay = voiceUrl
+        ? linkCell(
+            `🎤 ${stageMeta.voiceLabel}${voiceDur ? ` (${voiceDur})` : ''}`,
+            voiceUrl
+          )
+        : '—';
+
+      r = writeKvRow(
+        sheet,
+        r,
+        'Timestamp',
+        formatDateTime(stage.at),
+        'GPS Accuracy (m)',
+        stage.gps?.accuracy ?? '—'
+      );
+      // Full address — never truncate; wrap + tall row.
+      const addrRow = r;
+      r = writeKvRow(sheet, r, 'Full Address', stage.address, '', '');
+      sheet.mergeCells(addrRow, 2, addrRow, 4);
+      sheet.getRow(addrRow).getCell(2).alignment = {
+        wrapText: true,
+        vertical: 'top',
+      };
+      sheet.getRow(addrRow).height = Math.max(
+        36,
+        estimateWrapHeight(stage.address, 55)
+      );
+
+      r = writeKvRow(
+        sheet,
+        r,
+        'Latitude',
+        stage.gps?.latitude ?? '—',
+        'Longitude',
+        stage.gps?.longitude ?? '—'
+      );
+      const mapsRow = r;
+      r = writeKvRow(
+        sheet,
+        r,
+        'Google Maps',
+        map ? linkCell('📍 Open in Google Maps', map) : '—',
+        'Battery Level',
+        stage.battery === null || stage.battery === undefined
+          ? '—'
+          : `${stage.battery}%`
+      );
+      const mapsCell = sheet.getRow(mapsRow).getCell(2);
+      if (map) {
+        mapsCell.value = { text: '📍 Open in Google Maps', hyperlink: map };
+        mapsCell.font = {
+          color: { argb: COLORS.link },
+          underline: true,
+          bold: true,
+        };
+      }
+
+      r = writeKvRow(
+        sheet,
+        r,
+        'Network Type',
+        stage.network,
+        'Device ID',
+        stage.deviceId
+      );
+      r = writeKvRow(
+        sheet,
+        r,
+        'Device Platform',
+        '—',
+        'Device Model',
+        '—'
+      );
+      r = writeKvRow(
+        sheet,
+        r,
+        'App Version',
+        appVersion || '—',
+        'Stage Notes',
+        stage.notes
+      );
+
+      const voiceRow = r;
+      r = writeKvRow(sheet, r, 'Voice Recording', voiceDisplay, 'Photo Count', stage.photos.length);
+      const voiceCell = sheet.getRow(voiceRow).getCell(2);
+      if (voiceUrl) {
+        voiceCell.value = {
+          text: `🎤 ${stageMeta.voiceLabel}${voiceDur ? ` (${voiceDur})` : ''}`,
+          hyperlink: voiceUrl,
+        };
+        voiceCell.font = {
+          color: { argb: COLORS.link },
+          underline: true,
+          bold: true,
+        };
+      }
+
+      // Photos section — embed ALL stage thumbnails.
+      sheet.mergeCells(r, 1, r, 6);
+      sheet.getRow(r).getCell(1).value =
+        stage.photos.length > 0
+          ? `Photos (${stage.photos.length})`
+          : 'Photos';
+      sheet.getRow(r).getCell(1).font = { bold: true };
+      sheet.getRow(r).getCell(1).fill = solidFill(stageMeta.bodyArgb);
+      for (let c = 1; c <= 6; c += 1) {
+        sheet.getRow(r).getCell(c).fill = solidFill(stageMeta.bodyArgb);
+        sheet.getRow(r).getCell(c).border = thinBorder();
+      }
+      r += 1;
+
+      if (stage.photos.length === 0) {
+        sheet.getRow(r).getCell(1).value = '—';
+        r += 1;
+      } else {
+        const perRow = 4;
+        for (let p = 0; p < stage.photos.length; p += perRow) {
+          const batch = stage.photos.slice(p, p + perRow);
+          const labelRowNum = r;
+          const imageRowNum = r + 1;
+          batch.forEach((url, idx) => {
+            const col = idx + 1;
+            const labelCell = sheet.getRow(labelRowNum).getCell(col);
+            labelCell.value = {
+              text: `Photo ${p + idx + 1}`,
+              hyperlink: url,
+            };
+            labelCell.font = {
+              color: { argb: COLORS.link },
+              underline: true,
+              size: 9,
+              bold: true,
+            };
+            labelCell.alignment = { horizontal: 'center' };
+            labelCell.fill = solidFill(stageMeta.bodyArgb);
+            labelCell.border = thinBorder();
+
+            const buf = imageCache.get(url);
+            if (buf) {
+              // Fire-and-forget sync add (buffer already loaded).
+              // exceljs addImage is sync once buffer exists.
+            }
+            sheet.getRow(imageRowNum).getCell(col).fill = solidFill(
+              stageMeta.bodyArgb
+            );
+            sheet.getRow(imageRowNum).getCell(col).border = thinBorder();
+          });
+          sheet.getRow(labelRowNum).height = 18;
+          sheet.getRow(imageRowNum).height = THUMB_HEIGHT + 12;
+
+          batch.forEach((url, idx) => {
+            const buf = imageCache.get(url);
+            if (!buf) {
+              sheet.getRow(imageRowNum).getCell(idx + 1).value = {
+                text: 'Open image',
+                hyperlink: url,
+              };
+              sheet.getRow(imageRowNum).getCell(idx + 1).font = {
+                color: { argb: COLORS.link },
+                underline: true,
+              };
+              return;
+            }
+            // Synchronous image add with preloaded buffer.
+            const imageId = workbook.addImage({
+              buffer: buf,
+              extension: 'jpeg',
+            });
+            sheet.addImage(imageId, {
+              tl: { col: idx + 0.05, row: imageRowNum - 1 + 0.1 },
+              ext: { width: THUMB_WIDTH, height: THUMB_HEIGHT },
+              editAs: 'oneCell',
+              hyperlinks: {
+                hyperlink: url,
+                tooltip: `Open Photo ${p + idx + 1}`,
+              },
+            });
+          });
+
+          r += 2;
+        }
+      }
+      r += 1;
     }
 
-    applyHeaderStyle(sheet.getRow(1));
-    autoWidth(sheet, DETAILED_HEADERS, chunk.rows);
-    applyWorksheetFooter(sheet, generatedAt);
+    // Back to index link
+    sheet.getRow(r).getCell(1).value = {
+      text: '← Back to Sessions Index',
+      hyperlink: "#'Sessions Index'!A1",
+    };
+    sheet.getRow(r).getCell(1).font = {
+      color: { argb: COLORS.link },
+      underline: true,
+      bold: true,
+    };
+  }
+
+  // ——— Overflow bulk sheet (when > MAX_SESSION_SHEETS) ———
+  if (overflow.length > 0) {
+    const bulk = workbook.addWorksheet('Additional Sessions', {
+      views: [{ state: 'frozen', ySplit: 1 }],
+    });
+    applyPrintSetup(bulk);
+    applyWorksheetFooter(bulk, generatedAt);
+    const bulkHeaders = [
+      'Session ID',
+      'Employee Name',
+      'Employee ID',
+      'Department',
+      'Branch',
+      'Date',
+      'Status',
+      'Type',
+      'Calculated Hours',
+      'Approved Hours',
+      'Working Hours',
+      'Travel Hours',
+    ];
+    bulk.columns = bulkHeaders.map(() => ({ width: 16 }));
+    bulk.getRow(1).values = bulkHeaders;
+    bulk.getRow(1).eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: COLORS.white } };
+      cell.fill = solidFill(COLORS.navy);
+      cell.border = thinBorder();
+    });
+    overflow.forEach((record, idx) => {
+      const row = bulk.getRow(idx + 2);
+      row.values = [
+        null,
+        record._id?.toString?.() || '',
+        userDisplayName(record.userId),
+        record.userId?.employeeId || '—',
+        departmentName(record),
+        branchName(record),
+        formatDate(record.startAt || record.createdAt),
+        record.status || '—',
+        record.type || '—',
+        hoursLabel(record.eligibleOvertimeMinutes),
+        String(record.status).toUpperCase() === 'APPROVED'
+          ? hoursLabel(record.eligibleOvertimeMinutes)
+          : '—',
+        hoursLabel(record.workingDurationMinutes),
+        hoursLabel(travelMinutes(record)),
+      ];
+      styleStatusBadge(row.getCell(7), record.status);
+      row.alignment = { vertical: 'middle', wrapText: true };
+    });
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
 }
 
-export { MAX_EXPORT_ROWS, ROWS_PER_SHEET };
+export { MAX_EXPORT_ROWS, MAX_SESSION_SHEETS };

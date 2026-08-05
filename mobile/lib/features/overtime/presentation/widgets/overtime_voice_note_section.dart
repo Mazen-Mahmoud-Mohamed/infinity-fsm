@@ -1,13 +1,16 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/services/logger_service.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
 import 'package:path/path.dart' as p;
@@ -337,6 +340,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
   Future<void> _togglePlay() async {
     if (_actionsLocked || _recording) return;
     if (_playing) {
+      _debugVoiceLog('pause requested');
       await _player.pause();
       return;
     }
@@ -348,9 +352,19 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
         if (remote != null &&
             remote.isNotEmpty &&
             (remote.startsWith('http://') || remote.startsWith('https://'))) {
+          _debugVoiceLog('setUrl remote=$remote');
           await _player.setUrl(remote);
+          _debugVoiceLog(
+            'setUrl completed state=${_player.playerState} '
+            'duration=${_player.duration}',
+          );
         } else if (_localPath != null && await File(_localPath!).exists()) {
+          _debugVoiceLog('setFilePath local=$_localPath');
           await _player.setFilePath(_localPath!);
+          _debugVoiceLog(
+            'setFilePath completed state=${_player.playerState} '
+            'duration=${_player.duration}',
+          );
         } else {
           final bytes = _bytes ?? widget.localBytes;
           if (bytes == null || bytes.isEmpty) {
@@ -364,15 +378,56 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
           );
           await File(path).writeAsBytes(bytes, flush: true);
           _localPath = path;
+          _debugVoiceLog('setFilePath fromBytes=$path bytes=${bytes.length}');
           await _player.setFilePath(path);
+          _debugVoiceLog(
+            'setFilePath(fromBytes) completed state=${_player.playerState}',
+          );
         }
         _sourceReady = true;
       }
+      _debugVoiceLog(
+        'play() state=${_player.playerState} position=${_player.position}',
+      );
       await _player.play();
-    } on Object {
+      _debugVoiceLog(
+        'play() returned state=${_player.playerState} '
+        'playing=${_player.playing}',
+      );
+    } on Object catch (error, stackTrace) {
       _sourceReady = false;
+      _logVoicePlaybackError(error, stackTrace);
+      if (mounted) {
+        final l10n = AppLocalizations.of(context);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.overtimeVoicePlaybackFailed)),
+        );
+      }
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _debugVoiceLog(String message) {
+    if (!kDebugMode) return;
+    try {
+      getIt<LoggerService>().debug('[OvertimeVoice] $message');
+    } on Object {
+      debugPrint('[OvertimeVoice] $message');
+    }
+  }
+
+  void _logVoicePlaybackError(Object error, StackTrace stackTrace) {
+    final remote = widget.remoteUrl;
+    final message =
+        '[OvertimeVoice] playback failed url=$remote local=$_localPath '
+        'state=${_player.playerState} error=$error';
+    try {
+      getIt<LoggerService>().error(message, error, stackTrace);
+    } on Object {
+      debugPrint(message);
+      debugPrint('$error');
+      debugPrint('$stackTrace');
     }
   }
 
