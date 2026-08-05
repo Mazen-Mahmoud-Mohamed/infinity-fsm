@@ -1,196 +1,297 @@
 # Infinity FSM
 
-**Enterprise Field Service Management Platform**
+**Production-grade Enterprise Field Service Management (FSM) platform**
 
-Infinity FSM is a production-oriented Field Service Management (FSM) system for companies that manage technicians in the field. It unifies attendance, overtime (including travel overtime), GPS verification, live camera capture, work orders, inventory, assets, preventive maintenance, service reports, user management, and fine-grained RBAC in one coherent platform.
+[![Flutter](https://img.shields.io/badge/Flutter-Material%203-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
+[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-The Flutter client targets **phones, tablets, and desktop (Windows)** with a shared responsive design system. Desktop uses a unified **Desktop Shell** with a persistent `NavigationRail` and shell-branch navigation. The backend is a modular Node.js / Express / MongoDB API with JWT auth, Cloudinary media, and a Socket.IO foundation.
+Infinity FSM is a full-stack enterprise Field Service Management platform for organizations that run technicians in the field. It unifies attendance, offline-first overtime journeys, GPS verification, live camera evidence, work orders, inventory, assets, preventive maintenance, service reports, user administration, and fine-grained RBAC in one coherent product.
 
-Designed for real field operations. Built with Clean Architecture on the client and a platform-first modular API on the server. Offline-ready repository interfaces are in place for future sync.
+Built with **Flutter** (Android & Windows Desktop), **Node.js / Express**, **MongoDB Atlas**, and **Cloudinary**, with a modern **Material 3** UI, **Arabic & English** localization (RTL/LTR), responsive layouts, OpenStreetMap GPS & maps, and enterprise role-based access control.
 
 ---
 
 ## Table of Contents
 
-- [Features](#-features)
-- [Desktop Experience](#-desktop-experience)
-- [Responsive UI](#-responsive-ui)
-- [Architecture](#-architecture)
-- [Tech Stack](#-tech-stack)
-- [Screenshots](#-screenshots)
-- [Project Structure](#-project-structure)
-- [Documentation](#-documentation)
-- [Installation](#-installation)
-- [Backend Setup](#-backend-setup)
-- [Flutter Setup](#-flutter-setup)
-- [Environment Variables](#-environment-variables)
-- [Running Locally](#-running-locally)
-- [API Structure](#-api-structure)
-- [Security Features](#-security-features)
-- [Offline-first Architecture](#-offline-first-architecture)
-- [Roles & Permissions](#-roles--permissions)
-- [Recent Updates](#-recent-updates)
-- [Future Roadmap](#-future-roadmap)
-- [License](#-license)
-- [Author](#-author)
+- [Highlights](#highlights)
+- [Features](#features)
+- [Offline Support](#offline-support)
+- [Localization](#localization)
+- [Technology Stack](#technology-stack)
+- [Architecture](#architecture)
+- [Desktop & Responsive UI](#desktop--responsive-ui)
+- [Screenshots](#screenshots)
+- [Project Structure](#project-structure)
+- [Documentation](#documentation)
+- [Getting Started](#getting-started)
+- [Environment Variables](#environment-variables)
+- [API Structure](#api-structure)
+- [Security](#security)
+- [Roles & Permissions](#roles--permissions)
+- [Latest Improvements](#latest-improvements)
+- [Roadmap](#roadmap)
+- [License](#license)
+- [Author](#author)
+
+---
+
+## Highlights
+
+| Capability | Support |
+|------------|---------|
+| Android | ✅ |
+| Windows Desktop | ✅ |
+| Responsive phone / tablet / desktop layouts | ✅ |
+| Arabic & English (RTL / LTR) | ✅ |
+| Offline-first overtime (+ attendance sync hooks) | ✅ |
+| Enterprise RBAC with localized permissions | ✅ |
+| GPS, reverse geocoding & OpenStreetMap | ✅ |
+| Cloudinary image storage | ✅ |
+| Material 3 light / dark / system themes | ✅ |
+| Runtime API URL switching (Server Management) | ✅ |
 
 ---
 
 ## Features
 
-### Platform & UX
+### Authentication
 
-- **Responsive layouts** — Phones, tablets, and desktop (Windows) with adaptive chrome
-- **Desktop Shell navigation** — Persistent `NavigationRail` + content area (no full-screen hub pushes)
-- **Mobile navigation** — Bottom `NavigationBar` for primary day-to-day modules
-- **Authentication** — JWT access / refresh tokens with secure local session storage
-- **Role-based dashboards** — Admin, Supervisor, and Technician executive views
-- **Localization** — English and Arabic (RTL-ready) via Flutter gen-l10n
-- **Image upload & preview** — Cloudinary-backed uploads; desktop-safe image delivery (JPG-friendly)
-- **Reusable UI system** — Shared cards, grids, page frames, loaders, and desktop widgets
-- **State management** — `flutter_bloc` (Cubit) throughout the client
-- **API integration** — Dio + repository / datasource Clean Architecture layers
-- **Notifications** — In-app notification feed
-- **Offline-ready repositories** — Interfaces prepared for offline sync
-- **Real-time foundation** — Socket.IO enabled backend
+- JWT access + refresh token authentication
+- Secure login with local session persistence
+- Profile management
+- Avatar / profile photo upload (Cloudinary)
+- Change password (authenticated users)
+- Biometric unlock on supported devices (used to protect Server Management access)
 
-### Operations modules
+### Dashboard
 
-- **Attendance** — Clock in/out, breaks, GPS + live selfie verification
-- **Overtime** — Normal and travel overtime with photo and location evidence
-- **GPS tracking** — High-accuracy location capture with reverse geocoding (OpenStreetMap)
-- **Live camera verification** — Mandatory live photo capture for attendance / overtime evidence
-- **Work Orders** — Create, assign, accept, execute, and complete field jobs
-- **Work Order execution workflow** — Staged field execution with attachments, locations, and timeline
-- **Inventory** — Warehouses, spare parts, stock movements, low-stock alerts
-- **Assets** — Asset registry, categories, history, QR-ready architecture
-- **Preventive Maintenance (PM)** — Plans, schedules, checklists, history
-- **Service Reports** — Report generation and customer signatures
-- **User Management** — First-class module for user lifecycle and administration
-- **Roles & Permissions** — Fine-grained RBAC (Admin / Supervisor / Technician)
-- **Profile** — Personal account view and preferences entry points
-- **Settings** — Account, company information, system, and about (application settings only)
+- Role-aware enterprise dashboard (Admin / Supervisor / Technician)
+- KPI cards and operational statistics
+- Charts and trend views
+- Quick actions into primary modules
+- In-app notification feed entry points
+
+### Attendance
+
+- GPS-backed clock in / out with accuracy checks
+- Live selfie verification for attendance evidence
+- Personal attendance history
+- Team attendance views (permission-scoped)
+- Admin review workflows
+- Offline capture with sync when connectivity returns
+
+### Overtime
+
+Complete field overtime journey with evidence and admin control:
+
+- Offline-first overtime sessions with automatic synchronization
+- Pending action queue and local persistence
+- Multi-stage GPS checkpoints:
+  - Start Journey
+  - Arrived at Work Site
+  - Finished Work
+  - End Journey
+- Journey Timeline with stage evidence
+- Journey Overview map (markers, polyline, legend)
+- Open Live Location for map viewing
+- Per-checkpoint GPS accuracy, battery, network status, and reverse-geocoded address
+- Stage selfies / photos
+- Normal and travel overtime types
+- Admin approval and rejection
+- Interactive desktop overtime detail layout (timeline + map focus)
+
+### Work Orders
+
+- Create, assign, track, and complete field work orders
+- Staged execution with attachments, locations, and timeline
+- Desktop split detail layout (execution + context sidebar)
+
+### Preventive Maintenance
+
+- PM plans
+- PM schedules
+- PM history
+- Checklist builder
+
+### Inventory
+
+- Warehouses
+- Spare parts catalog
+- Stock history / movements
+- Low-stock visibility on operational dashboards
+
+### Assets
+
+- Asset registry and management
+- Asset categories
+- Asset history
+- QR-oriented asset workflows
+
+### Service Reports
+
+- Service reports list and dashboard
+- Report detail views
+- Generation / download flows (permission-scoped)
+- Customer signature support where enabled
+
+### User Management & Organization
+
+- Users lifecycle (view / create / update / delete — permission-scoped)
+- Roles & Permissions administration
+- Departments and organization hierarchy (branches, regions, teams as permitted)
+- Admin password reset permission for user accounts
+
+### Enterprise RBAC
+
+- Role management (view / create / update / delete)
+- Permission catalog grouped by module
+- Localized permission names (EN / AR)
+- Human-readable permission descriptions (what / where / whose data)
+- Search across permission titles, descriptions, and groups
+- Desktop tooltips and keyboard-accessible descriptions
+- Presentation-only labels — backend permission keys remain unchanged
+
+### Settings
+
+Enterprise settings hub (responsive list on phone; split panel on desktop):
+
+- Theme (System / Light / Dark) — exclusive control of the real app theme
+- Theme Preview (visual showcase only; does not change app theme)
+- Language (English / Arabic)
+- Notification preferences
+- Organization / company settings
+- Performance overview
+- About
+- Update Center
+- Diagnostics
+- **Server Management** — runtime backend URL configuration, connection test, ping, and diagnostics export **without rebuilding the app** (protected access; biometric unlock on supported devices)
 
 ---
 
-## Desktop Experience
+## Offline Support
 
-Desktop (and wide tablet) uses a single navigation model and a shared design system.
+Infinity FSM is designed for unreliable field connectivity, with overtime as the primary offline-first workflow:
 
-### Unified Desktop Shell
+- **Offline overtime sessions** — start / checkpoint / end while offline
+- **Local storage** — SharedPreferences-backed caches and pending queues
+- **Automatic synchronization** — pending actions drain when the device reconnects
+- **Queue visibility** — offline / pending indicators in the UI
+- **Attendance offline hooks** — offline attendance records with later sync
+- **Connectivity awareness** — offline banners and soft-refresh behavior
+- **Repository interfaces** prepared for broader module offline expansion
 
-- Persistent **NavigationRail** beside the content area
-- Primary modules open via **shell branch navigation** (`goBranch`) — content swaps inside the shell
-- Hub destinations do **not** push full-screen routes or show a Back button to leave the rail
-- Phone bottom navigation remains limited to day-to-day modules (Dashboard, Attendance, Work Orders, Overtime, Profile)
-
-### NavigationRail primary modules
-
-1. Dashboard  
-2. Attendance  
-3. Work Orders  
-4. Overtime  
-5. Profile  
-6. Inventory  
-7. Assets  
-8. Preventive Maintenance  
-9. Service Reports  
-10. User Management  
-11. Roles & Permissions  
-12. Settings  
-
-### Desktop UI system
-
-- **`AppPageFrame`** — Centers content and caps readable width under the shell
-- **Desktop cards & grids** — `AppDesktopActionCard`, `AppDesktopStatGrid`, shared list cards
-- **Desktop split layouts** — e.g. Work Order detail (main execution column + sidebar for attachments / locations / timeline)
-- **Settings redesign** — Split section list + right content panel (Account, Company, System, About)
-- **Dashboard improvements** — Responsive KPI / action layouts aligned with the desktop frame
-- **Users & Roles hubs** — Same stats + action-card patterns as Inventory / Assets / Dashboard
-- **Login** — Wide two-column branded layout on desktop
+> Full offline execution for every module continues to expand; overtime is the most complete offline path today.
 
 ---
 
-## Responsive UI
+## Localization
 
-Infinity FSM uses a shared breakpoint and widget layer so features adapt without duplicate business logic.
+- **English (LTR)** and **Arabic (RTL)** via Flutter ARB + `gen-l10n`
+- Locale-aware dates and number formatting through shared formatters
+- Enterprise localization pass across primary modules
+- Localized Roles & Permissions (group titles, permission titles, and descriptions)
+- Consistent terminology for core modules (Dashboard, Attendance, Overtime, Work Orders, Inventory, Assets, Maintenance, Settings, etc.)
+- Human-friendly error mapping (`localizeAppMessage`) instead of raw API English on failure screens
 
-| Breakpoint | Width | Typical chrome |
-|------------|-------|----------------|
-| Phone | `< 600` | Bottom `NavigationBar` |
-| Tablet | `600–900` | Compact rail / adaptive padding |
-| Desktop | `≥ 900` | Extended / labeled `NavigationRail` |
+---
 
-### Shared building blocks
+## Technology Stack
 
-- `AppBreakpoints` — Phone / tablet / desktop helpers, content max widths, grid columns, page padding
-- `AppPageFrame` — Bounded, centered content for lists, forms, and hubs
-- `AppDesktopStatGrid` / `AppDesktopActionCard` / `AppDesktopSplitView` — Desktop hub patterns
-- `AppListCard`, loaders, refresh bars, scroll padding, offline banner
-- `AppCachedNetworkImage` — Platform-aware network images (desktop-safe decoding)
+### Frontend
 
-### Desktop vs mobile behavior
+| Technology | Role |
+|------------|------|
+| Flutter | Cross-platform UI (Android, Windows) |
+| Dart | Client language |
+| Material 3 | Design system (light / dark) |
+| flutter_bloc (Cubit) | State management |
+| get_it | Dependency injection |
+| Dio | HTTP client |
+| go_router | Navigation (`StatefulShellRoute`) |
+| flutter_map | OpenStreetMap rendering |
+| geolocator / geocoding | GPS + reverse geocoding |
+| SharedPreferences | Local preferences & offline caches |
+| flutter_secure_storage | Secure token storage |
+| local_auth | Biometric unlock (supported devices) |
+| Cloudinary-delivered media | Avatars, selfies, attachments |
 
-| Concern | Desktop | Mobile |
-|---------|---------|--------|
-| Primary navigation | `NavigationRail` (all primary modules) | Bottom bar (5 modules) |
-| Module hubs | Shell content swap | Same routes; phone chrome adapted |
-| Dense layouts | Multi-column grids, split views | Single-column lists / sheets |
-| Settings | Section rail + content panel | Stacked settings list |
+### Backend
+
+| Technology | Role |
+|------------|------|
+| Node.js 20+ | Runtime |
+| Express | HTTP API |
+| MongoDB Atlas / Mongoose | Primary database |
+| JWT | Access + refresh authentication |
+| Cloudinary | Cloud image / media storage |
+| Multer | Multipart upload handling |
+| Socket.IO | Realtime foundation |
+| Pino | Structured logging |
+| Helmet / rate limiting / CORS | API hardening |
 
 ---
 
 ## Architecture
 
-Infinity FSM follows a **platform-first** modular architecture:
+### Flutter — Clean Architecture
 
 ```
-Platform Core (stable)                 Business Modules (pluggable)
-──────────────────────                 ────────────────────────────
-Auth & JWT                             Attendance
-RBAC / Permissions                     Overtime + Travel Overtime
-Organization hierarchy                 Work Orders
-Settings / Configuration               Inventory
-Notifications                          Assets
-Audit logging                          Preventive Maintenance
-File storage (Cloudinary)              Service Reports
-Maps / GPS utilities                   Dashboard analytics
-Sync & Search foundations              User Management UI
+Presentation  →  Pages / Widgets + Cubits (flutter_bloc)
+Domain        →  Entities, Use Cases, Repository interfaces
+Data          →  Models, Remote/Local datasources, Repository implementations
 ```
 
-### Flutter (Clean Architecture)
-
-```
-Presentation  →  Cubits (flutter_bloc) + pages / widgets
-Domain        →  Entities / Use Cases / Repository interfaces
-Data          →  Models / Remote datasources / Repository implementations
-```
+Cross-cutting concerns live under `mobile/lib/core/` (config, network, theme, router, localization, shared widgets, DI).
 
 Routing uses **`go_router`** with a **`StatefulShellRoute.indexedStack`** for the Desktop Shell and phone bottom navigation.
 
-### Backend
+### Backend — Modular API
 
 ```
 Routes → Validators → Controllers → Services → Mongoose Models
 ```
 
+```
+Platform Core (stable)                 Business Modules
+──────────────────────                 ────────────────
+Auth & JWT                             Attendance
+RBAC / Permissions                     Overtime (+ travel OT)
+Organization hierarchy                 Work Orders
+Settings / Configuration               Inventory
+Notifications foundation               Assets
+Audit logging                          Preventive Maintenance
+File storage (Cloudinary)              Service Reports
+Maps / GPS utilities                   Dashboard analytics
+Sync foundations                       User Management
+```
+
 ---
 
-## Tech Stack
+## Desktop & Responsive UI
 
-| Layer | Technology |
-|-------|------------|
-| Client | Flutter (Material 3), Windows / Android / iOS targets |
-| State | flutter_bloc (Cubit), get_it DI |
-| Navigation | go_router (StatefulShellRoute) |
-| Networking | Dio |
-| Backend | Node.js 20+, Express, MongoDB, Mongoose |
-| Auth | JWT (access + refresh) |
-| Realtime | Socket.IO |
-| Media | Cloudinary (JPG-oriented image delivery for desktop clients) |
-| Maps | OpenStreetMap (`flutter_map`, geolocator, geocoding) |
-| Localization | Flutter gen-l10n (EN / AR) |
-| Logging | Pino (API), logger (Flutter) |
+### Desktop Shell
+
+- Persistent **NavigationRail** for primary modules
+- Shell-branch navigation (content swaps inside the shell)
+- Shared **`AppPageFrame`**, desktop stat grids, action cards, and split views
+- Settings split panel (section list + content)
+- Desktop overtime detail with interactive map / timeline focus
+
+### Breakpoints
+
+| Breakpoint | Width | Chrome |
+|------------|-------|--------|
+| Phone | `< 600` | Bottom `NavigationBar` |
+| Tablet | `600–900` | Adaptive padding / compact rail |
+| Desktop | `≥ 900` | Extended `NavigationRail` |
+
+### Primary desktop modules
+
+Dashboard · Attendance · Work Orders · Overtime · Profile · Inventory · Assets · Preventive Maintenance · Service Reports · User Management · Roles & Permissions · Settings
+
+Phone bottom navigation focuses on day-to-day modules: Dashboard, Attendance, Work Orders, Overtime, Profile.
 
 ---
 
@@ -206,21 +307,23 @@ Routes → Validators → Controllers → Services → Mongoose Models
 | Login | ![Login](./screenshots/login.png) | ![Login Dark](./screenshots/login-dark.png) |
 | Dashboard | ![Dashboard](./screenshots/dashboard.png) | ![Dashboard Dark](./screenshots/dashboard-dark.png) |
 | Attendance | ![Attendance](./screenshots/attendance.png) | |
-| Overtime | ![Overtime](./screenshots/overtime.png) | |
+| Overtime Journey | ![Overtime](./screenshots/overtime.png) | |
 | Work Orders | ![Work Orders](./screenshots/work-orders.png) | |
 | Inventory | ![Inventory](./screenshots/inventory.png) | |
 | Assets | ![Assets](./screenshots/assets.png) | |
 | Preventive Maintenance | ![PM](./screenshots/pm.png) | |
-| Reports | ![Reports](./screenshots/reports.png) | |
-| Settings | ![Settings](./screenshots/settings.png) | |
+| Service Reports | ![Reports](./screenshots/reports.png) | |
+| Roles & Permissions | ![Roles](./screenshots/roles.png) | |
+| Settings / Theme | ![Settings](./screenshots/settings.png) | |
 
 ### Desktop (placeholders)
 
 | Screen | Capture |
 |--------|---------|
 | Desktop Shell / Dashboard | ![Desktop Dashboard](./screenshots/desktop-dashboard.png) |
-| Desktop Work Order detail | ![Desktop Work Order](./screenshots/desktop-work-order.png) |
-| Desktop Inventory hub | ![Desktop Inventory](./screenshots/desktop-inventory.png) |
+| Desktop Overtime Detail | ![Desktop Overtime](./screenshots/desktop-overtime.png) |
+| Desktop Work Order Detail | ![Desktop Work Order](./screenshots/desktop-work-order.png) |
+| Desktop Inventory Hub | ![Desktop Inventory](./screenshots/desktop-inventory.png) |
 | Desktop User Management | ![Desktop Users](./screenshots/desktop-users.png) |
 | Desktop Roles & Permissions | ![Desktop Roles](./screenshots/desktop-roles.png) |
 | Desktop Settings | ![Desktop Settings](./screenshots/desktop-settings.png) |
@@ -231,30 +334,28 @@ Routes → Validators → Controllers → Services → Mongoose Models
 
 ```
 infinity-fsm/
-├── backend/                 # Node.js + Express API
+├── backend/                      # Node.js + Express API
 │   ├── src/
-│   │   ├── config/
+│   │   ├── config/               # Env, Cloudinary, DB
 │   │   ├── modules/
-│   │   │   ├── core/        # auth, rbac, organization, settings, dashboard, users, ...
-│   │   │   └── business/    # attendance, overtime, work-orders, inventory, assets, pm, reports
-│   │   ├── routes/          # API version mounting (/api/v1)
-│   │   └── shared/          # middleware, errors, utils
-│   ├── scripts/
+│   │   │   ├── core/             # auth, rbac, organization, settings, dashboard, users, ...
+│   │   │   └── business/         # attendance, overtime, work-orders, inventory, assets, pm, reports
+│   │   ├── routes/               # /api/v1 mounting
+│   │   └── shared/               # middleware, errors, utils, constants
+│   ├── scripts/                  # seed & migrations
 │   └── .env.example
-├── mobile/                  # Flutter application
+├── mobile/                       # Flutter application
 │   ├── lib/
-│   │   ├── core/            # config, network, theme, router, localization, widgets, breakpoints
-│   │   │   └── widgets/
-│   │   │       └── desktop/ # AppDesktopActionCard, StatGrid, SplitView, ...
-│   │   ├── features/        # feature modules (Clean Architecture)
-│   │   └── shared/          # cross-feature presentation (e.g. profile)
-│   ├── windows/             # Desktop runner
+│   │   ├── core/                 # config, network, theme, router, l10n, widgets, DI
+│   │   ├── features/             # Clean Architecture feature modules
+│   │   └── shared/               # cross-feature presentation (e.g. profile)
+│   ├── windows/                  # Desktop runner
 │   └── assets/
-├── docs/                    # Architecture & API documentation
-├── infra/                   # Docker / CI / deployment planning
-├── scripts/                 # Ops & seed helpers
-├── tests/                   # Cross-cutting test assets
-├── screenshots/             # README screenshot placeholders
+├── docs/                         # Architecture & API documentation
+├── infra/                        # Docker / CI / deployment planning
+├── scripts/                      # Ops helpers
+├── tests/                        # Cross-cutting test assets
+├── screenshots/                  # README screenshot placeholders
 ├── README.md
 └── LICENSE
 ```
@@ -269,7 +370,7 @@ infinity-fsm/
 | [Database Schema](./docs/DATABASE.md) | Collections, indexes, relationships |
 | [REST API](./docs/API.md) | Endpoint catalog |
 | [RBAC](./docs/RBAC.md) | Roles, permissions, scope |
-| [Socket.IO Events](./docs/SOCKET_EVENTS.md) | Real-time event catalog |
+| [Socket.IO Events](./docs/SOCKET_EVENTS.md) | Realtime event catalog |
 | [Testing Strategy](./docs/TESTING.md) | Unit, integration, E2E |
 | [Non-Functional Requirements](./docs/NFR.md) | Performance, security, DR |
 | [Module Registry](./docs/MODULE_REGISTRY.md) | Module catalog |
@@ -278,25 +379,23 @@ infinity-fsm/
 
 ---
 
-## Installation
+## Getting Started
 
 ### Prerequisites
 
 - Node.js **20+**
-- MongoDB **6+** (local or Atlas)
+- MongoDB **6+** (local or **MongoDB Atlas**)
 - Flutter SDK with **Dart 3.12+** (see `mobile/pubspec.yaml`)
 - Cloudinary account (required for production media uploads)
 
----
-
-## Backend Setup
+### Backend
 
 ```bash
 cd backend
-cp .env.example .env
+cp .env.example .env   # fill MONGODB_URI, JWT secrets, Cloudinary, etc.
 npm install
-npm run seed    # optional demo data
-npm run dev     # http://localhost:3000
+npm run seed           # optional demo data
+npm run dev            # http://localhost:3000
 ```
 
 Health check:
@@ -305,9 +404,7 @@ Health check:
 curl http://localhost:3000/api/v1/health
 ```
 
----
-
-## Flutter Setup
+### Frontend
 
 ```bash
 cd mobile
@@ -316,11 +413,7 @@ flutter gen-l10n
 flutter run
 ```
 
-> API base URL is centralized in `mobile/lib/core/config/env_config.dart`.  
-> Default production API: `https://infinity-fsm-api.onrender.com/api/v1`  
-> Override for local backend: `--dart-define=API_BASE_URL=http://<lan-ip>:3000/api/v1`
-
-### Desktop (Windows)
+#### Windows Desktop
 
 ```bash
 cd mobile
@@ -328,32 +421,38 @@ flutter pub get
 flutter run -d windows
 ```
 
-### Build APK
+#### Release APK
 
 ```bash
 cd mobile
 flutter build apk --release
 ```
 
-### Local API override
+#### Local API override (compile-time)
 
 ```bash
 flutter run --dart-define=ENV=development --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
 ```
 
+> Default production API base is configured in `mobile/lib/core/config/env_config.dart`.  
+> At runtime, **Server Management** can switch the active API base URL without rebuilding (admin-protected).
+
 ---
 
 ## Environment Variables
 
-Copy `backend/.env.example` to `backend/.env` and fill in real values.
+Copy `backend/.env.example` to `backend/.env` and provide real values. **Never commit `backend/.env`.**
+
+### Backend
 
 | Variable | Description |
 |----------|-------------|
 | `NODE_ENV` | `development` / `production` / `test` |
 | `PORT` | API port (default `3000`) |
 | `API_VERSION` | API version segment (default `v1`) |
-| `MONGODB_URI` | MongoDB connection string |
-| `JWT_ACCESS_SECRET` | Access token secret (≥ 32 chars). Alias: `JWT_SECRET` |
+| `MONGODB_URI` | MongoDB / Atlas connection string |
+| `JWT_ACCESS_SECRET` | Access token secret (≥ 32 chars) |
+| `JWT_SECRET` | Alias for `JWT_ACCESS_SECRET` |
 | `JWT_REFRESH_SECRET` | Refresh token secret (≥ 32 chars) |
 | `JWT_ACCESS_EXPIRY` | Access token TTL (default `15m`) |
 | `JWT_REFRESH_EXPIRY` | Refresh token TTL (default `7d`) |
@@ -373,43 +472,13 @@ Copy `backend/.env.example` to `backend/.env` and fill in real values.
 | `OVERTIME_MAX_SESSION_HOURS` | Max live overtime session length |
 | `OVERTIME_GPS_ACCURACY_THRESHOLD_METERS` | Max GPS accuracy for overtime |
 
-**Never commit `backend/.env`.**
+### Frontend
 
-Flutter client overrides (compile-time):
-
-| Define | Description |
-|--------|-------------|
-| `API_BASE_URL` | REST base URL including `/api/v1` |
-| `ENV` | `development` or `production` (logging behavior) |
-
----
-
-## Running Locally
-
-```bash
-# Terminal 1 — API
-cd backend
-cp .env.example .env
-npm install
-npm run dev
-
-# Terminal 2 — Flutter (device / emulator)
-cd mobile
-flutter pub get
-flutter run
-
-# Or desktop Windows
-flutter run -d windows
-```
-
----
-
-## Building APK
-
-```bash
-cd mobile
-flutter build apk --release
-```
+| Configuration | Description |
+|---------------|-------------|
+| `--dart-define=API_BASE_URL=...` | Compile-time REST base URL including `/api/v1` |
+| `--dart-define=ENV=development\|production` | Client environment / logging behavior |
+| Server Management (in-app) | Runtime API base URL override, connection test, ping, diagnostics export |
 
 ---
 
@@ -438,11 +507,9 @@ flutter build apk --release
 
 See [docs/API.md](./docs/API.md) for the full catalog.
 
-> In-app notifications are implemented on the Flutter client; backend notification surface continues to evolve with the realtime / sync roadmap.
-
 ---
 
-## Security Features
+## Security
 
 - JWT access + refresh token rotation
 - Password hashing (bcrypt)
@@ -451,22 +518,11 @@ See [docs/API.md](./docs/API.md) for the full catalog.
 - CORS allow-list
 - RBAC permission checks on protected routes
 - Device clock skew detection
-- Mandatory live camera capture for attendance / overtime
+- Mandatory live camera capture for attendance / overtime evidence
 - GPS accuracy thresholds
 - Audit logging foundation
 - Secrets via environment variables only
-
----
-
-## Offline-first Architecture
-
-Repositories are designed with offline-ready interfaces:
-
-- Queueable attendance / overtime actions
-- Soft refresh + session query cache on mobile
-- Connectivity-aware banners and sync hooks
-
-Full offline execution continues to expand per the product roadmap.
+- Biometric-gated Server Management access on supported devices
 
 ---
 
@@ -478,39 +534,57 @@ Full offline execution continues to expand per the product roadmap.
 | **Supervisor** | Team attendance, overtime review, work order oversight |
 | **Technician** | Self attendance, overtime, assigned work orders |
 
-User Management and Roles & Permissions are **top-level Desktop Shell modules** (not nested under Settings). Settings remains focused on account, company, system, and about.
+User Management and Roles & Permissions are **top-level Desktop Shell modules**. Settings focuses on theme, language, notifications, organization, diagnostics, and about.
+
+The Roles UI presents localized permission groups with searchable titles and one-sentence descriptions so non-technical administrators can understand each grant.
 
 See [docs/RBAC.md](./docs/RBAC.md).
 
 ---
 
-## Recent Updates
+## Latest Improvements
 
-Summary of the latest product and UX improvements:
+Recent product and UX work reflected in the current codebase:
 
-- **Desktop Shell navigation refactor** — Primary modules open inside one shell via `StatefulShellRoute` branches
-- **NavigationRail improvements** — Consistent rail destinations for all primary desktop modules
-- **Users & Roles promoted** — First-class rail modules; removed from Settings → Administration
-- **Settings redesign** — Desktop split panel for Account, Company Information, System, and About
-- **Desktop dashboard redesign** — Frame width, spacing, and action patterns aligned with the design system
-- **Desktop Work Orders redesign** — Split detail layout (execution main + sidebar context)
-- **Responsive component system** — Shared breakpoints, grids, action cards, and list cards
-- **Desktop page frame** — `AppPageFrame` for consistent content width under the shell
-- **Image handling improvements** — Desktop-safe network image decoding / Cloudinary JPG-oriented delivery
-- **Work Order detail layout improvements** — Clearer execution vs context separation on wide screens
-- **Navigation improvements** — Shell `goBranch` instead of full-screen hub pushes; Settings / Profile entry via shell routes
-- **UI consistency improvements** — Inventory, Assets, Users, Roles, and Dashboard share the same desktop hub language
+- Offline overtime queue, local persistence, and automatic sync
+- Journey Overview map (markers, polyline, legend) + Journey Timeline
+- Multi-stage overtime checkpoints with GPS / battery / network / address / selfie evidence
+- Interactive desktop overtime detail (timeline ↔ map focus)
+- Runtime **Server Management** (API URL switching without rebuild)
+- Enterprise Settings hub (theme, language, notifications, organization, performance, diagnostics, update center, about)
+- Theme Preview redesign (visual showcase only; app theme controlled solely by the top selector)
+- Full localization audit (EN / AR, RTL / LTR)
+- Enterprise RBAC localization (permission names, descriptions, groups, search, tooltips)
+- Desktop Shell / NavigationRail polish and responsive settings layouts
+- Avatar upload and profile presentation improvements
+- Biometric protection for sensitive settings entry points
+- Dark mode polish across Material 3 surfaces
+- Human-friendly error localization on failure screens
 
 ---
 
-## Future Roadmap
+## Roadmap
 
-- Deeper offline sync and conflict resolution
-- Push notifications (FCM / APNs)
-- Advanced analytics and payroll exports
-- Vehicles module UI
-- Expanded scheduling and customer CRM
-- Hardened production deployment (Docker, CI/CD, monitoring)
+### Completed
+
+- [x] Platform core (auth, RBAC, organization, settings)
+- [x] Attendance with GPS + live selfie verification
+- [x] Offline-first overtime journey + admin review
+- [x] Work Orders, Inventory, Assets, PM, Service Reports
+- [x] Desktop Shell + responsive Material 3 UI
+- [x] Arabic / English localization with RTL
+- [x] Cloudinary media pipeline
+- [x] Runtime Server Management & diagnostics
+- [x] Localized Roles & Permissions UX
+
+### Planned
+
+- [ ] Deeper offline sync and conflict resolution across remaining modules
+- [ ] Push notifications (FCM / APNs)
+- [ ] Advanced analytics and payroll exports
+- [ ] Vehicles module UI
+- [ ] Expanded scheduling and customer CRM
+- [ ] Hardened production deployment (Docker, CI/CD, monitoring)
 
 See [docs/ROADMAP.md](./docs/ROADMAP.md) and [docs/FUTURE_IMPROVEMENTS.md](./docs/FUTURE_IMPROVEMENTS.md).
 
