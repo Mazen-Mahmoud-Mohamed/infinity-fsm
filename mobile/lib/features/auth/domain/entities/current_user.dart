@@ -42,6 +42,17 @@ class CurrentUser extends Equatable {
 
   String get primaryRole => roles.isNotEmpty ? roles.first : 'user';
 
+  /// Executive Dashboard is for Admin / Supervisor only.
+  ///
+  /// Field technicians use an operational home (Work Orders) instead.
+  bool get canAccessExecutiveDashboard {
+    final upper = roles.map((role) => role.toUpperCase());
+    return upper.contains('ADMIN') || upper.contains('SUPERVISOR');
+  }
+
+  /// Technicians and other non-management field roles.
+  bool get usesOperationalHome => !canAccessExecutiveDashboard;
+
   PermissionChecker get permissionChecker =>
       PermissionChecker(permissions);
 

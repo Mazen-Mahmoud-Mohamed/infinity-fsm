@@ -11,6 +11,8 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
     required super.type,
     required super.gps,
     required super.photoBytes,
+    super.voiceBytes = const [],
+    super.voiceDurationSeconds,
     required super.deviceId,
     required super.clientRequestId,
     required super.createdAt,
@@ -36,6 +38,8 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       sessionId: entity.sessionId,
       gps: entity.gps,
       photoBytes: entity.photoBytes,
+      voiceBytes: entity.voiceBytes,
+      voiceDurationSeconds: entity.voiceDurationSeconds,
       deviceId: entity.deviceId,
       clientRequestId: entity.clientRequestId,
       address: entity.address,
@@ -82,6 +86,7 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
 
   factory PendingOvertimeActionModel.fromJson(Map<String, dynamic> json) {
     final photoBase64 = requireString(json, 'photoBase64');
+    final voiceBase64 = optionalString(json, 'voiceBase64');
     final overtimeTypeRaw = optionalString(json, 'overtimeType');
 
     return PendingOvertimeActionModel(
@@ -93,6 +98,10 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       sessionId: optionalString(json, 'sessionId'),
       gps: GpsSnapshotModel.fromJson(json['gps'] as Map<String, dynamic>),
       photoBytes: base64Decode(photoBase64),
+      voiceBytes: voiceBase64 != null && voiceBase64.isNotEmpty
+          ? base64Decode(voiceBase64)
+          : const [],
+      voiceDurationSeconds: readOptionalDouble(json, 'voiceDurationSeconds'),
       deviceId: requireString(json, 'deviceId'),
       clientRequestId: requireString(json, 'clientRequestId'),
       address: optionalString(json, 'address'),
@@ -117,6 +126,9 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       'sessionId': sessionId,
       'gps': GpsSnapshotModel.fromEntity(gps).toJson(),
       'photoBase64': base64Encode(photoBytes),
+      if (voiceBytes.isNotEmpty) 'voiceBase64': base64Encode(voiceBytes),
+      if (voiceDurationSeconds != null)
+        'voiceDurationSeconds': voiceDurationSeconds,
       'deviceId': deviceId,
       'clientRequestId': clientRequestId,
       'address': address,

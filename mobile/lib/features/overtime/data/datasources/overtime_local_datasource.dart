@@ -234,6 +234,7 @@ class OvertimeLocalDataSource {
     );
     for (final action in queue) {
       await _persistPhoto(action);
+      await _persistVoice(action);
     }
     final slim = queue.map(_slimForQueueJson).toList();
     final payload = jsonEncode(slim.map((item) => item.toJson()).toList());
@@ -274,6 +275,7 @@ class OvertimeLocalDataSource {
           'type=${action.type.name} photoBytes=${action.photoBytes.length}',
     );
     await _persistPhoto(action);
+    await _persistVoice(action);
     final existing = readQueue();
     final queue = [...existing.map(_slimForQueueJson), _slimForQueueJson(action)];
     final payload = jsonEncode(queue.map((item) => item.toJson()).toList());
@@ -319,6 +321,7 @@ class OvertimeLocalDataSource {
     );
     final queue = readQueue().where((item) => item.id != id).toList();
     await _preferences.remove(OvertimeCacheKeys.pendingPhotoKey(id));
+    await _preferences.remove(OvertimeCacheKeys.pendingVoiceKey(id));
     await saveQueue(queue);
     OvertimeOfflineTrace.step(
       'QUEUE_REMOVE',
@@ -437,52 +440,79 @@ class OvertimeLocalDataSource {
 
   PendingOvertimeActionModel _hydrateAction(Map<String, dynamic> json) {
     final model = PendingOvertimeActionModel.fromJson(json);
-    if (model.photoBytes.isNotEmpty) {
+
+    var photoBytes = model.photoBytes;
+    if (photoBytes.isEmpty) {
+      final externalPhoto = _preferences.getString(
+        OvertimeCacheKeys.pendingPhotoKey(model.id),
+      );
+      if (externalPhoto == null || externalPhoto.isEmpty) {
+        OvertimeOfflineTrace.step(
+          'HYDRATE_PHOTO',
+          status: 'failure',
+          objectId: model.id,
+          detail: 'missing photo key and empty photoBase64',
+        );
+      } else {
+        try {
+          photoBytes = base64Decode(externalPhoto);
+        } on Object catch (error) {
+          OvertimeOfflineTrace.step(
+            'HYDRATE_PHOTO',
+            status: 'failure',
+            objectId: model.id,
+            detail: 'decode error: $error',
+          );
+        }
+      }
+    }
+
+    var voiceBytes = model.voiceBytes;
+    if (voiceBytes.isEmpty) {
+      final externalVoice = _preferences.getString(
+        OvertimeCacheKeys.pendingVoiceKey(model.id),
+      );
+      if (externalVoice != null && externalVoice.isNotEmpty) {
+        try {
+          voiceBytes = base64Decode(externalVoice);
+        } on Object catch (error) {
+          OvertimeOfflineTrace.step(
+            'HYDRATE_VOICE',
+            status: 'failure',
+            objectId: model.id,
+            detail: 'decode error: $error',
+          );
+        }
+      }
+    }
+
+    if (photoBytes == model.photoBytes && voiceBytes == model.voiceBytes) {
       return model;
     }
-    final external = _preferences.getString(
-      OvertimeCacheKeys.pendingPhotoKey(model.id),
+
+    return PendingOvertimeActionModel(
+      id: model.id,
+      type: model.type,
+      overtimeType: model.overtimeType,
+      sessionId: model.sessionId,
+      gps: model.gps,
+      photoBytes: photoBytes,
+      voiceBytes: voiceBytes,
+      voiceDurationSeconds: model.voiceDurationSeconds,
+      deviceId: model.deviceId,
+      clientRequestId: model.clientRequestId,
+      address: model.address,
+      startedAt: model.startedAt,
+      endedAt: model.endedAt,
+      durationSeconds: model.durationSeconds,
+      checkpointAt: model.checkpointAt,
+      notes: model.notes,
+      batteryLevel: model.batteryLevel,
+      networkStatus: model.networkStatus,
+      createdAt: model.createdAt,
+      retryCount: model.retryCount,
+      lastError: model.lastError,
     );
-    if (external == null || external.isEmpty) {
-      OvertimeOfflineTrace.step(
-        'HYDRATE_PHOTO',
-        status: 'failure',
-        objectId: model.id,
-        detail: 'missing photo key and empty photoBase64',
-      );
-      return model;
-    }
-    try {
-      return PendingOvertimeActionModel(
-        id: model.id,
-        type: model.type,
-        overtimeType: model.overtimeType,
-        sessionId: model.sessionId,
-        gps: model.gps,
-        photoBytes: base64Decode(external),
-        deviceId: model.deviceId,
-        clientRequestId: model.clientRequestId,
-        address: model.address,
-        startedAt: model.startedAt,
-        endedAt: model.endedAt,
-        durationSeconds: model.durationSeconds,
-        checkpointAt: model.checkpointAt,
-        notes: model.notes,
-        batteryLevel: model.batteryLevel,
-        networkStatus: model.networkStatus,
-        createdAt: model.createdAt,
-        retryCount: model.retryCount,
-        lastError: model.lastError,
-      );
-    } on Object catch (error) {
-      OvertimeOfflineTrace.step(
-        'HYDRATE_PHOTO',
-        status: 'failure',
-        objectId: model.id,
-        detail: 'decode error: $error',
-      );
-      return model;
-    }
   }
 
   Future<void> _persistPhoto(PendingOvertimeActionModel action) async {
@@ -505,6 +535,27 @@ class OvertimeLocalDataSource {
     }
   }
 
+  Future<void> _persistVoice(PendingOvertimeActionModel action) async {
+    if (action.voiceBytes.isEmpty) {
+      await _preferences.remove(OvertimeCacheKeys.pendingVoiceKey(action.id));
+      return;
+    }
+    final encoded = base64Encode(action.voiceBytes);
+    final ok = await _preferences.setString(
+      OvertimeCacheKeys.pendingVoiceKey(action.id),
+      encoded,
+    );
+    OvertimeOfflineTrace.step(
+      'WRITE_VOICE',
+      status: ok ? 'success' : 'failure',
+      objectId: action.id,
+      detail: 'bytes=${action.voiceBytes.length} b64Len=${encoded.length}',
+    );
+    if (!ok) {
+      throw StateError('Failed to persist overtime pending voice');
+    }
+  }
+
   PendingOvertimeActionModel _slimForQueueJson(PendingOvertimeActionModel action) {
     return PendingOvertimeActionModel(
       id: action.id,
@@ -513,6 +564,8 @@ class OvertimeLocalDataSource {
       sessionId: action.sessionId,
       gps: action.gps,
       photoBytes: const [],
+      voiceBytes: const [],
+      voiceDurationSeconds: action.voiceDurationSeconds,
       deviceId: action.deviceId,
       clientRequestId: action.clientRequestId,
       address: action.address,

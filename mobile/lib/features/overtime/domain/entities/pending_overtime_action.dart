@@ -16,6 +16,8 @@ class PendingOvertimeAction extends Equatable {
     required this.type,
     required this.gps,
     required this.photoBytes,
+    this.voiceBytes = const [],
+    this.voiceDurationSeconds,
     required this.deviceId,
     required this.clientRequestId,
     required this.createdAt,
@@ -39,6 +41,8 @@ class PendingOvertimeAction extends Equatable {
   final String? sessionId;
   final GpsSnapshot gps;
   final List<int> photoBytes;
+  final List<int> voiceBytes;
+  final double? voiceDurationSeconds;
   final String deviceId;
   final String clientRequestId;
   final String? address;
@@ -93,6 +97,9 @@ class PendingOvertimeAction extends Equatable {
     String? notes,
     int? batteryLevel,
     String? networkStatus,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
+    bool clearVoice = false,
   }) {
     return PendingOvertimeAction(
       id: id,
@@ -101,6 +108,10 @@ class PendingOvertimeAction extends Equatable {
       sessionId: sessionId ?? this.sessionId,
       gps: gps ?? this.gps,
       photoBytes: photoBytes,
+      voiceBytes: clearVoice ? const [] : (voiceBytes ?? this.voiceBytes),
+      voiceDurationSeconds: clearVoice
+          ? null
+          : (voiceDurationSeconds ?? this.voiceDurationSeconds),
       deviceId: deviceId,
       clientRequestId: clientRequestId,
       address: address ?? this.address,
@@ -125,6 +136,8 @@ class PendingOvertimeAction extends Equatable {
         sessionId,
         gps,
         photoBytes,
+        voiceBytes,
+        voiceDurationSeconds,
         deviceId,
         clientRequestId,
         address,

@@ -116,6 +116,7 @@ class OvertimeSessionModel extends OvertimeSession {
       at: at,
       gps: _mapGps(gpsJson),
       photoUrl: optionalString(raw, 'photoUrl'),
+      voiceNote: _mapVoiceNote(raw['voiceNote']),
       address: optionalString(raw, 'address'),
       deviceId: optionalString(raw, 'deviceId'),
       clientRequestId: optionalString(raw, 'clientRequestId'),
@@ -123,6 +124,40 @@ class OvertimeSessionModel extends OvertimeSession {
       networkStatus: optionalString(raw, 'networkStatus'),
       notes: optionalString(raw, 'notes'),
     );
+  }
+
+  static OvertimeVoiceNote? _mapVoiceNote(dynamic raw) {
+    if (raw is! Map<String, dynamic>) {
+      return null;
+    }
+    final url = optionalString(raw, 'url');
+    if (url == null || url.isEmpty) {
+      return null;
+    }
+    return OvertimeVoiceNote(
+      url: url,
+      publicId: optionalString(raw, 'publicId'),
+      duration: readOptionalDouble(raw, 'duration'),
+      size: _readNullableInt(raw, 'size'),
+      format: optionalString(raw, 'format'),
+      uploadedAt: parseDateTime(raw['uploadedAt']),
+      localPath: optionalString(raw, 'localPath'),
+    );
+  }
+
+  static Map<String, dynamic>? _voiceNoteToJson(OvertimeVoiceNote? note) {
+    if (note == null) {
+      return null;
+    }
+    return {
+      'url': note.url,
+      'publicId': note.publicId,
+      'duration': note.duration,
+      'size': note.size,
+      'format': note.format,
+      'uploadedAt': note.uploadedAt?.toIso8601String(),
+      'localPath': note.localPath,
+    };
   }
 
   static GpsSnapshotModel _mapGps(Map<String, dynamic> json) {
@@ -179,6 +214,7 @@ class OvertimeSessionModel extends OvertimeSession {
       'at': cp.at.toIso8601String(),
       'gps': GpsSnapshotModel.fromEntity(cp.gps).toJson(),
       'photoUrl': cp.photoUrl,
+      'voiceNote': _voiceNoteToJson(cp.voiceNote),
       'address': cp.address,
       'deviceId': cp.deviceId,
       'clientRequestId': cp.clientRequestId,

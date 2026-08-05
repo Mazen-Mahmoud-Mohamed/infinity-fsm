@@ -19,6 +19,7 @@ import 'package:mobile/features/attendance/presentation/widgets/clock_action_but
 import 'package:mobile/features/attendance/presentation/widgets/today_status_card.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 
 /// Bottom-nav / `/attendance` entry.
 ///
@@ -84,6 +85,7 @@ class _AttendanceDashboardView extends StatelessWidget {
         appBar: AppBar(
           title: Text(l10n.attendance),
           actions: [
+            const NotificationsBellAction(),
             IconButton(
               tooltip: l10n.attendanceHistoryTooltip,
               icon: const Icon(Icons.history),

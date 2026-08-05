@@ -252,23 +252,66 @@ class _DashboardViewState extends State<_DashboardView> {
 
 /// Primary navigation shell used by [StatefulShellRoute] in the app router.
 ///
-/// Phones use a bottom [NavigationBar] (first five branches).
-/// Tablet/desktop use a [NavigationRail] for all primary modules.
+/// Phones use a bottom [NavigationBar] (first five branches for management,
+/// four operational branches for technicians).
+/// Tablet/desktop use a [NavigationRail] for primary modules.
 class MainNavigationShell extends StatelessWidget {
   const MainNavigationShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
-  /// Phone bottom bar only exposes the first five shell branches.
-  static const int _phoneDestinationCount = 5;
+  /// Shell branch indexes (must match [createAppRouter] branch order).
+  static const int _branchDashboard = 0;
+  static const int _branchAttendance = 1;
+  static const int _branchWorkOrders = 2;
+  static const int _branchOvertime = 3;
+  static const int _branchProfile = 4;
+  static const int _branchInventory = 5;
+  static const int _branchAssets = 6;
+  static const int _branchPm = 7;
+  static const int _branchReports = 8;
+  static const int _branchUsers = 9;
+  static const int _branchRoles = 10;
+  static const int _branchSettings = 11;
+
+  /// Management phone bottom bar: Dashboard → Attendance → WO → OT → Profile.
+  static const List<int> _managementPhoneBranches = [
+    _branchDashboard,
+    _branchAttendance,
+    _branchWorkOrders,
+    _branchOvertime,
+    _branchProfile,
+  ];
+
+  /// Technician phone bottom bar (operational home first): WO → Attendance → OT → Profile.
+  static const List<int> _technicianPhoneBranches = [
+    _branchWorkOrders,
+    _branchAttendance,
+    _branchOvertime,
+    _branchProfile,
+  ];
+
+  /// Technician tablet/desktop rail — no executive Dashboard / analytics hub.
+  static const List<int> _technicianRailBranches = [
+    _branchAttendance,
+    _branchWorkOrders,
+    _branchOvertime,
+    _branchProfile,
+    _branchInventory,
+    _branchAssets,
+    _branchPm,
+    _branchUsers,
+    _branchRoles,
+    _branchSettings,
+  ];
 
   /// Desktop extended rail width (+28 vs previous 220). Tablet [minWidth] unchanged.
   static const double _desktopExtendedRailWidth = 248;
 
-  void _onDestinationSelected(int index) {
+  void _goBranch(int branchIndex) {
     navigationShell.goBranch(
-      index,
-      initialLocation: index == navigationShell.currentIndex,
+      branchIndex,
+      initialLocation: branchIndex == navigationShell.currentIndex,
     );
   }
 
@@ -302,6 +345,132 @@ class MainNavigationShell extends StatelessWidget {
     );
   }
 
+  NavigationRailDestination _destinationForBranch({
+    required int branchIndex,
+    required AppLocalizations l10n,
+    required bool extended,
+  }) {
+    return switch (branchIndex) {
+      _branchDashboard => _railDestination(
+          icon: Icons.dashboard_outlined,
+          selectedIcon: Icons.dashboard,
+          label: l10n.dashboard,
+          extended: extended,
+        ),
+      _branchAttendance => _railDestination(
+          icon: Icons.access_time_outlined,
+          selectedIcon: Icons.access_time,
+          label: l10n.attendance,
+          extended: extended,
+        ),
+      _branchWorkOrders => _railDestination(
+          icon: Icons.assignment_outlined,
+          selectedIcon: Icons.assignment,
+          label: l10n.workOrders,
+          extended: extended,
+        ),
+      _branchOvertime => _railDestination(
+          icon: Icons.more_time_outlined,
+          selectedIcon: Icons.more_time,
+          label: l10n.overtime,
+          extended: extended,
+        ),
+      _branchProfile => _railDestination(
+          icon: Icons.person_outline,
+          selectedIcon: Icons.person,
+          label: l10n.profile,
+          extended: extended,
+        ),
+      _branchInventory => _railDestination(
+          icon: Icons.inventory_2_outlined,
+          selectedIcon: Icons.inventory_2,
+          label: l10n.inventory,
+          extended: extended,
+        ),
+      _branchAssets => _railDestination(
+          icon: Icons.precision_manufacturing_outlined,
+          selectedIcon: Icons.precision_manufacturing,
+          label: l10n.assets,
+          extended: extended,
+        ),
+      _branchPm => _railDestination(
+          icon: Icons.build_circle_outlined,
+          selectedIcon: Icons.build_circle,
+          label: l10n.assetsStatusMaintenance,
+          extended: extended,
+        ),
+      _branchReports => _railDestination(
+          icon: Icons.analytics_outlined,
+          selectedIcon: Icons.analytics,
+          label: l10n.reportsCenter,
+          extended: extended,
+        ),
+      _branchUsers => _railDestination(
+          icon: Icons.manage_accounts_outlined,
+          selectedIcon: Icons.manage_accounts,
+          label: l10n.usersTitle,
+          extended: extended,
+        ),
+      _branchRoles => _railDestination(
+          icon: Icons.admin_panel_settings_outlined,
+          selectedIcon: Icons.admin_panel_settings,
+          label: l10n.rolesTitle,
+          extended: extended,
+        ),
+      _branchSettings => _railDestination(
+          icon: Icons.settings_outlined,
+          selectedIcon: Icons.settings,
+          label: l10n.settings,
+          extended: extended,
+        ),
+      _ => _railDestination(
+          icon: Icons.circle_outlined,
+          selectedIcon: Icons.circle,
+          label: '',
+          extended: extended,
+        ),
+    };
+  }
+
+  NavigationDestination _phoneDestinationForBranch({
+    required int branchIndex,
+    required AppLocalizations l10n,
+    required bool compact,
+  }) {
+    return switch (branchIndex) {
+      _branchDashboard => NavigationDestination(
+          icon: const Icon(Icons.dashboard_outlined),
+          selectedIcon: const Icon(Icons.dashboard),
+          label: compact ? l10n.navDashboard : l10n.dashboard,
+        ),
+      _branchAttendance => NavigationDestination(
+          icon: const Icon(Icons.access_time_outlined),
+          selectedIcon: const Icon(Icons.access_time),
+          label: compact ? l10n.navAttendance : l10n.attendance,
+        ),
+      _branchWorkOrders => NavigationDestination(
+          icon: const Icon(Icons.assignment_outlined),
+          selectedIcon: const Icon(Icons.assignment),
+          label: compact ? l10n.navWorkOrders : l10n.workOrders,
+        ),
+      _branchOvertime => NavigationDestination(
+          icon: const Icon(Icons.more_time_outlined),
+          selectedIcon: const Icon(Icons.more_time),
+          label: compact ? l10n.navOvertime : l10n.overtime,
+        ),
+      _branchProfile => NavigationDestination(
+          icon: const Icon(Icons.person_outline),
+          selectedIcon: const Icon(Icons.person),
+          label: compact ? l10n.navProfile : l10n.profile,
+        ),
+      _ => const NavigationDestination(
+          icon: Icon(Icons.circle_outlined),
+          selectedIcon: Icon(Icons.circle),
+          label: '',
+        ),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -310,6 +479,29 @@ class MainNavigationShell extends StatelessWidget {
     final compact = width < 400;
     final veryCompact = width < 340;
     final extendedRail = width >= 1100;
+    final user = context.watch<AuthCubit>().state.user;
+    final operational = user?.usesOperationalHome ?? false;
+    final phoneBranches =
+        operational ? _technicianPhoneBranches : _managementPhoneBranches;
+    final railBranches = operational
+        ? _technicianRailBranches
+        : const [
+            _branchDashboard,
+            _branchAttendance,
+            _branchWorkOrders,
+            _branchOvertime,
+            _branchProfile,
+            _branchInventory,
+            _branchAssets,
+            _branchPm,
+            _branchReports,
+            _branchUsers,
+            _branchRoles,
+            _branchSettings,
+          ];
+    final homeBranch =
+        operational ? _branchWorkOrders : _branchDashboard;
+    final currentBranch = navigationShell.currentIndex;
 
     final shellBody = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -326,6 +518,7 @@ class MainNavigationShell extends StatelessWidget {
     );
 
     if (!isPhone) {
+      final railSelected = railBranches.indexOf(currentBranch);
       return Scaffold(
         body: Row(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -334,8 +527,12 @@ class MainNavigationShell extends StatelessWidget {
               extended: extendedRail,
               minExtendedWidth: _desktopExtendedRailWidth,
               useIndicator: true,
-              selectedIndex: navigationShell.currentIndex,
-              onDestinationSelected: _onDestinationSelected,
+              selectedIndex: railSelected < 0 ? 0 : railSelected,
+              onDestinationSelected: (uiIndex) {
+                if (uiIndex >= 0 && uiIndex < railBranches.length) {
+                  _goBranch(railBranches[uiIndex]);
+                }
+              },
               labelType: extendedRail
                   ? NavigationRailLabelType.none
                   : NavigationRailLabelType.all,
@@ -348,7 +545,7 @@ class MainNavigationShell extends StatelessWidget {
                 ),
                 child: extendedRail
                     ? Text(
-                        l10n.dashboard,
+                        operational ? l10n.workOrders : l10n.dashboard,
                         maxLines: 1,
                         softWrap: false,
                         overflow: TextOverflow.ellipsis,
@@ -357,84 +554,19 @@ class MainNavigationShell extends StatelessWidget {
                             ),
                       )
                     : Icon(
-                        Icons.apps_outlined,
+                        operational
+                            ? Icons.assignment_outlined
+                            : Icons.apps_outlined,
                         color: Theme.of(context).colorScheme.primary,
                       ),
               ),
               destinations: [
-                _railDestination(
-                  icon: Icons.dashboard_outlined,
-                  selectedIcon: Icons.dashboard,
-                  label: l10n.dashboard,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.access_time_outlined,
-                  selectedIcon: Icons.access_time,
-                  label: l10n.attendance,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.assignment_outlined,
-                  selectedIcon: Icons.assignment,
-                  label: l10n.workOrders,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.more_time_outlined,
-                  selectedIcon: Icons.more_time,
-                  label: l10n.overtime,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.person_outline,
-                  selectedIcon: Icons.person,
-                  label: l10n.profile,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.inventory_2_outlined,
-                  selectedIcon: Icons.inventory_2,
-                  label: l10n.inventory,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.precision_manufacturing_outlined,
-                  selectedIcon: Icons.precision_manufacturing,
-                  label: l10n.assets,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.build_circle_outlined,
-                  selectedIcon: Icons.build_circle,
-                  // Short desktop rail label ("Maintenance" / "صيانة").
-                  label: l10n.assetsStatusMaintenance,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.analytics_outlined,
-                  selectedIcon: Icons.analytics,
-                  label: l10n.reportsCenter,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.manage_accounts_outlined,
-                  selectedIcon: Icons.manage_accounts,
-                  label: l10n.usersTitle,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.admin_panel_settings_outlined,
-                  selectedIcon: Icons.admin_panel_settings,
-                  label: l10n.rolesTitle,
-                  extended: extendedRail,
-                ),
-                _railDestination(
-                  icon: Icons.settings_outlined,
-                  selectedIcon: Icons.settings,
-                  label: l10n.settings,
-                  extended: extendedRail,
-                ),
+                for (final branch in railBranches)
+                  _destinationForBranch(
+                    branchIndex: branch,
+                    l10n: l10n,
+                    extended: extendedRail,
+                  ),
               ],
             ),
             const VerticalDivider(width: 1, thickness: 1),
@@ -444,8 +576,8 @@ class MainNavigationShell extends StatelessWidget {
       );
     }
 
-    final phoneIndex = navigationShell.currentIndex;
-    final showPhoneNav = phoneIndex < _phoneDestinationCount;
+    final phoneSelected = phoneBranches.indexOf(currentBranch);
+    final showPhoneNav = phoneSelected >= 0;
 
     return Scaffold(
       body: shellBody,
@@ -455,34 +587,19 @@ class MainNavigationShell extends StatelessWidget {
               labelBehavior: veryCompact
                   ? NavigationDestinationLabelBehavior.onlyShowSelected
                   : NavigationDestinationLabelBehavior.alwaysShow,
-              selectedIndex: phoneIndex,
-              onDestinationSelected: _onDestinationSelected,
+              selectedIndex: phoneSelected,
+              onDestinationSelected: (uiIndex) {
+                if (uiIndex >= 0 && uiIndex < phoneBranches.length) {
+                  _goBranch(phoneBranches[uiIndex]);
+                }
+              },
               destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.dashboard_outlined),
-                  selectedIcon: const Icon(Icons.dashboard),
-                  label: compact ? l10n.navDashboard : l10n.dashboard,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.access_time_outlined),
-                  selectedIcon: const Icon(Icons.access_time),
-                  label: compact ? l10n.navAttendance : l10n.attendance,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.assignment_outlined),
-                  selectedIcon: const Icon(Icons.assignment),
-                  label: compact ? l10n.navWorkOrders : l10n.workOrders,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.more_time_outlined),
-                  selectedIcon: const Icon(Icons.more_time),
-                  label: compact ? l10n.navOvertime : l10n.overtime,
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.person_outline),
-                  selectedIcon: const Icon(Icons.person),
-                  label: compact ? l10n.navProfile : l10n.profile,
-                ),
+                for (final branch in phoneBranches)
+                  _phoneDestinationForBranch(
+                    branchIndex: branch,
+                    l10n: l10n,
+                    compact: compact,
+                  ),
               ],
             )
           : Material(
@@ -496,9 +613,15 @@ class MainNavigationShell extends StatelessWidget {
                   child: SizedBox(
                     width: double.infinity,
                     child: FilledButton.tonalIcon(
-                      onPressed: () => _onDestinationSelected(0),
-                      icon: const Icon(Icons.home_outlined),
-                      label: Text(l10n.dashboard),
+                      onPressed: () => _goBranch(homeBranch),
+                      icon: Icon(
+                        operational
+                            ? Icons.assignment_outlined
+                            : Icons.home_outlined,
+                      ),
+                      label: Text(
+                        operational ? l10n.workOrders : l10n.dashboard,
+                      ),
                     ),
                   ),
                 ),

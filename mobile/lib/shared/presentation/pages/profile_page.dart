@@ -18,6 +18,7 @@ import 'package:mobile/core/widgets/branding/infinity_brand.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/organization/presentation/cubit/profile_cubit.dart';
 import 'package:mobile/features/roles/presentation/widgets/role_permission_tiles.dart';
 
@@ -48,6 +49,7 @@ class _ProfileView extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.profile),
         actions: [
+          const NotificationsBellAction(),
           IconButton(
             tooltip: l10n.settings,
             onPressed: () => context.go(RoutePaths.settings),

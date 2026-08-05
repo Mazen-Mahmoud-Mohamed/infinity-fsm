@@ -16,6 +16,7 @@ import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_status.dart';
 import 'package:mobile/features/work_orders/presentation/cubit/work_orders_list_cubit.dart';
@@ -110,7 +111,12 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
     final pagePad = AppBreakpoints.pagePadding(width);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.workOrders)),
+      appBar: AppBar(
+        title: Text(l10n.workOrders),
+        actions: const [
+          NotificationsBellAction(),
+        ],
+      ),
       floatingActionButton: canCreate
           ? (width < 360
               ? FloatingActionButton(

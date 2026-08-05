@@ -2450,6 +2450,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeNotesOptionalHint => 'Optional notes for this checkpoint';
 
   @override
+  String get overtimeVoiceNote => 'Voice Note';
+
+  @override
+  String get overtimeVoiceRecord => 'Record Voice';
+
+  @override
+  String get overtimeVoiceStop => 'Stop';
+
+  @override
+  String get overtimeVoicePlay => 'Play';
+
+  @override
+  String get overtimeVoicePause => 'Pause';
+
+  @override
+  String get overtimeVoiceDelete => 'Delete';
+
+  @override
+  String get overtimeVoiceRerecord => 'Re-record';
+
+  @override
+  String get overtimeVoiceMaxDurationHint => 'Optional. Maximum 2 minutes.';
+
+  @override
+  String get overtimeVoicePermissionDenied =>
+      'Microphone permission is required to record a voice note.';
+
+  @override
   String get overtimeRequiresManualReview => 'Requires manual review';
 
   @override

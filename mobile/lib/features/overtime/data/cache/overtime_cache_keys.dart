@@ -14,4 +14,11 @@ class OvertimeCacheKeys {
 
   static String pendingPhotoKey(String actionId) =>
       '$pendingPhotoPrefix$actionId';
+
+  /// Per-action voice payload (base64). Kept outside the queue JSON so
+  /// offline sessions do not blow SharedPreferences size limits.
+  static const String pendingVoicePrefix = 'overtime_pending_voice_';
+
+  static String pendingVoiceKey(String actionId) =>
+      '$pendingVoicePrefix$actionId';
 }

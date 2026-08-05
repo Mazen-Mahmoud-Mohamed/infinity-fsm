@@ -59,6 +59,26 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     return gps.copyWith(recordedAt: recordedAt);
   }
 
+  List<int>? _nonEmptyVoiceBytes(List<int>? voiceBytes) {
+    if (voiceBytes == null || voiceBytes.isEmpty) {
+      return null;
+    }
+    return voiceBytes;
+  }
+
+  OvertimeVoiceNote? _pendingVoiceNote({
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
+  }) {
+    if (voiceBytes == null || voiceBytes.isEmpty) {
+      return null;
+    }
+    return OvertimeVoiceNote(
+      url: 'local-pending',
+      duration: voiceDurationSeconds,
+    );
+  }
+
   OvertimeSessionModel _asModel(OvertimeSession session) {
     return session is OvertimeSessionModel
         ? session
@@ -99,6 +119,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String deviceId,
     String? address,
     String? photoUrl,
+    OvertimeVoiceNote? voiceNote,
     String? notes,
     String? clientRequestId,
     int? batteryLevel,
@@ -108,6 +129,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       at: at,
       gps: _gpsWithRecordedAt(gps, at),
       photoUrl: photoUrl,
+      voiceNote: voiceNote,
       address: address,
       deviceId: deviceId,
       clientRequestId: clientRequestId,
@@ -193,6 +215,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String clientRequestId,
     required String? address,
     required DateTime startAt,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
     String? notes,
     int? batteryLevel,
     String? networkStatus,
@@ -206,6 +230,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       batteryLevel: batteryLevel,
       networkStatus: networkStatus,
       notes: notes,
+      voiceNote: _pendingVoiceNote(
+        voiceBytes: voiceBytes,
+        voiceDurationSeconds: voiceDurationSeconds,
+      ),
     );
     return OvertimeSessionModel(
       id: 'local-$clientRequestId',
@@ -294,6 +322,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required OvertimeType type,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
     required String deviceId,
     required String clientRequestId,
     required String? address,
@@ -307,6 +337,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         type: type,
         gps: gps,
         photoBytes: photoBytes,
+        voiceBytes: voiceBytes,
+        voiceDurationSeconds: voiceDurationSeconds,
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
@@ -321,6 +353,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         type: type,
         gps: gps,
         photoBytes: photoBytes,
+        voiceBytes: _nonEmptyVoiceBytes(voiceBytes),
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
@@ -345,6 +378,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           type: type,
           gps: gps,
           photoBytes: photoBytes,
+          voiceBytes: voiceBytes,
+          voiceDurationSeconds: voiceDurationSeconds,
           deviceId: deviceId,
           clientRequestId: clientRequestId,
           address: address,
@@ -361,6 +396,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required OvertimeType type,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
     required String deviceId,
     required String clientRequestId,
     required String? address,
@@ -382,6 +419,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       clientRequestId: clientRequestId,
       address: address,
       startAt: startAt,
+      voiceBytes: voiceBytes,
+      voiceDurationSeconds: voiceDurationSeconds,
       notes: notes,
       batteryLevel: batteryLevel,
       networkStatus: networkStatus,
@@ -394,6 +433,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         overtimeType: type,
         gps: _gpsWithRecordedAt(gps, startAt),
         photoBytes: photoBytes,
+        voiceBytes: voiceBytes ?? const [],
+        voiceDurationSeconds: voiceDurationSeconds,
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
@@ -421,6 +462,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required OvertimeCheckpointStage stage,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
     required String deviceId,
     required String? address,
     required String clientRequestId,
@@ -443,6 +486,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         stage: stage,
         gps: gps,
         photoBytes: photoBytes,
+        voiceBytes: voiceBytes,
+        voiceDurationSeconds: voiceDurationSeconds,
         deviceId: deviceId,
         address: address,
         clientRequestId: clientRequestId,
@@ -458,6 +503,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
               sessionId: sessionId,
               gps: gps,
               photoBytes: photoBytes,
+              voiceBytes: _nonEmptyVoiceBytes(voiceBytes),
               deviceId: deviceId,
               address: address,
               clientRequestId: clientRequestId,
@@ -470,6 +516,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
               sessionId: sessionId,
               gps: gps,
               photoBytes: photoBytes,
+              voiceBytes: _nonEmptyVoiceBytes(voiceBytes),
               deviceId: deviceId,
               address: address,
               clientRequestId: clientRequestId,
@@ -496,6 +543,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           stage: stage,
           gps: gps,
           photoBytes: photoBytes,
+          voiceBytes: voiceBytes,
+          voiceDurationSeconds: voiceDurationSeconds,
           deviceId: deviceId,
           address: address,
           clientRequestId: clientRequestId,
@@ -513,6 +562,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required OvertimeCheckpointStage stage,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
     required String deviceId,
     required String? address,
     required String clientRequestId,
@@ -555,6 +606,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       batteryLevel: batteryLevel,
       networkStatus: networkStatus,
       notes: notes,
+      voiceNote: _pendingVoiceNote(
+        voiceBytes: voiceBytes,
+        voiceDurationSeconds: voiceDurationSeconds,
+      ),
     );
     final existing = running.checkpoints ?? const OvertimeCheckpoints();
     final updatedCheckpoints = stage == OvertimeCheckpointStage.arrivedAtWorkSite
@@ -581,6 +636,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         sessionId: updated.id,
         gps: _gpsWithRecordedAt(gps, at),
         photoBytes: photoBytes,
+        voiceBytes: voiceBytes ?? const [],
+        voiceDurationSeconds: voiceDurationSeconds,
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
@@ -599,6 +656,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String sessionId,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
     required String deviceId,
     required String? address,
     String? clientRequestId,
@@ -612,6 +671,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         sessionId: sessionId,
         gps: gps,
         photoBytes: photoBytes,
+        voiceBytes: voiceBytes,
+        voiceDurationSeconds: voiceDurationSeconds,
         deviceId: deviceId,
         address: address,
         clientRequestId: clientRequestId,
@@ -626,6 +687,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         sessionId: sessionId,
         gps: gps,
         photoBytes: photoBytes,
+        voiceBytes: _nonEmptyVoiceBytes(voiceBytes),
         deviceId: deviceId,
         address: address,
         clientRequestId: clientRequestId,
@@ -652,6 +714,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           sessionId: sessionId,
           gps: gps,
           photoBytes: photoBytes,
+          voiceBytes: voiceBytes,
+          voiceDurationSeconds: voiceDurationSeconds,
           deviceId: deviceId,
           address: address,
           clientRequestId: clientRequestId,
@@ -700,6 +764,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String sessionId,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    double? voiceDurationSeconds,
     required String deviceId,
     required String? address,
     String? clientRequestId,
@@ -769,6 +835,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       batteryLevel: batteryLevel,
       networkStatus: networkStatus,
       notes: notes,
+      voiceNote: _pendingVoiceNote(
+        voiceBytes: voiceBytes,
+        voiceDurationSeconds: voiceDurationSeconds,
+      ),
     );
     final existing = running.checkpoints ?? const OvertimeCheckpoints();
     final updatedCheckpoints = running.isV2Workflow
@@ -803,6 +873,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         sessionId: ended.id,
         gps: _gpsWithRecordedAt(gps, safeEndAt),
         photoBytes: photoBytes,
+        voiceBytes: voiceBytes ?? const [],
+        voiceDurationSeconds: voiceDurationSeconds,
         deviceId: deviceId,
         clientRequestId: resolvedClientRequestId,
         address: address,
@@ -1109,6 +1181,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             type: enriched.overtimeType ?? OvertimeType.normal,
             gps: _gpsWithRecordedAt(enriched.gps, startedAt),
             photoBytes: enriched.photoBytes,
+            voiceBytes: _nonEmptyVoiceBytes(enriched.voiceBytes),
             deviceId: enriched.deviceId,
             clientRequestId: enriched.clientRequestId,
             address: enriched.address,
@@ -1177,6 +1250,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                   sessionId: sessionId,
                   gps: _gpsWithRecordedAt(enriched.gps, checkpointAt),
                   photoBytes: enriched.photoBytes,
+                  voiceBytes: _nonEmptyVoiceBytes(enriched.voiceBytes),
                   deviceId: enriched.deviceId,
                   address: enriched.address,
                   clientRequestId: enriched.clientRequestId,
@@ -1189,6 +1263,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                   sessionId: sessionId,
                   gps: _gpsWithRecordedAt(enriched.gps, checkpointAt),
                   photoBytes: enriched.photoBytes,
+                  voiceBytes: _nonEmptyVoiceBytes(enriched.voiceBytes),
                   deviceId: enriched.deviceId,
                   address: enriched.address,
                   clientRequestId: enriched.clientRequestId,
@@ -1242,6 +1317,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             sessionId: sessionId,
             gps: _gpsWithRecordedAt(enriched.gps, endedAt),
             photoBytes: enriched.photoBytes,
+            voiceBytes: _nonEmptyVoiceBytes(enriched.voiceBytes),
             deviceId: enriched.deviceId,
             address: enriched.address,
             startedAt: startedAt,

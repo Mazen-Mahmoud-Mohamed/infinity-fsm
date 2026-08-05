@@ -2445,6 +2445,34 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeNotesOptionalHint => 'ملاحظات اختيارية لهذه النقطة';
 
   @override
+  String get overtimeVoiceNote => 'ملاحظة صوتية';
+
+  @override
+  String get overtimeVoiceRecord => 'تسجيل صوت';
+
+  @override
+  String get overtimeVoiceStop => 'إيقاف';
+
+  @override
+  String get overtimeVoicePlay => 'تشغيل';
+
+  @override
+  String get overtimeVoicePause => 'إيقاف مؤقت';
+
+  @override
+  String get overtimeVoiceDelete => 'حذف';
+
+  @override
+  String get overtimeVoiceRerecord => 'إعادة التسجيل';
+
+  @override
+  String get overtimeVoiceMaxDurationHint => 'اختياري. الحد الأقصى دقيقتان.';
+
+  @override
+  String get overtimeVoicePermissionDenied =>
+      'يلزم إذن الميكروفون لتسجيل ملاحظة صوتية.';
+
+  @override
   String get overtimeRequiresManualReview => 'يتطلب مراجعة يدوية';
 
   @override

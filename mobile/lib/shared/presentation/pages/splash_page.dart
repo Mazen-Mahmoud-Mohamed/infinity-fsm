@@ -47,7 +47,12 @@ class _SplashPageState extends State<SplashPage> {
 
     final authStatus = authCubit.state.status;
     if (authStatus == AuthStatus.authenticated) {
-      context.go(RoutePaths.dashboard);
+      final user = authCubit.state.user;
+      context.go(
+        user != null && user.usesOperationalHome
+            ? RoutePaths.workOrders
+            : RoutePaths.dashboard,
+      );
     } else {
       context.go(RoutePaths.login);
     }

@@ -12,6 +12,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_maps_launcher.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_fullscreen_image.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
 
 enum _SyncBadge { synced, pending, failed, offline }
 
@@ -66,6 +67,7 @@ class OvertimeJourneyTimeline extends StatelessWidget {
     this.includeJourneyOverview = true,
     this.focus,
     this.desktopCompactPhotos = false,
+    this.onPendingVoiceChanged,
   });
 
   final OvertimeSession session;
@@ -85,6 +87,12 @@ class OvertimeJourneyTimeline extends StatelessWidget {
 
   /// Desktop Overtime Details: shorter checkpoint photos (lightbox unchanged).
   final bool desktopCompactPhotos;
+
+  /// When set, technician may edit voice on stages still waiting for sync.
+  final void Function(
+    OvertimeCheckpointStage stage,
+    OvertimeVoiceDraft? draft,
+  )? onPendingVoiceChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -118,6 +126,10 @@ class OvertimeJourneyTimeline extends StatelessWidget {
               syncBadge: _syncBadgeFor(stages[i]),
               highlighted: focusListenable?.stage == stages[i],
               desktopCompactPhotos: desktopCompactPhotos,
+              pendingAction: _pendingFor(stages[i]),
+              onPendingVoiceChanged: onPendingVoiceChanged == null
+                  ? null
+                  : (draft) => onPendingVoiceChanged!(stages[i], draft),
               onSelect: focusListenable == null
                   ? null
                   : () {
@@ -187,6 +199,15 @@ class OvertimeJourneyTimeline extends StatelessWidget {
       return _SyncBadge.failed;
     }
     return _SyncBadge.pending;
+  }
+
+  PendingOvertimeAction? _pendingFor(OvertimeCheckpointStage stage) {
+    for (final action in pendingActions) {
+      if (action.checkpointStage == stage) {
+        return action;
+      }
+    }
+    return null;
   }
 
   static OvertimeCheckpoint? _checkpointFor(
@@ -412,6 +433,8 @@ class _TimelineStageTile extends StatelessWidget {
     this.syncBadge,
     this.highlighted = false,
     this.desktopCompactPhotos = false,
+    this.pendingAction,
+    this.onPendingVoiceChanged,
     this.onSelect,
   });
 
@@ -426,6 +449,8 @@ class _TimelineStageTile extends StatelessWidget {
   final _SyncBadge? syncBadge;
   final bool highlighted;
   final bool desktopCompactPhotos;
+  final PendingOvertimeAction? pendingAction;
+  final ValueChanged<OvertimeVoiceDraft?>? onPendingVoiceChanged;
   final VoidCallback? onSelect;
 
   @override
@@ -603,6 +628,29 @@ class _TimelineStageTile extends StatelessWidget {
                               label: l10n.overtimeNotes,
                               value: checkpoint!.notes!,
                             ),
+                          if (_shouldShowVoiceSection(
+                            checkpoint: checkpoint!,
+                            pendingAction: pendingAction,
+                            canEdit: onPendingVoiceChanged != null &&
+                                pendingAction != null,
+                          )) ...[
+                            const SizedBox(height: AppSpacing.md),
+                            OvertimeVoiceNoteSection(
+                              remoteUrl: _remoteVoiceUrl(checkpoint!.voiceNote),
+                              localBytes: pendingAction?.voiceBytes.isNotEmpty ==
+                                      true
+                                  ? pendingAction!.voiceBytes
+                                  : null,
+                              durationSeconds:
+                                  checkpoint!.voiceNote?.duration ??
+                                      pendingAction?.voiceDurationSeconds,
+                              readOnly: !(onPendingVoiceChanged != null &&
+                                  pendingAction != null &&
+                                  _remoteVoiceUrl(checkpoint!.voiceNote) ==
+                                      null),
+                              onDraftChanged: onPendingVoiceChanged,
+                            ),
+                          ],
                           if (photo != null) ...[
                             const SizedBox(height: AppSpacing.md),
                             photo,
@@ -636,6 +684,32 @@ class _TimelineStageTile extends StatelessWidget {
 
   static String _coords(GpsSnapshot gps) {
     return '${gps.latitude.toStringAsFixed(5)}, ${gps.longitude.toStringAsFixed(5)}';
+  }
+
+  static String? _remoteVoiceUrl(OvertimeVoiceNote? note) {
+    final url = note?.url;
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return null;
+  }
+
+  static bool _shouldShowVoiceSection({
+    required OvertimeCheckpoint checkpoint,
+    required PendingOvertimeAction? pendingAction,
+    required bool canEdit,
+  }) {
+    if (canEdit) return true;
+    if (_remoteVoiceUrl(checkpoint.voiceNote) != null) return true;
+    if (pendingAction != null && pendingAction.voiceBytes.isNotEmpty) {
+      return true;
+    }
+    if (checkpoint.voiceNote != null &&
+        checkpoint.voiceNote!.url == 'local-pending') {
+      return true;
+    }
+    return false;
   }
 }
 

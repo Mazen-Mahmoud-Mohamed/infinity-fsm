@@ -60,11 +60,43 @@ enum OvertimeCheckpointStage {
   ];
 }
 
+class OvertimeVoiceNote extends Equatable {
+  const OvertimeVoiceNote({
+    required this.url,
+    this.publicId,
+    this.duration,
+    this.size,
+    this.format,
+    this.uploadedAt,
+    this.localPath,
+  });
+
+  final String url;
+  final String? publicId;
+  final double? duration;
+  final int? size;
+  final String? format;
+  final DateTime? uploadedAt;
+  final String? localPath;
+
+  @override
+  List<Object?> get props => [
+        url,
+        publicId,
+        duration,
+        size,
+        format,
+        uploadedAt,
+        localPath,
+      ];
+}
+
 class OvertimeCheckpoint extends Equatable {
   const OvertimeCheckpoint({
     required this.at,
     required this.gps,
     this.photoUrl,
+    this.voiceNote,
     this.address,
     this.deviceId,
     this.clientRequestId,
@@ -76,6 +108,7 @@ class OvertimeCheckpoint extends Equatable {
   final DateTime at;
   final GpsSnapshot gps;
   final String? photoUrl;
+  final OvertimeVoiceNote? voiceNote;
   final String? address;
   final String? deviceId;
   final String? clientRequestId;
@@ -91,6 +124,7 @@ class OvertimeCheckpoint extends Equatable {
         at,
         gps,
         photoUrl,
+        voiceNote,
         address,
         deviceId,
         clientRequestId,

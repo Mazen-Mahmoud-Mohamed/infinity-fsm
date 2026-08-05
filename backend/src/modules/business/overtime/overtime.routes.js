@@ -5,7 +5,7 @@ import {
   requirePermission,
 } from '../../../shared/middleware/authorize.middleware.js';
 import { validate } from '../../../shared/middleware/validate.middleware.js';
-import upload from '../../../config/multer.config.js';
+import { overtimeMultipart } from '../../../config/multer.config.js';
 import PERMISSIONS from '../../../shared/constants/permissions.constants.js';
 import * as overtimeController from './overtime.controller.js';
 import {
@@ -56,7 +56,7 @@ router.get(
 router.post(
   '/start',
   requireAnyPermission(PERMISSIONS.OVERTIME_START, PERMISSIONS.OVERTIME_CREATE),
-  upload.single('photo'),
+  overtimeMultipart,
   validate(startOvertimeValidator),
   overtimeController.startSession
 );
@@ -74,7 +74,7 @@ router.get(
 router.post(
   '/:id/arrived-at-work-site',
   requireAnyPermission(PERMISSIONS.OVERTIME_END, PERMISSIONS.OVERTIME_CREATE),
-  upload.single('photo'),
+  overtimeMultipart,
   validate([...overtimeIdValidator, ...checkpointOvertimeValidator]),
   overtimeController.recordArrivedAtWorkSite
 );
@@ -82,7 +82,7 @@ router.post(
 router.post(
   '/:id/finished-work',
   requireAnyPermission(PERMISSIONS.OVERTIME_END, PERMISSIONS.OVERTIME_CREATE),
-  upload.single('photo'),
+  overtimeMultipart,
   validate([...overtimeIdValidator, ...checkpointOvertimeValidator]),
   overtimeController.recordFinishedWork
 );
@@ -90,7 +90,7 @@ router.post(
 router.post(
   '/:id/end',
   requireAnyPermission(PERMISSIONS.OVERTIME_END, PERMISSIONS.OVERTIME_CREATE),
-  upload.single('photo'),
+  overtimeMultipart,
   validate([...overtimeIdValidator, ...endOvertimeValidator]),
   overtimeController.endSession
 );

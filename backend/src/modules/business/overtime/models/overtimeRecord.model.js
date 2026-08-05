@@ -11,12 +11,26 @@ const photoRefSchema = new Schema(
   { _id: false }
 );
 
+/** Optional per-stage voice note metadata (Cloudinary; no binary in MongoDB). */
+const voiceNoteSchema = new Schema(
+  {
+    url: { type: String, required: true },
+    publicId: { type: String, default: null },
+    duration: { type: Number, default: null, min: 0 },
+    size: { type: Number, default: null, min: 0 },
+    format: { type: String, default: null, trim: true, maxlength: 20 },
+    uploadedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 /** Single journey checkpoint capture (additive 4-stage workflow). */
 const checkpointSchema = new Schema(
   {
     at: { type: Date, required: true },
     gps: { type: gpsSchema, required: true },
     photo: { type: photoRefSchema, required: true },
+    voiceNote: { type: voiceNoteSchema, default: undefined },
     address: { type: String, default: null },
     deviceId: { type: String, required: true },
     /** Client-generated id for idempotent retries (double-tap / offline sync). */

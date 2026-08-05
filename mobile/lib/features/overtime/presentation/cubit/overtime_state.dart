@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
+import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
 
 enum OvertimeLoadStatus {
   initial,
@@ -31,6 +32,7 @@ class OvertimeState extends Equatable {
     this.busyAction,
     this.isRefreshing = false,
     this.notesDraft,
+    this.voiceDraft,
     this.offerContinueSession = false,
     this.liveBatteryLevel,
     this.liveNetworkStatus,
@@ -49,6 +51,7 @@ class OvertimeState extends Equatable {
   final OvertimeBusyAction? busyAction;
   final bool isRefreshing;
   final String? notesDraft;
+  final OvertimeVoiceDraft? voiceDraft;
 
   /// True when a running session already exists (server conflict or local
   /// recovery) and the UI should offer to continue it instead of starting.
@@ -91,6 +94,8 @@ class OvertimeState extends Equatable {
     bool? isRefreshing,
     String? notesDraft,
     bool clearNotesDraft = false,
+    OvertimeVoiceDraft? voiceDraft,
+    bool clearVoiceDraft = false,
     bool? offerContinueSession,
     int? liveBatteryLevel,
     bool clearLiveBatteryLevel = false,
@@ -114,6 +119,7 @@ class OvertimeState extends Equatable {
       busyAction: clearBusyAction ? null : (busyAction ?? this.busyAction),
       isRefreshing: isRefreshing ?? this.isRefreshing,
       notesDraft: clearNotesDraft ? null : (notesDraft ?? this.notesDraft),
+      voiceDraft: clearVoiceDraft ? null : (voiceDraft ?? this.voiceDraft),
       offerContinueSession: offerContinueSession ?? this.offerContinueSession,
       liveBatteryLevel: clearLiveBatteryLevel
           ? null
@@ -141,6 +147,7 @@ class OvertimeState extends Equatable {
         busyAction,
         isRefreshing,
         notesDraft,
+        voiceDraft,
         offerContinueSession,
         liveBatteryLevel,
         liveNetworkStatus,

@@ -4838,6 +4838,60 @@ abstract class AppLocalizations {
   /// **'Optional notes for this checkpoint'**
   String get overtimeNotesOptionalHint;
 
+  /// No description provided for @overtimeVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Note'**
+  String get overtimeVoiceNote;
+
+  /// No description provided for @overtimeVoiceRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Voice'**
+  String get overtimeVoiceRecord;
+
+  /// No description provided for @overtimeVoiceStop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get overtimeVoiceStop;
+
+  /// No description provided for @overtimeVoicePlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get overtimeVoicePlay;
+
+  /// No description provided for @overtimeVoicePause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get overtimeVoicePause;
+
+  /// No description provided for @overtimeVoiceDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get overtimeVoiceDelete;
+
+  /// No description provided for @overtimeVoiceRerecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-record'**
+  String get overtimeVoiceRerecord;
+
+  /// No description provided for @overtimeVoiceMaxDurationHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Optional. Maximum 2 minutes.'**
+  String get overtimeVoiceMaxDurationHint;
+
+  /// No description provided for @overtimeVoicePermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Microphone permission is required to record a voice note.'**
+  String get overtimeVoicePermissionDenied;
+
   /// No description provided for @overtimeRequiresManualReview.
   ///
   /// In en, this message translates to:

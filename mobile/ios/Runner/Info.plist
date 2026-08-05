@@ -68,6 +68,10 @@
 	</array>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Authenticate to open Server Management.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Record optional voice notes for overtime journey checkpoints.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Capture live checkpoint photos for overtime and attendance.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>comgooglemaps</string>

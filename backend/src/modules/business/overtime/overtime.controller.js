@@ -2,39 +2,58 @@ import asyncHandler from '../../../shared/utils/asyncHandler.util.js';
 import { sendSuccess } from '../../../shared/utils/apiResponse.util.js';
 import overtimeService from './overtime.service.js';
 
+function pickMultipartFiles(req) {
+  // Compatible with multer.fields (req.files) and legacy single (req.file).
+  const photo = req.files?.photo?.[0] || req.file || null;
+  const voiceNote = req.files?.voiceNote?.[0] || null;
+  return { photo, voiceNote };
+}
+
 export const getRunning = asyncHandler(async (req, res) => {
   const data = await overtimeService.getRunning(req.user);
   sendSuccess(res, data);
 });
 
 export const startSession = asyncHandler(async (req, res) => {
-  const data = await overtimeService.start(req.user, req.body, req.file);
+  const { photo, voiceNote } = pickMultipartFiles(req);
+  const data = await overtimeService.start(req.user, req.body, photo, voiceNote);
   sendSuccess(res, data, 201);
 });
 
 export const endSession = asyncHandler(async (req, res) => {
-  const data = await overtimeService.end(req.user, req.params.id, req.body, req.file);
+  const { photo, voiceNote } = pickMultipartFiles(req);
+  const data = await overtimeService.end(
+    req.user,
+    req.params.id,
+    req.body,
+    photo,
+    voiceNote
+  );
   sendSuccess(res, data);
 });
 
 export const recordArrivedAtWorkSite = asyncHandler(async (req, res) => {
+  const { photo, voiceNote } = pickMultipartFiles(req);
   const data = await overtimeService.recordCheckpoint(
     req.user,
     req.params.id,
     'arrivedAtWorkSite',
     req.body,
-    req.file
+    photo,
+    voiceNote
   );
   sendSuccess(res, data);
 });
 
 export const recordFinishedWork = asyncHandler(async (req, res) => {
+  const { photo, voiceNote } = pickMultipartFiles(req);
   const data = await overtimeService.recordCheckpoint(
     req.user,
     req.params.id,
     'finishedWork',
     req.body,
-    req.file
+    photo,
+    voiceNote
   );
   sendSuccess(res, data);
 });

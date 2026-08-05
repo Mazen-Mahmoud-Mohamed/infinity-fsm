@@ -32,6 +32,8 @@ class OvertimeRemoteDataSource {
     required OvertimeType type,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    String? voiceFilename,
     required String deviceId,
     required String clientRequestId,
     required String? address,
@@ -53,6 +55,8 @@ class OvertimeRemoteDataSource {
       gps: gps,
       deviceId: deviceId,
       photoBytes: photoBytes,
+      voiceBytes: voiceBytes,
+      voiceFilename: voiceFilename,
       address: address,
       extra: {
         'type': type.apiValue,
@@ -88,6 +92,8 @@ class OvertimeRemoteDataSource {
     required String sessionId,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    String? voiceFilename,
     required String deviceId,
     required String? address,
     DateTime? startedAt,
@@ -102,6 +108,8 @@ class OvertimeRemoteDataSource {
       gps: gps,
       deviceId: deviceId,
       photoBytes: photoBytes,
+      voiceBytes: voiceBytes,
+      voiceFilename: voiceFilename,
       address: address,
       extra: {
         if (startedAt != null) 'startedAt': startedAt.toIso8601String(),
@@ -130,6 +138,8 @@ class OvertimeRemoteDataSource {
     required String sessionId,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    String? voiceFilename,
     required String deviceId,
     required String? address,
     required String clientRequestId,
@@ -142,6 +152,8 @@ class OvertimeRemoteDataSource {
       path: ApiConstants.overtimeArrivedAtWorkSite(sessionId),
       gps: gps,
       photoBytes: photoBytes,
+      voiceBytes: voiceBytes,
+      voiceFilename: voiceFilename,
       deviceId: deviceId,
       address: address,
       clientRequestId: clientRequestId,
@@ -156,6 +168,8 @@ class OvertimeRemoteDataSource {
     required String sessionId,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    String? voiceFilename,
     required String deviceId,
     required String? address,
     required String clientRequestId,
@@ -168,6 +182,8 @@ class OvertimeRemoteDataSource {
       path: ApiConstants.overtimeFinishedWork(sessionId),
       gps: gps,
       photoBytes: photoBytes,
+      voiceBytes: voiceBytes,
+      voiceFilename: voiceFilename,
       deviceId: deviceId,
       address: address,
       clientRequestId: clientRequestId,
@@ -182,6 +198,8 @@ class OvertimeRemoteDataSource {
     required String path,
     required GpsSnapshot gps,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    String? voiceFilename,
     required String deviceId,
     required String? address,
     required String clientRequestId,
@@ -194,6 +212,8 @@ class OvertimeRemoteDataSource {
       gps: gps,
       deviceId: deviceId,
       photoBytes: photoBytes,
+      voiceBytes: voiceBytes,
+      voiceFilename: voiceFilename,
       address: address,
       extra: {
         'clientRequestId': clientRequestId,
@@ -341,11 +361,13 @@ class OvertimeRemoteDataSource {
     required GpsSnapshot gps,
     required String deviceId,
     required List<int> photoBytes,
+    List<int>? voiceBytes,
+    String? voiceFilename,
     required String? address,
     Map<String, String> extra = const {},
   }) {
     final fields = GpsSnapshotModel.fromEntity(gps).toFormFields();
-    return FormData.fromMap({
+    final map = <String, dynamic>{
       ...fields,
       ...extra,
       'deviceId': deviceId,
@@ -354,6 +376,14 @@ class OvertimeRemoteDataSource {
         photoBytes,
         filename: 'overtime.jpg',
       ),
-    });
+    };
+    if (voiceBytes != null && voiceBytes.isNotEmpty) {
+      map['voiceNote'] = MultipartFile.fromBytes(
+        voiceBytes,
+        filename: voiceFilename ?? 'voice.m4a',
+        contentType: DioMediaType('audio', 'mp4'),
+      );
+    }
+    return FormData.fromMap(map);
   }
 }

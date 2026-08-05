@@ -15,7 +15,6 @@ import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_history_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
-import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
 
@@ -216,6 +215,7 @@ class _HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final timeFormat = AppFormatters.mediumDateTime(context);
 
     return Container(
       width: double.infinity,
@@ -252,16 +252,20 @@ class _HistoryCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            l10n.overtimeDurationLine(
-              OvertimeFormatters.durationFromMinutes(
-                session.eligibleOvertimeMinutes,
-                l10n,
-              ),
-            ),
+            '${l10n.overtimeStartTime}: ${timeFormat.format(session.startAt.toLocal())}',
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
+          if (session.endAt != null) ...[
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              '${l10n.overtimeEndTime}: ${timeFormat.format(session.endAt!.toLocal())}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
           if (!pendingSync &&
               session.id.isNotEmpty &&
               !session.id.startsWith('local-')) ...[
@@ -280,6 +284,16 @@ class _HistoryCard extends StatelessWidget {
               l10n.overtimeRejectionReasonLine(session.rejectionReason!),
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.error,
+              ),
+            ),
+          ],
+          if (session.reviewNotes != null &&
+              session.reviewNotes!.trim().isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              '${l10n.overtimeReviewNotes}: ${session.reviewNotes!.trim()}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
           ],

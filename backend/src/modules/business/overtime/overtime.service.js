@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import OvertimeRecord from './models/overtimeRecord.model.js';
-import { uploadOvertimePhotoBuffer } from './overtime.upload.js';
+import {
+  uploadOvertimePhotoBuffer,
+  uploadOvertimeVoiceNoteBuffer,
+} from './overtime.upload.js';
 import {
   assertReasonableSessionLength,
   calculateOvertimeDurations,
@@ -144,10 +147,47 @@ function isWorkflowV2(record) {
   return record?.workflowVersion === WORKFLOW_V2;
 }
 
+/** Max voice note length (seconds) — matches client recorder limit. */
+const MAX_VOICE_NOTE_SECONDS = 120;
+
+function voiceFormatFromMime(mimetype) {
+  const mime = String(mimetype || '').toLowerCase();
+  if (mime.includes('webm')) return 'webm';
+  if (mime.includes('ogg')) return 'ogg';
+  if (mime.includes('wav')) return 'wav';
+  if (mime.includes('mpeg') || mime.includes('mp3')) return 'mp3';
+  if (mime.includes('aac')) return 'aac';
+  return 'm4a';
+}
+
+async function resolveOptionalVoiceNote(voiceFile, { userId, stageKey }) {
+  if (!voiceFile?.buffer?.length) {
+    return undefined;
+  }
+  const voiceNote = await uploadOvertimeVoiceNoteBuffer(voiceFile.buffer, {
+    userId,
+    stageKey,
+    format: voiceFormatFromMime(voiceFile.mimetype),
+  });
+  if (
+    typeof voiceNote.duration === 'number' &&
+    Number.isFinite(voiceNote.duration) &&
+    voiceNote.duration > MAX_VOICE_NOTE_SECONDS + 2
+  ) {
+    throw new AppError(
+      'VOICE_NOTE_TOO_LONG',
+      `Voice notes must be ${MAX_VOICE_NOTE_SECONDS} seconds or less`,
+      422
+    );
+  }
+  return voiceNote;
+}
+
 function buildCheckpoint({
   at,
   gps,
   photo,
+  voiceNote,
   address,
   deviceId,
   notes,
@@ -163,6 +203,7 @@ function buildCheckpoint({
     at,
     gps,
     photo,
+    ...(voiceNote ? { voiceNote } : {}),
     address: address || null,
     deviceId,
     clientRequestId: clientRequestId ? String(clientRequestId).trim() : null,
@@ -212,7 +253,7 @@ class OvertimeService {
     return record ? this._map(record) : null;
   }
 
-  async start(user, body, file) {
+  async start(user, body, file, voiceFile) {
     const type = String(body.type || '').toUpperCase();
     if (type !== 'NORMAL' && type !== 'TRAVEL') {
       throw new AppError('INVALID_TYPE', 'Overtime type must be NORMAL or TRAVEL', 422);
@@ -269,6 +310,11 @@ class OvertimeService {
       photoType: 'start',
     });
 
+    const voiceNote = await resolveOptionalVoiceNote(voiceFile, {
+      userId: user._id.toString(),
+      stageKey: CHECKPOINT_STAGES.START_JOURNEY,
+    });
+
     const { startedAt: startAt } = resolveSessionTimeline({
       body,
       fallbackStartAt: new Date(),
@@ -279,6 +325,7 @@ class OvertimeService {
       at: startAt,
       gps,
       photo,
+      voiceNote,
       address,
       deviceId: body.deviceId,
       notes: body.notes,
@@ -326,7 +373,7 @@ class OvertimeService {
    * stage: arrivedAtWorkSite | finishedWork
    * Idempotent via clientRequestId when the stage is already recorded.
    */
-  async recordCheckpoint(user, id, stage, body, file) {
+  async recordCheckpoint(user, id, stage, body, file, voiceFile) {
     const normalized = String(stage || '').trim();
     if (
       normalized !== CHECKPOINT_STAGES.ARRIVED &&
@@ -432,6 +479,11 @@ class OvertimeService {
       photoType: normalized,
     });
 
+    const voiceNote = await resolveOptionalVoiceNote(voiceFile, {
+      userId: user._id.toString(),
+      stageKey: normalized,
+    });
+
     if (!record.checkpoints) {
       record.checkpoints = {};
     }
@@ -440,6 +492,7 @@ class OvertimeService {
       at: checkpointAt,
       gps,
       photo,
+      voiceNote,
       address: body.address || body.fullAddress || null,
       deviceId: body.deviceId,
       notes: body.notes,
@@ -464,7 +517,7 @@ class OvertimeService {
     return this._map(await this._loadWithTechnician(record._id, user.companyId));
   }
 
-  async end(user, id, body, file) {
+  async end(user, id, body, file, voiceFile) {
     const record = await OvertimeRecord.findOne({
       _id: id,
       companyId: user.companyId,
@@ -568,6 +621,11 @@ class OvertimeService {
       photoType: 'end',
     });
 
+    const voiceNote = await resolveOptionalVoiceNote(voiceFile, {
+      userId: user._id.toString(),
+      stageKey: CHECKPOINT_STAGES.END_JOURNEY,
+    });
+
     // Duration still uses Stage 1 (start) → Stage 4 (end) only.
     const calculated = calculateOvertimeDurations(startedAt, endedAt);
 
@@ -599,6 +657,7 @@ class OvertimeService {
         at: endedAt,
         gps,
         photo,
+        voiceNote,
         address: body.address || body.fullAddress || null,
         deviceId: body.deviceId,
         notes: body.notes,
@@ -1020,12 +1079,29 @@ class OvertimeService {
     };
   }
 
+  _mapVoiceNote(vn) {
+    if (!vn?.url) return null;
+    return {
+      url: vn.url,
+      publicId: vn.publicId || null,
+      duration:
+        typeof vn.duration === 'number' && Number.isFinite(vn.duration)
+          ? vn.duration
+          : null,
+      size:
+        typeof vn.size === 'number' && Number.isFinite(vn.size) ? vn.size : null,
+      format: vn.format || null,
+      uploadedAt: vn.uploadedAt?.toISOString?.() || vn.uploadedAt || null,
+    };
+  }
+
   _mapCheckpoint(cp) {
     if (!cp) return null;
     return {
       at: cp.at?.toISOString?.() || cp.at || null,
       gps: this._mapGps(cp.gps),
       photoUrl: cp.photo?.url || null,
+      voiceNote: this._mapVoiceNote(cp.voiceNote),
       address: cp.address || null,
       deviceId: cp.deviceId || null,
       clientRequestId: cp.clientRequestId || null,

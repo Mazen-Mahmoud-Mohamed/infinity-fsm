@@ -49,7 +49,11 @@ class _LoginView extends StatelessWidget {
       listener: (context, state) {
         if (state is LoginSuccess) {
           context.read<AuthCubit>().setAuthenticated(state.user);
-          context.go(RoutePaths.dashboard);
+          context.go(
+            state.user.usesOperationalHome
+                ? RoutePaths.workOrders
+                : RoutePaths.dashboard,
+          );
         } else if (state is LoginFailure) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()

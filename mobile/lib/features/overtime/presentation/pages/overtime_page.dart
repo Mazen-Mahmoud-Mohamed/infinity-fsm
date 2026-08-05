@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
-import 'package:mobile/core/localization/duration_formatter.dart';
+import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
@@ -14,6 +14,7 @@ import 'package:mobile/features/attendance/presentation/widgets/working_timer.da
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
+import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
@@ -23,6 +24,7 @@ import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart'
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
 
 /// Bottom-nav / `/overtime` entry.
 ///
@@ -69,6 +71,7 @@ class _OvertimeTrackingView extends StatelessWidget {
       appBar: AppBar(
         title: Text(l10n.overtime),
         actions: [
+          const NotificationsBellAction(),
           IconButton(
             tooltip: l10n.overtimeMyTooltip,
             onPressed: () => context.push(RoutePaths.overtimeHistory),
@@ -100,7 +103,8 @@ class _OvertimeTrackingView extends StatelessWidget {
               previous.liveBatteryLevel != current.liveBatteryLevel ||
               previous.liveNetworkStatus != current.liveNetworkStatus ||
               previous.gpsAccuracyMeters != current.gpsAccuracyMeters ||
-              previous.notesDraft != current.notesDraft;
+              previous.notesDraft != current.notesDraft ||
+              previous.voiceDraft != current.voiceDraft;
         },
         listenWhen: (previous, current) =>
             previous.message != current.message &&
@@ -320,6 +324,15 @@ class _StartActions extends StatelessWidget {
               context.read<OvertimeCubit>().updateNotesDraft(value),
         ),
         const SizedBox(height: AppSpacing.md),
+        OvertimeVoiceNoteSection(
+          localBytes: context.read<OvertimeCubit>().state.voiceDraft?.bytes,
+          durationSeconds:
+              context.read<OvertimeCubit>().state.voiceDraft?.durationSeconds,
+          enabled: !isBusy,
+          onDraftChanged: (draft) =>
+              context.read<OvertimeCubit>().updateVoiceDraft(draft),
+        ),
+        const SizedBox(height: AppSpacing.md),
         ElevatedButton.icon(
           onPressed: isBusy ? null : onStartNormal,
           icon: isNormalBusy
@@ -500,6 +513,13 @@ class _RunningSessionCard extends StatelessWidget {
           session: session,
           pendingActions: pendingActions,
           isOffline: isOffline,
+          onPendingVoiceChanged: (stage, draft) {
+            context.read<OvertimeCubit>().updatePendingStageVoice(
+                  stage: stage,
+                  draft: draft,
+                );
+            context.read<OvertimeSyncCubit>().refreshPendingCount();
+          },
         ),
         const SizedBox(height: AppSpacing.lg),
         TextField(
@@ -513,6 +533,15 @@ class _RunningSessionCard extends StatelessWidget {
           ),
           onChanged: (value) =>
               context.read<OvertimeCubit>().updateNotesDraft(value),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        OvertimeVoiceNoteSection(
+          localBytes: context.read<OvertimeCubit>().state.voiceDraft?.bytes,
+          durationSeconds:
+              context.read<OvertimeCubit>().state.voiceDraft?.durationSeconds,
+          enabled: !isBusy,
+          onDraftChanged: (draft) =>
+              context.read<OvertimeCubit>().updateVoiceDraft(draft),
         ),
         const SizedBox(height: AppSpacing.md),
         ElevatedButton.icon(
@@ -677,6 +706,7 @@ class _CompletedSummaryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final timeFormat = AppFormatters.mediumDateTime(context);
 
     return Card(
       child: Padding(
@@ -689,28 +719,35 @@ class _CompletedSummaryCard extends StatelessWidget {
               style: theme.textTheme.titleMedium,
             ),
             const SizedBox(height: AppSpacing.sm),
-            _MetaRow(label: l10n.labelType, value: overtimeTypeLabel(l10n, session.type)),
             _MetaRow(
-              label: l10n.overtimeTotalDuration,
-              value: DurationFormatter.fromMinutes(
-                session.totalDurationMinutes,
-                l10n,
-              ),
+              label: l10n.labelType,
+              value: overtimeTypeLabel(l10n, session.type),
             ),
             _MetaRow(
-              label: l10n.overtimeWorkingDuration,
-              value: DurationFormatter.fromMinutes(
-                session.workingDurationMinutes,
-                l10n,
-              ),
+              label: l10n.overtimeStatusLabel,
+              value: overtimeStatusLabel(l10n, session.status),
             ),
             _MetaRow(
-              label: AppLocalizations.of(context).overtimeEligible,
-              value: DurationFormatter.fromMinutes(
-                session.eligibleOvertimeMinutes,
-                l10n,
-              ),
+              label: l10n.overtimeStartTime,
+              value: timeFormat.format(session.startAt.toLocal()),
             ),
+            if (session.endAt != null)
+              _MetaRow(
+                label: l10n.overtimeEndTime,
+                value: timeFormat.format(session.endAt!.toLocal()),
+              ),
+            if (session.rejectionReason != null &&
+                session.rejectionReason!.trim().isNotEmpty)
+              _MetaRow(
+                label: l10n.overtimeRejectionReason,
+                value: session.rejectionReason!.trim(),
+              ),
+            if (session.reviewNotes != null &&
+                session.reviewNotes!.trim().isNotEmpty)
+              _MetaRow(
+                label: l10n.overtimeReviewNotes,
+                value: session.reviewNotes!.trim(),
+              ),
           ],
         ),
       ),

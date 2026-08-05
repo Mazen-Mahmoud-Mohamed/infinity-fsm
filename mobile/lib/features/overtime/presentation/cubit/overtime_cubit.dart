@@ -24,6 +24,8 @@ import 'package:mobile/features/overtime/domain/usecases/record_overtime_checkpo
 import 'package:mobile/features/overtime/domain/usecases/start_overtime_usecase.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
+import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
+import 'package:mobile/features/overtime/data/models/pending_overtime_action_model.dart';
 
 GpsSnapshot _toGpsSnapshot(GpsReading reading, {DateTime? trustedUtc}) {
   return GpsSnapshot(
@@ -156,6 +158,45 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       state.copyWith(
         notesDraft: (trimmed == null || trimmed.isEmpty) ? null : trimmed,
         clearNotesDraft: trimmed == null || trimmed.isEmpty,
+      ),
+    );
+  }
+
+  void updateVoiceDraft(OvertimeVoiceDraft? draft) {
+    emit(
+      state.copyWith(
+        voiceDraft: draft,
+        clearVoiceDraft: draft == null,
+      ),
+    );
+  }
+
+  /// Updates voice on an already-queued offline stage (before sync succeeds).
+  Future<void> updatePendingStageVoice({
+    required OvertimeCheckpointStage stage,
+    OvertimeVoiceDraft? draft,
+  }) async {
+    final queue = _localDataSource.readQueue();
+    final index = queue.indexWhere((action) => action.checkpointStage == stage);
+    if (index < 0) {
+      return;
+    }
+    final existing = queue[index];
+    final updated = PendingOvertimeActionModel.fromEntity(
+      draft == null
+          ? existing.copyWith(clearVoice: true)
+          : existing.copyWith(
+              voiceBytes: draft.bytes,
+              voiceDurationSeconds: draft.durationSeconds,
+            ),
+    );
+    final next = [...queue];
+    next[index] = updated;
+    await _localDataSource.saveQueue(next);
+    _kickPendingSync();
+    emit(
+      state.copyWith(
+        pendingSyncCount: next.length,
       ),
     );
   }
@@ -333,6 +374,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       final clientRequestId =
           'ot-cp-${capture.deviceId}-${next.apiValue}-${DateTime.now().millisecondsSinceEpoch}';
 
+      final voice = state.voiceDraft;
       final result = await _recordCheckpointUseCase(
         sessionId: session.id,
         stage: next,
@@ -344,6 +386,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
         notes: capture.notes,
         batteryLevel: capture.batteryLevel,
         networkStatus: capture.networkStatus,
+        voiceBytes: voice?.bytes,
+        voiceDurationSeconds: voice?.durationSeconds,
       );
 
       switch (result) {
@@ -371,6 +415,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
               isError: false,
               isOffline: offlineQueued,
               clearNotesDraft: true,
+              clearVoiceDraft: true,
             ),
           );
           unawaited(_deviceTimeGuard.syncSecurityEvents());
@@ -450,6 +495,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       final clientRequestId =
           'ot-end-${capture.deviceId}-${DateTime.now().millisecondsSinceEpoch}';
 
+      final voice = state.voiceDraft;
       final result = await _endOvertimeUseCase(
         sessionId: session.id,
         gps: capture.gps,
@@ -460,6 +506,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
         notes: capture.notes,
         batteryLevel: capture.batteryLevel,
         networkStatus: capture.networkStatus,
+        voiceBytes: voice?.bytes,
+        voiceDurationSeconds: voice?.durationSeconds,
       );
 
       switch (result) {
@@ -485,6 +533,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
               isError: false,
               isOffline: offlineQueued,
               clearNotesDraft: true,
+              clearVoiceDraft: true,
               offerContinueSession: false,
             ),
           );
@@ -669,6 +718,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       final clientRequestId =
           'ot-${capture.deviceId}-${DateTime.now().millisecondsSinceEpoch}';
 
+      final voice = state.voiceDraft;
       final result = await _startOvertimeUseCase(
         type: type,
         gps: capture.gps,
@@ -679,6 +729,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
         notes: capture.notes,
         batteryLevel: capture.batteryLevel,
         networkStatus: capture.networkStatus,
+        voiceBytes: voice?.bytes,
+        voiceDurationSeconds: voice?.durationSeconds,
       );
 
       switch (result) {
@@ -706,6 +758,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
               isError: false,
               isOffline: offlineQueued,
               clearNotesDraft: true,
+              clearVoiceDraft: true,
             ),
           );
           _startTicker(session.startAt);

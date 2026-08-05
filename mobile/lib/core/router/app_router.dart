@@ -86,8 +86,20 @@ GoRouter createAppRouter({
       }
 
       if (authStatus == AuthStatus.authenticated) {
+        final user = authCubit.state.user;
+        final home = user != null && user.usesOperationalHome
+            ? RoutePaths.workOrders
+            : RoutePaths.dashboard;
+
         if (isLogin || isSplash) {
-          return RoutePaths.dashboard;
+          return home;
+        }
+
+        // Technicians must not land on / use the executive Dashboard.
+        if (user != null &&
+            user.usesOperationalHome &&
+            location == RoutePaths.dashboard) {
+          return RoutePaths.workOrders;
         }
       }
 
