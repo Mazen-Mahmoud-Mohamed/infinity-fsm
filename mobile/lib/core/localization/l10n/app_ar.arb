@@ -1320,7 +1320,7 @@
   "settingsNotifSync": "إشعارات المزامنة",
   "settingsNotifUpdates": "إشعارات التحديثات",
   "settingsThemePreview": "معاينة المظهر",
-  "settingsThemePreviewBody": "البطاقات والنصوص والعناصر تتبع المظهر المحدد فوراً.",
+  "settingsThemePreviewBody": "للعرض فقط — بدّل بين الفاتح والداكن أدناه لمعاينة المكونات. هذا لا يغيّر مظهر التطبيق.",
   "settingsAboutApp": "حول التطبيق",
   "settingsDeveloper": "المطور",
   "settingsCopyright": "حقوق النشر © {year} {company}. جميع الحقوق محفوظة.",

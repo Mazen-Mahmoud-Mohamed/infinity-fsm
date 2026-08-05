@@ -1320,7 +1320,7 @@
   "settingsNotifSync": "Sync notifications",
   "settingsNotifUpdates": "Update notifications",
   "settingsThemePreview": "Theme preview",
-  "settingsThemePreviewBody": "Cards, text, and controls follow the selected theme instantly.",
+  "settingsThemePreviewBody": "Example only — switch Light or Dark below to preview components. This does not change the app theme.",
   "settingsAboutApp": "About",
   "settingsDeveloper": "Developer",
   "settingsCopyright": "Copyright © {year} {company}. All rights reserved.",

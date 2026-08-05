@@ -3550,7 +3550,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsThemePreviewBody =>
-      'البطاقات والنصوص والعناصر تتبع المظهر المحدد فوراً.';
+      'للعرض فقط — بدّل بين الفاتح والداكن أدناه لمعاينة المكونات. هذا لا يغيّر مظهر التطبيق.';
 
   @override
   String get settingsAboutApp => 'حول التطبيق';

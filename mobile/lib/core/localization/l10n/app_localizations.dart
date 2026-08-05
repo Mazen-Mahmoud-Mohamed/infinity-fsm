@@ -6959,7 +6959,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsThemePreviewBody.
   ///
   /// In en, this message translates to:
-  /// **'Cards, text, and controls follow the selected theme instantly.'**
+  /// **'Example only — switch Light or Dark below to preview components. This does not change the app theme.'**
   String get settingsThemePreviewBody;
 
   /// No description provided for @settingsAboutApp.

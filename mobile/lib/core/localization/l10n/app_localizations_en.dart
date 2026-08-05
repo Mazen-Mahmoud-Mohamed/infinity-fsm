@@ -3567,7 +3567,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsThemePreviewBody =>
-      'Cards, text, and controls follow the selected theme instantly.';
+      'Example only — switch Light or Dark below to preview components. This does not change the app theme.';
 
   @override
   String get settingsAboutApp => 'About';

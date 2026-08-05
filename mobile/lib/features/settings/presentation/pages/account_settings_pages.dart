@@ -5,6 +5,7 @@ import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_tiles.dart';
@@ -61,19 +62,28 @@ class LanguageSettingsPage extends StatelessWidget {
   }
 }
 
-class ThemeSettingsPage extends StatelessWidget {
+class ThemeSettingsPage extends StatefulWidget {
   const ThemeSettingsPage({super.key, this.embedded = false});
 
   final bool embedded;
+
+  @override
+  State<ThemeSettingsPage> createState() => _ThemeSettingsPageState();
+}
+
+class _ThemeSettingsPageState extends State<ThemeSettingsPage> {
+  /// Local preview brightness only — never writes to [AppCubit] theme mode.
+  bool _previewDark = false;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final themeMode = context.select((AppCubit c) => c.state.themeMode);
+    final previewTheme = _previewDark ? AppTheme.dark() : AppTheme.light();
 
     final body = SettingsPageBody(
-      embedded: embedded,
+      embedded: widget.embedded,
       children: [
         SettingsCard(
           title: l10n.settingsTheme,
@@ -114,62 +124,197 @@ class ThemeSettingsPage extends StatelessWidget {
             children: [
               Text(
                 l10n.settingsThemePreviewBody,
-                style: theme.textTheme.bodyMedium?.copyWith(height: 1.4),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  height: 1.4,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: AppSpacing.md),
-              SettingsActionBar(
-                children: [
-                  FilledButton(
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(120, kSettingsControlHeight),
-                    ),
-                    onPressed: () => context
-                        .read<AppCubit>()
-                        .setThemeMode(ThemeMode.light),
-                    child: Text(l10n.settingsThemeLight),
+              SegmentedButton<bool>(
+                segments: [
+                  ButtonSegment<bool>(
+                    value: false,
+                    label: Text(l10n.settingsThemeLight),
+                    icon: const Icon(Icons.light_mode_outlined, size: 18),
                   ),
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(120, kSettingsControlHeight),
-                    ),
-                    onPressed: () =>
-                        context.read<AppCubit>().setThemeMode(ThemeMode.dark),
-                    child: Text(l10n.settingsThemeDark),
+                  ButtonSegment<bool>(
+                    value: true,
+                    label: Text(l10n.settingsThemeDark),
+                    icon: const Icon(Icons.dark_mode_outlined, size: 18),
                   ),
                 ],
+                selected: {_previewDark},
+                onSelectionChanged: (selected) {
+                  setState(() => _previewDark = selected.first);
+                },
               ),
               const SizedBox(height: AppSpacing.md),
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.surfaceContainerHighest
-                      .withValues(alpha: 0.55),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: theme.colorScheme.outlineVariant
-                        .withValues(alpha: 0.6),
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: Row(
-                    children: [
-                      Icon(
-                        theme.brightness == Brightness.dark
-                            ? Icons.dark_mode_outlined
-                            : Icons.light_mode_outlined,
-                        color: theme.colorScheme.primary,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        theme.brightness == Brightness.dark
-                            ? l10n.settingsThemeDark
-                            : l10n.settingsThemeLight,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
+              Theme(
+                data: previewTheme,
+                child: Builder(
+                  builder: (previewContext) {
+                    final previewScheme = Theme.of(previewContext).colorScheme;
+                    final previewText = Theme.of(previewContext).textTheme;
+                    return Material(
+                      color: previewScheme.surface,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: previewScheme.outlineVariant
+                              .withValues(alpha: 0.7),
                         ),
                       ),
-                    ],
-                  ),
+                      clipBehavior: Clip.antiAlias,
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSpacing.md),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  _previewDark
+                                      ? Icons.dark_mode_outlined
+                                      : Icons.light_mode_outlined,
+                                  color: previewScheme.primary,
+                                ),
+                                const SizedBox(width: AppSpacing.sm),
+                                Expanded(
+                                  child: Text(
+                                    _previewDark
+                                        ? l10n.settingsThemeDark
+                                        : l10n.settingsThemeLight,
+                                    style: previewText.titleSmall?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                Chip(
+                                  avatar: Icon(
+                                    Icons.visibility_outlined,
+                                    size: 16,
+                                    color: previewScheme.primary,
+                                  ),
+                                  label: Text(l10n.settingsThemePreview),
+                                  visualDensity: VisualDensity.compact,
+                                  materialTapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Card(
+                              margin: EdgeInsets.zero,
+                              child: Padding(
+                                padding: const EdgeInsets.all(AppSpacing.md),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      l10n.settingsThemePreview,
+                                      style: previewText.titleMedium?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: AppSpacing.xs),
+                                    Text(
+                                      l10n.settingsThemePreviewBody,
+                                      style: previewText.bodySmall?.copyWith(
+                                        color: previewScheme.onSurfaceVariant,
+                                        height: 1.35,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Text(
+                              l10n.settingsTheme,
+                              style: previewText.bodyLarge,
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            TextFormField(
+                              key: ValueKey<bool>(_previewDark),
+                              readOnly: true,
+                              initialValue: _previewDark
+                                  ? l10n.settingsThemeDark
+                                  : l10n.settingsThemeLight,
+                              decoration: InputDecoration(
+                                labelText: l10n.settingsTheme,
+                                prefixIcon: const Icon(Icons.palette_outlined),
+                                border: const OutlineInputBorder(),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              children: [
+                                FilledButton.icon(
+                                  onPressed: () {},
+                                  icon: const Icon(Icons.check, size: 18),
+                                  label: Text(l10n.save),
+                                ),
+                                OutlinedButton.icon(
+                                  onPressed: () {},
+                                  icon: const Icon(Icons.close, size: 18),
+                                  label: Text(l10n.cancel),
+                                ),
+                                TextButton.icon(
+                                  onPressed: () {},
+                                  icon: const Icon(
+                                    Icons.info_outline,
+                                    size: 18,
+                                  ),
+                                  label: Text(l10n.settingsThemeSystem),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: AppSpacing.md),
+                            const Divider(),
+                            const SizedBox(height: AppSpacing.sm),
+                            Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.dashboard_outlined,
+                                  color: previewScheme.primary,
+                                ),
+                                Icon(
+                                  Icons.notifications_outlined,
+                                  color: previewScheme.onSurfaceVariant,
+                                ),
+                                Icon(
+                                  Icons.settings_outlined,
+                                  color: previewScheme.secondary,
+                                ),
+                                Chip(
+                                  label: Text(l10n.settingsThemeLight),
+                                  avatar: const Icon(
+                                    Icons.light_mode_outlined,
+                                    size: 16,
+                                  ),
+                                ),
+                                Chip(
+                                  label: Text(l10n.settingsThemeDark),
+                                  avatar: const Icon(
+                                    Icons.dark_mode_outlined,
+                                    size: 16,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
@@ -178,7 +323,7 @@ class ThemeSettingsPage extends StatelessWidget {
       ],
     );
 
-    if (embedded) return body;
+    if (widget.embedded) return body;
 
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsTheme)),
