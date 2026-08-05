@@ -303,13 +303,6 @@ class _StartActions extends StatelessWidget {
           l10n.overtimeStartTitle,
           style: theme.textTheme.titleLarge,
         ),
-        const SizedBox(height: AppSpacing.xs),
-        Text(
-          l10n.overtimeStartHint,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
         const SizedBox(height: AppSpacing.xl),
         TextField(
           enabled: !isBusy,

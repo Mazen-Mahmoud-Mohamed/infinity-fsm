@@ -215,7 +215,6 @@ class _HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final timeFormat = AppFormatters.mediumDateTime(context);
 
     return Container(
       width: double.infinity,
@@ -229,74 +228,22 @@ class _HistoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  dateFormat.format(session.startAt.toLocal()),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              OvertimeStatusBadge(
-                status: session.status,
-                pendingSync: pendingSync,
-              ),
-            ],
+          Text(
+            dateFormat.format(session.startAt.toLocal()),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
             overtimeTypeLabel(l10n, session.type),
             style: theme.textTheme.bodyLarge,
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            '${l10n.overtimeStartTime}: ${timeFormat.format(session.startAt.toLocal())}',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
+          const SizedBox(height: AppSpacing.sm),
+          OvertimeStatusBadge(
+            status: session.status,
+            pendingSync: pendingSync,
           ),
-          if (session.endAt != null) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${l10n.overtimeEndTime}: ${timeFormat.format(session.endAt!.toLocal())}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-          if (!pendingSync &&
-              session.id.isNotEmpty &&
-              !session.id.startsWith('local-')) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              l10n.overtimeStatusSynced,
-              style: theme.textTheme.labelMedium?.copyWith(
-                color: theme.colorScheme.primary,
-              ),
-            ),
-          ],
-          if (session.rejectionReason != null &&
-              session.rejectionReason!.isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              l10n.overtimeRejectionReasonLine(session.rejectionReason!),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
-              ),
-            ),
-          ],
-          if (session.reviewNotes != null &&
-              session.reviewNotes!.trim().isNotEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '${l10n.overtimeReviewNotes}: ${session.reviewNotes!.trim()}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
         ],
       ),
     );
