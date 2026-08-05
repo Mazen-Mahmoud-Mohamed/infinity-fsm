@@ -9,8 +9,10 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_executive_layout.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_metric_group_card.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section_grid.dart';
+import 'package:mobile/features/auth/domain/services/permission_checker.dart';
 
 String formatDashboardNum(num value, [BuildContext? context]) {
   if (context != null) {
@@ -37,6 +39,8 @@ List<Widget> buildRoleDashboardSections({
   required double sectionGap,
   required int chartWindowDays,
   required ValueChanged<int> onChartWindowChanged,
+  PermissionChecker? permissions,
+  bool showQuickActions = false,
 }) {
   switch (summary.viewRole) {
     case DashboardViewRole.admin:
@@ -47,6 +51,8 @@ List<Widget> buildRoleDashboardSections({
         sectionGap: sectionGap,
         chartWindowDays: chartWindowDays,
         onChartWindowChanged: onChartWindowChanged,
+        permissions: permissions,
+        showQuickActions: showQuickActions,
       );
     case DashboardViewRole.supervisor:
       return _supervisor(
@@ -56,6 +62,8 @@ List<Widget> buildRoleDashboardSections({
         sectionGap: sectionGap,
         chartWindowDays: chartWindowDays,
         onChartWindowChanged: onChartWindowChanged,
+        permissions: permissions,
+        showQuickActions: showQuickActions,
       );
     case DashboardViewRole.technician:
       return _technician(
@@ -65,6 +73,8 @@ List<Widget> buildRoleDashboardSections({
         sectionGap: sectionGap,
         chartWindowDays: chartWindowDays,
         onChartWindowChanged: onChartWindowChanged,
+        permissions: permissions,
+        showQuickActions: showQuickActions,
       );
   }
 }
@@ -76,6 +86,8 @@ List<Widget> _admin({
   required double sectionGap,
   required int chartWindowDays,
   required ValueChanged<int> onChartWindowChanged,
+  PermissionChecker? permissions,
+  bool showQuickActions = false,
 }) {
   final kpis = summary.kpis;
   final attendance = summary.attendance;
@@ -310,13 +322,25 @@ List<Widget> _admin({
     SizedBox(height: sectionGap),
     DashboardSectionGrid(gap: sectionGap, children: cards),
     SizedBox(height: sectionGap),
-    ..._trendsAndFeeds(
+    ..._trendChartsSection(
       context: context,
       l10n: l10n,
       summary: summary,
       sectionGap: sectionGap,
       chartWindowDays: chartWindowDays,
       onChartWindowChanged: onChartWindowChanged,
+    ),
+    ..._recentNotificationsSection(
+      context: context,
+      l10n: l10n,
+      summary: summary,
+      sectionGap: sectionGap,
+    ),
+    ..._quickActionsSection(
+      l10n: l10n,
+      sectionGap: sectionGap,
+      permissions: permissions,
+      showQuickActions: showQuickActions,
     ),
   ];
 }
@@ -328,6 +352,8 @@ List<Widget> _supervisor({
   required double sectionGap,
   required int chartWindowDays,
   required ValueChanged<int> onChartWindowChanged,
+  PermissionChecker? permissions,
+  bool showQuickActions = false,
 }) {
   final attendance = summary.teamAttendance;
   final overtime = summary.teamOvertime;
@@ -473,14 +499,25 @@ List<Widget> _supervisor({
     SizedBox(height: sectionGap),
     DashboardSectionGrid(gap: sectionGap, children: cards),
     SizedBox(height: sectionGap),
-    ..._trendsAndFeeds(
+    ..._trendChartsSection(
       context: context,
       l10n: l10n,
       summary: summary,
       sectionGap: sectionGap,
       chartWindowDays: chartWindowDays,
       onChartWindowChanged: onChartWindowChanged,
-      activityOverride: summary.teamActivity,
+    ),
+    ..._recentNotificationsSection(
+      context: context,
+      l10n: l10n,
+      summary: summary,
+      sectionGap: sectionGap,
+    ),
+    ..._quickActionsSection(
+      l10n: l10n,
+      sectionGap: sectionGap,
+      permissions: permissions,
+      showQuickActions: showQuickActions,
     ),
   ];
 }
@@ -492,6 +529,8 @@ List<Widget> _technician({
   required double sectionGap,
   required int chartWindowDays,
   required ValueChanged<int> onChartWindowChanged,
+  PermissionChecker? permissions,
+  bool showQuickActions = false,
 }) {
   final attendance = summary.attendance;
   final overtime = summary.overtime;
@@ -610,30 +649,38 @@ List<Widget> _technician({
     SizedBox(height: sectionGap),
     DashboardSectionGrid(gap: sectionGap, children: cards),
     SizedBox(height: sectionGap),
-    ..._trendsAndFeeds(
+    ..._trendChartsSection(
       context: context,
       l10n: l10n,
       summary: summary,
       sectionGap: sectionGap,
       chartWindowDays: chartWindowDays,
       onChartWindowChanged: onChartWindowChanged,
-      includeActivity: false,
+    ),
+    ..._recentNotificationsSection(
+      context: context,
+      l10n: l10n,
+      summary: summary,
+      sectionGap: sectionGap,
+    ),
+    ..._quickActionsSection(
+      l10n: l10n,
+      sectionGap: sectionGap,
+      permissions: permissions,
+      showQuickActions: showQuickActions,
     ),
   ];
 }
 
-List<Widget> _trendsAndFeeds({
+List<Widget> _trendChartsSection({
   required BuildContext context,
   required AppLocalizations l10n,
   required RoleDashboardSummary summary,
   required double sectionGap,
   required int chartWindowDays,
   required ValueChanged<int> onChartWindowChanged,
-  List<DashboardLiveActivityItem>? activityOverride,
-  bool includeActivity = true,
 }) {
   final charts = summary.charts;
-  final activity = activityOverride ?? summary.liveActivity;
   final children = <Widget>[];
 
   final visibleTrends = <Widget>[];
@@ -658,171 +705,79 @@ List<Widget> _trendsAndFeeds({
   addIfTrend(l10n.dashboardChartOvertime, charts.overtime);
   addIfTrend(l10n.dashboardChartPm, charts.preventiveMaintenance);
 
-  if (visibleTrends.isNotEmpty) {
-    children.add(
-      DashboardSection(
-        title: l10n.dashboardTrends,
-        trailing: SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 7, label: Text('7')),
-            ButtonSegment(value: 30, label: Text('30')),
-          ],
-          selected: {chartWindowDays},
-          onSelectionChanged: (value) => onChartWindowChanged(value.first),
-          style: const ButtonStyle(
-            visualDensity: VisualDensity.compact,
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-        ),
-        child: DashboardSectionGrid(
-          gap: AppSpacing.sm,
-          children: visibleTrends,
+  if (visibleTrends.isEmpty) return const [];
+
+  children.add(
+    DashboardSection(
+      title: l10n.dashboardTrends,
+      trailing: SegmentedButton<int>(
+        segments: const [
+          ButtonSegment(value: 7, label: Text('7')),
+          ButtonSegment(value: 30, label: Text('30')),
+        ],
+        selected: {chartWindowDays},
+        onSelectionChanged: (value) => onChartWindowChanged(value.first),
+        style: const ButtonStyle(
+          visualDensity: VisualDensity.compact,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
       ),
-    );
-    children.add(SizedBox(height: sectionGap));
-  }
-
-  if (includeActivity || summary.notifications.isNotEmpty) {
-    children.add(
-      LayoutBuilder(
-        builder: (context, constraints) {
-          final feeds = <Widget>[
-            if (includeActivity)
-              DashboardFeedCard(
-                title: l10n.dashboardSectionLiveActivity,
-                emptyLabel: l10n.dashboardNoLiveActivity,
-                maxItems: 5,
-                onViewAll: activity.isEmpty
-                    ? null
-                    : () => _showFeedSheet(
-                          context,
-                          title: l10n.dashboardSectionLiveActivity,
-                          items: activity
-                              .map(
-                                (e) => DashboardFeedItem(
-                                  title: localizeAuditEvent(l10n, e.action),
-                                  subtitle: localizeAuditFeedSubtitle(
-                                    l10n,
-                                    module: e.module,
-                                    actorName: e.actorName,
-                                  ),
-                                  icon: Icons.history,
-                                ),
-                              )
-                              .toList(),
-                        ),
-                items: activity
-                    .map(
-                      (e) => DashboardFeedItem(
-                        title: localizeAuditEvent(l10n, e.action),
-                        subtitle: localizeAuditFeedSubtitle(
-                          l10n,
-                          module: e.module,
-                          actorName: e.actorName,
-                        ),
-                        icon: Icons.history,
-                      ),
-                    )
-                    .toList(),
-              ),
-            DashboardFeedCard(
-              title: l10n.dashboardRecentNotifications,
-              emptyLabel: l10n.dashboardNoNotifications,
-              maxItems: 5,
-              onViewAll: () => context.push(RoutePaths.notifications),
-              items: summary.notifications
-                  .map(
-                    (n) => DashboardFeedItem(
-                      title: localizeAuditEvent(l10n, n.title),
-                      subtitle: _localizeNotificationBody(l10n, n.body),
-                      icon: Icons.notifications_outlined,
-                      onTap: () => context.push(RoutePaths.notifications),
-                    ),
-                  )
-                  .toList(),
-            ),
-          ];
-
-          if (constraints.maxWidth >= 700) {
-            return Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                for (var i = 0; i < feeds.length; i++) ...[
-                  if (i > 0) const SizedBox(width: AppSpacing.md),
-                  Expanded(child: feeds[i]),
-                ],
-              ],
-            );
-          }
-
-          return Column(
-            children: [
-              for (var i = 0; i < feeds.length; i++) ...[
-                if (i > 0) SizedBox(height: sectionGap),
-                feeds[i],
-              ],
-            ],
-          );
-        },
+      child: DashboardSectionGrid(
+        gap: AppSpacing.sm,
+        children: visibleTrends,
       ),
-    );
-  }
+    ),
+  );
 
   return children;
 }
 
-String _localizeNotificationBody(AppLocalizations l10n, String? body) {
-  final raw = (body ?? '').trim();
-  if (raw.isEmpty) return l10n.eventGenericActivity;
+List<Widget> _recentNotificationsSection({
+  required BuildContext context,
+  required AppLocalizations l10n,
+  required RoleDashboardSummary summary,
+  required double sectionGap,
+}) {
+  final previewItems = summary.notifications
+      .where((n) => !isInternalSystemAuditEvent(n.title))
+      .map(
+        (n) => DashboardFeedItem(
+          title: localizeAuditEvent(l10n, n.title),
+          subtitle: localizeNotificationBody(l10n, n.body),
+          icon: Icons.notifications_outlined,
+          onTap: () => context.push(RoutePaths.notifications),
+        ),
+      )
+      .toList(growable: false);
 
-  final separator = raw.contains(' · ') ? ' · ' : (raw.contains('·') ? '·' : null);
-  if (separator != null) {
-    final parts = raw.split(separator);
-    if (parts.length >= 2) {
-      final module = parts.first.trim();
-      final actor = parts.sublist(1).join(separator).trim();
-      return localizeAuditFeedSubtitle(
-        l10n,
-        module: module,
-        actorName: actor,
-      );
-    }
-  }
-
-  return localizeAuditEvent(l10n, raw);
+  return [
+    SizedBox(height: sectionGap),
+    DashboardFeedCard(
+      title: l10n.dashboardRecentNotifications,
+      emptyLabel: l10n.dashboardNoNotifications,
+      maxItems: 5,
+      onViewAll: () => context.push(RoutePaths.notifications),
+      items: previewItems,
+    ),
+  ];
 }
 
-void _showFeedSheet(
-  BuildContext context, {
-  required String title,
-  required List<DashboardFeedItem> items,
+List<Widget> _quickActionsSection({
+  required AppLocalizations l10n,
+  required double sectionGap,
+  required PermissionChecker? permissions,
+  required bool showQuickActions,
 }) {
-  showModalBottomSheet<void>(
-    context: context,
-    showDragHandle: true,
-    builder: (sheetContext) {
-      return SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.only(bottom: AppSpacing.lg),
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text(
-                title,
-                style: Theme.of(sheetContext).textTheme.titleLarge,
-              ),
-            ),
-            ...items.map(
-              (item) => ListTile(
-                leading: Icon(item.icon ?? Icons.circle_outlined),
-                title: Text(item.title),
-                subtitle: item.subtitle == null ? null : Text(item.subtitle!),
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
+  if (!showQuickActions ||
+      !DashboardQuickActionsGrid.hasVisibleActions(permissions)) {
+    return const [];
+  }
+
+  return [
+    SizedBox(height: sectionGap),
+    DashboardSection(
+      title: l10n.dashboardQuickActions,
+      child: DashboardQuickActionsGrid(permissions: permissions),
+    ),
+  ];
 }

@@ -20,7 +20,7 @@ class _QuickAction {
   final String route;
 }
 
-/// Permission-filtered admin shortcuts that are NOT on bottom navigation.
+/// Frequent operational shortcuts — not duplicate navigation entries.
 class DashboardQuickActionsGrid extends StatelessWidget {
   const DashboardQuickActionsGrid({
     super.key,

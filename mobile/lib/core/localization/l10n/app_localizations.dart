@@ -2972,6 +2972,18 @@ abstract class AppLocalizations {
   /// **'Quick actions'**
   String get dashboardQuickActions;
 
+  /// No description provided for @dashboardQuickCreateWorkOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Create work order'**
+  String get dashboardQuickCreateWorkOrder;
+
+  /// No description provided for @dashboardQuickStartOvertime.
+  ///
+  /// In en, this message translates to:
+  /// **'Start overtime'**
+  String get dashboardQuickStartOvertime;
+
   /// No description provided for @dashboardPeriodToday.
   ///
   /// In en, this message translates to:
@@ -6248,11 +6260,23 @@ abstract class AppLocalizations {
   /// **'No internet connection. Please check your network.'**
   String get errorNoInternet;
 
+  /// No description provided for @errorSecureConnectionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Secure connection failed. Please try again.'**
+  String get errorSecureConnectionFailed;
+
   /// No description provided for @errorRequestFailed.
   ///
   /// In en, this message translates to:
   /// **'Request failed'**
   String get errorRequestFailed;
+
+  /// No description provided for @errorUnexpectedNetworkError.
+  ///
+  /// In en, this message translates to:
+  /// **'Unexpected network error. Please try again.'**
+  String get errorUnexpectedNetworkError;
 
   /// No description provided for @attendanceAlreadyClockedIn.
   ///

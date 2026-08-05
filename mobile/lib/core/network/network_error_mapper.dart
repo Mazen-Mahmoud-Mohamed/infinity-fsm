@@ -34,6 +34,14 @@ class NetworkErrorMapper {
 
   /// Prefer stable API error codes so UI never shows raw English text.
   static String _messageKeyForApiException(ApiException error, String? code) {
+    // If Dio already classified the transport error into a specific,
+    // localized message key, preserve it. Otherwise we'd lose granularity
+    // and everything collapses into a generic connectivity message.
+    final message = error.message;
+    if (_isAlreadySpecificConnectivityKey(message)) {
+      return message;
+    }
+
     if (code == 'OFFLINE' ||
         code == 'TIMEOUT' ||
         code == 'NETWORK_ERROR' ||
@@ -85,6 +93,15 @@ class NetworkErrorMapper {
         lower.contains('clientexception') ||
         lower.contains('http request') ||
         lower.contains('xmlhttprequest');
+  }
+
+  static bool _isAlreadySpecificConnectivityKey(String? message) {
+    if (message == null) return false;
+    return message == 'errorNoInternet' ||
+        message == 'errorRequestTimeout' ||
+        message == 'errorSecureConnectionFailed' ||
+        message == 'errorUnableToReachServer' ||
+        message == 'errorUnexpectedNetworkError';
   }
 
   static String _friendlyConnectivityMessage(String? code) {

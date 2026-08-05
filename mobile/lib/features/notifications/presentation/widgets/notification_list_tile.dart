@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/localization/localize_audit_event.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
@@ -84,6 +85,8 @@ class NotificationListTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final unread = !notification.isRead;
     final createdAt = notification.createdAt;
+    final title = localizeAuditEvent(l10n, notification.title);
+    final body = localizeNotificationBody(l10n, notification.body);
 
     return AppListCard(
       onTap: onTap,
@@ -114,7 +117,7 @@ class NotificationListTile extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        notification.title,
+                        title,
                         style: theme.textTheme.titleSmall?.copyWith(
                           fontWeight:
                               unread ? FontWeight.w700 : FontWeight.w600,
@@ -138,7 +141,7 @@ class NotificationListTile extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  notification.body,
+                  body,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                     height: 1.35,

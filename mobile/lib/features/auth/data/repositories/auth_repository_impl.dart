@@ -39,14 +39,6 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<CurrentUser>> login(LoginParams params) async {
     try {
-      // First login always requires connectivity.
-      if (!await _connectivityService.isConnected) {
-        return const Failure(
-          'Internet is required for the first sign-in.',
-          code: 'OFFLINE',
-        );
-      }
-
       final response = await _remoteDataSource.login(
         LoginRequestDto(
           email: params.email.trim(),
@@ -84,20 +76,11 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       final cachedUser = _localDataSource.readCachedUser();
-      final isOnline = await _connectivityService.isConnected;
+      final tokenExpired = await _localDataSource.isAccessTokenExpired();
 
-      // Offline with a previous successful login: open the app from cache.
-      if (!isOnline) {
-        if (cachedUser != null) {
-          return Success(cachedUser);
-        }
-        return const Failure(
-          'authOfflineRestoreProfile',
-          code: 'OFFLINE',
-        );
-      }
-
-      if (await _localDataSource.isAccessTokenExpired()) {
+      // Refresh token must be decided by the actual API request, not by
+      // InternetConnectionChecker false-negatives.
+      if (tokenExpired) {
         final refreshResult = await refreshTokens();
         if (refreshResult is Failure) {
           if (_isConnectivityFailure(refreshResult.code) &&
@@ -110,6 +93,19 @@ class AuthRepositoryImpl implements AuthRepository {
             code: refreshResult.code,
           );
         }
+      }
+
+      final isOnline = await _connectivityService.isConnected;
+      // If token is still valid and connectivity is likely offline, we can
+      // open from cache as an optimization.
+      if (!tokenExpired && !isOnline) {
+        if (cachedUser != null) {
+          return Success(cachedUser);
+        }
+        return const Failure(
+          'authOfflineRestoreProfile',
+          code: 'OFFLINE',
+        );
       }
 
       final user = await _remoteDataSource.getCurrentUser();

@@ -164,8 +164,12 @@ String localizeAppMessage(
       return l10n.errorUnableToReachServer;
     case 'errorNoInternet':
       return l10n.errorNoInternet;
+    case 'errorSecureConnectionFailed':
+      return l10n.errorSecureConnectionFailed;
     case 'errorRequestFailed':
       return l10n.errorRequestFailed;
+    case 'errorUnexpectedNetworkError':
+      return l10n.errorUnexpectedNetworkError;
     case 'attendanceAlreadyClockedIn':
       return l10n.attendanceAlreadyClockedIn;
     case 'attendanceMustClockInBeforeOut':

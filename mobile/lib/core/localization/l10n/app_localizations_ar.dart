@@ -1485,6 +1485,12 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardQuickActions => 'إجراءات سريعة';
 
   @override
+  String get dashboardQuickCreateWorkOrder => 'إنشاء أمر عمل';
+
+  @override
+  String get dashboardQuickStartOvertime => 'بدء العمل الإضافي';
+
+  @override
   String get dashboardPeriodToday => 'اليوم';
 
   @override
@@ -3187,7 +3193,15 @@ class AppLocalizationsAr extends AppLocalizations {
       'لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة.';
 
   @override
+  String get errorSecureConnectionFailed =>
+      'فشل الاتصال الآمن. يرجى المحاولة مرة أخرى.';
+
+  @override
   String get errorRequestFailed => 'فشل الطلب';
+
+  @override
+  String get errorUnexpectedNetworkError =>
+      'خطأ غير متوقع في الشبكة. يرجى المحاولة مرة أخرى.';
 
   @override
   String get attendanceAlreadyClockedIn =>

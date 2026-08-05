@@ -15,9 +15,7 @@ import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_period_selector.dart';
-import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_sections.dart';
-import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
@@ -231,24 +229,12 @@ class _DashboardViewState extends State<_DashboardView> {
                               onChartWindowChanged: (days) {
                                 setState(() => _chartWindowDays = days);
                               },
+                              permissions: authUser?.permissionChecker,
+                              showQuickActions: isPhone,
                             ),
                           ] else ...[
                             SizedBox(height: sectionGap),
                             AppLoader(message: l10n.dashboardLoading),
-                          ],
-                          // Quick Actions stay on phone only — desktop uses
-                          // NavigationRail destinations instead.
-                          if (isPhone &&
-                              DashboardQuickActionsGrid.hasVisibleActions(
-                                authUser?.permissionChecker,
-                              )) ...[
-                            SizedBox(height: sectionGap),
-                            DashboardSection(
-                              title: l10n.dashboardQuickActions,
-                              child: DashboardQuickActionsGrid(
-                                permissions: authUser?.permissionChecker,
-                              ),
-                            ),
                           ],
                         ],
                       ),

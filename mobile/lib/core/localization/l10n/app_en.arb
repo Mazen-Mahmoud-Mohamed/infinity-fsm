@@ -540,6 +540,8 @@
   "dashboardRecentNotifications": "Recent notifications",
   "dashboardNoNotifications": "No recent notifications",
   "dashboardQuickActions": "Quick actions",
+  "dashboardQuickCreateWorkOrder": "Create work order",
+  "dashboardQuickStartOvertime": "Start overtime",
   "dashboardPeriodToday": "Today",
   "dashboardPeriodWeek": "This Week",
   "dashboardPeriodMonth": "This Month",
@@ -1177,7 +1179,9 @@
   "errorRequestTimeout": "Request timed out. Please try again.",
   "errorUnableToReachServer": "Unable to reach the server.",
   "errorNoInternet": "No internet connection. Please check your network.",
+  "errorSecureConnectionFailed": "Secure connection failed. Please try again.",
   "errorRequestFailed": "Request failed",
+  "errorUnexpectedNetworkError": "Unexpected network error. Please try again.",
 
   "attendanceAlreadyClockedIn": "You have already clocked in today.",
   "attendanceMustClockInBeforeOut": "You must clock in before clocking out.",

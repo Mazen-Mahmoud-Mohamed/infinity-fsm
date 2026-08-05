@@ -540,6 +540,8 @@
   "dashboardRecentNotifications": "أحدث الإشعارات",
   "dashboardNoNotifications": "لا توجد إشعارات حديثة",
   "dashboardQuickActions": "إجراءات سريعة",
+  "dashboardQuickCreateWorkOrder": "إنشاء أمر عمل",
+  "dashboardQuickStartOvertime": "بدء العمل الإضافي",
   "dashboardPeriodToday": "اليوم",
   "dashboardPeriodWeek": "هذا الأسبوع",
   "dashboardPeriodMonth": "هذا الشهر",
@@ -1177,7 +1179,9 @@
   "errorRequestTimeout": "انتهت مهلة الطلب. يرجى المحاولة مرة أخرى.",
   "errorUnableToReachServer": "تعذر الوصول إلى الخادم.",
   "errorNoInternet": "لا يوجد اتصال بالإنترنت. يرجى التحقق من الشبكة.",
+  "errorSecureConnectionFailed": "فشل الاتصال الآمن. يرجى المحاولة مرة أخرى.",
   "errorRequestFailed": "فشل الطلب",
+  "errorUnexpectedNetworkError": "خطأ غير متوقع في الشبكة. يرجى المحاولة مرة أخرى.",
 
   "attendanceAlreadyClockedIn": "لقد قمت بتسجيل الحضور اليوم بالفعل.",
   "attendanceMustClockInBeforeOut": "يجب تسجيل الحضور قبل تسجيل الانصراف.",

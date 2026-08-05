@@ -5,6 +5,7 @@ import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/localization/localize_audit_event.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -96,10 +97,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
               );
             }
 
-            final visible = state.visibleItems;
+            final displayItems = state.visibleItems
+                .where(shouldShowUserNotification)
+                .toList(growable: false);
             final categories = <NotificationCategory>{
               NotificationCategory.all,
-              ...state.items.map((e) => e.category),
+              ...displayItems.map((e) => e.category),
             }.toList()
               ..sort((a, b) => a.index.compareTo(b.index));
 
@@ -217,7 +220,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 ),
                               ),
                             )
-                          else if (visible.isEmpty)
+                          else if (displayItems.isEmpty)
                             SliverFillRemaining(
                               hasScrollBody: false,
                               child: Center(
@@ -243,11 +246,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 chrome: AppBottomChrome.system,
                               ),
                               sliver: SliverList.separated(
-                                itemCount: visible.length,
+                                itemCount: displayItems.length,
                                 separatorBuilder: (_, index) =>
                                     const SizedBox(height: AppSpacing.sm),
                                 itemBuilder: (context, index) {
-                                  final item = visible[index];
+                                  final item = displayItems[index];
                                   return NotificationListTile(
                                     notification: item,
                                     onTap: () => context

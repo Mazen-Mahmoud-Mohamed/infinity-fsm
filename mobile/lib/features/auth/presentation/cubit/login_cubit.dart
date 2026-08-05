@@ -101,15 +101,11 @@ class LoginCubit extends Cubit<LoginState> {
       case Success(data: final user):
         emit(LoginSuccess(user));
         emit(current.copyWith(password: ''));
-      case Failure(message: final message, code: final code):
-        final offline = code == 'OFFLINE' ||
-            code == 'TIMEOUT' ||
-            code == 'NETWORK_ERROR';
-        emit(
-          LoginFailure(
-            offline ? 'firstSignInRequiresInternet' : message,
-          ),
-        );
+      case Failure(message: final message, code: _):
+        // Do not collapse all transport failures into a single "No internet"
+        // message. Dio/network exceptions already map to the most accurate
+        // localized key available; preserve it here.
+        emit(LoginFailure(message));
         emit(current);
     }
   }

@@ -1,4 +1,31 @@
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
+
+/// Technical audit keys that must not appear in user-facing notification UI.
+bool isInternalSystemAuditEvent(String? action) {
+  final raw = (action ?? '').trim().toLowerCase();
+  if (raw.isEmpty) return false;
+
+  const hiddenExact = {
+    'auth.token_refreshed',
+    'auth.refresh',
+    'auth.token_refresh',
+    'keep_alive',
+    'ping',
+    'heartbeat',
+  };
+  if (hiddenExact.contains(raw)) return true;
+
+  if (raw.endsWith('.refresh') || raw.endsWith('.token_refreshed')) {
+    return true;
+  }
+
+  return raw.contains('keep_alive') || raw == 'ping';
+}
+
+bool shouldShowUserNotification(AppNotification notification) {
+  return !isInternalSystemAuditEvent(notification.title);
+}
 
 /// Maps internal audit / notification event keys to user-facing copy.
 ///
@@ -111,4 +138,25 @@ String localizeAuditFeedSubtitle(
         ? l10n.dashboardSystemActor
         : actorName.trim(),
   );
+}
+
+String localizeNotificationBody(AppLocalizations l10n, String? body) {
+  final raw = (body ?? '').trim();
+  if (raw.isEmpty) return l10n.eventGenericActivity;
+
+  final separator = raw.contains(' · ') ? ' · ' : (raw.contains('·') ? '·' : null);
+  if (separator != null) {
+    final parts = raw.split(separator);
+    if (parts.length >= 2) {
+      final module = parts.first.trim();
+      final actor = parts.sublist(1).join(separator).trim();
+      return localizeAuditFeedSubtitle(
+        l10n,
+        module: module,
+        actorName: actor,
+      );
+    }
+  }
+
+  return localizeAuditEvent(l10n, raw);
 }

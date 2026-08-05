@@ -5,6 +5,7 @@ import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/core/network/interceptors/auth_interceptor.dart';
 import 'package:mobile/core/network/interceptors/refresh_token_interceptor.dart';
 import 'package:mobile/core/services/auth_session_service.dart';
+import 'package:mobile/core/services/app_log_buffer.dart';
 import 'package:mobile/core/services/logger_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/storage/token_manager.dart';
@@ -28,6 +29,7 @@ class DioClient {
             },
           ),
         ) {
+    _logger = logger;
     if (envConfig.enableNetworkLogging) {
       _dio.interceptors.add(LoggingInterceptor(logger));
     }
@@ -45,6 +47,7 @@ class DioClient {
   }
 
   final Dio _dio;
+  late final LoggerService _logger;
 
   Dio get instance => _dio;
 
@@ -58,7 +61,7 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _handle(() => _dio.get<T>(
+    return _handle('GET', path, () => _dio.get<T>(
           path,
           queryParameters: queryParameters,
           options: options,
@@ -71,7 +74,7 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _handle(() => _dio.post<T>(
+    return _handle('POST', path, () => _dio.post<T>(
           path,
           data: data,
           queryParameters: queryParameters,
@@ -85,7 +88,7 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _handle(() => _dio.put<T>(
+    return _handle('PUT', path, () => _dio.put<T>(
           path,
           data: data,
           queryParameters: queryParameters,
@@ -99,7 +102,7 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _handle(() => _dio.patch<T>(
+    return _handle('PATCH', path, () => _dio.patch<T>(
           path,
           data: data,
           queryParameters: queryParameters,
@@ -113,7 +116,7 @@ class DioClient {
     Map<String, dynamic>? queryParameters,
     Options? options,
   }) {
-    return _handle(() => _dio.delete<T>(
+    return _handle('DELETE', path, () => _dio.delete<T>(
           path,
           data: data,
           queryParameters: queryParameters,
@@ -121,11 +124,38 @@ class DioClient {
         ));
   }
 
-  Future<Response<T>> _handle<T>(Future<Response<T>> Function() request) async {
+  String _fullUrl(String path) {
+    final base = _dio.options.baseUrl.toString();
+    if (base.isEmpty) return path;
+    final baseWithSlash = base.endsWith('/') ? base : '$base/';
+    final normalizedPath =
+        path.startsWith('/') ? path.substring(1) : path;
+    return Uri.parse(baseWithSlash).resolve(normalizedPath).toString();
+  }
+
+  Future<Response<T>> _handle<T>(
+    String method,
+    String path,
+    Future<Response<T>> Function() request,
+  ) async {
     try {
+      _logger.debug(
+        'Dio request: $method ${_fullUrl(path)}',
+        null,
+        null,
+        AppLogCategory.network,
+      );
       return await request();
     } on DioException catch (error) {
       if (error.response != null) {
+        _logger.warning(
+          'Dio http error: $method ${_fullUrl(path)} '
+          'status=${error.response?.statusCode} '
+          'message=${error.message}',
+          null,
+          null,
+          AppLogCategory.network,
+        );
         throw ApiException.fromResponse(
           statusCode: error.response!.statusCode ?? 500,
           data: error.response!.data,
@@ -135,14 +165,67 @@ class DioClient {
       final isTimeout = error.type == DioExceptionType.connectionTimeout ||
           error.type == DioExceptionType.sendTimeout ||
           error.type == DioExceptionType.receiveTimeout;
-      final isOffline = error.type == DioExceptionType.connectionError ||
-          error.type == DioExceptionType.unknown;
+      final errText = (error.error?.toString() ?? '').toLowerCase();
+
+      // Transport-level classification. Do NOT rely only on DioExceptionType
+      // because multiple underlying socket/TLS failures map to the same type.
+      final isSocketException = errText.contains('socketexception');
+      final isConnectionRefused = errText.contains('connection refused');
+      final isHandshakeException =
+          errText.contains('handshakeexception') ||
+              (errText.contains('ssl') && errText.contains('handshake')) ||
+              (errText.contains('certificate') && errText.contains('verify'));
+      final isDnsFailure = errText.contains('failed host lookup') ||
+          errText.contains('name or service not known') ||
+          errText.contains('dns') ||
+          errText.contains('nodename nor servname');
+
+      final mappedMessageKey = switch ((
+        isTimeout,
+        isSocketException || isConnectionRefused,
+        isHandshakeException,
+        isDnsFailure,
+        error.type == DioExceptionType.unknown
+      )) {
+        (true, _, _, _, _) => 'errorRequestTimeout',
+        (false, true, _, _, _) => 'errorNoInternet',
+        (false, _, true, _, _) => 'errorSecureConnectionFailed',
+        (false, _, _, true, _) => 'errorUnableToReachServer',
+        (false, _, _, _, true) => 'errorUnexpectedNetworkError',
+        _ => 'errorUnableToReachServer',
+      };
+
+      final mappedCode = switch (mappedMessageKey) {
+        'errorRequestTimeout' => 'TIMEOUT',
+        'errorNoInternet' ||
+        'errorSecureConnectionFailed' ||
+        'errorUnableToReachServer' =>
+          'OFFLINE',
+        'errorUnexpectedNetworkError' => 'NETWORK_ERROR',
+        _ => 'NETWORK_ERROR',
+      };
+
+      _logger.error(
+        'Dio exception: $method ${_fullUrl(path)} '
+        'type=${error.type} '
+        'message=${error.message} '
+        'requestUri=${error.requestOptions.uri} '
+        'error=${error.error}',
+        error,
+        error.stackTrace,
+        AppLogCategory.network,
+      );
+
+      _logger.info(
+        'Dio exception mapped => messageKey=$mappedMessageKey code=$mappedCode',
+        null,
+        null,
+        AppLogCategory.network,
+      );
 
       throw ApiException(
-        message: isTimeout ? 'errorRequestTimeout' : 'errorUnableToReachServer',
-        code: isTimeout
-            ? 'TIMEOUT'
-            : (isOffline ? 'OFFLINE' : 'NETWORK_ERROR'),
+        message: mappedMessageKey,
+        code: mappedCode,
       );
     }
   }

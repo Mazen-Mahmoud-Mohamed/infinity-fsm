@@ -216,7 +216,7 @@ Future<void> configureDependencies() async {
   final tokenManager = TokenManager(secureStorageService);
   getIt.registerSingleton<TokenManager>(tokenManager);
 
-  final connectivityService = ConnectivityService();
+  final connectivityService = ConnectivityService(logger: loggerService);
   getIt.registerSingleton<ConnectivityService>(connectivityService);
 
   if (!getIt.isRegistered<SessionQueryCache>()) {
@@ -239,6 +239,7 @@ Future<void> configureDependencies() async {
     envConfig: envConfig,
     dioClient: dioClient,
     preferences: preferencesService,
+    logger: loggerService,
   );
   getIt.registerSingleton<ApiEndpointService>(apiEndpointService);
   await apiEndpointService.bootstrap();

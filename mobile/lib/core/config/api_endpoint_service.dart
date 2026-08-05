@@ -1,5 +1,7 @@
 import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/config/env_config.dart';
+import 'package:mobile/core/services/app_log_buffer.dart';
+import 'package:mobile/core/services/logger_service.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
 import 'package:mobile/core/network/dio_client.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
@@ -14,13 +16,16 @@ class ApiEndpointService {
     required EnvConfig envConfig,
     required DioClient dioClient,
     required PreferencesService preferences,
+    LoggerService? logger,
   })  : _envConfig = envConfig,
         _dioClient = dioClient,
-        _preferences = preferences;
+        _preferences = preferences,
+        _logger = logger;
 
   final EnvConfig _envConfig;
   final DioClient _dioClient;
   final PreferencesService _preferences;
+  final LoggerService? _logger;
 
   /// Compile-time / dart-define default (includes `/api/v1`).
   String get defaultBaseUrl => EnvConfig.resolvedApiBaseUrl;
@@ -43,6 +48,12 @@ class ApiEndpointService {
   /// Load persisted override (if any) and apply before the first request.
   Future<void> bootstrap() async {
     final saved = _preferences.getString(StorageKeys.customApiBaseUrl);
+    _logger?.debug(
+      'ApiEndpointService.bootstrap: hasCustomOverride=${hasCustomOverride}, saved="$saved"',
+      null,
+      null,
+      AppLogCategory.network,
+    );
     if (saved == null || saved.trim().isEmpty) {
       return;
     }
@@ -52,6 +63,12 @@ class ApiEndpointService {
       return;
     }
     _applyInMemory(normalized);
+    _logger?.info(
+      'ApiEndpointService.bootstrap applied effectiveBaseUrl="${effectiveBaseUrl}"',
+      null,
+      null,
+      AppLogCategory.network,
+    );
   }
 
   /// Persist + apply a new base URL. Does not restart the app.
@@ -62,6 +79,12 @@ class ApiEndpointService {
     }
     await _preferences.setString(StorageKeys.customApiBaseUrl, normalized);
     _applyInMemory(normalized);
+    _logger?.info(
+      'ApiEndpointService.saveAndApply applied effectiveBaseUrl="$normalized"',
+      null,
+      null,
+      AppLogCategory.network,
+    );
     return normalized;
   }
 
@@ -69,6 +92,12 @@ class ApiEndpointService {
   Future<String> restoreDefault() async {
     await _preferences.remove(StorageKeys.customApiBaseUrl);
     _applyInMemory(defaultBaseUrl);
+    _logger?.info(
+      'ApiEndpointService.restoreDefault effectiveBaseUrl="$defaultBaseUrl"',
+      null,
+      null,
+      AppLogCategory.network,
+    );
     return defaultBaseUrl;
   }
 
@@ -82,6 +111,12 @@ class ApiEndpointService {
   void _applyInMemory(String normalizedBaseUrl) {
     _envConfig.applyApiBaseUrl(normalizedBaseUrl);
     _dioClient.applyBaseUrl(normalizedBaseUrl);
+    _logger?.debug(
+      'ApiEndpointService._applyInMemory => "$normalizedBaseUrl"',
+      null,
+      null,
+      AppLogCategory.network,
+    );
   }
 }
 

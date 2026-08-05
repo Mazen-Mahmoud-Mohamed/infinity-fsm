@@ -1485,6 +1485,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardQuickActions => 'Quick actions';
 
   @override
+  String get dashboardQuickCreateWorkOrder => 'Create work order';
+
+  @override
+  String get dashboardQuickStartOvertime => 'Start overtime';
+
+  @override
   String get dashboardPeriodToday => 'Today';
 
   @override
@@ -3197,7 +3203,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'No internet connection. Please check your network.';
 
   @override
+  String get errorSecureConnectionFailed =>
+      'Secure connection failed. Please try again.';
+
+  @override
   String get errorRequestFailed => 'Request failed';
+
+  @override
+  String get errorUnexpectedNetworkError =>
+      'Unexpected network error. Please try again.';
 
   @override
   String get attendanceAlreadyClockedIn => 'You have already clocked in today.';
