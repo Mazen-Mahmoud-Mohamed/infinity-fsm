@@ -168,6 +168,19 @@ import 'package:mobile/features/dashboard/data/repositories/dashboard_repository
 import 'package:mobile/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:mobile/features/dashboard/domain/usecases/get_dashboard_summary_usecase.dart';
 import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard_cubit.dart';
+import 'package:mobile/features/notifications/data/datasources/notifications_local_datasource.dart';
+import 'package:mobile/features/notifications/data/datasources/notifications_remote_datasource.dart';
+import 'package:mobile/features/notifications/data/repositories/notifications_repository_impl.dart';
+import 'package:mobile/features/notifications/domain/repositories/notifications_repository.dart';
+import 'package:mobile/features/notifications/domain/usecases/notifications_usecases.dart';
+import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
+import 'package:mobile/features/auth/domain/services/permission_checker.dart';
+import 'package:mobile/features/global_search/data/repositories/global_search_repository_impl.dart';
+import 'package:mobile/features/global_search/domain/repositories/global_search_repository.dart';
+import 'package:mobile/features/global_search/domain/usecases/search_globally_usecase.dart';
+import 'package:mobile/features/global_search/presentation/cubit/global_search_cubit.dart';
+import 'package:mobile/features/reports_center/presentation/cubit/reports_center_cubit.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1283,6 +1296,84 @@ Future<void> configureDependencies() async {
     () => ExecutiveDashboardCubit(
       getDashboardSummary: getIt<GetDashboardSummaryUseCase>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<NotificationsLocalDataSource>(
+    () => NotificationsLocalDataSource(getIt<PreferencesService>()),
+  );
+  getIt.registerLazySingleton<NotificationsRemoteDataSource>(
+    () => NotificationsRemoteDataSource(getIt<GetDashboardSummaryUseCase>()),
+  );
+  getIt.registerLazySingleton<NotificationsRepository>(
+    () => NotificationsRepositoryImpl(
+      remote: getIt<NotificationsRemoteDataSource>(),
+      local: getIt<NotificationsLocalDataSource>(),
+    ),
+  );
+  getIt.registerLazySingleton(
+    () => GetNotificationsUseCase(getIt<NotificationsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => GetNotificationsUnreadCountUseCase(getIt<NotificationsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => MarkNotificationReadUseCase(getIt<NotificationsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => MarkAllNotificationsReadUseCase(getIt<NotificationsRepository>()),
+  );
+  getIt.registerLazySingleton<NotificationsUnreadCubit>(
+    () => NotificationsUnreadCubit(
+      getUnreadCount: getIt<GetNotificationsUnreadCountUseCase>(),
+    ),
+  );
+  getIt.registerFactory<NotificationsCubit>(
+    () => NotificationsCubit(
+      getNotifications: getIt<GetNotificationsUseCase>(),
+      markNotificationRead: getIt<MarkNotificationReadUseCase>(),
+      markAllNotificationsRead: getIt<MarkAllNotificationsReadUseCase>(),
+      unreadCubit: getIt<NotificationsUnreadCubit>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<GlobalSearchRepository>(
+    () => GlobalSearchRepositoryImpl(
+      listUsers: getIt<ListManagedUsersUseCase>(),
+      listAssets: getIt<ListAssetsUseCase>(),
+      listSpareParts: getIt<ListSparePartsUseCase>(),
+      listWorkOrders: getIt<ListWorkOrdersUseCase>(),
+      listMyWorkOrders: getIt<ListMyWorkOrdersUseCase>(),
+      listAdminOvertime: getIt<ListAdminOvertimeUseCase>(),
+      listPmPlans: getIt<ListPmPlansUseCase>(),
+      listServiceReports: getIt<ListServiceReportsUseCase>(),
+    ),
+  );
+  getIt.registerLazySingleton(
+    () => SearchGloballyUseCase(getIt<GlobalSearchRepository>()),
+  );
+  getIt.registerFactory<GlobalSearchCubit>(
+    () => GlobalSearchCubit(
+      searchGlobally: getIt<SearchGloballyUseCase>(),
+      permissionsProvider: () {
+        final user = getIt<AuthCubit>().state.user;
+        return user?.permissionChecker ?? const PermissionChecker([]);
+      },
+    ),
+  );
+
+  getIt.registerFactoryParam<ReportsCenterCubit, PermissionChecker, void>(
+    (permissions, _) => ReportsCenterCubit(
+      permissions: permissions,
+      listAttendance: getIt<ListAdminAttendanceUseCase>(),
+      listOvertime: getIt<ListAdminOvertimeUseCase>(),
+      listWorkOrders: getIt<ListWorkOrdersUseCase>(),
+      listMyWorkOrders: getIt<ListMyWorkOrdersUseCase>(),
+      listAssets: getIt<ListAssetsUseCase>(),
+      listSpareParts: getIt<ListSparePartsUseCase>(),
+      listPmPlans: getIt<ListPmPlansUseCase>(),
+      listServiceReports: getIt<ListServiceReportsUseCase>(),
+      listUsers: getIt<ListManagedUsersUseCase>(),
     ),
   );
 

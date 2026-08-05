@@ -40,7 +40,7 @@ import 'package:mobile/features/roles/presentation/pages/roles_list_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/customer_signature_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/service_report_detail_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/service_report_generate_page.dart';
-import 'package:mobile/features/service_reports/presentation/pages/service_reports_dashboard_page.dart';
+import 'package:mobile/features/reports_center/presentation/pages/reports_center_page.dart';
 import 'package:mobile/features/service_reports/presentation/pages/service_reports_list_page.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
@@ -346,7 +346,7 @@ GoRouter createAppRouter({
               GoRoute(
                 path: RoutePaths.reports,
                 builder: (context, state) =>
-                    const ServiceReportsDashboardPage(),
+                    const ReportsCenterPage(),
                 routes: [
                   GoRoute(
                     path: 'list',

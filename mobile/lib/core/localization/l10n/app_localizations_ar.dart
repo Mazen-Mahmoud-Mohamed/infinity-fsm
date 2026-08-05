@@ -93,6 +93,184 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notifications => 'الإشعارات';
 
   @override
+  String get notificationsLoading => 'جاري تحميل الإشعارات...';
+
+  @override
+  String get notificationsLoadFailed => 'تعذر تحميل الإشعارات.';
+
+  @override
+  String get notificationsEmpty => 'لا توجد إشعارات بعد.';
+
+  @override
+  String get notificationsSearchHint => 'بحث في الإشعارات';
+
+  @override
+  String get notificationsSearchEmpty => 'لا توجد إشعارات مطابقة لبحثك.';
+
+  @override
+  String get notificationsMarkAllRead => 'تعيين الكل كمقروء';
+
+  @override
+  String get notificationsUnread => 'غير مقروء';
+
+  @override
+  String get notificationsRead => 'مقروء';
+
+  @override
+  String get notificationsFilterAll => 'الكل';
+
+  @override
+  String get notificationsCategoryGeneral => 'عام';
+
+  @override
+  String notificationsUnreadCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count إشعار غير مقروء',
+      many: '$count إشعارًا غير مقروء',
+      few: '$count إشعارات غير مقروءة',
+      two: 'إشعاران غير مقروءين',
+      one: 'إشعار واحد غير مقروء',
+      zero: 'لا إشعارات غير مقروءة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get globalSearch => 'بحث';
+
+  @override
+  String get globalSearchHint => 'ابحث في المستخدمين وأوامر العمل والأصول…';
+
+  @override
+  String get globalSearchPrompt => 'اكتب حرفين على الأقل للبحث عبر الوحدات.';
+
+  @override
+  String get globalSearchEmpty => 'لا توجد نتائج.';
+
+  @override
+  String get globalSearchFailed => 'تعذر تنفيذ البحث حالياً.';
+
+  @override
+  String get globalSearchShortcutHint => 'Ctrl+K';
+
+  @override
+  String get reportsCenter => 'مركز التقارير';
+
+  @override
+  String get reportsCenterSearchHint => 'بحث في سجلات التقارير';
+
+  @override
+  String get reportsCenterFilters => 'عوامل التصفية';
+
+  @override
+  String get reportsCenterApplyFilters => 'تطبيق عوامل التصفية';
+
+  @override
+  String get reportsCenterStatusFilter => 'الحالة';
+
+  @override
+  String get reportsCenterFilterAll => 'الكل';
+
+  @override
+  String get reportsCenterDateRange => 'نطاق التاريخ';
+
+  @override
+  String get reportsCenterCustomRange => 'نطاق مخصص';
+
+  @override
+  String get reportsCenterClearDates => 'مسح التواريخ';
+
+  @override
+  String get reportsCenterEmployee => 'الموظف';
+
+  @override
+  String get reportsCenterDepartment => 'القسم';
+
+  @override
+  String get reportsCenterSort => 'ترتيب';
+
+  @override
+  String get reportsCenterSortTitleAsc => 'العنوان أ–ي';
+
+  @override
+  String get reportsCenterSortTitleDesc => 'العنوان ي–أ';
+
+  @override
+  String get reportsCenterSortDateAsc => 'الأقدم تاريخاً';
+
+  @override
+  String get reportsCenterSortDateDesc => 'الأحدث تاريخاً';
+
+  @override
+  String get reportsCenterSortStatusAsc => 'الحالة أ–ي';
+
+  @override
+  String get reportsCenterSortStatusDesc => 'الحالة ي–أ';
+
+  @override
+  String get reportsCenterExport => 'تصدير';
+
+  @override
+  String get reportsCenterExportUnavailable => 'التصدير غير متاح حالياً.';
+
+  @override
+  String get reportsCenterFilterUnavailable =>
+      'عامل التصفية هذا غير مدعوم في واجهة البرمجة الحالية.';
+
+  @override
+  String get reportsCenterEmpty =>
+      'لا توجد سجلات مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterEmptyAttendance =>
+      'لا توجد سجلات حضور مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterEmptyOvertime =>
+      'لا توجد جلسات عمل إضافي مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterEmptyWorkOrders =>
+      'لا توجد أوامر عمل مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterEmptyAssets =>
+      'لا توجد أصول مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterEmptyInventory =>
+      'لا توجد قطع مخزون مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterEmptyPm =>
+      'لا توجد خطط صيانة مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterEmptyServiceReports =>
+      'لا توجد تقارير خدمة مطابقة لعوامل التصفية المحددة.';
+
+  @override
+  String get reportsCenterLoadFailed => 'تعذر تحميل بيانات التقارير.';
+
+  @override
+  String get reportsCenterNoAccess =>
+      'ليس لديك صلاحية الوصول إلى أي وحدة تقارير.';
+
+  @override
+  String get reportsCenterColTitle => 'العنوان';
+
+  @override
+  String get reportsCenterColSubtitle => 'المرجع';
+
+  @override
+  String get reportsCenterColDate => 'التاريخ';
+
+  @override
+  String get reportsCenterColMeta => 'التفاصيل';
+
+  @override
   String get profile => 'الملف الشخصي';
 
   @override

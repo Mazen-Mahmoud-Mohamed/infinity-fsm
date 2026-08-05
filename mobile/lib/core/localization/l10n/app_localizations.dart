@@ -266,6 +266,318 @@ abstract class AppLocalizations {
   /// **'Notifications'**
   String get notifications;
 
+  /// No description provided for @notificationsLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading notifications...'**
+  String get notificationsLoading;
+
+  /// No description provided for @notificationsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load notifications.'**
+  String get notificationsLoadFailed;
+
+  /// No description provided for @notificationsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications yet.'**
+  String get notificationsEmpty;
+
+  /// No description provided for @notificationsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search notifications'**
+  String get notificationsSearchHint;
+
+  /// No description provided for @notificationsSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No notifications match your search.'**
+  String get notificationsSearchEmpty;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark all as read'**
+  String get notificationsMarkAllRead;
+
+  /// No description provided for @notificationsUnread.
+  ///
+  /// In en, this message translates to:
+  /// **'Unread'**
+  String get notificationsUnread;
+
+  /// No description provided for @notificationsRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Read'**
+  String get notificationsRead;
+
+  /// No description provided for @notificationsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get notificationsFilterAll;
+
+  /// No description provided for @notificationsCategoryGeneral.
+  ///
+  /// In en, this message translates to:
+  /// **'General'**
+  String get notificationsCategoryGeneral;
+
+  /// No description provided for @notificationsUnreadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 unread notification} other{{count} unread notifications}}'**
+  String notificationsUnreadCount(int count);
+
+  /// No description provided for @globalSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get globalSearch;
+
+  /// No description provided for @globalSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search users, work orders, assets…'**
+  String get globalSearchHint;
+
+  /// No description provided for @globalSearchPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Type at least 2 characters to search across modules.'**
+  String get globalSearchPrompt;
+
+  /// No description provided for @globalSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No results found.'**
+  String get globalSearchEmpty;
+
+  /// No description provided for @globalSearchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to search right now.'**
+  String get globalSearchFailed;
+
+  /// No description provided for @globalSearchShortcutHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Ctrl+K'**
+  String get globalSearchShortcutHint;
+
+  /// No description provided for @reportsCenter.
+  ///
+  /// In en, this message translates to:
+  /// **'Reports Center'**
+  String get reportsCenter;
+
+  /// No description provided for @reportsCenterSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search report records'**
+  String get reportsCenterSearchHint;
+
+  /// No description provided for @reportsCenterFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get reportsCenterFilters;
+
+  /// No description provided for @reportsCenterApplyFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply filters'**
+  String get reportsCenterApplyFilters;
+
+  /// No description provided for @reportsCenterStatusFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get reportsCenterStatusFilter;
+
+  /// No description provided for @reportsCenterFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get reportsCenterFilterAll;
+
+  /// No description provided for @reportsCenterDateRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get reportsCenterDateRange;
+
+  /// No description provided for @reportsCenterCustomRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom range'**
+  String get reportsCenterCustomRange;
+
+  /// No description provided for @reportsCenterClearDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear dates'**
+  String get reportsCenterClearDates;
+
+  /// No description provided for @reportsCenterEmployee.
+  ///
+  /// In en, this message translates to:
+  /// **'Employee'**
+  String get reportsCenterEmployee;
+
+  /// No description provided for @reportsCenterDepartment.
+  ///
+  /// In en, this message translates to:
+  /// **'Department'**
+  String get reportsCenterDepartment;
+
+  /// No description provided for @reportsCenterSort.
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get reportsCenterSort;
+
+  /// No description provided for @reportsCenterSortTitleAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Title A–Z'**
+  String get reportsCenterSortTitleAsc;
+
+  /// No description provided for @reportsCenterSortTitleDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Title Z–A'**
+  String get reportsCenterSortTitleDesc;
+
+  /// No description provided for @reportsCenterSortDateAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Date oldest'**
+  String get reportsCenterSortDateAsc;
+
+  /// No description provided for @reportsCenterSortDateDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Date newest'**
+  String get reportsCenterSortDateDesc;
+
+  /// No description provided for @reportsCenterSortStatusAsc.
+  ///
+  /// In en, this message translates to:
+  /// **'Status A–Z'**
+  String get reportsCenterSortStatusAsc;
+
+  /// No description provided for @reportsCenterSortStatusDesc.
+  ///
+  /// In en, this message translates to:
+  /// **'Status Z–A'**
+  String get reportsCenterSortStatusDesc;
+
+  /// No description provided for @reportsCenterExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get reportsCenterExport;
+
+  /// No description provided for @reportsCenterExportUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Export is not available yet.'**
+  String get reportsCenterExportUnavailable;
+
+  /// No description provided for @reportsCenterFilterUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'This filter is not supported by the current API.'**
+  String get reportsCenterFilterUnavailable;
+
+  /// No description provided for @reportsCenterEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No records match the selected filters.'**
+  String get reportsCenterEmpty;
+
+  /// No description provided for @reportsCenterEmptyAttendance.
+  ///
+  /// In en, this message translates to:
+  /// **'No attendance records found for the selected filters.'**
+  String get reportsCenterEmptyAttendance;
+
+  /// No description provided for @reportsCenterEmptyOvertime.
+  ///
+  /// In en, this message translates to:
+  /// **'No overtime sessions found for the selected filters.'**
+  String get reportsCenterEmptyOvertime;
+
+  /// No description provided for @reportsCenterEmptyWorkOrders.
+  ///
+  /// In en, this message translates to:
+  /// **'No work orders found for the selected filters.'**
+  String get reportsCenterEmptyWorkOrders;
+
+  /// No description provided for @reportsCenterEmptyAssets.
+  ///
+  /// In en, this message translates to:
+  /// **'No assets found for the selected filters.'**
+  String get reportsCenterEmptyAssets;
+
+  /// No description provided for @reportsCenterEmptyInventory.
+  ///
+  /// In en, this message translates to:
+  /// **'No inventory parts found for the selected filters.'**
+  String get reportsCenterEmptyInventory;
+
+  /// No description provided for @reportsCenterEmptyPm.
+  ///
+  /// In en, this message translates to:
+  /// **'No maintenance plans found for the selected filters.'**
+  String get reportsCenterEmptyPm;
+
+  /// No description provided for @reportsCenterEmptyServiceReports.
+  ///
+  /// In en, this message translates to:
+  /// **'No service reports found for the selected filters.'**
+  String get reportsCenterEmptyServiceReports;
+
+  /// No description provided for @reportsCenterLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load report data.'**
+  String get reportsCenterLoadFailed;
+
+  /// No description provided for @reportsCenterNoAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have access to any report modules.'**
+  String get reportsCenterNoAccess;
+
+  /// No description provided for @reportsCenterColTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Title'**
+  String get reportsCenterColTitle;
+
+  /// No description provided for @reportsCenterColSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get reportsCenterColSubtitle;
+
+  /// No description provided for @reportsCenterColDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get reportsCenterColDate;
+
+  /// No description provided for @reportsCenterColMeta.
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get reportsCenterColMeta;
+
   /// No description provided for @profile.
   ///
   /// In en, this message translates to:

@@ -19,6 +19,8 @@ import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_a
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_sections.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
+import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
+import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -63,11 +65,8 @@ class _DashboardViewState extends State<_DashboardView> {
       appBar: AppBar(
         title: Text(l10n.dashboard),
         actions: [
-          IconButton(
-            tooltip: l10n.notifications,
-            onPressed: () => context.push(RoutePaths.notifications),
-            icon: const Icon(Icons.notifications_outlined),
-          ),
+          const GlobalSearchAction(),
+          const NotificationsBellAction(),
           IconButton(
             tooltip: l10n.settings,
             onPressed: () => context.go(RoutePaths.settings),
@@ -427,9 +426,9 @@ class MainNavigationShell extends StatelessWidget {
                   extended: extendedRail,
                 ),
                 _railDestination(
-                  icon: Icons.description_outlined,
-                  selectedIcon: Icons.description,
-                  label: l10n.reportsTitle,
+                  icon: Icons.analytics_outlined,
+                  selectedIcon: Icons.analytics,
+                  label: l10n.reportsCenter,
                   extended: extendedRail,
                 ),
                 _railDestination(

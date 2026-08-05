@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,8 @@ import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
+import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
+import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
@@ -32,30 +35,49 @@ class InfinityApp extends StatelessWidget {
         BlocProvider<OvertimeSyncCubit>.value(
           value: getIt<OvertimeSyncCubit>(),
         ),
+        BlocProvider<NotificationsUnreadCubit>.value(
+          value: getIt<NotificationsUnreadCubit>(),
+        ),
       ],
-      child: BlocListener<AuthCubit, AuthState>(
-        listenWhen: (previous, current) =>
-            previous.message != current.message &&
-            current.message != null &&
-            !isUserFacingNetworkNoise(current.message),
-        listener: (context, state) {
-          if (state.message == null ||
-              isUserFacingNetworkNoise(state.message)) {
-            return;
-          }
-          scaffoldMessengerKey.currentState
-            ?..hideCurrentSnackBar()
-            ..showSnackBar(
-              SnackBar(
-                content: Text(
-                  localizeAppMessage(
-                    AppLocalizations.of(context),
-                    state.message,
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<AuthCubit, AuthState>(
+            listenWhen: (previous, current) =>
+                previous.message != current.message &&
+                current.message != null &&
+                !isUserFacingNetworkNoise(current.message),
+            listener: (context, state) {
+              if (state.message == null ||
+                  isUserFacingNetworkNoise(state.message)) {
+                return;
+              }
+              scaffoldMessengerKey.currentState
+                ?..hideCurrentSnackBar()
+                ..showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      localizeAppMessage(
+                        AppLocalizations.of(context),
+                        state.message,
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            );
-        },
+                );
+            },
+          ),
+          BlocListener<AuthCubit, AuthState>(
+            listenWhen: (previous, current) =>
+                previous.status != current.status,
+            listener: (context, state) {
+              final unread = context.read<NotificationsUnreadCubit>();
+              if (state.status == AuthStatus.authenticated) {
+                unread.refresh();
+              } else if (state.status == AuthStatus.unauthenticated) {
+                unread.clear();
+              }
+            },
+          ),
+        ],
         child: BlocBuilder<AppCubit, AppState>(
           buildWhen: (previous, current) =>
               previous.themeMode != current.themeMode ||
@@ -94,7 +116,26 @@ class InfinityApp extends StatelessWidget {
                   data: scaled,
                   child: AnnotatedRegion(
                     value: AppSystemUi.overlayFor(theme),
-                    child: child ?? const SizedBox.shrink(),
+                    child: Shortcuts(
+                      shortcuts: const <ShortcutActivator, Intent>{
+                        SingleActivator(LogicalKeyboardKey.keyK, control: true):
+                            OpenGlobalSearchIntent(),
+                        SingleActivator(LogicalKeyboardKey.keyK, meta: true):
+                            OpenGlobalSearchIntent(),
+                      },
+                      child: Actions(
+                        actions: <Type, Action<Intent>>{
+                          OpenGlobalSearchIntent:
+                              CallbackAction<OpenGlobalSearchIntent>(
+                            onInvoke: (_) {
+                              openGlobalSearch(context);
+                              return null;
+                            },
+                          ),
+                        },
+                        child: child ?? const SizedBox.shrink(),
+                      ),
+                    ),
                   ),
                 );
               },

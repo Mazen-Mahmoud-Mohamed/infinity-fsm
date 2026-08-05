@@ -93,6 +93,180 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notifications => 'Notifications';
 
   @override
+  String get notificationsLoading => 'Loading notifications...';
+
+  @override
+  String get notificationsLoadFailed => 'Unable to load notifications.';
+
+  @override
+  String get notificationsEmpty => 'No notifications yet.';
+
+  @override
+  String get notificationsSearchHint => 'Search notifications';
+
+  @override
+  String get notificationsSearchEmpty => 'No notifications match your search.';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark all as read';
+
+  @override
+  String get notificationsUnread => 'Unread';
+
+  @override
+  String get notificationsRead => 'Read';
+
+  @override
+  String get notificationsFilterAll => 'All';
+
+  @override
+  String get notificationsCategoryGeneral => 'General';
+
+  @override
+  String notificationsUnreadCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count unread notifications',
+      one: '1 unread notification',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get globalSearch => 'Search';
+
+  @override
+  String get globalSearchHint => 'Search users, work orders, assets…';
+
+  @override
+  String get globalSearchPrompt =>
+      'Type at least 2 characters to search across modules.';
+
+  @override
+  String get globalSearchEmpty => 'No results found.';
+
+  @override
+  String get globalSearchFailed => 'Unable to search right now.';
+
+  @override
+  String get globalSearchShortcutHint => 'Ctrl+K';
+
+  @override
+  String get reportsCenter => 'Reports Center';
+
+  @override
+  String get reportsCenterSearchHint => 'Search report records';
+
+  @override
+  String get reportsCenterFilters => 'Filters';
+
+  @override
+  String get reportsCenterApplyFilters => 'Apply filters';
+
+  @override
+  String get reportsCenterStatusFilter => 'Status';
+
+  @override
+  String get reportsCenterFilterAll => 'All';
+
+  @override
+  String get reportsCenterDateRange => 'Date range';
+
+  @override
+  String get reportsCenterCustomRange => 'Custom range';
+
+  @override
+  String get reportsCenterClearDates => 'Clear dates';
+
+  @override
+  String get reportsCenterEmployee => 'Employee';
+
+  @override
+  String get reportsCenterDepartment => 'Department';
+
+  @override
+  String get reportsCenterSort => 'Sort';
+
+  @override
+  String get reportsCenterSortTitleAsc => 'Title A–Z';
+
+  @override
+  String get reportsCenterSortTitleDesc => 'Title Z–A';
+
+  @override
+  String get reportsCenterSortDateAsc => 'Date oldest';
+
+  @override
+  String get reportsCenterSortDateDesc => 'Date newest';
+
+  @override
+  String get reportsCenterSortStatusAsc => 'Status A–Z';
+
+  @override
+  String get reportsCenterSortStatusDesc => 'Status Z–A';
+
+  @override
+  String get reportsCenterExport => 'Export';
+
+  @override
+  String get reportsCenterExportUnavailable => 'Export is not available yet.';
+
+  @override
+  String get reportsCenterFilterUnavailable =>
+      'This filter is not supported by the current API.';
+
+  @override
+  String get reportsCenterEmpty => 'No records match the selected filters.';
+
+  @override
+  String get reportsCenterEmptyAttendance =>
+      'No attendance records found for the selected filters.';
+
+  @override
+  String get reportsCenterEmptyOvertime =>
+      'No overtime sessions found for the selected filters.';
+
+  @override
+  String get reportsCenterEmptyWorkOrders =>
+      'No work orders found for the selected filters.';
+
+  @override
+  String get reportsCenterEmptyAssets =>
+      'No assets found for the selected filters.';
+
+  @override
+  String get reportsCenterEmptyInventory =>
+      'No inventory parts found for the selected filters.';
+
+  @override
+  String get reportsCenterEmptyPm =>
+      'No maintenance plans found for the selected filters.';
+
+  @override
+  String get reportsCenterEmptyServiceReports =>
+      'No service reports found for the selected filters.';
+
+  @override
+  String get reportsCenterLoadFailed => 'Unable to load report data.';
+
+  @override
+  String get reportsCenterNoAccess =>
+      'You do not have access to any report modules.';
+
+  @override
+  String get reportsCenterColTitle => 'Title';
+
+  @override
+  String get reportsCenterColSubtitle => 'Reference';
+
+  @override
+  String get reportsCenterColDate => 'Date';
+
+  @override
+  String get reportsCenterColMeta => 'Details';
+
+  @override
   String get profile => 'Profile';
 
   @override

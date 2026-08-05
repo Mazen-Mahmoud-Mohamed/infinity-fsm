@@ -77,8 +77,8 @@ class DashboardQuickActionsGrid extends StatelessWidget {
         ),
       if (checker.canViewReports())
         _QuickAction(
-          label: l10n.reportsTitle,
-          icon: Icons.description_outlined,
+          label: l10n.reportsCenter,
+          icon: Icons.analytics_outlined,
           route: RoutePaths.reports,
         ),
     ];
