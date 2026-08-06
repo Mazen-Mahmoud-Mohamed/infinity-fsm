@@ -805,6 +805,17 @@
   "settingsOvertimePhotoTestCompressedSize": "Compressed Size",
   "settingsOvertimePhotoTestEstimatedCloudinaryUsage": "Estimated Cloudinary Storage",
   "settingsOvertimePhotoTestEstimatedUploadTime": "Estimated Upload Time",
+  "settingsOvertimePhotoTestOriginalResolution": "Original Resolution",
+  "settingsOvertimePhotoTestCompressedResolution": "Compressed Resolution",
+  "settingsOvertimePhotoTestJpegQuality": "JPEG Quality",
+  "settingsOvertimePhotoTestJpegQualityValue": "{quality}%",
+  "@settingsOvertimePhotoTestJpegQualityValue": {
+    "placeholders": { "quality": { "type": "int" } }
+  },
+  "settingsOvertimePhotoTestNoCompression": "No compression (original policy)",
+  "settingsOvertimePhotoTestUnderPolicyLimit": "Under policy limit",
+  "settingsOvertimePhotoTestSplitHint": "Drag the slider to compare. Pinch or double-tap to zoom.",
+  "settingsOvertimePhotoTestOpenFullscreen": "Open fullscreen",
   "settingsOvertimePerformanceInfoTitle": "Performance Information",
   "settingsOvertimePerformanceVoiceMaxDuration": "Maximum Duration",
   "settingsOvertimePerformanceVoiceMaxSize": "Estimated Maximum Size",

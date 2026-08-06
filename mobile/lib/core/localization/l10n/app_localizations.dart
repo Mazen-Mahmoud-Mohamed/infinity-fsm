@@ -4052,6 +4052,54 @@ abstract class AppLocalizations {
   /// **'Estimated Upload Time'**
   String get settingsOvertimePhotoTestEstimatedUploadTime;
 
+  /// No description provided for @settingsOvertimePhotoTestOriginalResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Original Resolution'**
+  String get settingsOvertimePhotoTestOriginalResolution;
+
+  /// No description provided for @settingsOvertimePhotoTestCompressedResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressed Resolution'**
+  String get settingsOvertimePhotoTestCompressedResolution;
+
+  /// No description provided for @settingsOvertimePhotoTestJpegQuality.
+  ///
+  /// In en, this message translates to:
+  /// **'JPEG Quality'**
+  String get settingsOvertimePhotoTestJpegQuality;
+
+  /// No description provided for @settingsOvertimePhotoTestJpegQualityValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{quality}%'**
+  String settingsOvertimePhotoTestJpegQualityValue(int quality);
+
+  /// No description provided for @settingsOvertimePhotoTestNoCompression.
+  ///
+  /// In en, this message translates to:
+  /// **'No compression (original policy)'**
+  String get settingsOvertimePhotoTestNoCompression;
+
+  /// No description provided for @settingsOvertimePhotoTestUnderPolicyLimit.
+  ///
+  /// In en, this message translates to:
+  /// **'Under policy limit'**
+  String get settingsOvertimePhotoTestUnderPolicyLimit;
+
+  /// No description provided for @settingsOvertimePhotoTestSplitHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Drag the slider to compare. Pinch or double-tap to zoom.'**
+  String get settingsOvertimePhotoTestSplitHint;
+
+  /// No description provided for @settingsOvertimePhotoTestOpenFullscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open fullscreen'**
+  String get settingsOvertimePhotoTestOpenFullscreen;
+
   /// No description provided for @settingsOvertimePerformanceInfoTitle.
   ///
   /// In en, this message translates to:

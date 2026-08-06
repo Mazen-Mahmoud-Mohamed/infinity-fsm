@@ -12,8 +12,10 @@ import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/overtime/domain/constants/overtime_media_estimates.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_photo_compression_result.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_photo_compressor.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_voice_record_config.dart';
+import 'package:mobile/features/settings/presentation/widgets/overtime_photo_comparison_viewer.dart';
 import 'package:mobile/features/settings/presentation/widgets/overtime_settings_helpers.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -54,6 +56,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
 
   List<int>? _originalPhoto;
   List<int>? _compressedPhoto;
+  OvertimePhotoCompressionResult? _compressionResult;
   img.Image? _decodedOriginal;
   img.Image? _decodedCompressed;
   bool _photoBusy = false;
@@ -67,6 +70,15 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
       vsync: this,
       duration: const Duration(milliseconds: 900),
     );
+  }
+
+  @override
+  void didUpdateWidget(covariant OvertimeSettingsConfigLab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.maxPhotoSize != widget.maxPhotoSize &&
+        _originalPhoto != null) {
+      _recompressCurrentPhoto();
+    }
   }
 
   @override
@@ -191,39 +203,111 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
     if (_photoBusy) return;
     setState(() => _photoBusy = true);
     try {
-      final picked = await ImagePicker().pickImage(
-        source: source,
-        imageQuality: 95,
-      );
+      final picked = await ImagePicker().pickImage(source: source);
       if (picked == null) return;
       final original = await picked.readAsBytes();
-      final compressed = await OvertimePhotoCompressor.compressToPolicy(
-        original,
-        maxPhotoSize: widget.maxPhotoSize,
-      );
-      final decodedOriginal = img.decodeImage(original);
-      final decodedCompressed = img.decodeImage(Uint8List.fromList(compressed));
-      if (!mounted) return;
-      setState(() {
-        _originalPhoto = original;
-        _compressedPhoto = compressed;
-        _decodedOriginal = decodedOriginal;
-        _decodedCompressed = decodedCompressed;
-        _splitRatio = 0.5;
-      });
+      await _applyCompression(original);
     } finally {
       if (mounted) setState(() => _photoBusy = false);
     }
+  }
+
+  Future<void> _recompressCurrentPhoto() async {
+    final original = _originalPhoto;
+    if (original == null || _photoBusy) return;
+    setState(() => _photoBusy = true);
+    try {
+      await _applyCompression(original);
+    } finally {
+      if (mounted) setState(() => _photoBusy = false);
+    }
+  }
+
+  Future<void> _applyCompression(List<int> original) async {
+    final result = await OvertimePhotoCompressor.compressWithDetails(
+      original,
+      maxPhotoSize: widget.maxPhotoSize,
+    );
+    final compressed = result.bytes;
+    final decodedOriginal = img.decodeImage(Uint8List.fromList(original));
+    final decodedCompressed = img.decodeImage(Uint8List.fromList(compressed));
+    if (!mounted) return;
+    setState(() {
+      _originalPhoto = original;
+      _compressedPhoto = compressed;
+      _compressionResult = result;
+      _decodedOriginal = decodedOriginal;
+      _decodedCompressed = decodedCompressed;
+      _splitRatio = 0.5;
+    });
   }
 
   void _clearPhotoPreview() {
     setState(() {
       _originalPhoto = null;
       _compressedPhoto = null;
+      _compressionResult = null;
       _decodedOriginal = null;
       _decodedCompressed = null;
       _splitRatio = 0.5;
     });
+  }
+
+  Future<void> _openFullscreenPreview() async {
+    final original = _originalPhoto;
+    final compressed = _compressedPhoto;
+    if (original == null || compressed == null) return;
+
+    final mode = switch (_photoView) {
+      _PhotoViewMode.original => OvertimePhotoComparisonMode.original,
+      _PhotoViewMode.compressed => OvertimePhotoComparisonMode.compressed,
+      _PhotoViewMode.split => OvertimePhotoComparisonMode.split,
+    };
+
+    await OvertimePhotoComparisonViewer.show(
+      context,
+      mode: mode,
+      originalBytes: Uint8List.fromList(original),
+      compressedBytes: Uint8List.fromList(compressed),
+      initialSplitRatio: _splitRatio,
+    );
+  }
+
+  int _statGridColumns(double width) {
+    if (width >= AppBreakpoints.tabletMax) return 4;
+    if (width >= AppBreakpoints.phoneMax) return 3;
+    return 2;
+  }
+
+  double _statGridAspectRatio(int columns) {
+    return switch (columns) {
+      >= 4 => 1.55,
+      3 => 1.7,
+      _ => 2.1,
+    };
+  }
+
+  String _formatResolution(int width, int height) {
+    if (width <= 0 || height <= 0) return '—';
+    return '$width × $height';
+  }
+
+  String _jpegQualityLabel(
+    AppLocalizations l10n,
+    OvertimePhotoCompressionResult? result,
+  ) {
+    if (result == null) return '—';
+    if (result.isOriginalPolicy) {
+      return l10n.settingsOvertimePhotoTestNoCompression;
+    }
+    if (result.skippedBecauseUnderLimit) {
+      return l10n.settingsOvertimePhotoTestUnderPolicyLimit;
+    }
+    final quality = result.jpegQuality;
+    if (quality != null) {
+      return l10n.settingsOvertimePhotoTestJpegQualityValue(quality);
+    }
+    return l10n.settingsOvertimePhotoTestNoCompression;
   }
 
   @override
@@ -505,7 +589,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
                 child: Text(l10n.settingsOvertimePhotoTestChooseAnother),
               ),
               OutlinedButton(
-                onPressed: () => _pickPhoto(ImageSource.gallery),
+                onPressed: _recompressCurrentPhoto,
                 child: Text(l10n.settingsOvertimePhotoTestRetest),
               ),
               TextButton(
@@ -525,9 +609,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
         const SizedBox(height: AppSpacing.sm),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= AppBreakpoints.tabletMax
-                ? 2
-                : 1;
+            final columns = _statGridColumns(constraints.maxWidth);
             final items = [
               _EnterpriseStatCard(
                 label: l10n.settingsOvertimePerformanceVoiceMaxDuration,
@@ -567,7 +649,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: AppSpacing.sm,
               crossAxisSpacing: AppSpacing.sm,
-              childAspectRatio: columns == 2 ? 2.2 : 2.6,
+              childAspectRatio: _statGridAspectRatio(columns),
               children: items,
             );
           },
@@ -582,9 +664,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
         const SizedBox(height: AppSpacing.sm),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = constraints.maxWidth >= AppBreakpoints.tabletMax
-                ? 2
-                : 1;
+            final columns = _statGridColumns(constraints.maxWidth);
 
             final items = [
               _EnterpriseStatCard(
@@ -652,7 +732,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: AppSpacing.sm,
               crossAxisSpacing: AppSpacing.sm,
-              childAspectRatio: columns == 2 ? 2.2 : 2.6,
+              childAspectRatio: _statGridAspectRatio(columns),
               children: items,
             );
           },
@@ -664,24 +744,39 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
   Widget _buildPhotoComparison(BuildContext context, AppLocalizations l10n) {
     final originalBytes = _originalPhoto!;
     final compressedBytes = _compressedPhoto!;
-
+    final result = _compressionResult;
     final decodedOriginal = _decodedOriginal;
     final decodedCompressed = _decodedCompressed;
 
-    final ratio = originalBytes.isEmpty
-        ? 0
-        : ((1 - (compressedBytes.length / originalBytes.length)) * 100).round();
+    final ratio =
+        result?.compressionRatioPercent ??
+        (originalBytes.isEmpty
+            ? 0
+            : ((1 - (compressedBytes.length / originalBytes.length)) * 100)
+                  .round());
 
-    int pickWidth(img.Image? decoded) => decoded?.width ?? 0;
-    int pickHeight(img.Image? decoded) => decoded?.height ?? 0;
+    final originalWidth = decodedOriginal?.width ?? result?.outputWidth ?? 0;
+    final originalHeight = decodedOriginal?.height ?? result?.outputHeight ?? 0;
+    final compressedWidth =
+        decodedCompressed?.width ?? result?.outputWidth ?? originalWidth;
+    final compressedHeight =
+        decodedCompressed?.height ?? result?.outputHeight ?? originalHeight;
 
-    final originalWidth = pickWidth(decodedOriginal);
-    final originalHeight = pickHeight(decodedOriginal);
+    final estimatedUploadTimeSeconds =
+        (compressedBytes.length / (2 * 1024 * 1024)).ceil();
+
+    String fmtUploadTime(int seconds) {
+      if (seconds < 60) return '~ $seconds s';
+      final m = seconds ~/ 60;
+      final s = seconds % 60;
+      return '~ ${m}m ${s.toString().padLeft(2, '0')}s';
+    }
 
     Widget memoryPreview(Uint8List bytes) {
       return Image.memory(
         bytes,
         fit: BoxFit.contain,
+        gaplessPlayback: true,
         frameBuilder: (context, child, frame, _) {
           if (frame == null) {
             return const Center(
@@ -703,16 +798,21 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
       );
     }
 
-    // Used for split view: original is "before", compressed is "after".
-    Widget buildBeforeAfterSlider({required bool allowGesture}) {
+    Widget buildInlineSplit() {
       return LayoutBuilder(
         builder: (context, constraints) {
           final maxW = constraints.maxWidth;
-          final clampedRatio = _splitRatio.clamp(0.0, 1.0);
-          final splitX = maxW * clampedRatio;
+          final splitX = maxW * _splitRatio.clamp(0.05, 0.95);
 
-          Widget stackContent() {
-            return Stack(
+          return GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: _openFullscreenPreview,
+            onHorizontalDragUpdate: (details) {
+              final x = details.localPosition.dx.clamp(0.0, maxW);
+              setState(() => _splitRatio = (x / maxW).clamp(0.05, 0.95));
+            },
+            child: Stack(
+              fit: StackFit.expand,
               children: [
                 Positioned.fill(
                   child: memoryPreview(Uint8List.fromList(originalBytes)),
@@ -726,7 +826,6 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
                     child: memoryPreview(Uint8List.fromList(compressedBytes)),
                   ),
                 ),
-                // Split handle line.
                 Positioned(
                   left: splitX - 1,
                   top: 0,
@@ -739,28 +838,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
                   ),
                 ),
               ],
-            );
-          }
-
-          final zoomableChild = InteractiveViewer(
-            // Slider drag should remain responsive; pan/drag is disabled.
-            panEnabled: false,
-            child: stackContent(),
-          );
-
-          if (!allowGesture) {
-            return zoomableChild;
-          }
-
-          return GestureDetector(
-            behavior: HitTestBehavior.translucent,
-            onHorizontalDragUpdate: (d) {
-              final x = d.localPosition.dx.clamp(0.0, maxW);
-              final next = x / maxW;
-              if ((next - _splitRatio).abs() < 0.01) return;
-              setState(() => _splitRatio = next);
-            },
-            child: zoomableChild,
+            ),
           );
         },
       );
@@ -784,87 +862,17 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
       );
     }
 
-    Future<void> fullscreenPreview() {
-      // Keep the fullscreen preview simple: reuse current view mode content.
-      final isSplit = _photoView == _PhotoViewMode.split;
-      final showBeforeAfter = isSplit;
-
-      return showDialog<void>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(
-            _photoView == _PhotoViewMode.original
-                ? l10n.settingsOvertimePhotoTestOriginal
-                : _photoView == _PhotoViewMode.compressed
-                ? l10n.settingsOvertimePhotoTestCompressed
-                : l10n.settingsOvertimePhotoTestSplit,
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (showBeforeAfter)
-                  photoFrame(
-                    child: LayoutBuilder(
-                      builder: (ctx, constraints) {
-                        final maxW = constraints.maxWidth;
-                        final splitX = maxW * _splitRatio.clamp(0.0, 1.0);
-                        return Stack(
-                          children: [
-                            Positioned.fill(
-                              child: InteractiveViewer(
-                                child: memoryPreview(
-                                  Uint8List.fromList(originalBytes),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              left: 0,
-                              top: 0,
-                              bottom: 0,
-                              width: splitX,
-                              child: ClipRect(
-                                child: InteractiveViewer(
-                                  child: memoryPreview(
-                                    Uint8List.fromList(compressedBytes),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  )
-                else
-                  photoFrame(
-                    child: InteractiveViewer(
-                      child: memoryPreview(
-                        Uint8List.fromList(
-                          _photoView == _PhotoViewMode.original
-                              ? originalBytes
-                              : compressedBytes,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
     Widget imageSection() {
       final child = switch (_photoView) {
-        _PhotoViewMode.original => InteractiveViewer(
+        _PhotoViewMode.original => GestureDetector(
+          onTap: _openFullscreenPreview,
           child: memoryPreview(Uint8List.fromList(originalBytes)),
         ),
-        _PhotoViewMode.compressed => InteractiveViewer(
+        _PhotoViewMode.compressed => GestureDetector(
+          onTap: _openFullscreenPreview,
           child: memoryPreview(Uint8List.fromList(compressedBytes)),
         ),
-        _PhotoViewMode.split => buildBeforeAfterSlider(allowGesture: true),
+        _PhotoViewMode.split => buildInlineSplit(),
       };
 
       return Column(
@@ -876,69 +884,68 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
             alignment: Alignment.centerRight,
             child: IconButton(
               icon: const Icon(Icons.fullscreen_outlined),
-              onPressed: fullscreenPreview,
-              tooltip: l10n.settingsOvertimePhotoTestSplit,
+              onPressed: _openFullscreenPreview,
+              tooltip: l10n.settingsOvertimePhotoTestOpenFullscreen,
             ),
           ),
         ],
       );
     }
 
-    final widthToShow = originalWidth > 0
-        ? originalWidth
-        : decodedCompressed?.width ?? 0;
-    final heightToShow = originalHeight > 0
-        ? originalHeight
-        : decodedCompressed?.height ?? 0;
-
-    final estimatedCloudinaryUsageBytes = compressedBytes.length;
-    final estimatedUploadTimeSeconds =
-        (estimatedCloudinaryUsageBytes / (2 * 1024 * 1024)).ceil();
-
-    String fmtUploadTime(int seconds) {
-      if (seconds < 60) return '~ $seconds s';
-      final m = seconds ~/ 60;
-      final s = seconds % 60;
-      return '~ ${m}m ${s.toString().padLeft(2, '0')}s';
-    }
+    final metricItems = [
+      _MetricTile(
+        label: l10n.settingsOvertimePhotoTestOriginalResolution,
+        value: _formatResolution(originalWidth, originalHeight),
+      ),
+      _MetricTile(
+        label: l10n.settingsOvertimePhotoTestCompressedResolution,
+        value: _formatResolution(compressedWidth, compressedHeight),
+      ),
+      _MetricTile(
+        label: l10n.settingsOvertimePhotoTestOriginalSize,
+        value: formatBytes(l10n, originalBytes.length),
+      ),
+      _MetricTile(
+        label: l10n.settingsOvertimePhotoTestCompressedSize,
+        value: formatBytes(l10n, compressedBytes.length),
+      ),
+      _MetricTile(
+        label: l10n.settingsOvertimePhotoTestCompressionRatio(ratio),
+        value: '',
+      ),
+      _MetricTile(
+        label: l10n.settingsOvertimePhotoTestJpegQuality,
+        value: _jpegQualityLabel(l10n, result),
+      ),
+      _MetricTile(
+        label: l10n.settingsOvertimePhotoTestEstimatedUploadTime,
+        value: fmtUploadTime(estimatedUploadTimeSeconds),
+      ),
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         imageSection(),
         const SizedBox(height: AppSpacing.sm),
-        Text(
-          l10n.settingsOvertimePhotoTestResolution(widthToShow, heightToShow),
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xs),
-        _MetricTile(
-          label: l10n.settingsOvertimePhotoTestOriginalSize,
-          value: formatBytes(l10n, originalBytes.length),
-        ),
-        _MetricTile(
-          label: l10n.settingsOvertimePhotoTestCompressedSize,
-          value: formatBytes(l10n, compressedBytes.length),
-        ),
-        _MetricTile(
-          label: l10n.settingsOvertimePhotoTestCompressionRatio(ratio),
-          value: '',
-        ),
-        _MetricTile(
-          label: l10n.settingsOvertimePhotoTestEstimatedUpload(
-            formatBytes(l10n, compressedBytes.length),
-          ),
-          value: '',
-        ),
-        _MetricTile(
-          label: l10n.settingsOvertimePhotoTestEstimatedCloudinaryUsage,
-          value: formatBytes(l10n, estimatedCloudinaryUsageBytes),
-        ),
-        _MetricTile(
-          label: l10n.settingsOvertimePhotoTestEstimatedUploadTime,
-          value: fmtUploadTime(estimatedUploadTimeSeconds),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= AppBreakpoints.phoneMax
+                ? 2
+                : 1;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisSpacing: AppSpacing.xs,
+                crossAxisSpacing: AppSpacing.sm,
+                childAspectRatio: columns == 2 ? 2.8 : 3.4,
+              ),
+              itemCount: metricItems.length,
+              itemBuilder: (context, index) => metricItems[index],
+            );
+          },
         ),
       ],
     );

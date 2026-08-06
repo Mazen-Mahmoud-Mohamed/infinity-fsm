@@ -787,6 +787,17 @@
   "settingsOvertimePhotoTestCompressedSize": "حجم المضغوط",
   "settingsOvertimePhotoTestEstimatedCloudinaryUsage": "تخزين Cloudinary التقديري",
   "settingsOvertimePhotoTestEstimatedUploadTime": "زمن الرفع التقديري",
+  "settingsOvertimePhotoTestOriginalResolution": "دقة الأصل",
+  "settingsOvertimePhotoTestCompressedResolution": "دقة المضغوط",
+  "settingsOvertimePhotoTestJpegQuality": "جودة JPEG",
+  "settingsOvertimePhotoTestJpegQualityValue": "{quality}٪",
+  "@settingsOvertimePhotoTestJpegQualityValue": {
+    "placeholders": { "quality": { "type": "int" } }
+  },
+  "settingsOvertimePhotoTestNoCompression": "بدون ضغط (سياسة الأصل)",
+  "settingsOvertimePhotoTestUnderPolicyLimit": "أقل من حد السياسة",
+  "settingsOvertimePhotoTestSplitHint": "اسحب المنزلق للمقارنة. اقرص أو انقر مرتين للتكبير.",
+  "settingsOvertimePhotoTestOpenFullscreen": "فتح ملء الشاشة",
   "settingsOvertimePerformanceInfoTitle": "معلومات الأداء",
   "settingsOvertimePerformanceVoiceMaxDuration": "الحد الأقصى للمدة",
   "settingsOvertimePerformanceVoiceMaxSize": "الحد الأقصى التقديري للحجم",

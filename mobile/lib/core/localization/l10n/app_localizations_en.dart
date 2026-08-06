@@ -2087,6 +2087,36 @@ class AppLocalizationsEn extends AppLocalizations {
       'Estimated Upload Time';
 
   @override
+  String get settingsOvertimePhotoTestOriginalResolution =>
+      'Original Resolution';
+
+  @override
+  String get settingsOvertimePhotoTestCompressedResolution =>
+      'Compressed Resolution';
+
+  @override
+  String get settingsOvertimePhotoTestJpegQuality => 'JPEG Quality';
+
+  @override
+  String settingsOvertimePhotoTestJpegQualityValue(int quality) {
+    return '$quality%';
+  }
+
+  @override
+  String get settingsOvertimePhotoTestNoCompression =>
+      'No compression (original policy)';
+
+  @override
+  String get settingsOvertimePhotoTestUnderPolicyLimit => 'Under policy limit';
+
+  @override
+  String get settingsOvertimePhotoTestSplitHint =>
+      'Drag the slider to compare. Pinch or double-tap to zoom.';
+
+  @override
+  String get settingsOvertimePhotoTestOpenFullscreen => 'Open fullscreen';
+
+  @override
   String get settingsOvertimePerformanceInfoTitle => 'Performance Information';
 
   @override

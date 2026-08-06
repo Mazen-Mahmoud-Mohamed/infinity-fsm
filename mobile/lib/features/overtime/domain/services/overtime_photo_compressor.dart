@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:image/image.dart' as img;
 import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_photo_compression_result.dart';
 
 /// Compresses overtime checkpoint photos to fit within the configured size.
 class OvertimePhotoCompressor {
@@ -11,53 +12,111 @@ class OvertimePhotoCompressor {
     List<int> bytes, {
     required Object maxPhotoSize,
   }) async {
-    final limitMb = OvertimeMediaConfig.maxPhotoSizeMbOrNull(maxPhotoSize);
+    final result = await compressWithDetails(bytes, maxPhotoSize: maxPhotoSize);
+    return result.bytes;
+  }
+
+  static Future<OvertimePhotoCompressionResult> compressWithDetails(
+    List<int> bytes, {
+    required Object maxPhotoSize,
+  }) async {
+    final normalized = OvertimeMediaConfig.normalizeMaxPhotoSize(maxPhotoSize);
+    final limitMb = OvertimeMediaConfig.maxPhotoSizeMbOrNull(normalized);
+    final decoded = img.decodeImage(Uint8List.fromList(bytes));
+    final originalWidth = decoded?.width;
+    final originalHeight = decoded?.height;
+
     if (limitMb == null) {
-      return bytes;
+      return OvertimePhotoCompressionResult(
+        bytes: bytes,
+        originalBytes: bytes,
+        outputWidth: originalWidth,
+        outputHeight: originalHeight,
+        policyLimitMb: null,
+      );
     }
 
     final maxBytes = limitMb * 1024 * 1024;
     if (bytes.length <= maxBytes) {
-      return bytes;
+      return OvertimePhotoCompressionResult(
+        bytes: bytes,
+        originalBytes: bytes,
+        outputWidth: originalWidth,
+        outputHeight: originalHeight,
+        policyLimitMb: limitMb,
+        skippedBecauseUnderLimit: true,
+      );
     }
 
-    final decoded = img.decodeImage(Uint8List.fromList(bytes));
     if (decoded == null) {
-      return bytes;
+      return OvertimePhotoCompressionResult(
+        bytes: bytes,
+        originalBytes: bytes,
+        outputWidth: originalWidth,
+        outputHeight: originalHeight,
+        policyLimitMb: limitMb,
+        decodeFailed: true,
+      );
     }
 
     var quality = 85;
     var width = decoded.width;
-    img.Image working = decoded;
+    List<int>? bestAttempt;
+    int? bestQuality;
+    img.Image? bestWorking;
+    var reachedMinQuality = false;
 
-    for (var attempt = 0; attempt < 12; attempt++) {
-      if (width < decoded.width) {
-        working = img.copyResize(
-          decoded,
-          width: width,
-          interpolation: img.Interpolation.linear,
-        );
-      } else {
-        working = decoded;
-      }
+    for (var attempt = 0; attempt < 16; attempt++) {
+      final working = width < decoded.width
+          ? img.copyResize(
+              decoded,
+              width: width,
+              interpolation: img.Interpolation.linear,
+            )
+          : decoded;
 
       final compressed = Uint8List.fromList(
         img.encodeJpg(working, quality: quality),
       );
+      bestAttempt = compressed;
+      bestQuality = quality;
+      bestWorking = working;
+
       if (compressed.length <= maxBytes) {
-        return compressed;
+        return OvertimePhotoCompressionResult(
+          bytes: compressed,
+          originalBytes: bytes,
+          jpegQuality: quality,
+          outputWidth: working.width,
+          outputHeight: working.height,
+          policyLimitMb: limitMb,
+        );
       }
 
-      if (quality > 45) {
+      if (quality > 35) {
         quality -= 10;
-      } else if (width > 640) {
-        width = (width * 0.85).round();
-        quality = 75;
+      } else if (width > 480) {
+        width = (width * 0.82).round();
+        quality = 70;
+      } else if (quality > 25) {
+        quality -= 5;
       } else {
-        return compressed;
+        reachedMinQuality = true;
+        break;
       }
     }
 
-    return bytes;
+    final fallback = bestAttempt ?? bytes;
+    final working = bestWorking;
+
+    return OvertimePhotoCompressionResult(
+      bytes: fallback,
+      originalBytes: bytes,
+      jpegQuality: bestQuality,
+      outputWidth: working?.width ?? originalWidth,
+      outputHeight: working?.height ?? originalHeight,
+      policyLimitMb: limitMb,
+      reachedMinQuality: reachedMinQuality,
+    );
   }
 }

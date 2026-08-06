@@ -2088,6 +2088,33 @@ class AppLocalizationsAr extends AppLocalizations {
       'زمن الرفع التقديري';
 
   @override
+  String get settingsOvertimePhotoTestOriginalResolution => 'دقة الأصل';
+
+  @override
+  String get settingsOvertimePhotoTestCompressedResolution => 'دقة المضغوط';
+
+  @override
+  String get settingsOvertimePhotoTestJpegQuality => 'جودة JPEG';
+
+  @override
+  String settingsOvertimePhotoTestJpegQualityValue(int quality) {
+    return '$quality٪';
+  }
+
+  @override
+  String get settingsOvertimePhotoTestNoCompression => 'بدون ضغط (سياسة الأصل)';
+
+  @override
+  String get settingsOvertimePhotoTestUnderPolicyLimit => 'أقل من حد السياسة';
+
+  @override
+  String get settingsOvertimePhotoTestSplitHint =>
+      'اسحب المنزلق للمقارنة. اقرص أو انقر مرتين للتكبير.';
+
+  @override
+  String get settingsOvertimePhotoTestOpenFullscreen => 'فتح ملء الشاشة';
+
+  @override
   String get settingsOvertimePerformanceInfoTitle => 'معلومات الأداء';
 
   @override
