@@ -1506,6 +1506,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardPeriodCustom => 'Custom';
 
   @override
+  String get dashboardPeriodFrom => 'From Date';
+
+  @override
+  String get dashboardPeriodTo => 'To Date';
+
+  @override
+  String get dashboardPeriodApply => 'Apply';
+
+  @override
   String get dashboardRangeUntilNow => 'Today';
 
   @override
@@ -1604,6 +1613,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardKpiTravelOtHours => 'Travel OT hours';
+
+  @override
+  String get dashboardKpiTotalApprovedHours => 'Total Approved Hours';
+
+  @override
+  String get dashboardKpiTotalTrips => 'Total Trips';
+
+  @override
+  String get dashboardKpiOvernightTrips => 'Overnight Trips';
+
+  @override
+  String get dashboardKpiOtTechnicians => 'Total Technicians';
+
+  @override
+  String get dashboardKpiAvgHoursPerTrip => 'Average Hours per Trip';
+
+  @override
+  String get dashboardOvertimeAnalytics => 'Overtime Analytics';
+
+  @override
+  String get dashboardTechnicianSummary => 'Technician Summary';
+
+  @override
+  String get dashboardChartHoursPerTechnician => 'Hours per Technician';
+
+  @override
+  String get dashboardChartTripsPerTechnician => 'Trips per Technician';
+
+  @override
+  String get dashboardChartHoursOverTime => 'Hours over Time';
 
   @override
   String get dashboardKpiAvgOtPerEmployee => 'Avg OT per employee';
@@ -2852,6 +2891,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeStartTravel => 'Start Journey — Travel';
 
   @override
+  String get overtimeStart => 'Start Overtime';
+
+  @override
+  String get overtimeTravel => 'Travel';
+
+  @override
+  String get overtimeOvernightStay => 'Overnight Stay';
+
+  @override
   String get overtimeEnd => 'End Journey';
 
   @override
@@ -3090,6 +3138,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overtimeEligible => 'Eligible overtime';
+
+  @override
+  String get overtimeWorkedHours => 'Worked Hours';
+
+  @override
+  String get overtimeApprovedHours => 'Approved Hours';
+
+  @override
+  String get overtimeApprovePartial => 'Approve Partial';
+
+  @override
+  String get overtimeApprovePartialTitle => 'Approve Partial Hours';
+
+  @override
+  String get overtimeApprovedHoursHint => 'Enter hours to approve';
+
+  @override
+  String get overtimeApprovedHoursInvalid =>
+      'Enter a valid number between 0 and worked hours.';
 
   @override
   String get overtimeTypeNormal => 'Normal Overtime';

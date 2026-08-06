@@ -93,35 +93,69 @@ class DashboardTopOvertimeEmployee extends Equatable {
     required this.userId,
     required this.fullName,
     required this.hours,
+    this.trips = 0,
+    this.overnightTrips = 0,
+    this.averageHoursPerTrip = 0,
   });
 
   final String userId;
   final String fullName;
   final double hours;
+  final int trips;
+  final int overnightTrips;
+  final double averageHoursPerTrip;
 
   @override
-  List<Object?> get props => [userId, fullName, hours];
+  List<Object?> get props => [
+        userId,
+        fullName,
+        hours,
+        trips,
+        overnightTrips,
+        averageHoursPerTrip,
+      ];
 }
 
 class DashboardOvertimeSummary extends Equatable {
   const DashboardOvertimeSummary({
     this.totalOvertimeHours = 0,
     this.totalTravelOvertimeHours = 0,
+    this.totalTrips = 0,
+    this.overnightTrips = 0,
+    this.totalTechnicians = 0,
+    this.averageHoursPerTrip = 0,
     this.averageOtHoursPerEmployee = 0,
     this.topOvertimeEmployees = const [],
+    this.hoursPerTechnician = const [],
+    this.tripsPerTechnician = const [],
   });
 
+  /// Total approved OT hours (`approvedHours ?? workedHours`), all types.
   final double totalOvertimeHours;
+
+  /// Legacy TRAVEL-only hours (kept for API compatibility; UI does not split).
   final double totalTravelOvertimeHours;
+  final int totalTrips;
+  final int overnightTrips;
+  final int totalTechnicians;
+  final double averageHoursPerTrip;
   final double averageOtHoursPerEmployee;
   final List<DashboardTopOvertimeEmployee> topOvertimeEmployees;
+  final List<DashboardChartPoint> hoursPerTechnician;
+  final List<DashboardChartPoint> tripsPerTechnician;
 
   @override
   List<Object?> get props => [
         totalOvertimeHours,
         totalTravelOvertimeHours,
+        totalTrips,
+        overnightTrips,
+        totalTechnicians,
+        averageHoursPerTrip,
         averageOtHoursPerEmployee,
         topOvertimeEmployees,
+        hoursPerTechnician,
+        tripsPerTechnician,
       ];
 }
 

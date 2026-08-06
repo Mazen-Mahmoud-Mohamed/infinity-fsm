@@ -19,6 +19,7 @@ abstract class OvertimeRepository {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    bool isOvernight = false,
     String? notes,
     int? batteryLevel,
     String? networkStatus,
@@ -72,6 +73,7 @@ abstract class OvertimeRepository {
   Future<Result<OvertimeSession>> approveSession(
     String id, {
     String? reviewNotes,
+    double? approvedHours,
   });
 
   Future<Result<OvertimeSession>> rejectSession(

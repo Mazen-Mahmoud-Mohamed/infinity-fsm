@@ -120,30 +120,29 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     required OvertimeUploadPolicyService uploadPolicyService,
     required LoggerService loggerService,
     OvertimeSessionReminderService? reminderService,
-  })  : _getRunningOvertimeUseCase = getRunningOvertimeUseCase,
-        _startOvertimeUseCase = startOvertimeUseCase,
-        _endOvertimeUseCase = endOvertimeUseCase,
-        _recordCheckpointUseCase = recordCheckpointUseCase,
-        _gpsService = gpsService,
-        _selfieCaptureService = selfieCaptureService,
-        _addressResolverService = addressResolverService,
-        _deviceTimeGuard = deviceTimeGuard,
-        _gpsAddressSync = gpsAddressSync,
-        _preferencesService = preferencesService,
-        _connectivityService = connectivityService,
-        _checkpointTelemetryService = checkpointTelemetryService,
-        _sessionQueryCache = sessionQueryCache,
-        _localDataSource = localDataSource,
-        _overtimeSyncCubit = overtimeSyncCubit,
-        _getMediaConfigUseCase = getMediaConfigUseCase,
-        _uploadPolicyService = uploadPolicyService,
-        _logger = loggerService,
-        _reminderService = reminderService,
-        super(const OvertimeState());
+  }) : _getRunningOvertimeUseCase = getRunningOvertimeUseCase,
+       _startOvertimeUseCase = startOvertimeUseCase,
+       _endOvertimeUseCase = endOvertimeUseCase,
+       _recordCheckpointUseCase = recordCheckpointUseCase,
+       _gpsService = gpsService,
+       _selfieCaptureService = selfieCaptureService,
+       _addressResolverService = addressResolverService,
+       _deviceTimeGuard = deviceTimeGuard,
+       _gpsAddressSync = gpsAddressSync,
+       _preferencesService = preferencesService,
+       _connectivityService = connectivityService,
+       _checkpointTelemetryService = checkpointTelemetryService,
+       _sessionQueryCache = sessionQueryCache,
+       _localDataSource = localDataSource,
+       _overtimeSyncCubit = overtimeSyncCubit,
+       _getMediaConfigUseCase = getMediaConfigUseCase,
+       _uploadPolicyService = uploadPolicyService,
+       _logger = loggerService,
+       _reminderService = reminderService,
+       super(const OvertimeState());
 
   static const String _runningCacheKey = 'overtime:running';
-  static const String _mediaConfigCacheKey =
-      'settings:overtime:media_config';
+  static const String _mediaConfigCacheKey = 'settings:overtime:media_config';
   static const Duration _telemetryRefreshInterval = Duration(seconds: 30);
 
   final GetRunningOvertimeUseCase _getRunningOvertimeUseCase;
@@ -180,12 +179,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   }
 
   void updateVoiceDraft(OvertimeVoiceDraft? draft) {
-    emit(
-      state.copyWith(
-        voiceDraft: draft,
-        clearVoiceDraft: draft == null,
-      ),
-    );
+    emit(state.copyWith(voiceDraft: draft, clearVoiceDraft: draft == null));
   }
 
   /// Updates voice on an already-queued offline stage (before sync succeeds).
@@ -211,17 +205,16 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     next[index] = updated;
     await _localDataSource.saveQueue(next);
     _kickPendingSync();
-    emit(
-      state.copyWith(
-        pendingSyncCount: next.length,
-      ),
-    );
+    emit(state.copyWith(pendingSyncCount: next.length));
   }
 
   Future<void> initialize() async {
-    final cached = _sessionQueryCache.get<_CachedRunningOvertime>(_runningCacheKey);
+    final cached = _sessionQueryCache.get<_CachedRunningOvertime>(
+      _runningCacheKey,
+    );
     final localSession = _localDataSource.readRunningSession();
-    final hasCachedLookup = cached != null ||
+    final hasCachedLookup =
+        cached != null ||
         localSession != null ||
         state.status == OvertimeLoadStatus.ready;
 
@@ -271,8 +264,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   Future<void> refreshMediaConfig() => _refreshMediaConfig();
 
   Future<void> _refreshMediaConfig() async {
-    final cached =
-        _sessionQueryCache.get<OvertimeMediaConfigEntity>(_mediaConfigCacheKey);
+    final cached = _sessionQueryCache.get<OvertimeMediaConfigEntity>(
+      _mediaConfigCacheKey,
+    );
     if (cached != null && !isClosed) {
       _applyMediaConfig(cached);
     }
@@ -364,8 +358,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
           }
           return;
         }
-        if (state.session != null ||
-            state.status == OvertimeLoadStatus.ready) {
+        if (state.session != null || state.status == OvertimeLoadStatus.ready) {
           emit(
             state.copyWith(
               status: OvertimeLoadStatus.ready,
@@ -390,15 +383,25 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     }
   }
 
-  Future<void> startNormal() => _start(
-        OvertimeType.normal,
-        OvertimeBusyAction.startNormal,
-      );
+  Future<void> startNormal() =>
+      start(type: OvertimeType.normal, isOvernight: false);
 
-  Future<void> startTravel() => _start(
-        OvertimeType.travel,
-        OvertimeBusyAction.startTravel,
-      );
+  Future<void> startTravel() =>
+      start(type: OvertimeType.travel, isOvernight: false);
+
+  /// Starts overtime from the technician Start screen.
+  ///
+  /// [isOvernight] is only applied when [type] is [OvertimeType.travel].
+  Future<void> start({required OvertimeType type, bool isOvernight = false}) {
+    final busy = type == OvertimeType.travel
+        ? OvertimeBusyAction.startTravel
+        : OvertimeBusyAction.startNormal;
+    return _start(
+      type,
+      busy,
+      isOvernight: type == OvertimeType.travel && isOvernight,
+    );
+  }
 
   /// Completes the next sequential checkpoint (arrived / finished / end).
   Future<void> completeNextCheckpoint() async {
@@ -458,17 +461,17 @@ class OvertimeCubit extends Cubit<OvertimeState> {
 
       switch (result) {
         case Success(data: final updated):
-          final offlineQueued = !(await _connectivityService.isConnected) ||
+          final offlineQueued =
+              !(await _connectivityService.isConnected) ||
               updated.companyId == 'local' ||
               updated.id.startsWith('local-');
           _sessionQueryCache.set(
             _runningCacheKey,
             _CachedRunningOvertime(updated),
           );
-          final successKey =
-              next == OvertimeCheckpointStage.arrivedAtWorkSite
-                  ? 'overtimeArrivedAtWorkSiteRecorded'
-                  : 'overtimeFinishedWorkRecorded';
+          final successKey = next == OvertimeCheckpointStage.arrivedAtWorkSite
+              ? 'overtimeArrivedAtWorkSiteRecorded'
+              : 'overtimeFinishedWorkRecorded';
           emit(
             state.copyWith(
               status: OvertimeLoadStatus.ready,
@@ -581,7 +584,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
 
       switch (result) {
         case Success(data: final ended):
-          final offlineQueued = !(await _connectivityService.isConnected) ||
+          final offlineQueued =
+              !(await _connectivityService.isConnected) ||
               ended.companyId == 'local' ||
               ended.id.startsWith('local-');
           _stopTicker();
@@ -741,18 +745,14 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   }
 
   void clearFeedback() {
-    emit(
-      state.copyWith(
-        clearMessage: true,
-        isError: false,
-      ),
-    );
+    emit(state.copyWith(clearMessage: true, isError: false));
   }
 
   Future<void> _start(
     OvertimeType type,
-    OvertimeBusyAction busyAction,
-  ) async {
+    OvertimeBusyAction busyAction, {
+    bool isOvernight = false,
+  }) async {
     if (state.isBusy) {
       return;
     }
@@ -797,6 +797,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       final voice = state.voiceDraft;
       final result = await _startOvertimeUseCase(
         type: type,
+        isOvernight: isOvernight,
         gps: capture.gps,
         photoBytes: capture.photo,
         deviceId: capture.deviceId,
@@ -811,7 +812,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
 
       switch (result) {
         case Success(data: final session):
-          final offlineQueued = !(await _connectivityService.isConnected) ||
+          final offlineQueued =
+              !(await _connectivityService.isConnected) ||
               session.companyId == 'local' ||
               session.id.startsWith('local-');
           _sessionQueryCache.set(
@@ -828,8 +830,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
               message: offlineQueued
                   ? null
                   : (type == OvertimeType.travel
-                      ? 'travelOvertimeStarted'
-                      : 'normalOvertimeStarted'),
+                        ? 'travelOvertimeStarted'
+                        : 'normalOvertimeStarted'),
               clearMessage: offlineQueued,
               isError: false,
               isOffline: offlineQueued,
@@ -845,7 +847,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
             _kickPendingSync();
           }
         case Failure(message: final message, code: final code):
-          final isConflict = code == 'CONFLICT' ||
+          final isConflict =
+              code == 'CONFLICT' ||
               message.toLowerCase().contains('already have a running');
           if (isConflict) {
             await _fetchRunning();

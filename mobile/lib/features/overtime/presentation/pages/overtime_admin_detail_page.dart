@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
@@ -11,6 +12,7 @@ import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_detail_cubit.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
@@ -180,6 +182,17 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                     l10n,
                   ),
                 ),
+                _DetailRow(
+                  label: l10n.overtimeWorkedHours,
+                  value: OvertimeFormatters.hoursValue(session.workedHours),
+                ),
+                if (session.status == OvertimeStatus.approved)
+                  _DetailRow(
+                    label: l10n.overtimeApprovedHours,
+                    value: OvertimeFormatters.hoursValue(
+                      session.effectiveApprovedHours,
+                    ),
+                  ),
                 if (session.rejectionReason != null &&
                     session.rejectionReason!.isNotEmpty)
                   _DetailRow(
@@ -319,48 +332,86 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                       AppSpacing.lg,
                       AppSpacing.lg,
                     ),
-                    child: Row(
-                      children: [
-                        if (canReject)
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: state.isBusy
-                                  ? null
-                                  : () => _showRejectDialog(context),
-                              child: state.isRejecting
-                                  ? SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
-                                      ),
-                                    )
-                                  : Text(l10n.workOrderReject),
-                            ),
-                          ),
-                        if (canReject && canApprove)
-                          const SizedBox(width: AppSpacing.md),
-                        if (canApprove)
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: state.isBusy
-                                  ? null
-                                  : () => _showApproveDialog(context),
-                              child: state.isApproving
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : Text(l10n.approve),
-                            ),
-                          ),
-                      ],
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final stacked = constraints.maxWidth < 520;
+                        final rejectBtn = canReject
+                            ? OutlinedButton(
+                                onPressed: state.isBusy
+                                    ? null
+                                    : () => _showRejectDialog(context),
+                                child: state.isRejecting
+                                    ? SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      )
+                                    : Text(l10n.workOrderReject),
+                              )
+                            : null;
+                        final partialBtn = canApprove
+                            ? OutlinedButton(
+                                onPressed: state.isBusy
+                                    ? null
+                                    : () => _showApprovePartialDialog(context),
+                                child: Text(l10n.overtimeApprovePartial),
+                              )
+                            : null;
+                        final approveBtn = canApprove
+                            ? ElevatedButton(
+                                onPressed: state.isBusy
+                                    ? null
+                                    : () => _showApproveDialog(context),
+                                child: state.isApproving
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : Text(l10n.approve),
+                              )
+                            : null;
+
+                        if (stacked) {
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (approveBtn != null) approveBtn,
+                              if (partialBtn != null) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                partialBtn,
+                              ],
+                              if (rejectBtn != null) ...[
+                                const SizedBox(height: AppSpacing.sm),
+                                rejectBtn,
+                              ],
+                            ],
+                          );
+                        }
+
+                        return Row(
+                          children: [
+                            if (rejectBtn != null)
+                              Expanded(child: rejectBtn),
+                            if (rejectBtn != null &&
+                                (partialBtn != null || approveBtn != null))
+                              const SizedBox(width: AppSpacing.sm),
+                            if (partialBtn != null)
+                              Expanded(child: partialBtn),
+                            if (partialBtn != null && approveBtn != null)
+                              const SizedBox(width: AppSpacing.sm),
+                            if (approveBtn != null)
+                              Expanded(child: approveBtn),
+                          ],
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -373,20 +424,34 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
 
   Future<void> _showApproveDialog(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
+    final session = context.read<OvertimeDetailCubit>().state.session;
     final notesController = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
         return AlertDialog(
           title: Text(l10n.approve),
-          content: TextField(
-            controller: notesController,
-            maxLines: 3,
-            maxLength: 2000,
-            decoration: InputDecoration(
-              labelText: l10n.overtimeReviewNotes,
-              hintText: l10n.overtimeReviewNotesHint,
-            ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (session != null) ...[
+                Text(
+                  '${l10n.overtimeWorkedHours}: '
+                  '${OvertimeFormatters.hoursValue(session.workedHours)}',
+                ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              TextField(
+                controller: notesController,
+                maxLines: 3,
+                maxLength: 2000,
+                decoration: InputDecoration(
+                  labelText: l10n.overtimeReviewNotes,
+                  hintText: l10n.overtimeReviewNotesHint,
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -407,8 +472,90 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
     }
 
     final notes = notesController.text.trim();
+    // Full approval — omit approvedHours so backend sets worked hours.
     await context.read<OvertimeDetailCubit>().approve(
           reviewNotes: notes.isEmpty ? null : notes,
+        );
+  }
+
+  Future<void> _showApprovePartialDialog(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final session = context.read<OvertimeDetailCubit>().state.session;
+    if (session == null) return;
+
+    final worked = session.workedHours ?? 0;
+    final hoursController = TextEditingController(
+      text: OvertimeFormatters.hoursValue(worked),
+    );
+    final formKey = GlobalKey<FormState>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.overtimeApprovePartialTitle),
+          content: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  '${l10n.overtimeWorkedHours}: '
+                  '${OvertimeFormatters.hoursValue(worked)}',
+                  style: Theme.of(dialogContext).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                TextFormField(
+                  controller: hoursController,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                  ],
+                  decoration: InputDecoration(
+                    labelText: l10n.overtimeApprovedHours,
+                    hintText: l10n.overtimeApprovedHoursHint,
+                    border: const OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    final parsed = double.tryParse(value?.trim() ?? '');
+                    if (parsed == null || parsed < 0 || parsed > worked) {
+                      return l10n.overtimeApprovedHoursInvalid;
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.cancel),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (formKey.currentState?.validate() != true) return;
+                Navigator.of(dialogContext).pop(true);
+              },
+              child: Text(l10n.approve),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true || !context.mounted) {
+      return;
+    }
+
+    final parsed = double.tryParse(hoursController.text.trim());
+    if (parsed == null) return;
+
+    await context.read<OvertimeDetailCubit>().approve(
+          approvedHours: parsed,
         );
   }
 

@@ -3014,6 +3014,24 @@ abstract class AppLocalizations {
   /// **'Custom'**
   String get dashboardPeriodCustom;
 
+  /// No description provided for @dashboardPeriodFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'From Date'**
+  String get dashboardPeriodFrom;
+
+  /// No description provided for @dashboardPeriodTo.
+  ///
+  /// In en, this message translates to:
+  /// **'To Date'**
+  String get dashboardPeriodTo;
+
+  /// No description provided for @dashboardPeriodApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get dashboardPeriodApply;
+
   /// No description provided for @dashboardRangeUntilNow.
   ///
   /// In en, this message translates to:
@@ -3205,6 +3223,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Travel OT hours'**
   String get dashboardKpiTravelOtHours;
+
+  /// No description provided for @dashboardKpiTotalApprovedHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Approved Hours'**
+  String get dashboardKpiTotalApprovedHours;
+
+  /// No description provided for @dashboardKpiTotalTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Trips'**
+  String get dashboardKpiTotalTrips;
+
+  /// No description provided for @dashboardKpiOvernightTrips.
+  ///
+  /// In en, this message translates to:
+  /// **'Overnight Trips'**
+  String get dashboardKpiOvernightTrips;
+
+  /// No description provided for @dashboardKpiOtTechnicians.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Technicians'**
+  String get dashboardKpiOtTechnicians;
+
+  /// No description provided for @dashboardKpiAvgHoursPerTrip.
+  ///
+  /// In en, this message translates to:
+  /// **'Average Hours per Trip'**
+  String get dashboardKpiAvgHoursPerTrip;
+
+  /// No description provided for @dashboardOvertimeAnalytics.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime Analytics'**
+  String get dashboardOvertimeAnalytics;
+
+  /// No description provided for @dashboardTechnicianSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Technician Summary'**
+  String get dashboardTechnicianSummary;
+
+  /// No description provided for @dashboardChartHoursPerTechnician.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours per Technician'**
+  String get dashboardChartHoursPerTechnician;
+
+  /// No description provided for @dashboardChartTripsPerTechnician.
+  ///
+  /// In en, this message translates to:
+  /// **'Trips per Technician'**
+  String get dashboardChartTripsPerTechnician;
+
+  /// No description provided for @dashboardChartHoursOverTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Hours over Time'**
+  String get dashboardChartHoursOverTime;
 
   /// No description provided for @dashboardKpiAvgOtPerEmployee.
   ///
@@ -5474,6 +5552,24 @@ abstract class AppLocalizations {
   /// **'Start Journey — Travel'**
   String get overtimeStartTravel;
 
+  /// No description provided for @overtimeStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Overtime'**
+  String get overtimeStart;
+
+  /// No description provided for @overtimeTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel'**
+  String get overtimeTravel;
+
+  /// No description provided for @overtimeOvernightStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Overnight Stay'**
+  String get overtimeOvernightStay;
+
   /// No description provided for @overtimeEnd.
   ///
   /// In en, this message translates to:
@@ -5923,6 +6019,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Eligible overtime'**
   String get overtimeEligible;
+
+  /// No description provided for @overtimeWorkedHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Worked Hours'**
+  String get overtimeWorkedHours;
+
+  /// No description provided for @overtimeApprovedHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Approved Hours'**
+  String get overtimeApprovedHours;
+
+  /// No description provided for @overtimeApprovePartial.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve Partial'**
+  String get overtimeApprovePartial;
+
+  /// No description provided for @overtimeApprovePartialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Approve Partial Hours'**
+  String get overtimeApprovePartialTitle;
+
+  /// No description provided for @overtimeApprovedHoursHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter hours to approve'**
+  String get overtimeApprovedHoursHint;
+
+  /// No description provided for @overtimeApprovedHoursInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid number between 0 and worked hours.'**
+  String get overtimeApprovedHoursInvalid;
 
   /// No description provided for @overtimeTypeNormal.
   ///

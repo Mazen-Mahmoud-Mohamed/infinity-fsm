@@ -27,12 +27,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required AddressResolverService addressResolver,
     required GpsAddressSyncService gpsAddressSync,
     required OvertimeUploadPolicyService uploadPolicy,
-  })  : _remote = remote,
-        _local = local,
-        _connectivity = connectivity,
-        _addressResolver = addressResolver,
-        _gpsAddressSync = gpsAddressSync,
-        _uploadPolicy = uploadPolicy;
+  }) : _remote = remote,
+       _local = local,
+       _connectivity = connectivity,
+       _addressResolver = addressResolver,
+       _gpsAddressSync = gpsAddressSync,
+       _uploadPolicy = uploadPolicy;
 
   final OvertimeRemoteDataSource _remote;
   final OvertimeLocalDataSource _local;
@@ -45,9 +45,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       _uploadPolicy.shouldAttemptImmediateUpload(force: force);
 
   bool _isConnectivityFailure(String? code) {
-    return code == 'OFFLINE' ||
-        code == 'TIMEOUT' ||
-        code == 'NETWORK_ERROR';
+    return code == 'OFFLINE' || code == 'TIMEOUT' || code == 'NETWORK_ERROR';
   }
 
   static int durationSecondsBetween(DateTime startAt, DateTime endAt) {
@@ -90,35 +88,38 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   OvertimeSessionModel _asModel(OvertimeSession session) {
     return session is OvertimeSessionModel
         ? session
-        : OvertimeSessionModel.fromJson(OvertimeSessionModel(
-            id: session.id,
-            companyId: session.companyId,
-            userId: session.userId,
-            type: session.type,
-            status: session.status,
-            startAt: session.startAt,
-            startGps: session.startGps,
-            startDeviceId: session.startDeviceId,
-            startAddress: session.startAddress,
-            startPhotoUrl: session.startPhotoUrl,
-            endAt: session.endAt,
-            endGps: session.endGps,
-            endAddress: session.endAddress,
-            endPhotoUrl: session.endPhotoUrl,
-            endDeviceId: session.endDeviceId,
-            totalDurationMinutes: session.totalDurationMinutes,
-            workingDurationMinutes: session.workingDurationMinutes,
-            eligibleOvertimeMinutes: session.eligibleOvertimeMinutes,
-            liveElapsedSeconds: session.liveElapsedSeconds,
-            rejectionReason: session.rejectionReason,
-            createdAt: session.createdAt,
-            workflowVersion: session.workflowVersion,
-            checkpoints: session.checkpoints,
-            nextCheckpoint: session.nextCheckpoint,
-            requiresManualReview: session.requiresManualReview,
-            reviewReason: session.reviewReason,
-            reviewNotes: session.reviewNotes,
-          ).toJson());
+        : OvertimeSessionModel.fromJson(
+            OvertimeSessionModel(
+              id: session.id,
+              companyId: session.companyId,
+              userId: session.userId,
+              type: session.type,
+              status: session.status,
+              startAt: session.startAt,
+              startGps: session.startGps,
+              startDeviceId: session.startDeviceId,
+              startAddress: session.startAddress,
+              startPhotoUrl: session.startPhotoUrl,
+              endAt: session.endAt,
+              endGps: session.endGps,
+              endAddress: session.endAddress,
+              endPhotoUrl: session.endPhotoUrl,
+              endDeviceId: session.endDeviceId,
+              totalDurationMinutes: session.totalDurationMinutes,
+              workingDurationMinutes: session.workingDurationMinutes,
+              eligibleOvertimeMinutes: session.eligibleOvertimeMinutes,
+              approvedHours: session.approvedHours,
+              liveElapsedSeconds: session.liveElapsedSeconds,
+              rejectionReason: session.rejectionReason,
+              createdAt: session.createdAt,
+              workflowVersion: session.workflowVersion,
+              checkpoints: session.checkpoints,
+              nextCheckpoint: session.nextCheckpoint,
+              requiresManualReview: session.requiresManualReview,
+              reviewReason: session.reviewReason,
+              reviewNotes: session.reviewNotes,
+            ).toJson(),
+          );
   }
 
   OvertimeCheckpoint _buildCheckpoint({
@@ -166,6 +167,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     int? totalDurationMinutes,
     int? workingDurationMinutes,
     int? eligibleOvertimeMinutes,
+    double? approvedHours,
     int? liveElapsedSeconds,
     DateTime? createdAt,
     OvertimeWorkflowVersion? workflowVersion,
@@ -183,6 +185,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       companyId: companyId ?? source.companyId,
       userId: userId ?? source.userId,
       type: source.type,
+      isOvernight: source.isOvernight,
       status: status ?? source.status,
       startAt: startAt ?? source.startAt,
       startGps: startGps ?? source.startGps,
@@ -194,12 +197,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       endAddress: clearEnd ? null : (endAddress ?? source.endAddress),
       endPhotoUrl: clearEnd ? null : (endPhotoUrl ?? source.endPhotoUrl),
       endDeviceId: clearEnd ? null : (endDeviceId ?? source.endDeviceId),
-      totalDurationMinutes:
-          totalDurationMinutes ?? source.totalDurationMinutes,
+      totalDurationMinutes: totalDurationMinutes ?? source.totalDurationMinutes,
       workingDurationMinutes:
           workingDurationMinutes ?? source.workingDurationMinutes,
       eligibleOvertimeMinutes:
           eligibleOvertimeMinutes ?? source.eligibleOvertimeMinutes,
+      approvedHours: approvedHours ?? source.approvedHours,
       liveElapsedSeconds: liveElapsedSeconds ?? source.liveElapsedSeconds,
       createdAt: createdAt ?? source.createdAt,
       workflowVersion: workflowVersion ?? source.workflowVersion,
@@ -207,8 +210,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       nextCheckpoint: clearNextCheckpoint
           ? null
           : (nextCheckpoint ?? source.nextCheckpoint),
-      requiresManualReview:
-          requiresManualReview ?? source.requiresManualReview,
+      requiresManualReview: requiresManualReview ?? source.requiresManualReview,
       reviewReason: clearReviewReason
           ? null
           : (reviewReason ?? source.reviewReason),
@@ -223,6 +225,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String clientRequestId,
     required String? address,
     required DateTime startAt,
+    bool isOvernight = false,
     List<int>? voiceBytes,
     double? voiceDurationSeconds,
     String? notes,
@@ -248,6 +251,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       companyId: 'local',
       userId: 'local',
       type: type,
+      isOvernight: type == OvertimeType.travel && isOvernight,
       status: OvertimeStatus.running,
       startAt: startAt,
       startGps: _gpsWithRecordedAt(gps, startAt),
@@ -335,10 +339,12 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    bool isOvernight = false,
     String? notes,
     int? batteryLevel,
     String? networkStatus,
   }) async {
+    final resolvedOvernight = type == OvertimeType.travel ? isOvernight : false;
     final shouldUpload = await _shouldAttemptRemoteUpload();
     if (!shouldUpload) {
       return _queueStart(
@@ -350,6 +356,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
+        isOvernight: resolvedOvernight,
         notes: notes,
         batteryLevel: batteryLevel,
         networkStatus: networkStatus,
@@ -365,6 +372,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         deviceId: deviceId,
         clientRequestId: clientRequestId,
         address: address,
+        isOvernight: resolvedOvernight,
         notes: notes,
         batteryLevel: batteryLevel,
         networkStatus: networkStatus,
@@ -391,6 +399,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           deviceId: deviceId,
           clientRequestId: clientRequestId,
           address: address,
+          isOvernight: resolvedOvernight,
           notes: notes,
           batteryLevel: batteryLevel,
           networkStatus: networkStatus,
@@ -409,6 +418,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    bool isOvernight = false,
     String? notes,
     int? batteryLevel,
     String? networkStatus,
@@ -427,6 +437,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       clientRequestId: clientRequestId,
       address: address,
       startAt: startAt,
+      isOvernight: isOvernight,
       voiceBytes: voiceBytes,
       voiceDurationSeconds: voiceDurationSeconds,
       notes: notes,
@@ -439,6 +450,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         id: clientRequestId,
         type: PendingOvertimeActionType.start,
         overtimeType: type,
+        isOvernight: isOvernight,
         gps: _gpsWithRecordedAt(gps, startAt),
         photoBytes: photoBytes,
         voiceBytes: voiceBytes ?? const [],
@@ -620,7 +632,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       ),
     );
     final existing = running.checkpoints ?? const OvertimeCheckpoints();
-    final updatedCheckpoints = stage == OvertimeCheckpointStage.arrivedAtWorkSite
+    final updatedCheckpoints =
+        stage == OvertimeCheckpointStage.arrivedAtWorkSite
         ? existing.copyWith(arrivedAtWorkSite: checkpoint)
         : existing.copyWith(finishedWork: checkpoint);
     final next = updatedCheckpoints.nextStage;
@@ -760,6 +773,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         clientRequestId: action.clientRequestId,
         address: action.address,
         startAt: startAt,
+        isOvernight: action.isOvernight,
         notes: action.notes,
         batteryLevel: action.batteryLevel,
         networkStatus: action.networkStatus,
@@ -796,15 +810,14 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         detail: 'NO_RUNNING_SESSION',
       );
       return const Failure(
-      'overtimeNoRunningSession',
-      code: 'NO_RUNNING_SESSION',
-    );
+        'overtimeNoRunningSession',
+        code: 'NO_RUNNING_SESSION',
+      );
     }
 
     if (running.isV2Workflow) {
       final expected = running.effectiveNextCheckpoint;
-      if (expected != null &&
-          expected != OvertimeCheckpointStage.endJourney) {
+      if (expected != null && expected != OvertimeCheckpointStage.endJourney) {
         OvertimeOfflineTrace.step(
           'QUEUE_END',
           status: 'failure',
@@ -823,16 +836,16 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     final endAt = gps.recordedAt.isAfter(startAt)
         ? gps.recordedAt
         : DateTime.now();
-    final safeEndAt = endAt.isAfter(startAt) ? endAt : startAt.add(
-      const Duration(seconds: 1),
-    );
+    final safeEndAt = endAt.isAfter(startAt)
+        ? endAt
+        : startAt.add(const Duration(seconds: 1));
     final durationSeconds = durationSecondsBetween(startAt, safeEndAt);
     final durations = calculateDurations(startAt, safeEndAt);
 
     final resolvedClientRequestId =
         (clientRequestId != null && clientRequestId.trim().isNotEmpty)
-            ? clientRequestId.trim()
-            : 'end-${running.id}-${safeEndAt.millisecondsSinceEpoch}';
+        ? clientRequestId.trim()
+        : 'end-${running.id}-${safeEndAt.millisecondsSinceEpoch}';
 
     final endCheckpoint = _buildCheckpoint(
       at: safeEndAt,
@@ -870,7 +883,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     );
 
     await _local.saveRunningSession(null);
-    final history = _local.readHistory()
+    final history = _local
+        .readHistory()
         .where((item) => item.id != ended.id)
         .toList();
     await _local.saveHistory([ended, ...history].take(50).toList());
@@ -901,7 +915,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       localId: ended.id,
       objectId: resolvedClientRequestId,
       queueLength: _local.readQueue().length,
-      pendingSessions: _local.readHistory().where((e) => e.id.startsWith('local-')).length,
+      pendingSessions: _local
+          .readHistory()
+          .where((e) => e.id.startsWith('local-'))
+          .length,
       detail: 'converted to pending sync',
     );
     _local.dumpStorage();
@@ -934,10 +951,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   ) async {
     try {
       if (!await _connectivity.isConnected) {
-        return const Failure(
-          'errorNoInternet',
-          code: 'OFFLINE',
-        );
+        return const Failure('errorNoInternet', code: 'OFFLINE');
       }
       final result = await _remote.exportExcel(filters);
       return Success(result);
@@ -978,8 +992,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         OvertimeOfflineTrace.step(
           'HISTORY_REFRESH',
           status: 'success',
-          pendingSessions:
-              merged.where((e) => e.id.startsWith('local-')).length,
+          pendingSessions: merged
+              .where((e) => e.id.startsWith('local-'))
+              .length,
           queueLength: _local.readQueue().length,
         );
         _local.dumpStorage();
@@ -1061,7 +1076,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       if (remoteIds.contains(item.id)) {
         continue;
       }
-      final keep = item.id.startsWith('local-') ||
+      final keep =
+          item.id.startsWith('local-') ||
           queue.any((action) {
             final actionSessionId = action.sessionId;
             if (actionSessionId == item.id) {
@@ -1099,9 +1115,14 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   Future<Result<OvertimeSession>> approveSession(
     String id, {
     String? reviewNotes,
+    double? approvedHours,
   }) async {
     try {
-      final session = await _remote.approve(id, reviewNotes: reviewNotes);
+      final session = await _remote.approve(
+        id,
+        reviewNotes: reviewNotes,
+        approvedHours: approvedHours,
+      );
       return Success(session);
     } on Object catch (error) {
       return NetworkErrorMapper.map(error);
@@ -1212,6 +1233,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             clientRequestId: enriched.clientRequestId,
             address: enriched.address,
             startedAt: startedAt,
+            isOvernight: enriched.isOvernight,
             notes: enriched.notes,
             batteryLevel: enriched.batteryLevel,
             networkStatus: enriched.networkStatus,
@@ -1239,8 +1261,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                 companyId: session.companyId,
                 userId: session.userId,
                 startAt: running.startAt,
-                startPhotoUrl:
-                    running.startPhotoUrl ?? session.startPhotoUrl,
+                startPhotoUrl: running.startPhotoUrl ?? session.startPhotoUrl,
                 workflowVersion: session.workflowVersion,
                 checkpoints: running.checkpoints ?? session.checkpoints,
                 nextCheckpoint:
@@ -1268,10 +1289,9 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             continue;
           }
 
-          final checkpointAt =
-              enriched.checkpointAt ?? enriched.gps.recordedAt;
-          final remote = enriched.type ==
-                  PendingOvertimeActionType.arrivedAtWorkSite
+          final checkpointAt = enriched.checkpointAt ?? enriched.gps.recordedAt;
+          final remote =
+              enriched.type == PendingOvertimeActionType.arrivedAtWorkSite
               ? await _remote.recordArrivedAtWorkSite(
                   sessionId: sessionId,
                   gps: _gpsWithRecordedAt(enriched.gps, checkpointAt),
@@ -1301,8 +1321,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
 
           final running = _local.readRunningSession();
           if (running != null &&
-              (running.id == sessionId ||
-                  running.id == enriched.sessionId)) {
+              (running.id == sessionId || running.id == enriched.sessionId)) {
             await _local.saveRunningSession(
               _copySession(
                 _asModel(remote),
@@ -1335,7 +1354,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
 
           final endedAt = enriched.endedAt ?? enriched.gps.recordedAt;
           final startedAt = enriched.startedAt;
-          final durationSeconds = enriched.durationSeconds ??
+          final durationSeconds =
+              enriched.durationSeconds ??
               (startedAt == null
                   ? null
                   : durationSecondsBetween(startedAt, endedAt));
@@ -1365,7 +1385,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                   totalDurationMinutes: endedRemote.totalDurationMinutes,
                   workingDurationMinutes: endedRemote.workingDurationMinutes,
                   eligibleOvertimeMinutes: endedRemote.eligibleOvertimeMinutes,
-                  liveElapsedSeconds: enriched.durationSeconds ??
+                  liveElapsedSeconds:
+                      enriched.durationSeconds ??
                       durationSecondsBetween(startedAt, endedAt),
                   endGps: _gpsWithRecordedAt(enriched.gps, endedAt),
                   endAddress: enriched.address ?? endedRemote.endAddress,
@@ -1382,8 +1403,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           final withoutDupes = history
               .where(
                 (item) =>
-                    item.id != localEnded.id &&
-                    item.id != enriched.sessionId,
+                    item.id != localEnded.id && item.id != enriched.sessionId,
               )
               .toList();
           await _local.saveHistory(
@@ -1443,8 +1463,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       if (session.id.startsWith('local-')) {
         return;
       }
-      final clientRequestId =
-          session.checkpoints?.startJourney?.clientRequestId?.trim();
+      final clientRequestId = session.checkpoints?.startJourney?.clientRequestId
+          ?.trim();
       if (clientRequestId == null || clientRequestId.isEmpty) {
         return;
       }

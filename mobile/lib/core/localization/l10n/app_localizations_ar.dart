@@ -1506,6 +1506,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardPeriodCustom => 'مخصص';
 
   @override
+  String get dashboardPeriodFrom => 'من تاريخ';
+
+  @override
+  String get dashboardPeriodTo => 'إلى تاريخ';
+
+  @override
+  String get dashboardPeriodApply => 'تطبيق';
+
+  @override
   String get dashboardRangeUntilNow => 'حتى الآن';
 
   @override
@@ -1604,6 +1613,36 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dashboardKpiTravelOtHours => 'ساعات وقت السفر';
+
+  @override
+  String get dashboardKpiTotalApprovedHours => 'إجمالي الساعات المعتمدة';
+
+  @override
+  String get dashboardKpiTotalTrips => 'إجمالي الرحلات';
+
+  @override
+  String get dashboardKpiOvernightTrips => 'رحلات المبيت';
+
+  @override
+  String get dashboardKpiOtTechnicians => 'إجمالي الفنيين';
+
+  @override
+  String get dashboardKpiAvgHoursPerTrip => 'متوسط الساعات لكل رحلة';
+
+  @override
+  String get dashboardOvertimeAnalytics => 'تحليلات العمل الإضافي';
+
+  @override
+  String get dashboardTechnicianSummary => 'ملخص الفنيين';
+
+  @override
+  String get dashboardChartHoursPerTechnician => 'الساعات لكل فني';
+
+  @override
+  String get dashboardChartTripsPerTechnician => 'الرحلات لكل فني';
+
+  @override
+  String get dashboardChartHoursOverTime => 'الساعات عبر الزمن';
 
   @override
   String get dashboardKpiAvgOtPerEmployee => 'متوسط العمل الإضافي للموظف';
@@ -2846,6 +2885,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeStartTravel => 'بدء الرحلة — سفر';
 
   @override
+  String get overtimeStart => 'بدء العمل الإضافي';
+
+  @override
+  String get overtimeTravel => 'سفر';
+
+  @override
+  String get overtimeOvernightStay => 'مبيت ليلي';
+
+  @override
   String get overtimeEnd => 'إنهاء الرحلة';
 
   @override
@@ -3084,6 +3132,25 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get overtimeEligible => 'العمل الإضافي المؤهل';
+
+  @override
+  String get overtimeWorkedHours => 'ساعات العمل';
+
+  @override
+  String get overtimeApprovedHours => 'الساعات المعتمدة';
+
+  @override
+  String get overtimeApprovePartial => 'اعتماد جزئي';
+
+  @override
+  String get overtimeApprovePartialTitle => 'اعتماد ساعات جزئية';
+
+  @override
+  String get overtimeApprovedHoursHint => 'أدخل الساعات المراد اعتمادها';
+
+  @override
+  String get overtimeApprovedHoursInvalid =>
+      'أدخل رقمًا صالحًا بين 0 وساعات العمل.';
 
   @override
   String get overtimeTypeNormal => 'عمل إضافي عادي';

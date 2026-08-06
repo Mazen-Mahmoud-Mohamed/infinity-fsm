@@ -159,6 +159,10 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
     return DashboardOvertimeSummary(
       totalOvertimeHours: _asDouble(json['totalOvertimeHours']),
       totalTravelOvertimeHours: _asDouble(json['totalTravelOvertimeHours']),
+      totalTrips: _asInt(json['totalTrips']),
+      overnightTrips: _asInt(json['overnightTrips']),
+      totalTechnicians: _asInt(json['totalTechnicians']),
+      averageHoursPerTrip: _asDouble(json['averageHoursPerTrip']),
       averageOtHoursPerEmployee: _asDouble(json['averageOtHoursPerEmployee']),
       topOvertimeEmployees: _asMapList(json['topOvertimeEmployees'])
           .map(
@@ -166,9 +170,14 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
               userId: row['userId']?.toString() ?? '',
               fullName: row['fullName']?.toString() ?? '—',
               hours: _asDouble(row['hours']),
+              trips: _asInt(row['trips']),
+              overnightTrips: _asInt(row['overnightTrips']),
+              averageHoursPerTrip: _asDouble(row['averageHoursPerTrip']),
             ),
           )
           .toList(),
+      hoursPerTechnician: _mapPoints(json['hoursPerTechnician']),
+      tripsPerTechnician: _mapPoints(json['tripsPerTechnician']),
     );
   }
 

@@ -52,7 +52,8 @@ class OvertimeLocalDataSource {
       'WRITE_RUNNING',
       status: readBack == payload ? 'success' : 'failure',
       objectId: session.id,
-      detail: 'payloadLen=${payload.length} readBackLen=${readBack?.length ?? 0}',
+      detail:
+          'payloadLen=${payload.length} readBackLen=${readBack?.length ?? 0}',
     );
     if (readBack != payload) {
       throw StateError('Running session read-back mismatch after write');
@@ -74,9 +75,7 @@ class OvertimeLocalDataSource {
         );
         return null;
       }
-      return OvertimeSessionModel.fromJson(
-        Map<String, dynamic>.from(decoded),
-      );
+      return OvertimeSessionModel.fromJson(Map<String, dynamic>.from(decoded));
     } on Object catch (error) {
       OvertimeOfflineTrace.step(
         'READ_RUNNING',
@@ -96,10 +95,7 @@ class OvertimeLocalDataSource {
       detail: 'count=${items.length} ids=$ids',
     );
     final payload = jsonEncode(items.map((item) => item.toJson()).toList());
-    final ok = await _preferences.setString(
-      OvertimeCacheKeys.history,
-      payload,
-    );
+    final ok = await _preferences.setString(OvertimeCacheKeys.history, payload);
     if (!ok) {
       OvertimeOfflineTrace.step(
         'WRITE_HISTORY',
@@ -271,13 +267,15 @@ class OvertimeLocalDataSource {
       status: 'entered',
       objectId: action.id,
       localId: action.sessionId,
-      detail:
-          'type=${action.type.name} photoBytes=${action.photoBytes.length}',
+      detail: 'type=${action.type.name} photoBytes=${action.photoBytes.length}',
     );
     await _persistPhoto(action);
     await _persistVoice(action);
     final existing = readQueue();
-    final queue = [...existing.map(_slimForQueueJson), _slimForQueueJson(action)];
+    final queue = [
+      ...existing.map(_slimForQueueJson),
+      _slimForQueueJson(action),
+    ];
     final payload = jsonEncode(queue.map((item) => item.toJson()).toList());
     final ok = await _preferences.setString(
       OvertimeCacheKeys.pendingQueue,
@@ -295,7 +293,8 @@ class OvertimeLocalDataSource {
     }
     final parsed = readQueue();
     final found = parsed.any((item) => item.id == action.id);
-    final photoLen = _preferences
+    final photoLen =
+        _preferences
             .getString(OvertimeCacheKeys.pendingPhotoKey(action.id))
             ?.length ??
         0;
@@ -305,7 +304,8 @@ class OvertimeLocalDataSource {
       objectId: action.id,
       localId: action.sessionId,
       queueLength: parsed.length,
-      detail: 'photoKeyLen=$photoLen hydratedPhoto=${parsed.firstWhere((e) => e.id == action.id, orElse: () => action).photoBytes.length}',
+      detail:
+          'photoKeyLen=$photoLen hydratedPhoto=${parsed.firstWhere((e) => e.id == action.id, orElse: () => action).photoBytes.length}',
     );
     if (!found) {
       throw StateError('Enqueue read-back missing action ${action.id}');
@@ -384,13 +384,13 @@ class OvertimeLocalDataSource {
       await _preferences.remove(OvertimeCacheKeys.localIdMap);
       return;
     }
-    await _preferences.setString(
-      OvertimeCacheKeys.localIdMap,
-      jsonEncode(map),
-    );
+    await _preferences.setString(OvertimeCacheKeys.localIdMap, jsonEncode(map));
   }
 
-  Future<void> remapQueueSessionIds(String fromLocalId, String toServerId) async {
+  Future<void> remapQueueSessionIds(
+    String fromLocalId,
+    String toServerId,
+  ) async {
     final queue = readQueue();
     var changed = false;
     final next = queue.map((item) {
@@ -436,7 +436,8 @@ class OvertimeLocalDataSource {
     return false;
   }
 
-  Map<String, Object?> dumpStorage() => OvertimeOfflineTrace.dumpRaw(_preferences);
+  Map<String, Object?> dumpStorage() =>
+      OvertimeOfflineTrace.dumpRaw(_preferences);
 
   PendingOvertimeActionModel _hydrateAction(Map<String, dynamic> json) {
     final model = PendingOvertimeActionModel.fromJson(json);
@@ -494,6 +495,7 @@ class OvertimeLocalDataSource {
       id: model.id,
       type: model.type,
       overtimeType: model.overtimeType,
+      isOvernight: model.isOvernight,
       sessionId: model.sessionId,
       gps: model.gps,
       photoBytes: photoBytes,
@@ -556,11 +558,14 @@ class OvertimeLocalDataSource {
     }
   }
 
-  PendingOvertimeActionModel _slimForQueueJson(PendingOvertimeActionModel action) {
+  PendingOvertimeActionModel _slimForQueueJson(
+    PendingOvertimeActionModel action,
+  ) {
     return PendingOvertimeActionModel(
       id: action.id,
       type: action.type,
       overtimeType: action.overtimeType,
+      isOvernight: action.isOvernight,
       sessionId: action.sessionId,
       gps: action.gps,
       photoBytes: const [],

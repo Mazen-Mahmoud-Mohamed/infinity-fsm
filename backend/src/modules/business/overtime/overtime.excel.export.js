@@ -1,5 +1,9 @@
 import ExcelJS from 'exceljs';
 import { createRequire } from 'module';
+import {
+  resolveApprovedHours,
+  workedHoursFromRecord,
+} from './overtime.approved-hours.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../../../../package.json');
@@ -398,7 +402,12 @@ function computeStats(records) {
     if (Number.isFinite(eligible)) {
       totalEligible += eligible;
       eligibleSamples.push(eligible);
-      if (st === 'APPROVED') totalApprovedEligible += eligible;
+    }
+    if (st === 'APPROVED') {
+      const approved = resolveApprovedHours(record);
+      if (approved !== null && Number.isFinite(approved)) {
+        totalApprovedEligible += approved * 60;
+      }
     }
     const working = Number(record.workingDurationMinutes);
     if (Number.isFinite(working)) totalWorking += working;
@@ -809,7 +818,7 @@ export async function buildOvertimeExcelWorkbook({
     const sheetName = hasSheet ? sessionSheetName(seq) : 'Additional Sessions';
     const approvedHours =
       String(record.status).toUpperCase() === 'APPROVED'
-        ? hoursLabel(record.eligibleOvertimeMinutes)
+        ? (resolveApprovedHours(record) ?? '—')
         : '—';
     const rowValues = [
       record._id?.toString?.() || '',
@@ -937,8 +946,9 @@ export async function buildOvertimeExcelWorkbook({
         : record.approvedAt;
     const approvedHours =
       String(record.status).toUpperCase() === 'APPROVED'
-        ? hoursLabel(record.eligibleOvertimeMinutes)
+        ? (resolveApprovedHours(record) ?? '—')
         : '—';
+    const workedHours = workedHoursFromRecord(record) ?? '—';
 
     r = writeSectionHeader(sheet, r, 'Overtime Information', COLORS.navy);
     const statusRow = r;
@@ -971,10 +981,18 @@ export async function buildOvertimeExcelWorkbook({
     r = writeKvRow(
       sheet,
       r,
-      'Calculated Hours',
-      hoursLabel(record.eligibleOvertimeMinutes),
+      'Worked Hours',
+      workedHours,
       'Approved Hours',
       approvedHours
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      'Calculated Hours',
+      hoursLabel(record.eligibleOvertimeMinutes),
+      '',
+      ''
     );
     r = writeKvRow(
       sheet,
@@ -1250,7 +1268,7 @@ export async function buildOvertimeExcelWorkbook({
         record.type || '—',
         hoursLabel(record.eligibleOvertimeMinutes),
         String(record.status).toUpperCase() === 'APPROVED'
-          ? hoursLabel(record.eligibleOvertimeMinutes)
+          ? (resolveApprovedHours(record) ?? '—')
           : '—',
         hoursLabel(record.workingDurationMinutes),
         hoursLabel(travelMinutes(record)),

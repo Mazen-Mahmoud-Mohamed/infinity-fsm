@@ -38,6 +38,7 @@ class OvertimeRemoteDataSource {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    bool isOvernight = false,
     DateTime? startedAt,
     DateTime? endedAt,
     int? durationSeconds,
@@ -61,6 +62,7 @@ class OvertimeRemoteDataSource {
       address: address,
       extra: {
         'type': type.apiValue,
+        'isOvernight': isOvernight ? 'true' : 'false',
         'clientRequestId': clientRequestId,
         if (startedAt != null) 'startedAt': startedAt.toIso8601String(),
         if (endedAt != null) 'endedAt': endedAt.toIso8601String(),
@@ -82,7 +84,8 @@ class OvertimeRemoteDataSource {
       status: 'success',
       objectId: clientRequestId,
       serverId: (response.data?['data'] as Map?)?['id']?.toString(),
-      detail: 'POST ${ApiConstants.overtimeStart} status=${response.statusCode}',
+      detail:
+          'POST ${ApiConstants.overtimeStart} status=${response.statusCode}',
     );
     return OvertimeSessionModel.fromJson(
       response.data?['data'] as Map<String, dynamic>,
@@ -311,12 +314,14 @@ class OvertimeRemoteDataSource {
   Future<OvertimeSessionModel> approve(
     String id, {
     String? reviewNotes,
+    double? approvedHours,
   }) async {
     final response = await _client.post<Map<String, dynamic>>(
       '${ApiConstants.overtimeSessions}/$id/approve',
       data: {
         if (reviewNotes != null && reviewNotes.trim().isNotEmpty)
           'reviewNotes': reviewNotes.trim(),
+        if (approvedHours != null) 'approvedHours': approvedHours,
       },
     );
     return OvertimeSessionModel.fromJson(
@@ -350,15 +355,16 @@ class OvertimeRemoteDataSource {
 
     final items = data is List
         ? data
-            .whereType<Map<String, dynamic>>()
-            .map(OvertimeSessionModel.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(OvertimeSessionModel.fromJson)
+              .toList()
         : <OvertimeSessionModel>[];
 
     final page = _asInt(pagination['page']) ?? 1;
     final limit = _asInt(pagination['limit']) ?? 20;
     final total = _asInt(pagination['total']) ?? items.length;
-    final totalPages = _asInt(pagination['totalPages']) ??
+    final totalPages =
+        _asInt(pagination['totalPages']) ??
         (limit == 0 ? 1 : (total / limit).ceil().clamp(1, 999999));
 
     return OvertimeSessionPage(
@@ -402,10 +408,7 @@ class OvertimeRemoteDataSource {
       ...extra,
       'deviceId': deviceId,
       if (address != null && address.isNotEmpty) 'address': address,
-      'photo': MultipartFile.fromBytes(
-        photoBytes,
-        filename: 'overtime.jpg',
-      ),
+      'photo': MultipartFile.fromBytes(photoBytes, filename: 'overtime.jpg'),
     };
     if (voiceBytes != null && voiceBytes.isNotEmpty) {
       map['voiceNote'] = MultipartFile.fromBytes(

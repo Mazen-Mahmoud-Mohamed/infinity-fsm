@@ -15,6 +15,7 @@ class OvertimeSession extends Equatable {
     required this.startAt,
     required this.startGps,
     required this.startDeviceId,
+    this.isOvernight = false,
     this.technician,
     this.startAddress,
     this.startPhotoUrl,
@@ -26,6 +27,7 @@ class OvertimeSession extends Equatable {
     this.totalDurationMinutes,
     this.workingDurationMinutes,
     this.eligibleOvertimeMinutes,
+    this.approvedHours,
     this.liveElapsedSeconds,
     this.approvedBy,
     this.approvedAt,
@@ -46,6 +48,9 @@ class OvertimeSession extends Equatable {
   final String userId;
   final OvertimeTechnicianSummary? technician;
   final OvertimeType type;
+
+  /// Travel overnight stay. Always false for NORMAL; defaults false for legacy.
+  final bool isOvernight;
   final OvertimeStatus status;
   final DateTime startAt;
   final GpsSnapshot startGps;
@@ -60,6 +65,9 @@ class OvertimeSession extends Equatable {
   final int? totalDurationMinutes;
   final int? workingDurationMinutes;
   final int? eligibleOvertimeMinutes;
+
+  /// Decimal approved OT hours from reviewer. null = treat as [workedHours].
+  final double? approvedHours;
   final int? liveElapsedSeconds;
   final OvertimeTechnicianSummary? approvedBy;
   final DateTime? approvedAt;
@@ -85,6 +93,16 @@ class OvertimeSession extends Equatable {
   bool get isRunning => status == OvertimeStatus.running;
   bool get isPendingReview => status == OvertimeStatus.pendingReview;
   bool get isV2Workflow => workflowVersion == OvertimeWorkflowVersion.v2;
+
+  /// Submitted / calculated OT hours (eligible minutes ÷ 60).
+  double? get workedHours {
+    final minutes = eligibleOvertimeMinutes;
+    if (minutes == null) return null;
+    return (minutes / 60 * 100).roundToDouble() / 100;
+  }
+
+  /// Display/payroll hours: approvedHours ?? workedHours.
+  double? get effectiveApprovedHours => approvedHours ?? workedHours;
 
   /// Effective next action for the employee UI.
   OvertimeCheckpointStage? get effectiveNextCheckpoint {
@@ -112,39 +130,41 @@ class OvertimeSession extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        companyId,
-        userId,
-        technician,
-        type,
-        status,
-        startAt,
-        startGps,
-        startDeviceId,
-        startAddress,
-        startPhotoUrl,
-        endAt,
-        endGps,
-        endAddress,
-        endPhotoUrl,
-        endDeviceId,
-        totalDurationMinutes,
-        workingDurationMinutes,
-        eligibleOvertimeMinutes,
-        liveElapsedSeconds,
-        approvedBy,
-        approvedAt,
-        rejectedBy,
-        rejectedAt,
-        rejectionReason,
-        createdAt,
-        workflowVersion,
-        checkpoints,
-        nextCheckpoint,
-        requiresManualReview,
-        reviewReason,
-        reviewNotes,
-      ];
+    id,
+    companyId,
+    userId,
+    technician,
+    type,
+    isOvernight,
+    status,
+    startAt,
+    startGps,
+    startDeviceId,
+    startAddress,
+    startPhotoUrl,
+    endAt,
+    endGps,
+    endAddress,
+    endPhotoUrl,
+    endDeviceId,
+    totalDurationMinutes,
+    workingDurationMinutes,
+    eligibleOvertimeMinutes,
+    approvedHours,
+    liveElapsedSeconds,
+    approvedBy,
+    approvedAt,
+    rejectedBy,
+    rejectedAt,
+    rejectionReason,
+    createdAt,
+    workflowVersion,
+    checkpoints,
+    nextCheckpoint,
+    requiresManualReview,
+    reviewReason,
+    reviewNotes,
+  ];
 }
 
 class OvertimeSessionPage extends Equatable {

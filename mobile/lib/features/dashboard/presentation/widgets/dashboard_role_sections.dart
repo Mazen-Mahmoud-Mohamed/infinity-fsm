@@ -9,6 +9,7 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_executive_layout.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_metric_group_card.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_overtime_section.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section_grid.dart';
@@ -111,7 +112,7 @@ List<Widget> _admin({
         if (kpis != null)
           DashboardMetric(
             label: l10n.dashboardKpiOnOvertime,
-            value: '${kpis.employeesOnOvertime + kpis.employeesOnTravelOvertime}',
+            value: '${kpis.employeesOnOvertime}',
             icon: Icons.more_time_outlined,
             onTap: () => context.go(RoutePaths.overtime),
           ),
@@ -132,7 +133,7 @@ List<Widget> _admin({
       ],
     );
 
-  if (kpis != null || attendance != null || overtime != null) {
+  if (kpis != null || attendance != null) {
     cards.add(
       DashboardMetricGroupCard(
         title: l10n.dashboardWorkforce,
@@ -147,11 +148,6 @@ List<Widget> _admin({
               label: l10n.dashboardKpiActiveEmployees,
               value: '${kpis.activeEmployees}',
               icon: Icons.badge_outlined,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiOnTravelOt,
-              value: '${kpis.employeesOnTravelOvertime}',
-              icon: Icons.flight_takeoff_outlined,
             ),
           ],
           if (attendance != null) ...[
@@ -168,37 +164,7 @@ List<Widget> _admin({
               onTap: () => context.go(RoutePaths.attendance),
             ),
           ],
-          if (overtime != null) ...[
-            DashboardMetric(
-              label: l10n.dashboardKpiOtHours,
-              value: formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
-              icon: Icons.more_time_outlined,
-              onTap: () => context.go(RoutePaths.overtime),
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiTravelOtHours,
-              value:
-                  formatDashboardHours(overtime.totalTravelOvertimeHours, l10n, context),
-              icon: Icons.flight_outlined,
-            ),
-          ],
         ],
-        footer: overtime != null && overtime.topOvertimeEmployees.isNotEmpty
-            ? Column(
-                children: overtime.topOvertimeEmployees
-                    .take(3)
-                    .map(
-                      (e) => ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.person_outline, size: 20),
-                        title: Text(e.fullName),
-                        trailing: Text(formatDashboardHours(e.hours, l10n, context)),
-                      ),
-                    )
-                    .toList(),
-              )
-            : null,
       ),
     );
   }
@@ -321,6 +287,14 @@ List<Widget> _admin({
     hero,
     SizedBox(height: sectionGap),
     DashboardSectionGrid(gap: sectionGap, children: cards),
+    if (overtime != null) ...[
+      SizedBox(height: sectionGap),
+      DashboardOvertimeSection(
+        overtime: overtime,
+        hoursOverTime: summary.charts.overtime,
+        sectionGap: sectionGap,
+      ),
+    ],
     SizedBox(height: sectionGap),
     ..._trendChartsSection(
       context: context,
@@ -387,7 +361,7 @@ List<Widget> _supervisor({
           ),
         if (overtime != null)
           DashboardMetric(
-            label: l10n.dashboardKpiOtHours,
+            label: l10n.dashboardKpiTotalApprovedHours,
             value: formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
             icon: Icons.more_time_outlined,
           ),
@@ -418,19 +392,12 @@ List<Widget> _supervisor({
             onTap: () => context.go(RoutePaths.attendance),
           ),
         ],
-        if (overtime != null) ...[
+        if (overtime != null)
           DashboardMetric(
-            label: l10n.dashboardKpiOtHours,
+            label: l10n.dashboardKpiTotalApprovedHours,
             value: formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
             icon: Icons.more_time_outlined,
           ),
-          DashboardMetric(
-            label: l10n.dashboardKpiTravelOtHours,
-            value:
-                formatDashboardHours(overtime.totalTravelOvertimeHours, l10n, context),
-            icon: Icons.flight_outlined,
-          ),
-        ],
         if (performance != null)
           DashboardMetric(
             label: l10n.dashboardKpiAverageWorkingHours,
@@ -576,19 +543,12 @@ List<Widget> _technician({
     DashboardMetricGroupCard(
       title: l10n.dashboardSectionPerformance,
       metrics: [
-        if (overtime != null) ...[
+        if (overtime != null)
           DashboardMetric(
-            label: l10n.dashboardKpiOtHours,
+            label: l10n.dashboardKpiTotalApprovedHours,
             value: formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
             icon: Icons.more_time_outlined,
           ),
-          DashboardMetric(
-            label: l10n.dashboardKpiTravelOtHours,
-            value:
-                formatDashboardHours(overtime.totalTravelOvertimeHours, l10n, context),
-            icon: Icons.flight_outlined,
-          ),
-        ],
         if (work != null)
           DashboardMetric(
             label: l10n.dashboardKpiWoPending,

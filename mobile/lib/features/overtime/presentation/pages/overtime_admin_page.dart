@@ -353,11 +353,17 @@ class _AdminSessionCard extends StatelessWidget {
               ),
               _MetaChip(
                 icon: Icons.timer_outlined,
-                label: OvertimeFormatters.durationFromMinutes(
-                  session.eligibleOvertimeMinutes,
-                  l10n,
-                ),
+                label:
+                    '${l10n.overtimeWorkedHours}: '
+                    '${OvertimeFormatters.hoursValue(session.workedHours)}',
               ),
+              if (session.status == OvertimeStatus.approved)
+                _MetaChip(
+                  icon: Icons.verified_outlined,
+                  label:
+                      '${l10n.overtimeApprovedHours}: '
+                      '${OvertimeFormatters.hoursValue(session.effectiveApprovedHours)}',
+                ),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

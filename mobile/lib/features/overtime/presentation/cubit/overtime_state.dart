@@ -4,15 +4,10 @@ import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dar
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
 
-enum OvertimeLoadStatus {
-  initial,
-  loading,
-  actionInProgress,
-  ready,
-  failure,
-}
+enum OvertimeLoadStatus { initial, loading, actionInProgress, ready, failure }
 
 enum OvertimeBusyAction {
+  start,
   startNormal,
   startTravel,
   arrivedAtWorkSite,
@@ -83,6 +78,10 @@ class OvertimeState extends Equatable {
 
   bool get isRunning => session?.isRunning ?? false;
   bool get isBusy => busyAction != null;
+  bool get isStarting =>
+      busyAction == OvertimeBusyAction.start ||
+      busyAction == OvertimeBusyAction.startNormal ||
+      busyAction == OvertimeBusyAction.startTravel;
   bool get isStartingNormal => busyAction == OvertimeBusyAction.startNormal;
   bool get isStartingTravel => busyAction == OvertimeBusyAction.startTravel;
   bool get isRecordingArrived =>
@@ -130,11 +129,13 @@ class OvertimeState extends Equatable {
     return OvertimeState(
       status: status ?? this.status,
       session: clearSession ? null : (session ?? this.session),
-      completedSession:
-          clearCompleted ? null : (completedSession ?? this.completedSession),
+      completedSession: clearCompleted
+          ? null
+          : (completedSession ?? this.completedSession),
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
-      currentAddress:
-          clearAddress ? null : (currentAddress ?? this.currentAddress),
+      currentAddress: clearAddress
+          ? null
+          : (currentAddress ?? this.currentAddress),
       message: clearMessage ? null : (message ?? this.message),
       isError: isError ?? this.isError,
       isOffline: isOffline ?? this.isOffline,
@@ -164,26 +165,26 @@ class OvertimeState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        session,
-        completedSession,
-        elapsedSeconds,
-        currentAddress,
-        message,
-        isError,
-        isOffline,
-        busyAction,
-        isRefreshing,
-        notesDraft,
-        voiceDraft,
-        offerContinueSession,
-        liveBatteryLevel,
-        liveNetworkStatus,
-        gpsAccuracyMeters,
-        pendingSyncCount,
-        voiceMaxDurationSeconds,
-        voiceRecordingQuality,
-        maxPhotoSize,
-        uploadPolicy,
-      ];
+    status,
+    session,
+    completedSession,
+    elapsedSeconds,
+    currentAddress,
+    message,
+    isError,
+    isOffline,
+    busyAction,
+    isRefreshing,
+    notesDraft,
+    voiceDraft,
+    offerContinueSession,
+    liveBatteryLevel,
+    liveNetworkStatus,
+    gpsAccuracyMeters,
+    pendingSyncCount,
+    voiceMaxDurationSeconds,
+    voiceRecordingQuality,
+    maxPhotoSize,
+    uploadPolicy,
+  ];
 }

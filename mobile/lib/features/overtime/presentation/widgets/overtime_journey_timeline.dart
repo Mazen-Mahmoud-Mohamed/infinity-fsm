@@ -72,6 +72,7 @@ class OvertimeJourneyTimeline extends StatelessWidget {
     this.desktopCompactPhotos = false,
     this.onPendingVoiceChanged,
     this.isSyncing = false,
+    this.showOpenLiveLocation = true,
   });
 
   final OvertimeSession session;
@@ -102,6 +103,9 @@ class OvertimeJourneyTimeline extends StatelessWidget {
 
   /// True while the offline overtime queue is actively uploading.
   final bool isSyncing;
+
+  /// Supervisors/admins review locations; technicians do not need this action.
+  final bool showOpenLiveLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -139,6 +143,7 @@ class OvertimeJourneyTimeline extends StatelessWidget {
               desktopCompactPhotos: desktopCompactPhotos,
               pendingAction: _pendingFor(stages[i]),
               isSyncing: isSyncing,
+              showOpenLiveLocation: showOpenLiveLocation,
               onPendingVoiceChanged: onPendingVoiceChanged == null
                   ? null
                   : (draft) => onPendingVoiceChanged!(stages[i], draft),
@@ -449,6 +454,7 @@ class _TimelineStageTile extends StatelessWidget {
     this.desktopCompactPhotos = false,
     this.pendingAction,
     this.isSyncing = false,
+    this.showOpenLiveLocation = true,
     this.onPendingVoiceChanged,
     this.onSelect,
   });
@@ -468,6 +474,7 @@ class _TimelineStageTile extends StatelessWidget {
   final bool desktopCompactPhotos;
   final PendingOvertimeAction? pendingAction;
   final bool isSyncing;
+  final bool showOpenLiveLocation;
   final ValueChanged<OvertimeVoiceDraft?>? onPendingVoiceChanged;
   final VoidCallback? onSelect;
 
@@ -654,6 +661,9 @@ class _TimelineStageTile extends StatelessWidget {
                           )) ...[
                             const SizedBox(height: AppSpacing.md),
                             OvertimeVoiceNoteSection(
+                              key: ValueKey(
+                                'overtime-timeline-voice-${stage.apiValue}',
+                              ),
                               maxDurationSeconds: maxDurationSeconds,
                               voiceRecordingQuality: voiceRecordingQuality,
                               remoteUrl: _remoteVoiceUrl(checkpoint!.voiceNote),
@@ -686,7 +696,7 @@ class _TimelineStageTile extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (checkpoint != null)
+                if (checkpoint != null && showOpenLiveLocation)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(
                       AppSpacing.md,

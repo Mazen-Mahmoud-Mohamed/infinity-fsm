@@ -14,6 +14,7 @@ import AppError, {
   ConflictError,
   ForbiddenError,
   NotFoundError,
+  ValidationError,
 } from '../../../shared/errors/AppError.js';
 import auditService from '../../core/audit/audit.service.js';
 import { resolveSessionTimeline } from './overtime.timeline.js';
@@ -23,6 +24,11 @@ import {
   EXPORT_MODE,
   MAX_EXPORT_ROWS,
 } from './overtime.excel.export.js';
+import {
+  approvedOtMinutesExpr,
+  normalizeApprovedHoursInput,
+  workedHoursFromRecord,
+} from './overtime.approved-hours.js';
 import User from '../../core/organization/models/user.model.js';
 import Company from '../../core/organization/models/company.model.js';
 import { createRequire } from 'module';
@@ -271,6 +277,12 @@ class OvertimeService {
       throw new AppError('INVALID_TYPE', 'Overtime type must be NORMAL or TRAVEL', 422);
     }
 
+    // Additive overnight flag: only meaningful for TRAVEL; NORMAL always false.
+    let isOvernight = this._parseBooleanFlag(body.isOvernight);
+    if (type !== 'TRAVEL') {
+      isOvernight = false;
+    }
+
     if (!file) {
       throw new AppError('LIVE_PHOTO_REQUIRED', 'A start photo is required', 422);
     }
@@ -353,6 +365,7 @@ class OvertimeService {
       branchId: user.branchId,
       departmentId: user.departmentId,
       type,
+      isOvernight,
       status: 'RUNNING',
       workflowVersion: WORKFLOW_V2,
       checkpoints: {
@@ -374,7 +387,12 @@ class OvertimeService {
       module: 'overtime',
       resourceType: 'overtime_record',
       resourceId: record._id,
-      metadata: { type, workflowVersion: WORKFLOW_V2, checkpoint: CHECKPOINT_STAGES.START_JOURNEY },
+      metadata: {
+        type,
+        isOvernight,
+        workflowVersion: WORKFLOW_V2,
+        checkpoint: CHECKPOINT_STAGES.START_JOURNEY,
+      },
     });
 
     return this._map(record);
@@ -1005,7 +1023,7 @@ class OvertimeService {
     return this._map(record);
   }
 
-  async approve(user, auth, id, { reviewNotes } = {}) {
+  async approve(user, auth, id, { reviewNotes, approvedHours } = {}) {
     this._assertCanApprove(auth);
 
     const record = await OvertimeRecord.findOne({
@@ -1021,12 +1039,19 @@ class OvertimeService {
       throw new ConflictError('Only pending overtime sessions can be approved.');
     }
 
+    const workedHours = workedHoursFromRecord(record);
+    const normalized = normalizeApprovedHoursInput(approvedHours, workedHours);
+    if (!normalized.ok) {
+      throw new ValidationError(normalized.message);
+    }
+
     record.status = 'APPROVED';
     record.approvedBy = user._id;
     record.approvedAt = new Date();
     record.rejectedBy = null;
     record.rejectedAt = null;
     record.rejectionReason = null;
+    record.approvedHours = normalized.value;
     if (reviewNotes !== undefined) {
       record.reviewNotes = reviewNotes?.trim() || null;
     }
@@ -1044,6 +1069,8 @@ class OvertimeService {
         requiresManualReview: !!record.requiresManualReview,
         reviewReason: record.reviewReason || null,
         reviewNotes: record.reviewNotes || null,
+        approvedHours: record.approvedHours,
+        workedHours,
       },
     });
 
@@ -1078,6 +1105,7 @@ class OvertimeService {
     }
     record.approvedBy = null;
     record.approvedAt = null;
+    record.approvedHours = null;
     await record.save();
 
     await auditService.log({
@@ -1121,7 +1149,7 @@ class OvertimeService {
         {
           $group: {
             _id: null,
-            totalEligibleMinutes: { $sum: { $ifNull: ['$eligibleOvertimeMinutes', 0] } },
+            totalEligibleMinutes: { $sum: approvedOtMinutesExpr() },
             totalDurationMinutes: { $sum: { $ifNull: ['$totalDurationMinutes', 0] } },
           },
         },
@@ -1132,7 +1160,7 @@ class OvertimeService {
           $group: {
             _id: '$userId',
             sessions: { $sum: 1 },
-            eligibleMinutes: { $sum: { $ifNull: ['$eligibleOvertimeMinutes', 0] } },
+            eligibleMinutes: { $sum: approvedOtMinutesExpr() },
           },
         },
         { $sort: { eligibleMinutes: -1 } },
@@ -1176,7 +1204,7 @@ class OvertimeService {
               month: { $month: '$createdAt' },
             },
             sessions: { $sum: 1 },
-            eligibleMinutes: { $sum: { $ifNull: ['$eligibleOvertimeMinutes', 0] } },
+            eligibleMinutes: { $sum: approvedOtMinutesExpr() },
           },
         },
         { $sort: { '_id.year': -1, '_id.month': -1 } },
@@ -1273,6 +1301,19 @@ class OvertimeService {
     }
 
     throw new ForbiddenError('You do not have permission to view this overtime session');
+  }
+
+  _parseBooleanFlag(value) {
+    if (value === true || value === 1) return true;
+    if (value === false || value === 0 || value == null || value === '') {
+      return false;
+    }
+    if (typeof value === 'string') {
+      const normalized = value.trim().toLowerCase();
+      if (normalized === 'true' || normalized === '1') return true;
+      if (normalized === 'false' || normalized === '0') return false;
+    }
+    return false;
   }
 
   _mapUserSummary(userDoc) {
@@ -1377,6 +1418,7 @@ class OvertimeService {
       branchId: doc.branchId?.toString() || null,
       departmentId: doc.departmentId?.toString() || null,
       type: doc.type,
+      isOvernight: Boolean(doc.isOvernight),
       status: doc.status,
       workflowVersion,
       checkpoints: this._mapCheckpoints(doc),
@@ -1397,6 +1439,11 @@ class OvertimeService {
       totalDurationMinutes: doc.totalDurationMinutes,
       workingDurationMinutes: doc.workingDurationMinutes,
       eligibleOvertimeMinutes: doc.eligibleOvertimeMinutes,
+      /** Decimal hours; null means treat as worked (eligible/60) for legacy. */
+      approvedHours:
+        doc.approvedHours === null || doc.approvedHours === undefined
+          ? null
+          : Number(doc.approvedHours),
       calculationVersion: doc.calculationVersion,
       calculatedAt: doc.calculatedAt?.toISOString() || null,
       approvedBy: this._mapUserSummary(doc.approvedBy),

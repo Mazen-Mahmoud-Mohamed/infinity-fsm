@@ -96,6 +96,12 @@ const overtimeRecordSchema = new Schema(
       enum: ['NORMAL', 'TRAVEL'],
       required: true,
     },
+    /** Travel overnight stay flag. Always false for NORMAL; additive / backward compatible. */
+    isOvernight: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     status: {
       type: String,
       enum: ['RUNNING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'CANCELLED'],
@@ -131,6 +137,16 @@ const overtimeRecordSchema = new Schema(
     totalDurationMinutes: { type: Number, default: null },
     workingDurationMinutes: { type: Number, default: null },
     eligibleOvertimeMinutes: { type: Number, default: null },
+    /**
+     * Admin/Supervisor approved OT hours (decimal hours).
+     * null = legacy / full approval equivalent to eligibleOvertimeMinutes / 60.
+     * Additive — never remove; existing records stay null.
+     */
+    approvedHours: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
     calculationVersion: { type: String, default: null },
     calculatedAt: { type: Date, default: null },
     approvedBy: {

@@ -16,6 +16,7 @@ class OvertimeSessionModel extends OvertimeSession {
     required super.startAt,
     required super.startGps,
     required super.startDeviceId,
+    super.isOvernight,
     super.technician,
     super.startAddress,
     super.startPhotoUrl,
@@ -27,6 +28,7 @@ class OvertimeSessionModel extends OvertimeSession {
     super.totalDurationMinutes,
     super.workingDurationMinutes,
     super.eligibleOvertimeMinutes,
+    super.approvedHours,
     super.liveElapsedSeconds,
     super.approvedBy,
     super.approvedAt,
@@ -58,6 +60,7 @@ class OvertimeSessionModel extends OvertimeSession {
           ? null
           : _mapTechnician(technicianJson),
       type: OvertimeType.fromApi(requireString(json, 'type')),
+      isOvernight: json['isOvernight'] == true,
       status: OvertimeStatus.fromApi(requireString(json, 'status')),
       startAt: requireDateTime(json, 'startAt'),
       startGps: _mapGps(startGpsJson),
@@ -71,23 +74,31 @@ class OvertimeSessionModel extends OvertimeSession {
       endDeviceId: optionalString(json, 'endDeviceId'),
       totalDurationMinutes: _readNullableInt(json, 'totalDurationMinutes'),
       workingDurationMinutes: _readNullableInt(json, 'workingDurationMinutes'),
-      eligibleOvertimeMinutes: _readNullableInt(json, 'eligibleOvertimeMinutes'),
+      eligibleOvertimeMinutes: _readNullableInt(
+        json,
+        'eligibleOvertimeMinutes',
+      ),
+      approvedHours: _readNullableDouble(json, 'approvedHours'),
       liveElapsedSeconds: _readNullableInt(json, 'liveElapsedSeconds'),
-      approvedBy:
-          approvedByJson == null ? null : _mapTechnician(approvedByJson),
+      approvedBy: approvedByJson == null
+          ? null
+          : _mapTechnician(approvedByJson),
       approvedAt: parseDateTime(json['approvedAt']),
-      rejectedBy:
-          rejectedByJson == null ? null : _mapTechnician(rejectedByJson),
+      rejectedBy: rejectedByJson == null
+          ? null
+          : _mapTechnician(rejectedByJson),
       rejectedAt: parseDateTime(json['rejectedAt']),
       rejectionReason: optionalString(json, 'rejectionReason'),
       createdAt: parseDateTime(json['createdAt']),
-      workflowVersion:
-          OvertimeWorkflowVersion.fromApi(optionalString(json, 'workflowVersion')),
+      workflowVersion: OvertimeWorkflowVersion.fromApi(
+        optionalString(json, 'workflowVersion'),
+      ),
       checkpoints: checkpointsJson == null
           ? null
           : _mapCheckpoints(checkpointsJson),
-      nextCheckpoint:
-          OvertimeCheckpointStage.fromApi(optionalString(json, 'nextCheckpoint')),
+      nextCheckpoint: OvertimeCheckpointStage.fromApi(
+        optionalString(json, 'nextCheckpoint'),
+      ),
       requiresManualReview: json['requiresManualReview'] == true,
       reviewReason: optionalString(json, 'reviewReason'),
       reviewNotes: optionalString(json, 'reviewNotes'),
@@ -208,6 +219,20 @@ class OvertimeSessionModel extends OvertimeSession {
     return int.tryParse(value.toString());
   }
 
+  static double? _readNullableDouble(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    if (value == null) {
+      return null;
+    }
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value.toString());
+  }
+
   static Map<String, dynamic>? _checkpointToJson(OvertimeCheckpoint? cp) {
     if (cp == null) return null;
     return {
@@ -241,6 +266,7 @@ class OvertimeSessionModel extends OvertimeSession {
               'roles': technician!.roles,
             },
       'type': type.apiValue,
+      'isOvernight': isOvernight,
       'status': status.apiValue,
       'workflowVersion': workflowVersion.apiValue,
       'nextCheckpoint': nextCheckpoint?.apiValue,
@@ -251,8 +277,9 @@ class OvertimeSessionModel extends OvertimeSession {
           ? null
           : {
               'startJourney': _checkpointToJson(checkpoints!.startJourney),
-              'arrivedAtWorkSite':
-                  _checkpointToJson(checkpoints!.arrivedAtWorkSite),
+              'arrivedAtWorkSite': _checkpointToJson(
+                checkpoints!.arrivedAtWorkSite,
+              ),
               'finishedWork': _checkpointToJson(checkpoints!.finishedWork),
               'endJourney': _checkpointToJson(checkpoints!.endJourney),
             },
@@ -271,6 +298,7 @@ class OvertimeSessionModel extends OvertimeSession {
       'totalDurationMinutes': totalDurationMinutes,
       'workingDurationMinutes': workingDurationMinutes,
       'eligibleOvertimeMinutes': eligibleOvertimeMinutes,
+      'approvedHours': approvedHours,
       'liveElapsedSeconds': liveElapsedSeconds,
       'approvedBy': approvedBy == null
           ? null

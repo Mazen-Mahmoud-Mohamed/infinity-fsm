@@ -19,6 +19,20 @@ export const startOvertimeValidator = [
     .trim()
     .isIn(['NORMAL', 'TRAVEL', 'normal', 'travel'])
     .withMessage('type must be NORMAL or TRAVEL'),
+  // Multipart may send "true"/"false" strings; service normalizes.
+  body('isOvernight')
+    .optional({ values: 'falsy' })
+    .customSanitizer((value) => {
+      if (value === true || value === false) return value;
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true' || normalized === '1') return true;
+        if (normalized === 'false' || normalized === '0') return false;
+      }
+      return value;
+    })
+    .isBoolean()
+    .withMessage('isOvernight must be a boolean'),
   body('latitude').isFloat({ min: -90, max: 90 }),
   body('longitude').isFloat({ min: -180, max: 180 }),
   body('accuracy').isFloat({ min: 0 }),
@@ -180,6 +194,11 @@ export const approveOvertimeValidator = [
     .trim()
     .isLength({ max: 2000 })
     .withMessage('reviewNotes must be at most 2000 characters'),
+  body('approvedHours')
+    .optional({ values: 'null' })
+    .isFloat({ min: 0 })
+    .withMessage('approvedHours must be a number >= 0')
+    .toFloat(),
 ];
 
 export const overtimeIdValidator = [

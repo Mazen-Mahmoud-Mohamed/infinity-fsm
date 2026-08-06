@@ -17,6 +17,7 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
     required super.clientRequestId,
     required super.createdAt,
     super.overtimeType,
+    super.isOvernight,
     super.sessionId,
     super.address,
     super.startedAt,
@@ -35,6 +36,7 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       id: entity.id,
       type: entity.type,
       overtimeType: entity.overtimeType,
+      isOvernight: entity.isOvernight,
       sessionId: entity.sessionId,
       gps: entity.gps,
       photoBytes: entity.photoBytes,
@@ -95,6 +97,7 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       overtimeType: overtimeTypeRaw == null
           ? null
           : OvertimeType.fromApi(overtimeTypeRaw),
+      isOvernight: json['isOvernight'] == true,
       sessionId: optionalString(json, 'sessionId'),
       gps: GpsSnapshotModel.fromJson(json['gps'] as Map<String, dynamic>),
       photoBytes: base64Decode(photoBase64),
@@ -123,6 +126,7 @@ class PendingOvertimeActionModel extends PendingOvertimeAction {
       'id': id,
       'type': _typeToApi(type),
       'overtimeType': overtimeType?.apiValue,
+      'isOvernight': isOvernight,
       'sessionId': sessionId,
       'gps': GpsSnapshotModel.fromEntity(gps).toJson(),
       'photoBase64': base64Encode(photoBytes),

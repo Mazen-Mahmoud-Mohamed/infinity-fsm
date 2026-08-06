@@ -98,6 +98,7 @@ export const getSession = asyncHandler(async (req, res) => {
 export const approveSession = asyncHandler(async (req, res) => {
   const data = await overtimeService.approve(req.user, req.auth, req.params.id, {
     reviewNotes: req.body.reviewNotes,
+    approvedHours: req.body.approvedHours,
   });
   sendSuccess(res, data);
 });

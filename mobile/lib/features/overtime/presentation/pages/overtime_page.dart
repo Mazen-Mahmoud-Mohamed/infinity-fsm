@@ -17,17 +17,18 @@ import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
-import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_cellular_upload_prompt_service.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_cellular_upload_dialog.dart';
-import 'package:mobile/features/overtime/presentation/widgets/overtime_technician_voice_config_card.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
 
 /// Bottom-nav / `/overtime` entry.
@@ -86,8 +87,11 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final permissions =
-        context.watch<AuthCubit>().state.user?.permissionChecker;
+    final permissions = context
+        .watch<AuthCubit>()
+        .state
+        .user
+        ?.permissionChecker;
     final syncState = context.watch<OvertimeSyncCubit>().state;
 
     return Scaffold(
@@ -173,8 +177,8 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
               message: localizeAppMessage(
                 l10n,
                 state.message != null
-                ? localizeAppMessage(l10n, state.message)
-                : l10n.overtimeLoadFailed,
+                    ? localizeAppMessage(l10n, state.message)
+                    : l10n.overtimeLoadFailed,
               ),
               onRetry: () => context.read<OvertimeCubit>().initialize(),
             );
@@ -203,9 +207,7 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
                         const SizedBox(height: AppSpacing.lg),
                       ],
                       if (state.completedSession != null) ...[
-                        _CompletedSummaryCard(
-                          session: state.completedSession!,
-                        ),
+                        _CompletedSummaryCard(session: state.completedSession!),
                         const SizedBox(height: AppSpacing.lg),
                       ],
                       if (state.isRunning && state.session != null)
@@ -227,13 +229,23 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
                       else
                         _StartActions(
                           isBusy: state.isBusy,
-                          isNormalBusy: state.isStartingNormal,
-                          isTravelBusy: state.isStartingTravel,
+                          isStarting: state.isStarting,
                           offerContinueSession: state.offerContinueSession,
-                          onStartNormal: () =>
-                              context.read<OvertimeCubit>().startNormal(),
-                          onStartTravel: () =>
-                              context.read<OvertimeCubit>().startTravel(),
+                          onStart:
+                              ({
+                                required bool travel,
+                                required bool overnight,
+                              }) {
+                                final cubit = context.read<OvertimeCubit>();
+                                if (!travel) {
+                                  cubit.start(type: OvertimeType.normal);
+                                } else {
+                                  cubit.start(
+                                    type: OvertimeType.travel,
+                                    isOvernight: overnight,
+                                  );
+                                }
+                              },
                           onContinue: () => context
                               .read<OvertimeCubit>()
                               .continueExistingSession(),
@@ -291,41 +303,58 @@ class _ContinueSessionBanner extends StatelessWidget {
   }
 }
 
-class _StartActions extends StatelessWidget {
+class _StartActions extends StatefulWidget {
   const _StartActions({
     required this.isBusy,
-    required this.isNormalBusy,
-    required this.isTravelBusy,
-    required this.onStartNormal,
-    required this.onStartTravel,
+    required this.isStarting,
+    required this.onStart,
     this.offerContinueSession = false,
     this.onContinue,
   });
 
   final bool isBusy;
-  final bool isNormalBusy;
-  final bool isTravelBusy;
+  final bool isStarting;
   final bool offerContinueSession;
-  final VoidCallback onStartNormal;
-  final VoidCallback onStartTravel;
+  final void Function({required bool travel, required bool overnight}) onStart;
   final VoidCallback? onContinue;
+
+  @override
+  State<_StartActions> createState() => _StartActionsState();
+}
+
+class _StartActionsState extends State<_StartActions> {
+  bool _travel = false;
+  bool _overnight = false;
+
+  void _onTravelChanged(bool? value) {
+    final next = value ?? false;
+    setState(() {
+      _travel = next;
+      if (!next) {
+        _overnight = false;
+      }
+    });
+  }
+
+  void _onOvernightChanged(bool? value) {
+    if (!_travel) return;
+    setState(() => _overnight = value ?? false);
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final isBusy = widget.isBusy;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (offerContinueSession && onContinue != null) ...[
-          _ContinueSessionBanner(onContinue: onContinue!),
+        if (widget.offerContinueSession && widget.onContinue != null) ...[
+          _ContinueSessionBanner(onContinue: widget.onContinue!),
           const SizedBox(height: AppSpacing.lg),
         ],
-        Text(
-          l10n.overtimeStartTitle,
-          style: theme.textTheme.titleLarge,
-        ),
+        Text(l10n.overtimeStartTitle, style: theme.textTheme.titleLarge),
         const SizedBox(height: AppSpacing.xl),
         TextField(
           enabled: !isBusy,
@@ -340,32 +369,60 @@ class _StartActions extends StatelessWidget {
               context.read<OvertimeCubit>().updateNotesDraft(value),
         ),
         const SizedBox(height: AppSpacing.md),
-        OvertimeTechnicianVoiceConfigCard(
-          durationMinutes: OvertimeMediaConfig.minutesFromSeconds(
-            context.select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
+        CheckboxListTile(
+          value: _travel,
+          onChanged: isBusy ? null : _onTravelChanged,
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+          title: Text(l10n.overtimeTravel),
+          secondary: Icon(
+            Icons.directions_car_outlined,
+            color: theme.colorScheme.onSurfaceVariant,
           ),
-          quality: context
-              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
-          uploadPolicy:
-              context.select((OvertimeCubit c) => c.state.uploadPolicy),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: !_travel
+              ? const SizedBox.shrink()
+              : CheckboxListTile(
+                  value: _overnight,
+                  onChanged: isBusy ? null : _onOvernightChanged,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  contentPadding: const EdgeInsets.only(left: AppSpacing.lg),
+                  title: Text(l10n.overtimeOvernightStay),
+                  secondary: Icon(
+                    Icons.hotel_outlined,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
         ),
         const SizedBox(height: AppSpacing.md),
         OvertimeVoiceNoteSection(
-          maxDurationSeconds: context
-              .select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
-          voiceRecordingQuality: context
-              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
+          key: const ValueKey('overtime-start-voice'),
+          maxDurationSeconds: context.select(
+            (OvertimeCubit c) => c.state.voiceMaxDurationSeconds,
+          ),
+          voiceRecordingQuality: context.select(
+            (OvertimeCubit c) => c.state.voiceRecordingQuality,
+          ),
           localBytes: context.read<OvertimeCubit>().state.voiceDraft?.bytes,
-          durationSeconds:
-              context.read<OvertimeCubit>().state.voiceDraft?.durationSeconds,
+          durationSeconds: context
+              .read<OvertimeCubit>()
+              .state
+              .voiceDraft
+              ?.durationSeconds,
           enabled: !isBusy,
           onDraftChanged: (OvertimeVoiceDraft? draft) =>
               context.read<OvertimeCubit>().updateVoiceDraft(draft),
         ),
-        const SizedBox(height: AppSpacing.md),
-        ElevatedButton.icon(
-          onPressed: isBusy ? null : onStartNormal,
-          icon: isNormalBusy
+        const SizedBox(height: AppSpacing.lg),
+        FilledButton.icon(
+          onPressed: isBusy
+              ? null
+              : () => widget.onStart(travel: _travel, overnight: _overnight),
+          icon: widget.isStarting
               ? SizedBox(
                   width: 18,
                   height: 18,
@@ -375,26 +432,9 @@ class _StartActions extends StatelessWidget {
                   ),
                 )
               : const Icon(Icons.more_time),
-          label: Text(l10n.overtimeStartNormal),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        OutlinedButton.icon(
-          onPressed: isBusy ? null : onStartTravel,
-          icon: isTravelBusy
-              ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: theme.colorScheme.primary,
-                  ),
-                )
-              : const Icon(Icons.directions_car_outlined),
-          label: Text(l10n.overtimeStartTravel),
-          style: OutlinedButton.styleFrom(
+          label: Text(l10n.overtimeStart),
+          style: FilledButton.styleFrom(
+            minimumSize: const Size.fromHeight(52),
             padding: const EdgeInsets.symmetric(vertical: 16),
           ),
         ),
@@ -436,7 +476,8 @@ class _RunningSessionCard extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final next = session.effectiveNextCheckpoint;
     final actionLabel = _nextActionLabel(l10n, next);
-    final isAdvancing = busyAction == OvertimeBusyAction.arrivedAtWorkSite ||
+    final isAdvancing =
+        busyAction == OvertimeBusyAction.arrivedAtWorkSite ||
         busyAction == OvertimeBusyAction.finishedWork ||
         busyAction == OvertimeBusyAction.end;
     final completed = overtimeCompletedCheckpointCount(session);
@@ -476,10 +517,7 @@ class _RunningSessionCard extends StatelessWidget {
                   value: l10n.overtimeProgressOf(completed, total),
                 ),
                 if (address != null && address!.isNotEmpty)
-                  _MetaRow(
-                    label: l10n.overtimeLocation,
-                    value: address!,
-                  ),
+                  _MetaRow(label: l10n.overtimeLocation, value: address!),
                 if (gpsAccuracyMeters != null)
                   _MetaRow(
                     label: l10n.overtimeGpsStatus,
@@ -527,38 +565,39 @@ class _RunningSessionCard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        Text(
-          l10n.overtimeProgress,
-          style: theme.textTheme.titleMedium,
-        ),
+        Text(l10n.overtimeProgress, style: theme.textTheme.titleMedium),
         const SizedBox(height: AppSpacing.sm),
         OvertimeJourneyProgressStrip(session: session),
         const SizedBox(height: AppSpacing.lg),
-        Text(
-          l10n.overtimeJourneyTimeline,
-          style: theme.textTheme.titleMedium,
-        ),
+        Text(l10n.overtimeJourneyTimeline, style: theme.textTheme.titleMedium),
         const SizedBox(height: AppSpacing.md),
         OvertimeJourneyTimeline(
           session: session,
-          maxDurationSeconds: context
-              .select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
-          voiceRecordingQuality: context
-              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
+          // Technicians track stages; live-location review is for admins/supervisors.
+          showOpenLiveLocation: false,
+          maxDurationSeconds: context.select(
+            (OvertimeCubit c) => c.state.voiceMaxDurationSeconds,
+          ),
+          voiceRecordingQuality: context.select(
+            (OvertimeCubit c) => c.state.voiceRecordingQuality,
+          ),
           pendingActions: pendingActions,
           isOffline: isOffline,
-          isSyncing: context.watch<OvertimeSyncCubit>().state.status ==
+          isSyncing:
+              context.watch<OvertimeSyncCubit>().state.status ==
               OvertimeSyncStatus.syncing,
           onPendingVoiceChanged: (stage, draft) {
             context.read<OvertimeCubit>().updatePendingStageVoice(
-                  stage: stage,
-                  draft: draft,
-                );
+              stage: stage,
+              draft: draft,
+            );
             context.read<OvertimeSyncCubit>().refreshPendingCount();
           },
         ),
         const SizedBox(height: AppSpacing.lg),
         TextField(
+          // Fresh EditableText state per stage (mirrors Voice Note keying).
+          key: ValueKey('overtime-active-notes-${next?.apiValue ?? 'none'}'),
           enabled: !isBusy,
           maxLines: 2,
           maxLength: 1000,
@@ -569,26 +608,25 @@ class _RunningSessionCard extends StatelessWidget {
           ),
           onChanged: (value) =>
               context.read<OvertimeCubit>().updateNotesDraft(value),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        OvertimeTechnicianVoiceConfigCard(
-          durationMinutes: OvertimeMediaConfig.minutesFromSeconds(
-            context.select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
-          ),
-          quality: context
-              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
-          uploadPolicy:
-              context.select((OvertimeCubit c) => c.state.uploadPolicy),
+          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
         ),
         const SizedBox(height: AppSpacing.md),
         OvertimeVoiceNoteSection(
-          maxDurationSeconds: context
-              .select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
-          voiceRecordingQuality: context
-              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
+          // Fresh State per journey stage so prior recordings never linger
+          // in the active recorder UI after advancing.
+          key: ValueKey('overtime-active-voice-${next?.apiValue ?? 'none'}'),
+          maxDurationSeconds: context.select(
+            (OvertimeCubit c) => c.state.voiceMaxDurationSeconds,
+          ),
+          voiceRecordingQuality: context.select(
+            (OvertimeCubit c) => c.state.voiceRecordingQuality,
+          ),
           localBytes: context.read<OvertimeCubit>().state.voiceDraft?.bytes,
-          durationSeconds:
-              context.read<OvertimeCubit>().state.voiceDraft?.durationSeconds,
+          durationSeconds: context
+              .read<OvertimeCubit>()
+              .state
+              .voiceDraft
+              ?.durationSeconds,
           enabled: !isBusy,
           onDraftChanged: (OvertimeVoiceDraft? draft) =>
               context.read<OvertimeCubit>().updateVoiceDraft(draft),
@@ -679,18 +717,22 @@ class _SyncStatusChip extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final colorScheme = Theme.of(context).colorScheme;
     final (label, color, icon) = isOffline
-        ? (l10n.overtimeSyncOffline, colorScheme.outline, Icons.cloud_off_outlined)
+        ? (
+            l10n.overtimeSyncOffline,
+            colorScheme.outline,
+            Icons.cloud_off_outlined,
+          )
         : pendingCount > 0
-            ? (
-                l10n.overtimeSyncPending,
-                colorScheme.tertiary,
-                Icons.cloud_upload_outlined,
-              )
-            : (
-                l10n.overtimeSyncSynced,
-                colorScheme.primary,
-                Icons.cloud_done_outlined,
-              );
+        ? (
+            l10n.overtimeSyncPending,
+            colorScheme.tertiary,
+            Icons.cloud_upload_outlined,
+          )
+        : (
+            l10n.overtimeSyncSynced,
+            colorScheme.primary,
+            Icons.cloud_done_outlined,
+          );
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -706,10 +748,9 @@ class _SyncStatusChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             label,
-            style: Theme.of(context)
-                .textTheme
-                .labelSmall
-                ?.copyWith(color: color),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(color: color),
           ),
         ],
       ),
@@ -737,10 +778,7 @@ class _TelemetryChip extends StatelessWidget {
         children: [
           Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.labelSmall,
-          ),
+          Text(label, style: Theme.of(context).textTheme.labelSmall),
         ],
       ),
     );
@@ -777,6 +815,18 @@ class _CompletedSummaryCard extends StatelessWidget {
               label: l10n.overtimeStatusLabel,
               value: overtimeStatusLabel(l10n, session.status),
             ),
+            if (session.workedHours != null)
+              _MetaRow(
+                label: l10n.overtimeWorkedHours,
+                value: OvertimeFormatters.hoursValue(session.workedHours),
+              ),
+            if (session.status == OvertimeStatus.approved)
+              _MetaRow(
+                label: l10n.overtimeApprovedHours,
+                value: OvertimeFormatters.hoursValue(
+                  session.effectiveApprovedHours,
+                ),
+              ),
             _MetaRow(
               label: l10n.overtimeStartTime,
               value: timeFormat.format(session.startAt.toLocal()),
@@ -828,9 +878,7 @@ class _MetaRow extends StatelessWidget {
               ),
             ),
           ),
-          Expanded(
-            child: Text(value, style: theme.textTheme.bodyLarge),
-          ),
+          Expanded(child: Text(value, style: theme.textTheme.bodyLarge)),
         ],
       ),
     );

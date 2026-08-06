@@ -21,8 +21,21 @@ import { OFFICIAL_WORKING_HOURS } from '../../business/overtime/working-hours.po
 const COMPANY_TZ = OFFICIAL_WORKING_HOURS.timeZone;
 
 function otMinutesExpr() {
-  // Always sum persisted eligible OT — never fall back to total session length.
-  return { $ifNull: ['$eligibleOvertimeMinutes', 0] };
+  // Prefer approvedHours (decimal hours → minutes); fallback to eligible OT.
+  return {
+    $cond: [
+      {
+        $and: [
+          { $ne: [{ $ifNull: ['$approvedHours', null] }, null] },
+          { $ne: ['$approvedHours', ''] },
+        ],
+      },
+      {
+        $multiply: [{ $toDouble: { $ifNull: ['$approvedHours', 0] } }, 60],
+      },
+      { $ifNull: ['$eligibleOvertimeMinutes', 0] },
+    ],
+  };
 }
 
 function addCairoCalendarDays(year, month, day, daysToAdd) {
@@ -336,8 +349,9 @@ class DashboardService {
       attendanceAgg,
       presentDays,
       expectedWorkDays,
-      overtimeAgg,
+      overtimeTotals,
       topOvertime,
+      travelOtMinutesAgg,
       woByStatus,
       pmByStatus,
       lowStock,
@@ -357,7 +371,6 @@ class DashboardService {
       OvertimeRecord.countDocuments({
         companyId,
         status: 'RUNNING',
-        type: 'NORMAL',
       }),
       OvertimeRecord.countDocuments({
         companyId,
@@ -385,22 +398,30 @@ class DashboardService {
         { $match: overtimeBase },
         {
           $group: {
-            _id: '$type',
+            _id: null,
             minutes: { $sum: otMinutesExpr() },
-            count: { $sum: 1 },
+            trips: { $sum: 1 },
+            overnightTrips: {
+              $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
+            },
+            technicians: { $addToSet: '$userId' },
           },
         },
       ]),
       OvertimeRecord.aggregate([
-        { $match: { ...overtimeBase, status: { $in: ['APPROVED', 'PENDING_REVIEW', 'RUNNING'] } } },
+        { $match: overtimeBase },
         {
           $group: {
             _id: '$userId',
             minutes: { $sum: otMinutesExpr() },
+            trips: { $sum: 1 },
+            overnightTrips: {
+              $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
+            },
           },
         },
         { $sort: { minutes: -1 } },
-        { $limit: 5 },
+        { $limit: 20 },
         {
           $lookup: {
             from: 'users',
@@ -414,6 +435,8 @@ class DashboardService {
           $project: {
             userId: '$_id',
             minutes: 1,
+            trips: 1,
+            overnightTrips: 1,
             fullName: {
               $ifNull: [
                 '$user.fullName',
@@ -430,6 +453,15 @@ class DashboardService {
                 },
               ],
             },
+          },
+        },
+      ]),
+      OvertimeRecord.aggregate([
+        { $match: { ...overtimeBase, type: 'TRAVEL' } },
+        {
+          $group: {
+            _id: null,
+            minutes: { $sum: otMinutesExpr() },
           },
         },
       ]),
@@ -483,9 +515,32 @@ class DashboardService {
       (presentCount / (expected * Math.min(daySpan, 31))) * 1000
     ) / 10;
 
-    const otNormal = overtimeAgg.find((r) => r._id === 'NORMAL')?.minutes || 0;
-    const otTravel = overtimeAgg.find((r) => r._id === 'TRAVEL')?.minutes || 0;
-    const otTotal = otNormal + otTravel;
+    const otRow = overtimeTotals[0] || {
+      minutes: 0,
+      trips: 0,
+      overnightTrips: 0,
+      technicians: [],
+    };
+    const otTotalMinutes = otRow.minutes || 0;
+    const totalTrips = otRow.trips || 0;
+    const overnightTrips = otRow.overnightTrips || 0;
+    const totalTechnicians = Array.isArray(otRow.technicians)
+      ? otRow.technicians.length
+      : 0;
+    const otTravel = travelOtMinutesAgg[0]?.minutes || 0;
+
+    const technicianRows = topOvertime.map((row) => {
+      const hours = toHours(row.minutes);
+      const trips = row.trips || 0;
+      return {
+        userId: String(row.userId),
+        fullName: row.fullName || '—',
+        hours,
+        trips,
+        overnightTrips: row.overnightTrips || 0,
+        averageHoursPerTrip: trips > 0 ? Math.round((hours / trips) * 100) / 100 : 0,
+      };
+    });
 
     const woMap = Object.fromEntries(woByStatus.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries(pmByStatus.map((r) => [r._id, r.count]));
@@ -510,14 +565,27 @@ class DashboardService {
         attendanceRate: Math.min(100, Math.max(0, attendanceRate || 0)),
       },
       overtime: {
-        totalOvertimeHours: toHours(otNormal),
+        // Phase 3: totalApprovedHours semantics (approvedHours ?? worked).
+        totalOvertimeHours: toHours(otTotalMinutes),
+        // Backward-compatible field (TRAVEL only); UI no longer splits types.
         totalTravelOvertimeHours: toHours(otTravel),
+        totalTrips,
+        overnightTrips,
+        totalTechnicians,
+        averageHoursPerTrip:
+          totalTrips > 0
+            ? Math.round((toHours(otTotalMinutes) / totalTrips) * 100) / 100
+            : 0,
         averageOtHoursPerEmployee:
-          activeEmployees > 0 ? toHours(otTotal / activeEmployees) : 0,
-        topOvertimeEmployees: topOvertime.map((row) => ({
-          userId: String(row.userId),
-          fullName: row.fullName || '—',
-          hours: toHours(row.minutes),
+          activeEmployees > 0 ? toHours(otTotalMinutes / activeEmployees) : 0,
+        topOvertimeEmployees: technicianRows,
+        hoursPerTechnician: technicianRows.map((row) => ({
+          label: row.fullName,
+          value: row.hours,
+        })),
+        tripsPerTechnician: technicianRows.map((row) => ({
+          label: row.fullName,
+          value: row.trips,
         })),
       },
       workOrders: {
@@ -543,10 +611,7 @@ class DashboardService {
           quantityDelta: m.quantityDelta,
           partName: m.sparePartId?.name || null,
           sku: m.sparePartId?.partNumber || null,
-          createdAt:
-            m.movementDate?.toISOString?.() ||
-            m.createdAt?.toISOString?.() ||
-            null,
+          createdAt: (m.movementDate || m.createdAt)?.toISOString?.() || null,
         })),
       },
       assets: {
@@ -564,6 +629,8 @@ class DashboardService {
       })),
       charts: trends,
       period,
+      from: from.toISOString(),
+      to: to.toISOString(),
     };
   }
 
@@ -661,6 +728,7 @@ class DashboardService {
     const att = attendanceAgg[0] || { totalMinutes: 0, users: [] };
     const otNormal = overtimeAgg.find((r) => r._id === 'NORMAL')?.minutes || 0;
     const otTravel = overtimeAgg.find((r) => r._id === 'TRAVEL')?.minutes || 0;
+    const otTotal = otNormal + otTravel;
     const woMap = Object.fromEntries(woByStatus.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmByStatus || []).map((r) => [r._id, r.count]));
     const woTotal = Object.values(woMap).reduce((a, b) => a + b, 0);
@@ -673,7 +741,7 @@ class DashboardService {
         membersPresent: att.users?.length || 0,
       },
       teamOvertime: {
-        totalOvertimeHours: toHours(otNormal),
+        totalOvertimeHours: toHours(otTotal),
         totalTravelOvertimeHours: toHours(otTravel),
       },
       teamWorkOrders: {
@@ -805,6 +873,7 @@ class DashboardService {
     const att = attendanceAgg[0] || { totalMinutes: 0, days: 0 };
     const otNormal = overtimeAgg.find((r) => r._id === 'NORMAL')?.minutes || 0;
     const otTravel = overtimeAgg.find((r) => r._id === 'TRAVEL')?.minutes || 0;
+    const otTotal = otNormal + otTravel;
     const woMap = Object.fromEntries(woByStatus.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmByStatus || []).map((r) => [r._id, r.count]));
     const daySpan = Math.max(
@@ -829,7 +898,7 @@ class DashboardService {
         todayWorkingHours: toHours(todayAttendance?.workingMinutes || 0),
       },
       overtime: {
-        totalOvertimeHours: toHours(otNormal),
+        totalOvertimeHours: toHours(otTotal),
         totalTravelOvertimeHours: toHours(otTravel),
       },
       work: {
@@ -857,7 +926,7 @@ class DashboardService {
       performance: {
         attendanceRate: Math.min(100, Math.max(0, attendanceRate || 0)),
         monthlyWorkingHours: toHours(att.totalMinutes),
-        monthlyOvertimeHours: toHours(otNormal),
+        monthlyOvertimeHours: toHours(otTotal),
         monthlyTravelOtHours: toHours(otTravel),
         completedJobs: woMap.COMPLETED || 0,
         averageCompletionHours: avgCompletion?.avgMs

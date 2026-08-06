@@ -3,12 +3,7 @@ import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 
-enum PendingOvertimeActionType {
-  start,
-  arrivedAtWorkSite,
-  finishedWork,
-  end,
-}
+enum PendingOvertimeActionType { start, arrivedAtWorkSite, finishedWork, end }
 
 class PendingOvertimeAction extends Equatable {
   const PendingOvertimeAction({
@@ -22,6 +17,7 @@ class PendingOvertimeAction extends Equatable {
     required this.clientRequestId,
     required this.createdAt,
     this.overtimeType,
+    this.isOvernight = false,
     this.sessionId,
     this.address,
     this.startedAt,
@@ -38,6 +34,9 @@ class PendingOvertimeAction extends Equatable {
   final String id;
   final PendingOvertimeActionType type;
   final OvertimeType? overtimeType;
+
+  /// Travel overnight stay for START actions. Defaults false for legacy queue items.
+  final bool isOvernight;
   final String? sessionId;
   final GpsSnapshot gps;
   final List<int> photoBytes;
@@ -105,6 +104,7 @@ class PendingOvertimeAction extends Equatable {
       id: id,
       type: type,
       overtimeType: overtimeType,
+      isOvernight: isOvernight,
       sessionId: sessionId ?? this.sessionId,
       gps: gps ?? this.gps,
       photoBytes: photoBytes,
@@ -130,26 +130,27 @@ class PendingOvertimeAction extends Equatable {
 
   @override
   List<Object?> get props => [
-        id,
-        type,
-        overtimeType,
-        sessionId,
-        gps,
-        photoBytes,
-        voiceBytes,
-        voiceDurationSeconds,
-        deviceId,
-        clientRequestId,
-        address,
-        startedAt,
-        endedAt,
-        durationSeconds,
-        checkpointAt,
-        notes,
-        batteryLevel,
-        networkStatus,
-        createdAt,
-        retryCount,
-        lastError,
-      ];
+    id,
+    type,
+    overtimeType,
+    isOvernight,
+    sessionId,
+    gps,
+    photoBytes,
+    voiceBytes,
+    voiceDurationSeconds,
+    deviceId,
+    clientRequestId,
+    address,
+    startedAt,
+    endedAt,
+    durationSeconds,
+    checkpointAt,
+    notes,
+    batteryLevel,
+    networkStatus,
+    createdAt,
+    retryCount,
+    lastError,
+  ];
 }
