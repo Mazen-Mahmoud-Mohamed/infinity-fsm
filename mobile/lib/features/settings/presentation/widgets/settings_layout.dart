@@ -40,8 +40,7 @@ class SettingsPageBody extends StatelessWidget {
       child: ListView(
         padding: AppScrollPadding.resolve(
           context,
-          base: padding ??
-              EdgeInsets.fromLTRB(hPad, vPad, hPad, AppSpacing.xl),
+          base: padding ?? EdgeInsets.fromLTRB(hPad, vPad, hPad, AppSpacing.xl),
           chrome: AppBottomChrome.system,
         ),
         children: children,
@@ -51,10 +50,7 @@ class SettingsPageBody extends StatelessWidget {
     // Embedded panels already sit inside a framed hub — avoid double gutters.
     if (embedded) return list;
 
-    return AppPageFrame(
-      maxWidth: maxWidth,
-      child: list,
-    );
+    return AppPageFrame(maxWidth: maxWidth, child: list);
   }
 }
 
@@ -100,7 +96,7 @@ class SettingsResponsiveRow extends StatelessWidget {
   }
 }
 
-class SettingsCard extends StatelessWidget {
+class SettingsCard extends StatefulWidget {
   const SettingsCard({
     super.key,
     required this.child,
@@ -119,70 +115,103 @@ class SettingsCard extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
 
   @override
+  State<SettingsCard> createState() => _SettingsCardState();
+}
+
+class _SettingsCardState extends State<SettingsCard> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDesktop = AppBreakpoints.isDesktopOf(context);
+    final borderColor = _pressed
+        ? theme.colorScheme.primary
+        : _hovered
+        ? theme.colorScheme.primary.withValues(alpha: 0.7)
+        : theme.colorScheme.outlineVariant.withValues(alpha: 0.55);
+    final elevation = _pressed
+        ? 1.0
+        : _hovered
+        ? 3.0
+        : (isDesktop ? 0.0 : 1.0);
 
-    return Card(
-      margin: margin ?? EdgeInsets.zero,
-      clipBehavior: Clip.antiAlias,
-      elevation: isDesktop ? 0 : null,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.55),
-        ),
-      ),
-      child: Padding(
-        padding: isDesktop
-            ? const EdgeInsets.all(AppSpacing.lg)
-            : padding,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (title != null) ...[
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() {
+        _hovered = false;
+        _pressed = false;
+      }),
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTapDown: (_) => setState(() => _pressed = true),
+        onTapUp: (_) => setState(() => _pressed = false),
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeOutCubic,
+          child: Card(
+            margin: widget.margin ?? EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            elevation: elevation,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              side: BorderSide(color: borderColor),
+            ),
+            child: Padding(
+              padding: isDesktop
+                  ? const EdgeInsets.all(AppSpacing.lg)
+                  : widget.padding,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  if (leading != null) ...[
-                    IconTheme(
-                      data: IconThemeData(
-                        size: 22,
-                        color: theme.colorScheme.primary,
-                      ),
-                      child: leading!,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                  ],
-                  Expanded(
-                    child: Column(
+                  if (widget.title != null) ...[
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title!,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.1,
+                        if (widget.leading != null) ...[
+                          IconTheme(
+                            data: IconThemeData(
+                              size: 22,
+                              color: theme.colorScheme.primary,
+                            ),
+                            child: widget.leading!,
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                        ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                widget.title!,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.1,
+                                ),
+                              ),
+                              if (widget.subtitle != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  widget.subtitle!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
                         ),
-                        if (subtitle != null) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            subtitle!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
                       ],
                     ),
-                  ),
+                    SizedBox(height: isDesktop ? AppSpacing.lg : AppSpacing.md),
+                  ],
+                  widget.child,
                 ],
               ),
-              SizedBox(height: isDesktop ? AppSpacing.lg : AppSpacing.md),
-            ],
-            child,
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -267,7 +296,9 @@ class SettingsActionBar extends StatelessWidget {
       children: [
         for (final child in children)
           ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: kSettingsControlHeight),
+            constraints: const BoxConstraints(
+              minHeight: kSettingsControlHeight,
+            ),
             child: child,
           ),
       ],

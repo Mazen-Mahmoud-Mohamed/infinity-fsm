@@ -78,10 +78,7 @@ class _OvertimeSettingsPageState extends State<OvertimeSettingsPage> {
                       ? localizeAppMessage(l10n, state.message)
                       : l10n.settingsLoadFailed,
                 ),
-                FilledButton(
-                  onPressed: _cubit.load,
-                  child: Text(l10n.retry),
-                ),
+                FilledButton(onPressed: _cubit.load, child: Text(l10n.retry)),
               ],
             ),
           );
@@ -95,24 +92,29 @@ class _OvertimeSettingsPageState extends State<OvertimeSettingsPage> {
           settings?.voiceMaxDurationSeconds ??
               OvertimeMediaConfig.defaultMaxDurationSeconds,
         );
-        final durationOptions = (settings?.voiceDurationOptionsSeconds ??
-                OvertimeMediaConfig.durationOptionsSeconds)
-            .map(OvertimeMediaConfig.minutesFromSeconds)
-            .toList();
-        final quality = settings?.voiceRecordingQuality ??
+        final durationOptions =
+            (settings?.voiceDurationOptionsSeconds ??
+                    OvertimeMediaConfig.durationOptionsSeconds)
+                .map(OvertimeMediaConfig.minutesFromSeconds)
+                .toList();
+        final quality =
+            settings?.voiceRecordingQuality ??
             OvertimeMediaConfig.defaultVoiceQuality;
-        final qualityOptions = settings?.voiceQualityOptions ??
+        final qualityOptions =
+            settings?.voiceQualityOptions ??
             OvertimeMediaConfig.voiceQualityOptions;
-        final maxPhotoSize = settings?.maxPhotoSize ??
-            OvertimeMediaConfig.defaultMaxPhotoSizeMb;
-        final photoOptions = settings?.maxPhotoSizeOptions ??
+        final maxPhotoSize =
+            settings?.maxPhotoSize ?? OvertimeMediaConfig.defaultMaxPhotoSizeMb;
+        final photoOptions =
+            settings?.maxPhotoSizeOptions ??
             <Object>[
               ...OvertimeMediaConfig.maxPhotoSizeOptionsMb,
               OvertimeMediaConfig.maxPhotoSizeOriginal,
             ];
-        final uploadPolicy = settings?.uploadPolicy ??
-            OvertimeMediaConfig.defaultUploadPolicy;
-        final policyOptions = settings?.uploadPolicyOptions ??
+        final uploadPolicy =
+            settings?.uploadPolicy ?? OvertimeMediaConfig.defaultUploadPolicy;
+        final policyOptions =
+            settings?.uploadPolicyOptions ??
             OvertimeMediaConfig.uploadPolicyOptions;
 
         final activePreset = state.activePresetId;
@@ -134,10 +136,9 @@ class _OvertimeSettingsPageState extends State<OvertimeSettingsPage> {
                 Padding(
                   padding: const EdgeInsets.only(bottom: AppSpacing.md),
                   child: MaterialBanner(
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .tertiaryContainer
-                        .withValues(alpha: 0.45),
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.tertiaryContainer.withValues(alpha: 0.45),
                     leading: Icon(
                       Icons.warning_amber_rounded,
                       color: Theme.of(context).colorScheme.tertiary,
@@ -226,10 +227,8 @@ class _OvertimeSettingsPageState extends State<OvertimeSettingsPage> {
                       Text(
                         l10n.settingsReadOnly,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
-                            ),
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                     if (isSaving) ...[
@@ -326,16 +325,16 @@ class _PresetSection extends StatelessWidget {
       children: [
         Text(
           l10n.settingsOvertimePresetTitle,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
           l10n.settingsOvertimePresetSubtitle,
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: AppSpacing.md),
         if (isDesktop)
@@ -343,57 +342,35 @@ class _PresetSection extends StatelessWidget {
             spacing: AppSpacing.sm,
             runSpacing: AppSpacing.sm,
             children: allOptions.map((preset) {
-              final id = preset.id;
-              return ChoiceChip(
-                avatar: id == OvertimeConfigurationPreset.customId
-                    ? null
-                    : Icon(_presetIcon(id), size: 18),
-                label: Text(presetLabel(l10n, id)),
-                selected: activePreset == id,
-                onSelected: !canManage || isSaving || id == activePreset
-                    ? null
-                    : (_) {
-                        if (id != OvertimeConfigurationPreset.customId) {
-                          onPresetSelected(preset);
-                        }
-                      },
+              return _PresetOptionCard(
+                l10n: l10n,
+                preset: preset,
+                selected: activePreset == preset.id,
+                canManage: canManage,
+                isSaving: isSaving,
+                onSelected: onPresetSelected,
+                iconForPreset: _presetIcon,
               );
             }).toList(),
           )
         else
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            title: Text(presetLabel(l10n, activePreset)),
-            subtitle: Text(l10n.settingsOvertimePresetSubtitle),
-            trailing: const Icon(Icons.chevron_right_rounded),
-            enabled: canManage && !isSaving,
-            onTap: canManage && !isSaving
-                ? () async {
-                    final picked = await showModalBottomSheet<String>(
-                      context: context,
-                      showDragHandle: true,
-                      builder: (ctx) => SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: presets
-                              .map(
-                                (p) => ListTile(
-                                  leading: Icon(_presetIcon(p.id)),
-                                  title: Text(presetLabel(l10n, p.id)),
-                                  onTap: () => Navigator.pop(ctx, p.id),
-                                ),
-                              )
-                              .toList(),
-                        ),
-                      ),
-                    );
-                    if (picked != null) {
-                      onPresetSelected(
-                        presets.firstWhere((p) => p.id == picked),
-                      );
-                    }
-                  }
-                : null,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (int i = 0; i < allOptions.length; i++) ...[
+                _PresetOptionCard(
+                  l10n: l10n,
+                  preset: allOptions[i],
+                  selected: activePreset == allOptions[i].id,
+                  canManage: canManage,
+                  isSaving: isSaving,
+                  onSelected: onPresetSelected,
+                  iconForPreset: _presetIcon,
+                ),
+                if (i != allOptions.length - 1)
+                  const SizedBox(height: AppSpacing.sm),
+              ],
+            ],
           ),
       ],
     );
@@ -410,6 +387,151 @@ class _PresetSection extends StatelessWidget {
       default:
         return Icons.tune_outlined;
     }
+  }
+}
+
+class _PresetOptionCard extends StatelessWidget {
+  const _PresetOptionCard({
+    required this.l10n,
+    required this.preset,
+    required this.selected,
+    required this.canManage,
+    required this.isSaving,
+    required this.onSelected,
+    required this.iconForPreset,
+  });
+
+  final AppLocalizations l10n;
+  final OvertimeConfigurationPreset preset;
+  final bool selected;
+  final bool canManage;
+  final bool isSaving;
+  final ValueChanged<OvertimeConfigurationPreset> onSelected;
+  final IconData Function(String id) iconForPreset;
+
+  String _uploadPolicyHint(String policy) {
+    switch (OvertimeMediaConfig.normalizeUploadPolicy(policy)) {
+      case 'wifi_preferred':
+        return l10n.settingsOvertimeUploadPolicyWifiPreferredHint;
+      case 'wifi_only':
+        return l10n.settingsOvertimeUploadPolicyWifiOnlyHint;
+      case 'manual':
+        return l10n.settingsOvertimeUploadPolicyManualHint;
+      case 'ask_every_time':
+        return l10n.settingsOvertimeUploadPolicyAskEveryTimeHint;
+      default:
+        return l10n.settingsOvertimeUploadPolicyImmediatelyHint;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isCustom = preset.id == OvertimeConfigurationPreset.customId;
+
+    final estimatedTotalMb = OvertimeMediaEstimates.estimatedTotalUploadMb(
+      durationMinutes: preset.durationMinutes,
+      quality: preset.quality,
+      maxPhotoSize: preset.maxPhotoSize,
+    );
+
+    final storageEstimate = l10n.settingsOvertimeEstimateTotalMb(
+      estimatedTotalMb.toStringAsFixed(0),
+    );
+    final uploadLabel = uploadPolicyLabel(l10n, preset.uploadPolicy);
+
+    final enabled = canManage && !isSaving && !selected && !isCustom;
+
+    final borderColor = selected
+        ? theme.colorScheme.primary
+        : theme.colorScheme.outlineVariant.withValues(alpha: 0.75);
+    final background = selected
+        ? theme.colorScheme.primaryContainer.withValues(alpha: 0.32)
+        : theme.colorScheme.surfaceContainerLow;
+
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: presetLabel(l10n, preset.id),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: enabled ? () => onSelected(preset) : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    iconForPreset(preset.id),
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      presetLabel(l10n, preset.id),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                l10n.settingsOvertimePresetSubtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                storageEstimate,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                children: [
+                  Expanded(
+                    child: Tooltip(
+                      message: _uploadPolicyHint(preset.uploadPolicy),
+                      child: Text(
+                        uploadLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  if (selected)
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 18,
+                      color: theme.colorScheme.primary,
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -450,7 +572,9 @@ class _DurationSetting extends StatelessWidget {
           isSaving: isSaving,
           title: l10n.settingsOvertimeVoiceMaxDurationTitle,
           subtitle: l10n.settingsOvertimeVoiceMaxDurationSubtitle,
-          currentValue: l10n.settingsOvertimeVoiceDurationMinutes(selectedMinutes),
+          currentValue: l10n.settingsOvertimeVoiceDurationMinutes(
+            selectedMinutes,
+          ),
           sheetTitle: l10n.settingsOvertimeVoiceMaxDurationTitle,
           options: optionsMinutes
               .map(
@@ -478,10 +602,12 @@ class _DurationSetting extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         Text(
-          l10n.settingsOvertimeEstimatedMaxFileSize(formatEstimatedSize(l10n, estKb)),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          l10n.settingsOvertimeEstimatedMaxFileSize(
+            formatEstimatedSize(l10n, estKb),
+          ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -551,8 +677,8 @@ class _QualitySetting extends StatelessWidget {
             formatEstimatedSize(l10n, kbPerMin),
           ),
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
         const SizedBox(height: AppSpacing.xs),
         Text(
@@ -565,9 +691,9 @@ class _QualitySetting extends StatelessWidget {
               ),
             ),
           ),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -618,9 +744,7 @@ class _PhotoSizeSetting extends StatelessWidget {
           return ChoiceChip(
             label: Text(_label(size)),
             selected: selected == size,
-            onSelected: !canManage || isSaving
-                ? null
-                : (_) => onSelected(size),
+            onSelected: !canManage || isSaving ? null : (_) => onSelected(size),
           );
         }).toList(),
       ),
@@ -736,46 +860,60 @@ class _OvertimeSettingBlock<T> extends StatelessWidget {
     if (!canManage || isSaving) {
       return;
     }
+    final sortedOptions = [
+      ...options.where((o) => o.value == selected),
+      ...options.where((o) => o.value != selected),
+    ];
     final picked = await showModalBottomSheet<T>(
       context: context,
       showDragHandle: true,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                  AppSpacing.lg,
-                  AppSpacing.sm,
-                ),
-                child: Text(
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainerLow,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.6,
+          minChildSize: 0.28,
+          maxChildSize: 0.92,
+          builder: (sheetCtx, scrollController) {
+            return ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.sm,
+                AppSpacing.lg,
+                AppSpacing.md,
+              ),
+              children: [
+                Text(
                   sheetTitle,
-                  style: Theme.of(ctx).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
+                  style: Theme.of(sheetCtx).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                ...sortedOptions.map(
+                  (option) => ListTile(
+                    title: Text(option.label),
+                    trailing: AnimatedScale(
+                      duration: const Duration(milliseconds: 180),
+                      scale: option.value == selected ? 1 : 0,
+                      child: Icon(
+                        Icons.check_rounded,
+                        color: Theme.of(sheetCtx).colorScheme.primary,
                       ),
+                    ),
+                    onTap: () => Navigator.pop(sheetCtx, option.value),
+                  ),
                 ),
-              ),
-              ...options.map(
-                (option) => ListTile(
-                  title: Text(option.label),
-                  trailing: option.value == selected
-                      ? Icon(
-                          Icons.check_rounded,
-                          color: Theme.of(ctx).colorScheme.primary,
-                        )
-                      : null,
-                  onTap: () => Navigator.pop(ctx, option.value),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-            ],
-          ),
-        );
-      },
+              ],
+            );
+          },
+        ),
+      ),
     );
     if (picked != null && picked != selected) {
       await onSelected(picked);

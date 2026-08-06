@@ -2074,6 +2074,20 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsOvertimePhotoTestDeletePreview => 'حذف المعاينة';
 
   @override
+  String get settingsOvertimePhotoTestOriginalSize => 'حجم الأصل';
+
+  @override
+  String get settingsOvertimePhotoTestCompressedSize => 'حجم المضغوط';
+
+  @override
+  String get settingsOvertimePhotoTestEstimatedCloudinaryUsage =>
+      'تخزين Cloudinary التقديري';
+
+  @override
+  String get settingsOvertimePhotoTestEstimatedUploadTime =>
+      'زمن الرفع التقديري';
+
+  @override
   String get settingsOvertimePerformanceInfoTitle => 'معلومات الأداء';
 
   @override
@@ -2094,6 +2108,44 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsOvertimePerformanceTotalUpload => 'إجمالي الرفع التقديري';
+
+  @override
+  String get settingsOvertimePerformanceCompression => 'الضغط';
+
+  @override
+  String get settingsOvertimeStorageCalculatorTitle => 'حاسبة التخزين';
+
+  @override
+  String get settingsOvertimeStorageEstimatedVoiceSize =>
+      'الحجم التقديري للصوت';
+
+  @override
+  String get settingsOvertimeStorageEstimatedImageSize =>
+      'الحجم التقديري للصور';
+
+  @override
+  String get settingsOvertimeStorageEstimatedUploadPerSession =>
+      'إجمالي الرفع لكل جلسة';
+
+  @override
+  String get settingsOvertimeStorageEstimatedUploadPerTechnician =>
+      'إجمالي الرفع لكل فني';
+
+  @override
+  String get settingsOvertimeStorageEstimatedDailyUsage =>
+      'الاستخدام اليومي التقديري';
+
+  @override
+  String get settingsOvertimeStorageEstimatedMonthlyUsage =>
+      'الاستخدام الشهري التقديري';
+
+  @override
+  String get settingsOvertimeStorageEstimatedCloudinaryStorage =>
+      'تخزين Cloudinary التقديري';
+
+  @override
+  String get settingsOvertimeStorageEstimatedBandwidth =>
+      'نطاق البيانات (Bandwidth) التقديري';
 
   @override
   String get overtimeVoiceSettingsInfoTitle => 'إعدادات التسجيل الصوتي';

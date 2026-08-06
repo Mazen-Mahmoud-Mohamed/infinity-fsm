@@ -4028,6 +4028,30 @@ abstract class AppLocalizations {
   /// **'Delete Preview'**
   String get settingsOvertimePhotoTestDeletePreview;
 
+  /// No description provided for @settingsOvertimePhotoTestOriginalSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Original Size'**
+  String get settingsOvertimePhotoTestOriginalSize;
+
+  /// No description provided for @settingsOvertimePhotoTestCompressedSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressed Size'**
+  String get settingsOvertimePhotoTestCompressedSize;
+
+  /// No description provided for @settingsOvertimePhotoTestEstimatedCloudinaryUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Cloudinary Storage'**
+  String get settingsOvertimePhotoTestEstimatedCloudinaryUsage;
+
+  /// No description provided for @settingsOvertimePhotoTestEstimatedUploadTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Upload Time'**
+  String get settingsOvertimePhotoTestEstimatedUploadTime;
+
   /// No description provided for @settingsOvertimePerformanceInfoTitle.
   ///
   /// In en, this message translates to:
@@ -4063,6 +4087,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimated Total Upload'**
   String get settingsOvertimePerformanceTotalUpload;
+
+  /// No description provided for @settingsOvertimePerformanceCompression.
+  ///
+  /// In en, this message translates to:
+  /// **'Compression'**
+  String get settingsOvertimePerformanceCompression;
+
+  /// No description provided for @settingsOvertimeStorageCalculatorTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Storage Calculator'**
+  String get settingsOvertimeStorageCalculatorTitle;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedVoiceSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Voice Size'**
+  String get settingsOvertimeStorageEstimatedVoiceSize;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedImageSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Image Size'**
+  String get settingsOvertimeStorageEstimatedImageSize;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedUploadPerSession.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Upload Per Session'**
+  String get settingsOvertimeStorageEstimatedUploadPerSession;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedUploadPerTechnician.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Upload Per Technician'**
+  String get settingsOvertimeStorageEstimatedUploadPerTechnician;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedDailyUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Daily Usage'**
+  String get settingsOvertimeStorageEstimatedDailyUsage;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedMonthlyUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Monthly Usage'**
+  String get settingsOvertimeStorageEstimatedMonthlyUsage;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedCloudinaryStorage.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Cloudinary Storage'**
+  String get settingsOvertimeStorageEstimatedCloudinaryStorage;
+
+  /// No description provided for @settingsOvertimeStorageEstimatedBandwidth.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Bandwidth'**
+  String get settingsOvertimeStorageEstimatedBandwidth;
 
   /// No description provided for @overtimeVoiceSettingsInfoTitle.
   ///

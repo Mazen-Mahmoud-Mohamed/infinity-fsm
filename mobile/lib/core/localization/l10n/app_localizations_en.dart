@@ -2073,6 +2073,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOvertimePhotoTestDeletePreview => 'Delete Preview';
 
   @override
+  String get settingsOvertimePhotoTestOriginalSize => 'Original Size';
+
+  @override
+  String get settingsOvertimePhotoTestCompressedSize => 'Compressed Size';
+
+  @override
+  String get settingsOvertimePhotoTestEstimatedCloudinaryUsage =>
+      'Estimated Cloudinary Storage';
+
+  @override
+  String get settingsOvertimePhotoTestEstimatedUploadTime =>
+      'Estimated Upload Time';
+
+  @override
   String get settingsOvertimePerformanceInfoTitle => 'Performance Information';
 
   @override
@@ -2092,6 +2106,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOvertimePerformanceTotalUpload => 'Estimated Total Upload';
+
+  @override
+  String get settingsOvertimePerformanceCompression => 'Compression';
+
+  @override
+  String get settingsOvertimeStorageCalculatorTitle => 'Storage Calculator';
+
+  @override
+  String get settingsOvertimeStorageEstimatedVoiceSize =>
+      'Estimated Voice Size';
+
+  @override
+  String get settingsOvertimeStorageEstimatedImageSize =>
+      'Estimated Image Size';
+
+  @override
+  String get settingsOvertimeStorageEstimatedUploadPerSession =>
+      'Estimated Upload Per Session';
+
+  @override
+  String get settingsOvertimeStorageEstimatedUploadPerTechnician =>
+      'Estimated Upload Per Technician';
+
+  @override
+  String get settingsOvertimeStorageEstimatedDailyUsage =>
+      'Estimated Daily Usage';
+
+  @override
+  String get settingsOvertimeStorageEstimatedMonthlyUsage =>
+      'Estimated Monthly Usage';
+
+  @override
+  String get settingsOvertimeStorageEstimatedCloudinaryStorage =>
+      'Estimated Cloudinary Storage';
+
+  @override
+  String get settingsOvertimeStorageEstimatedBandwidth => 'Estimated Bandwidth';
 
   @override
   String get overtimeVoiceSettingsInfoTitle => 'Voice Recording Settings';
