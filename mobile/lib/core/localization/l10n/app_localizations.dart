@@ -3992,6 +3992,48 @@ abstract class AppLocalizations {
   /// **'Split View'**
   String get settingsOvertimePhotoTestSplit;
 
+  /// No description provided for @settingsOvertimePhotoTestCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get settingsOvertimePhotoTestCompare;
+
+  /// No description provided for @settingsOvertimePhotoTestCompareShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get settingsOvertimePhotoTestCompareShort;
+
+  /// No description provided for @settingsOvertimePhotoTestOriginalShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get settingsOvertimePhotoTestOriginalShort;
+
+  /// No description provided for @settingsOvertimePhotoTestCompressedShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressed'**
+  String get settingsOvertimePhotoTestCompressedShort;
+
+  /// No description provided for @settingsOvertimePhotoTestMobileStackHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Scroll to compare Original and Compressed side by side.'**
+  String get settingsOvertimePhotoTestMobileStackHint;
+
+  /// No description provided for @settingsOvertimePhotoTestFullscreenSwipeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Swipe between Original, Compressed, and Split comparison.'**
+  String get settingsOvertimePhotoTestFullscreenSwipeHint;
+
+  /// No description provided for @settingsOvertimePhotoTestNoCompressionApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'No compression applied (Original policy)'**
+  String get settingsOvertimePhotoTestNoCompressionApplied;
+
   /// No description provided for @settingsOvertimePhotoTestResolution.
   ///
   /// In en, this message translates to:
@@ -4099,6 +4141,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open fullscreen'**
   String get settingsOvertimePhotoTestOpenFullscreen;
+
+  /// No description provided for @settingsOvertimePhotoTestEstimatedUploadSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Upload Size'**
+  String get settingsOvertimePhotoTestEstimatedUploadSize;
 
   /// No description provided for @settingsOvertimePerformanceInfoTitle.
   ///

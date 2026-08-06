@@ -279,14 +279,6 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
     return 2;
   }
 
-  double _statGridAspectRatio(int columns) {
-    return switch (columns) {
-      >= 4 => 1.55,
-      3 => 1.7,
-      _ => 2.1,
-    };
-  }
-
   String _formatResolution(int width, int height) {
     if (width <= 0 || height <= 0) return '—';
     return '$width × $height';
@@ -298,7 +290,7 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
   ) {
     if (result == null) return '—';
     if (result.isOriginalPolicy) {
-      return l10n.settingsOvertimePhotoTestNoCompression;
+      return l10n.settingsOvertimePhotoTestNoCompressionApplied;
     }
     if (result.skippedBecauseUnderLimit) {
       return l10n.settingsOvertimePhotoTestUnderPolicyLimit;
@@ -307,7 +299,25 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
     if (quality != null) {
       return l10n.settingsOvertimePhotoTestJpegQualityValue(quality);
     }
-    return l10n.settingsOvertimePhotoTestNoCompression;
+    return l10n.settingsOvertimePhotoTestNoCompressionApplied;
+  }
+
+  Widget _responsiveStatGrid({
+    required double maxWidth,
+    required List<Widget> children,
+  }) {
+    final columns = _statGridColumns(maxWidth);
+    const spacing = AppSpacing.sm;
+    final itemWidth =
+        (maxWidth - (spacing * (columns - 1))).clamp(120.0, maxWidth) / columns;
+
+    return Wrap(
+      spacing: spacing,
+      runSpacing: spacing,
+      children: [
+        for (final child in children) SizedBox(width: itemWidth, child: child),
+      ],
+    );
   }
 
   @override
@@ -463,9 +473,6 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
           const SizedBox(height: AppSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
-              final columns = constraints.maxWidth >= AppBreakpoints.tabletMax
-                  ? 2
-                  : 1;
               final durationMin = l10n.settingsOvertimeVoiceDurationMinutes(
                 ((_voiceDurationSec ?? 0) / 60).ceil().clamp(
                   1,
@@ -473,56 +480,49 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
                 ),
               );
 
-              final items = [
-                _EnterpriseStatCard(
-                  label: l10n.settingsOvertimeVoiceTestDuration,
-                  value: durationMin,
-                  icon: Icons.timer_rounded,
-                ),
-                _EnterpriseStatCard(
-                  label: l10n.settingsOvertimeVoiceTestEstimatedSize,
-                  value: formatEstimatedSize(l10n, estVoiceKb),
-                  icon: Icons.calculate_rounded,
-                ),
-                _EnterpriseStatCard(
-                  label: l10n.settingsOvertimeVoiceTestActualSize,
-                  value: formatBytes(l10n, _voiceBytes!),
-                  icon: Icons.file_present_rounded,
-                ),
-                _EnterpriseStatCard(
-                  label: l10n.settingsOvertimeVoiceQualityTitle,
-                  value: voiceQualityLabel(l10n, widget.quality),
-                  icon: Icons.mic_none_rounded,
-                ),
-                _EnterpriseStatCard(
-                  label: l10n.settingsOvertimeVoiceTestEncoding,
-                  value: 'AAC-LC • Mono',
-                  icon: Icons.audiotrack_rounded,
-                ),
-                _EnterpriseStatCard(
-                  label: l10n.settingsOvertimeVoiceTestBitrate,
-                  value: l10n.settingsOvertimeVoiceTestBitrateKbps(
-                    config.bitRate ~/ 1000,
+              return _responsiveStatGrid(
+                maxWidth: constraints.maxWidth,
+                children: [
+                  _EnterpriseStatCard(
+                    label: l10n.settingsOvertimeVoiceTestDuration,
+                    value: durationMin,
+                    icon: Icons.timer_rounded,
                   ),
-                  icon: Icons.speed_rounded,
-                ),
-                _EnterpriseStatCard(
-                  label: l10n.settingsOvertimeVoiceTestSampleRate,
-                  value: l10n.settingsOvertimeVoiceTestSampleRateKhz(
-                    config.sampleRate ~/ 1000,
+                  _EnterpriseStatCard(
+                    label: l10n.settingsOvertimeVoiceTestEstimatedSize,
+                    value: formatEstimatedSize(l10n, estVoiceKb),
+                    icon: Icons.calculate_rounded,
                   ),
-                  icon: Icons.speed_rounded,
-                ),
-              ];
-
-              return GridView.count(
-                crossAxisCount: columns,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: AppSpacing.sm,
-                crossAxisSpacing: AppSpacing.sm,
-                childAspectRatio: columns == 2 ? 1.75 : 2.15,
-                children: items,
+                  _EnterpriseStatCard(
+                    label: l10n.settingsOvertimeVoiceTestActualSize,
+                    value: formatBytes(l10n, _voiceBytes!),
+                    icon: Icons.file_present_rounded,
+                  ),
+                  _EnterpriseStatCard(
+                    label: l10n.settingsOvertimeVoiceQualityTitle,
+                    value: voiceQualityLabel(l10n, widget.quality),
+                    icon: Icons.mic_none_rounded,
+                  ),
+                  _EnterpriseStatCard(
+                    label: l10n.settingsOvertimeVoiceTestEncoding,
+                    value: 'AAC-LC • Mono',
+                    icon: Icons.audiotrack_rounded,
+                  ),
+                  _EnterpriseStatCard(
+                    label: l10n.settingsOvertimeVoiceTestBitrate,
+                    value: l10n.settingsOvertimeVoiceTestBitrateKbps(
+                      config.bitRate ~/ 1000,
+                    ),
+                    icon: Icons.speed_rounded,
+                  ),
+                  _EnterpriseStatCard(
+                    label: l10n.settingsOvertimeVoiceTestSampleRate,
+                    value: l10n.settingsOvertimeVoiceTestSampleRateKhz(
+                      config.sampleRate ~/ 1000,
+                    ),
+                    icon: Icons.speed_rounded,
+                  ),
+                ],
               );
             },
           ),
@@ -534,9 +534,10 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.md),
         Wrap(
           spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
           children: [
             OutlinedButton.icon(
               onPressed: _photoBusy
@@ -560,29 +561,16 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
         ],
         if (_originalPhoto != null && _compressedPhoto != null) ...[
           const SizedBox(height: AppSpacing.md),
-          SegmentedButton<_PhotoViewMode>(
-            segments: [
-              ButtonSegment(
-                value: _PhotoViewMode.original,
-                label: Text(l10n.settingsOvertimePhotoTestOriginal),
-              ),
-              ButtonSegment(
-                value: _PhotoViewMode.compressed,
-                label: Text(l10n.settingsOvertimePhotoTestCompressed),
-              ),
-              ButtonSegment(
-                value: _PhotoViewMode.split,
-                label: Text(l10n.settingsOvertimePhotoTestSplit),
-              ),
-            ],
-            selected: {_photoView},
-            onSelectionChanged: (s) => setState(() => _photoView = s.first),
+          _PhotoModeSelector(
+            selected: _photoView,
+            onSelected: (mode) => setState(() => _photoView = mode),
           ),
           const SizedBox(height: AppSpacing.md),
           _buildPhotoComparison(context, l10n),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           Wrap(
             spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
             children: [
               OutlinedButton(
                 onPressed: () => _pickPhoto(ImageSource.gallery),
@@ -606,51 +594,45 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = _statGridColumns(constraints.maxWidth);
-            final items = [
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimePerformanceVoiceMaxDuration,
-                value: l10n.settingsOvertimeVoiceDurationMinutes(
-                  widget.durationMinutes,
+            return _responsiveStatGrid(
+              maxWidth: constraints.maxWidth,
+              children: [
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimePerformanceVoiceMaxDuration,
+                  value: l10n.settingsOvertimeVoiceDurationMinutes(
+                    widget.durationMinutes,
+                  ),
+                  icon: Icons.timer_rounded,
                 ),
-                icon: Icons.timer_rounded,
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimePerformanceVoiceMaxSize,
-                value: formatEstimatedSize(l10n, estVoiceKb),
-                icon: Icons.mic_none_rounded,
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimePerformancePhotoMaxSize,
-                value: l10n.settingsOvertimePerformancePhotoAverageMb(photoMb),
-                icon: Icons.photo_size_select_actual_rounded,
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimePerformanceTotalUpload,
-                value: l10n.settingsOvertimeEstimateTotalMb(
-                  totalMb.toStringAsFixed(0),
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimePerformanceVoiceMaxSize,
+                  value: formatEstimatedSize(l10n, estVoiceKb),
+                  icon: Icons.mic_none_rounded,
                 ),
-                icon: Icons.cloud_upload_rounded,
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimePerformanceCompression,
-                value: '$estimatedCompressionPercent%',
-                icon: Icons.compress_rounded,
-                progress: estimatedCompressionPercent / 100,
-              ),
-            ];
-
-            return GridView.count(
-              crossAxisCount: columns,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: AppSpacing.sm,
-              crossAxisSpacing: AppSpacing.sm,
-              childAspectRatio: _statGridAspectRatio(columns),
-              children: items,
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimePerformancePhotoMaxSize,
+                  value: l10n.settingsOvertimePerformancePhotoAverageMb(
+                    photoMb,
+                  ),
+                  icon: Icons.photo_size_select_actual_rounded,
+                ),
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimePerformanceTotalUpload,
+                  value: l10n.settingsOvertimeEstimateTotalMb(
+                    totalMb.toStringAsFixed(0),
+                  ),
+                  icon: Icons.cloud_upload_rounded,
+                ),
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimePerformanceCompression,
+                  value: '$estimatedCompressionPercent%',
+                  icon: Icons.compress_rounded,
+                  progress: estimatedCompressionPercent / 100,
+                ),
+              ],
             );
           },
         ),
@@ -661,79 +643,77 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
             fontWeight: FontWeight.w600,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
-            final columns = _statGridColumns(constraints.maxWidth);
-
-            final items = [
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedVoiceSize,
-                value: formatEstimatedSize(l10n, voiceKb),
-                icon: Icons.mic_none_rounded,
-                progress: _progressFromKb(voiceKb, capKb: 1024 * 20),
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedImageSize,
-                value: formatEstimatedSize(l10n, imageKb),
-                icon: Icons.photo_size_select_actual_rounded,
-                progress: _progressFromKb(imageKb, capKb: 1024 * 20),
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedUploadPerSession,
-                value: formatEstimatedSize(l10n, uploadPerSessionKb),
-                icon: Icons.cloud_upload_rounded,
-                progress: _progressFromKb(uploadPerSessionKb, capKb: 1024 * 40),
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedUploadPerTechnician,
-                value: formatEstimatedSize(l10n, uploadPerTechnicianKb),
-                icon: Icons.person_rounded,
-                progress: _progressFromKb(
-                  uploadPerTechnicianKb,
-                  capKb: 1024 * 40,
+            return _responsiveStatGrid(
+              maxWidth: constraints.maxWidth,
+              children: [
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimeStorageEstimatedVoiceSize,
+                  value: formatEstimatedSize(l10n, voiceKb),
+                  icon: Icons.mic_none_rounded,
+                  progress: _progressFromKb(voiceKb, capKb: 1024 * 20),
                 ),
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedDailyUsage,
-                value: formatEstimatedSize(l10n, dailyUsageKb),
-                icon: Icons.calendar_today_rounded,
-                progress: _progressFromKb(dailyUsageKb, capKb: 1024 * 80),
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedMonthlyUsage,
-                value: formatEstimatedSize(l10n, monthlyUsageKb),
-                icon: Icons.calendar_view_month_rounded,
-                progress: _progressFromKb(monthlyUsageKb, capKb: 1024 * 1200),
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedCloudinaryStorage,
-                value: formatEstimatedSize(l10n, estimatedCloudinaryStorageKb),
-                icon: Icons.cloud_circle_rounded,
-                progress: _progressFromKb(
-                  estimatedCloudinaryStorageKb,
-                  capKb: 1024 * 1200,
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimeStorageEstimatedImageSize,
+                  value: formatEstimatedSize(l10n, imageKb),
+                  icon: Icons.photo_size_select_actual_rounded,
+                  progress: _progressFromKb(imageKb, capKb: 1024 * 20),
                 ),
-              ),
-              _EnterpriseStatCard(
-                label: l10n.settingsOvertimeStorageEstimatedBandwidth,
-                value: formatEstimatedSize(l10n, estimatedBandwidthKb),
-                icon: Icons.speed_rounded,
-                progress: _progressFromKb(
-                  estimatedBandwidthKb,
-                  capKb: 1024 * 1200,
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimeStorageEstimatedUploadPerSession,
+                  value: formatEstimatedSize(l10n, uploadPerSessionKb),
+                  icon: Icons.cloud_upload_rounded,
+                  progress: _progressFromKb(
+                    uploadPerSessionKb,
+                    capKb: 1024 * 40,
+                  ),
                 ),
-              ),
-            ];
-
-            return GridView.count(
-              crossAxisCount: columns,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: AppSpacing.sm,
-              crossAxisSpacing: AppSpacing.sm,
-              childAspectRatio: _statGridAspectRatio(columns),
-              children: items,
+                _EnterpriseStatCard(
+                  label:
+                      l10n.settingsOvertimeStorageEstimatedUploadPerTechnician,
+                  value: formatEstimatedSize(l10n, uploadPerTechnicianKb),
+                  icon: Icons.person_rounded,
+                  progress: _progressFromKb(
+                    uploadPerTechnicianKb,
+                    capKb: 1024 * 40,
+                  ),
+                ),
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimeStorageEstimatedDailyUsage,
+                  value: formatEstimatedSize(l10n, dailyUsageKb),
+                  icon: Icons.calendar_today_rounded,
+                  progress: _progressFromKb(dailyUsageKb, capKb: 1024 * 80),
+                ),
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimeStorageEstimatedMonthlyUsage,
+                  value: formatEstimatedSize(l10n, monthlyUsageKb),
+                  icon: Icons.calendar_view_month_rounded,
+                  progress: _progressFromKb(monthlyUsageKb, capKb: 1024 * 1200),
+                ),
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimeStorageEstimatedCloudinaryStorage,
+                  value: formatEstimatedSize(
+                    l10n,
+                    estimatedCloudinaryStorageKb,
+                  ),
+                  icon: Icons.cloud_circle_rounded,
+                  progress: _progressFromKb(
+                    estimatedCloudinaryStorageKb,
+                    capKb: 1024 * 1200,
+                  ),
+                ),
+                _EnterpriseStatCard(
+                  label: l10n.settingsOvertimeStorageEstimatedBandwidth,
+                  value: formatEstimatedSize(l10n, estimatedBandwidthKb),
+                  icon: Icons.speed_rounded,
+                  progress: _progressFromKb(
+                    estimatedBandwidthKb,
+                    capKb: 1024 * 1200,
+                  ),
+                ),
+              ],
             );
           },
         ),
@@ -747,6 +727,8 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
     final result = _compressionResult;
     final decodedOriginal = _decodedOriginal;
     final decodedCompressed = _decodedCompressed;
+    final isPhone = AppBreakpoints.isPhoneOf(context);
+    final isOriginalPolicy = result?.isOriginalPolicy == true;
 
     final ratio =
         result?.compressionRatioPercent ??
@@ -755,8 +737,8 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
             : ((1 - (compressedBytes.length / originalBytes.length)) * 100)
                   .round());
 
-    final originalWidth = decodedOriginal?.width ?? result?.outputWidth ?? 0;
-    final originalHeight = decodedOriginal?.height ?? result?.outputHeight ?? 0;
+    final originalWidth = decodedOriginal?.width ?? 0;
+    final originalHeight = decodedOriginal?.height ?? 0;
     final compressedWidth =
         decodedCompressed?.width ?? result?.outputWidth ?? originalWidth;
     final compressedHeight =
@@ -772,33 +754,89 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
       return '~ ${m}m ${s.toString().padLeft(2, '0')}s';
     }
 
-    Widget memoryPreview(Uint8List bytes) {
-      return Image.memory(
-        bytes,
-        fit: BoxFit.contain,
-        gaplessPlayback: true,
-        frameBuilder: (context, child, frame, _) {
-          if (frame == null) {
-            return const Center(
-              child: SizedBox(
-                width: 24,
-                height: 24,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            );
-          }
-          return child;
-        },
-        errorBuilder: (context, error, stackTrace) => Center(
-          child: Icon(
-            Icons.broken_image_outlined,
-            color: Theme.of(context).colorScheme.error,
+    final aspect = (originalWidth > 0 && originalHeight > 0)
+        ? originalWidth / originalHeight
+        : 3 / 4;
+
+    Widget previewFrame({
+      required Widget child,
+      required VoidCallback onFullscreen,
+    }) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return AspectRatio(
+                aspectRatio: aspect.clamp(0.55, 1.8),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: child,
+                  ),
+                ),
+              );
+            },
           ),
-        ),
+          const SizedBox(height: AppSpacing.xs),
+          Align(
+            alignment: Alignment.centerRight,
+            child: IconButton(
+              icon: const Icon(Icons.fullscreen_outlined),
+              onPressed: onFullscreen,
+              tooltip: l10n.settingsOvertimePhotoTestOpenFullscreen,
+            ),
+          ),
+        ],
       );
     }
 
-    Widget buildInlineSplit() {
+    Widget labeledStackImage({
+      required String label,
+      required Uint8List bytes,
+      required OvertimePhotoComparisonMode mode,
+    }) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            label,
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          previewFrame(
+            onFullscreen: () => OvertimePhotoComparisonViewer.show(
+              context,
+              mode: mode,
+              originalBytes: Uint8List.fromList(originalBytes),
+              compressedBytes: Uint8List.fromList(compressedBytes),
+              initialSplitRatio: _splitRatio,
+            ),
+            child: _ZoomableMemoryImage(
+              bytes: bytes,
+              onTap: () => OvertimePhotoComparisonViewer.show(
+                context,
+                mode: mode,
+                originalBytes: Uint8List.fromList(originalBytes),
+                compressedBytes: Uint8List.fromList(compressedBytes),
+                initialSplitRatio: _splitRatio,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    Widget buildDesktopSplit() {
       return LayoutBuilder(
         builder: (context, constraints) {
           final maxW = constraints.maxWidth;
@@ -815,7 +853,11 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
               fit: StackFit.expand,
               children: [
                 Positioned.fill(
-                  child: memoryPreview(Uint8List.fromList(originalBytes)),
+                  child: Image.memory(
+                    Uint8List.fromList(originalBytes),
+                    fit: BoxFit.contain,
+                    gaplessPlayback: true,
+                  ),
                 ),
                 Positioned(
                   left: 0,
@@ -823,7 +865,13 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
                   bottom: 0,
                   width: splitX,
                   child: ClipRect(
-                    child: memoryPreview(Uint8List.fromList(compressedBytes)),
+                    child: Image.memory(
+                      Uint8List.fromList(compressedBytes),
+                      fit: BoxFit.contain,
+                      gaplessPlayback: true,
+                      width: maxW,
+                      alignment: Alignment.centerLeft,
+                    ),
                   ),
                 ),
                 Positioned(
@@ -832,9 +880,27 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
                   bottom: 0,
                   child: Container(
                     width: 2,
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.85),
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                Positioned(
+                  left: splitX - 16,
+                  top: 0,
+                  bottom: 0,
+                  child: Center(
+                    child: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.compare_arrows_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -844,55 +910,57 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
       );
     }
 
-    Widget photoFrame({required Widget child}) {
-      return AspectRatio(
-        aspectRatio: 4 / 3,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: Theme.of(context).colorScheme.outlineVariant,
-            ),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: child,
-          ),
-        ),
-      );
-    }
-
     Widget imageSection() {
-      final child = switch (_photoView) {
-        _PhotoViewMode.original => GestureDetector(
-          onTap: _openFullscreenPreview,
-          child: memoryPreview(Uint8List.fromList(originalBytes)),
-        ),
-        _PhotoViewMode.compressed => GestureDetector(
-          onTap: _openFullscreenPreview,
-          child: memoryPreview(Uint8List.fromList(compressedBytes)),
-        ),
-        _PhotoViewMode.split => buildInlineSplit(),
+      if (_photoView == _PhotoViewMode.split && isPhone) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              l10n.settingsOvertimePhotoTestMobileStackHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            labeledStackImage(
+              label: l10n.settingsOvertimePhotoTestOriginal,
+              bytes: Uint8List.fromList(originalBytes),
+              mode: OvertimePhotoComparisonMode.original,
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+              child: Icon(
+                Icons.arrow_downward_rounded,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+            ),
+            labeledStackImage(
+              label: l10n.settingsOvertimePhotoTestCompressed,
+              bytes: Uint8List.fromList(compressedBytes),
+              mode: OvertimePhotoComparisonMode.compressed,
+            ),
+          ],
+        );
+      }
+
+      final bytes = switch (_photoView) {
+        _PhotoViewMode.original => originalBytes,
+        _PhotoViewMode.compressed => compressedBytes,
+        _PhotoViewMode.split => originalBytes,
       };
 
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          photoFrame(child: child),
-          const SizedBox(height: AppSpacing.xs),
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: const Icon(Icons.fullscreen_outlined),
-              onPressed: _openFullscreenPreview,
-              tooltip: l10n.settingsOvertimePhotoTestOpenFullscreen,
-            ),
-          ),
-        ],
+      return previewFrame(
+        onFullscreen: _openFullscreenPreview,
+        child: _photoView == _PhotoViewMode.split
+            ? buildDesktopSplit()
+            : _ZoomableMemoryImage(
+                bytes: Uint8List.fromList(bytes),
+                onTap: _openFullscreenPreview,
+              ),
       );
     }
 
-    final metricItems = [
+    final metricItems = <Widget>[
       _MetricTile(
         label: l10n.settingsOvertimePhotoTestOriginalResolution,
         value: _formatResolution(originalWidth, originalHeight),
@@ -918,6 +986,10 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
         value: _jpegQualityLabel(l10n, result),
       ),
       _MetricTile(
+        label: l10n.settingsOvertimePhotoTestEstimatedUploadSize,
+        value: formatBytes(l10n, compressedBytes.length),
+      ),
+      _MetricTile(
         label: l10n.settingsOvertimePhotoTestEstimatedUploadTime,
         value: fmtUploadTime(estimatedUploadTimeSeconds),
       ),
@@ -926,24 +998,41 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (isOriginalPolicy) ...[
+          Container(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            decoration: BoxDecoration(
+              color: Theme.of(
+                context,
+              ).colorScheme.secondaryContainer.withValues(alpha: 0.45),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              l10n.settingsOvertimePhotoTestNoCompressionApplied,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+        ],
         imageSection(),
-        const SizedBox(height: AppSpacing.sm),
+        const SizedBox(height: AppSpacing.md),
         LayoutBuilder(
           builder: (context, constraints) {
             final columns = constraints.maxWidth >= AppBreakpoints.phoneMax
                 ? 2
                 : 1;
-            return GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: columns,
-                mainAxisSpacing: AppSpacing.xs,
-                crossAxisSpacing: AppSpacing.sm,
-                childAspectRatio: columns == 2 ? 2.8 : 3.4,
-              ),
-              itemCount: metricItems.length,
-              itemBuilder: (context, index) => metricItems[index],
+            const spacing = AppSpacing.sm;
+            final itemWidth =
+                (constraints.maxWidth - (spacing * (columns - 1))) / columns;
+            return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                for (final item in metricItems)
+                  SizedBox(width: itemWidth, child: item),
+              ],
             );
           },
         ),
@@ -964,6 +1053,217 @@ class _OvertimeSettingsConfigLabState extends State<OvertimeSettingsConfigLab>
 }
 
 enum _PhotoViewMode { original, compressed, split }
+
+class _PhotoModeSelector extends StatelessWidget {
+  const _PhotoModeSelector({required this.selected, required this.onSelected});
+
+  final _PhotoViewMode selected;
+  final ValueChanged<_PhotoViewMode> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final compact = AppBreakpoints.isPhoneOf(context);
+
+    final options = <(_PhotoViewMode, IconData, String)>[
+      (
+        _PhotoViewMode.original,
+        Icons.photo_outlined,
+        compact
+            ? l10n.settingsOvertimePhotoTestOriginalShort
+            : l10n.settingsOvertimePhotoTestOriginal,
+      ),
+      (
+        _PhotoViewMode.compressed,
+        Icons.compress_rounded,
+        compact
+            ? l10n.settingsOvertimePhotoTestCompressedShort
+            : l10n.settingsOvertimePhotoTestCompressed,
+      ),
+      (
+        _PhotoViewMode.split,
+        Icons.compare_arrows_rounded,
+        compact
+            ? l10n.settingsOvertimePhotoTestCompareShort
+            : l10n.settingsOvertimePhotoTestCompare,
+      ),
+    ];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.45,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Row(
+          children: [
+            for (final option in options)
+              Expanded(
+                child: _PhotoModeChip(
+                  selected: selected == option.$1,
+                  icon: option.$2,
+                  label: option.$3,
+                  compact: compact,
+                  onTap: () => onSelected(option.$1),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PhotoModeChip extends StatelessWidget {
+  const _PhotoModeChip({
+    required this.selected,
+    required this.icon,
+    required this.label,
+    required this.compact,
+    required this.onTap,
+  });
+
+  final bool selected;
+  final IconData icon;
+  final String label;
+  final bool compact;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: selected ? theme.colorScheme.primaryContainer : Colors.transparent,
+      borderRadius: BorderRadius.circular(10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            vertical: compact ? 10 : 12,
+            horizontal: 4,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: compact ? 18 : 20,
+                color: selected
+                    ? theme.colorScheme.onPrimaryContainer
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? theme.colorScheme.onPrimaryContainer
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ZoomableMemoryImage extends StatefulWidget {
+  const _ZoomableMemoryImage({required this.bytes, this.onTap});
+
+  final Uint8List bytes;
+  final VoidCallback? onTap;
+
+  @override
+  State<_ZoomableMemoryImage> createState() => _ZoomableMemoryImageState();
+}
+
+class _ZoomableMemoryImageState extends State<_ZoomableMemoryImage> {
+  final TransformationController _controller = TransformationController();
+  TapDownDetails? _doubleTapDetails;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _handleDoubleTap() {
+    if (_controller.value.getMaxScaleOnAxis() > 1.01) {
+      _controller.value = Matrix4.identity();
+      return;
+    }
+    final details = _doubleTapDetails;
+    if (details == null) return;
+    const scale = 2.5;
+    final position = details.localPosition;
+    _controller.value = Matrix4.identity()
+      ..translateByDouble(
+        -position.dx * (scale - 1),
+        -position.dy * (scale - 1),
+        0,
+        1,
+      )
+      ..scaleByDouble(scale, scale, 1, 1);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onDoubleTapDown: (details) => _doubleTapDetails = details,
+      onDoubleTap: _handleDoubleTap,
+      child: InteractiveViewer(
+        transformationController: _controller,
+        minScale: 1,
+        maxScale: 5,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SizedBox(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              child: Image.memory(
+                widget.bytes,
+                fit: BoxFit.contain,
+                gaplessPlayback: true,
+                frameBuilder: (context, child, frame, _) {
+                  if (frame == null) {
+                    return const Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    );
+                  }
+                  return child;
+                },
+                errorBuilder: (context, error, stackTrace) => Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
 
 class _RecordingWaveform extends StatelessWidget {
   const _RecordingWaveform({required this.controller});
@@ -1018,37 +1318,35 @@ class _EnterpriseStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cardTheme = theme.colorScheme;
+    final scheme = theme.colorScheme;
 
     return Card(
       elevation: 0,
-      color: cardTheme.surfaceContainerLow,
+      margin: EdgeInsets.zero,
+      color: scheme.surfaceContainerLow,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: cardTheme.outlineVariant.withValues(alpha: 0.8),
-        ),
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(color: scheme.outlineVariant.withValues(alpha: 0.75)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.lg,
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              children: [
-                Icon(icon, size: 18, color: cardTheme.primary),
-                const SizedBox(width: AppSpacing.xs),
-                Expanded(
-                  child: Text(
-                    label,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: cardTheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
+            Icon(icon, size: 22, color: scheme.primary),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+                height: 1.25,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: AppSpacing.sm),
             AnimatedSwitcher(
@@ -1056,13 +1354,15 @@ class _EnterpriseStatCard extends StatelessWidget {
               child: Text(
                 value,
                 key: ValueKey<String>(value),
+                textAlign: TextAlign.center,
                 style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
+                  height: 1.2,
                 ),
               ),
             ),
             if (progress != null) ...[
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.md),
               TweenAnimationBuilder<double>(
                 duration: const Duration(milliseconds: 280),
                 tween: Tween<double>(begin: 0, end: progress!.clamp(0, 1)),
@@ -1088,24 +1388,38 @@ class _MetricTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-      child: Row(
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.sm,
+      ),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+              height: 1.25,
             ),
           ),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
+          if (value.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
         ],
       ),
     );

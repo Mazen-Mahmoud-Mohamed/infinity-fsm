@@ -2050,6 +2050,30 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsOvertimePhotoTestSplit => 'عرض مقسم';
 
   @override
+  String get settingsOvertimePhotoTestCompare => 'مقارنة';
+
+  @override
+  String get settingsOvertimePhotoTestCompareShort => 'مقارنة';
+
+  @override
+  String get settingsOvertimePhotoTestOriginalShort => 'الأصل';
+
+  @override
+  String get settingsOvertimePhotoTestCompressedShort => 'مضغوط';
+
+  @override
+  String get settingsOvertimePhotoTestMobileStackHint =>
+      'مرّر لمقارنة الأصل والمضغوط.';
+
+  @override
+  String get settingsOvertimePhotoTestFullscreenSwipeHint =>
+      'اسحب بين الأصل والمضغوط والمقارنة المقسمة.';
+
+  @override
+  String get settingsOvertimePhotoTestNoCompressionApplied =>
+      'لم يتم تطبيق ضغط (سياسة الأصل)';
+
+  @override
   String settingsOvertimePhotoTestResolution(int width, int height) {
     return 'الدقة: $width × $height';
   }
@@ -2113,6 +2137,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsOvertimePhotoTestOpenFullscreen => 'فتح ملء الشاشة';
+
+  @override
+  String get settingsOvertimePhotoTestEstimatedUploadSize =>
+      'حجم الرفع التقديري';
 
   @override
   String get settingsOvertimePerformanceInfoTitle => 'معلومات الأداء';

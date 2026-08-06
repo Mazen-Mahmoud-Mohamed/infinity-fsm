@@ -783,6 +783,13 @@
   "settingsOvertimePhotoTestOriginal": "Original",
   "settingsOvertimePhotoTestCompressed": "Compressed",
   "settingsOvertimePhotoTestSplit": "Split View",
+  "settingsOvertimePhotoTestCompare": "Compare",
+  "settingsOvertimePhotoTestCompareShort": "Compare",
+  "settingsOvertimePhotoTestOriginalShort": "Original",
+  "settingsOvertimePhotoTestCompressedShort": "Compressed",
+  "settingsOvertimePhotoTestMobileStackHint": "Scroll to compare Original and Compressed side by side.",
+  "settingsOvertimePhotoTestFullscreenSwipeHint": "Swipe between Original, Compressed, and Split comparison.",
+  "settingsOvertimePhotoTestNoCompressionApplied": "No compression applied (Original policy)",
   "settingsOvertimePhotoTestResolution": "Resolution: {width} × {height}",
   "@settingsOvertimePhotoTestResolution": {
     "placeholders": {
@@ -816,6 +823,7 @@
   "settingsOvertimePhotoTestUnderPolicyLimit": "Under policy limit",
   "settingsOvertimePhotoTestSplitHint": "Drag the slider to compare. Pinch or double-tap to zoom.",
   "settingsOvertimePhotoTestOpenFullscreen": "Open fullscreen",
+  "settingsOvertimePhotoTestEstimatedUploadSize": "Estimated Upload Size",
   "settingsOvertimePerformanceInfoTitle": "Performance Information",
   "settingsOvertimePerformanceVoiceMaxDuration": "Maximum Duration",
   "settingsOvertimePerformanceVoiceMaxSize": "Estimated Maximum Size",

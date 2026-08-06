@@ -2049,6 +2049,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOvertimePhotoTestSplit => 'Split View';
 
   @override
+  String get settingsOvertimePhotoTestCompare => 'Compare';
+
+  @override
+  String get settingsOvertimePhotoTestCompareShort => 'Compare';
+
+  @override
+  String get settingsOvertimePhotoTestOriginalShort => 'Original';
+
+  @override
+  String get settingsOvertimePhotoTestCompressedShort => 'Compressed';
+
+  @override
+  String get settingsOvertimePhotoTestMobileStackHint =>
+      'Scroll to compare Original and Compressed side by side.';
+
+  @override
+  String get settingsOvertimePhotoTestFullscreenSwipeHint =>
+      'Swipe between Original, Compressed, and Split comparison.';
+
+  @override
+  String get settingsOvertimePhotoTestNoCompressionApplied =>
+      'No compression applied (Original policy)';
+
+  @override
   String settingsOvertimePhotoTestResolution(int width, int height) {
     return 'Resolution: $width × $height';
   }
@@ -2115,6 +2139,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsOvertimePhotoTestOpenFullscreen => 'Open fullscreen';
+
+  @override
+  String get settingsOvertimePhotoTestEstimatedUploadSize =>
+      'Estimated Upload Size';
 
   @override
   String get settingsOvertimePerformanceInfoTitle => 'Performance Information';
