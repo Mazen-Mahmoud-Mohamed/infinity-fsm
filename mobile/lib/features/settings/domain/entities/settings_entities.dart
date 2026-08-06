@@ -164,3 +164,104 @@ class SystemInfo extends Equatable {
         timestamp,
       ];
 }
+
+class OvertimeSettings extends Equatable {
+  const OvertimeSettings({
+    required this.voiceMaxDurationSeconds,
+    required this.voiceDurationOptionsSeconds,
+    required this.voiceRecordingQuality,
+    required this.voiceQualityOptions,
+    required this.maxPhotoSize,
+    required this.maxPhotoSizeOptions,
+    required this.uploadPolicy,
+    required this.uploadPolicyOptions,
+    this.configurationPreset,
+  });
+
+  final int voiceMaxDurationSeconds;
+  final List<int> voiceDurationOptionsSeconds;
+  final String voiceRecordingQuality;
+  final List<String> voiceQualityOptions;
+
+  /// Integer MB or the string [OvertimeMediaConfig.maxPhotoSizeOriginal].
+  final Object maxPhotoSize;
+  final List<Object> maxPhotoSizeOptions;
+  final String uploadPolicy;
+  final List<String> uploadPolicyOptions;
+  final String? configurationPreset;
+
+  @override
+  List<Object?> get props => [
+        voiceMaxDurationSeconds,
+        voiceDurationOptionsSeconds,
+        voiceRecordingQuality,
+        voiceQualityOptions,
+        maxPhotoSize,
+        maxPhotoSizeOptions,
+        uploadPolicy,
+        uploadPolicyOptions,
+        configurationPreset,
+      ];
+}
+
+class OvertimeSettingsUpdate extends Equatable {
+  const OvertimeSettingsUpdate({
+    this.voiceMaxDurationSeconds,
+    this.voiceRecordingQuality,
+    this.maxPhotoSize,
+    this.uploadPolicy,
+    this.configurationPreset,
+    this.restoreDefaults = false,
+  });
+
+  final int? voiceMaxDurationSeconds;
+  final String? voiceRecordingQuality;
+  final Object? maxPhotoSize;
+  final String? uploadPolicy;
+  final String? configurationPreset;
+  final bool restoreDefaults;
+
+  @override
+  List<Object?> get props => [
+        voiceMaxDurationSeconds,
+        voiceRecordingQuality,
+        maxPhotoSize,
+        uploadPolicy,
+        configurationPreset,
+        restoreDefaults,
+      ];
+}
+
+class OvertimeMediaConfigEntity extends Equatable {
+  const OvertimeMediaConfigEntity({
+    required this.voiceMaxDurationSeconds,
+    required this.voiceRecordingQuality,
+    required this.maxPhotoSize,
+    required this.uploadPolicy,
+  });
+
+  final int voiceMaxDurationSeconds;
+  final String voiceRecordingQuality;
+  final Object maxPhotoSize;
+  final String uploadPolicy;
+
+  factory OvertimeMediaConfigEntity.defaults() {
+    return const OvertimeMediaConfigEntity(
+      voiceMaxDurationSeconds: 300,
+      voiceRecordingQuality: 'medium',
+      maxPhotoSize: 2,
+      uploadPolicy: 'immediately',
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        voiceMaxDurationSeconds,
+        voiceRecordingQuality,
+        maxPhotoSize,
+        uploadPolicy,
+      ];
+}
+
+@Deprecated('Use OvertimeMediaConfigEntity')
+typedef OvertimeVoiceDurationConfig = OvertimeMediaConfigEntity;

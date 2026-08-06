@@ -51,4 +51,33 @@ class SettingsRepositoryImpl implements SettingsRepository {
       return NetworkErrorMapper.map(e);
     }
   }
+
+  @override
+  Future<Result<OvertimeSettings>> getOvertimeSettings() async {
+    try {
+      return Success(await _remote.getOvertimeSettings());
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
+
+  @override
+  Future<Result<OvertimeSettings>> updateOvertimeSettings(
+    OvertimeSettingsUpdate input,
+  ) async {
+    try {
+      return Success(await _remote.updateOvertimeSettings(input));
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
+
+  @override
+  Future<Result<OvertimeMediaConfigEntity>> getOvertimeMediaConfig() async {
+    try {
+      return Success(await _remote.getOvertimeMediaConfig());
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
 }

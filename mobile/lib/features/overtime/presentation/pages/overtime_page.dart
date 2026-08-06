@@ -24,6 +24,10 @@ import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart'
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
+import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_cellular_upload_prompt_service.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_cellular_upload_dialog.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_technician_voice_config_card.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
 
 /// Bottom-nav / `/overtime` entry.
@@ -57,8 +61,27 @@ class OvertimePage extends StatelessWidget {
   }
 }
 
-class _OvertimeTrackingView extends StatelessWidget {
+class _OvertimeTrackingView extends StatefulWidget {
   const _OvertimeTrackingView();
+
+  @override
+  State<_OvertimeTrackingView> createState() => _OvertimeTrackingViewState();
+}
+
+class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
+  @override
+  void initState() {
+    super.initState();
+    getIt<OvertimeCellularUploadPromptService>().register(
+      () => showCellularUploadPrompt(context),
+    );
+  }
+
+  @override
+  void dispose() {
+    getIt<OvertimeCellularUploadPromptService>().unregister();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -317,12 +340,26 @@ class _StartActions extends StatelessWidget {
               context.read<OvertimeCubit>().updateNotesDraft(value),
         ),
         const SizedBox(height: AppSpacing.md),
+        OvertimeTechnicianVoiceConfigCard(
+          durationMinutes: OvertimeMediaConfig.minutesFromSeconds(
+            context.select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
+          ),
+          quality: context
+              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
+          uploadPolicy:
+              context.select((OvertimeCubit c) => c.state.uploadPolicy),
+        ),
+        const SizedBox(height: AppSpacing.md),
         OvertimeVoiceNoteSection(
+          maxDurationSeconds: context
+              .select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
+          voiceRecordingQuality: context
+              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
           localBytes: context.read<OvertimeCubit>().state.voiceDraft?.bytes,
           durationSeconds:
               context.read<OvertimeCubit>().state.voiceDraft?.durationSeconds,
           enabled: !isBusy,
-          onDraftChanged: (draft) =>
+          onDraftChanged: (OvertimeVoiceDraft? draft) =>
               context.read<OvertimeCubit>().updateVoiceDraft(draft),
         ),
         const SizedBox(height: AppSpacing.md),
@@ -504,6 +541,10 @@ class _RunningSessionCard extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         OvertimeJourneyTimeline(
           session: session,
+          maxDurationSeconds: context
+              .select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
+          voiceRecordingQuality: context
+              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
           pendingActions: pendingActions,
           isOffline: isOffline,
           isSyncing: context.watch<OvertimeSyncCubit>().state.status ==
@@ -530,12 +571,26 @@ class _RunningSessionCard extends StatelessWidget {
               context.read<OvertimeCubit>().updateNotesDraft(value),
         ),
         const SizedBox(height: AppSpacing.md),
+        OvertimeTechnicianVoiceConfigCard(
+          durationMinutes: OvertimeMediaConfig.minutesFromSeconds(
+            context.select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
+          ),
+          quality: context
+              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
+          uploadPolicy:
+              context.select((OvertimeCubit c) => c.state.uploadPolicy),
+        ),
+        const SizedBox(height: AppSpacing.md),
         OvertimeVoiceNoteSection(
+          maxDurationSeconds: context
+              .select((OvertimeCubit c) => c.state.voiceMaxDurationSeconds),
+          voiceRecordingQuality: context
+              .select((OvertimeCubit c) => c.state.voiceRecordingQuality),
           localBytes: context.read<OvertimeCubit>().state.voiceDraft?.bytes,
           durationSeconds:
               context.read<OvertimeCubit>().state.voiceDraft?.durationSeconds,
           enabled: !isBusy,
-          onDraftChanged: (draft) =>
+          onDraftChanged: (OvertimeVoiceDraft? draft) =>
               context.read<OvertimeCubit>().updateVoiceDraft(draft),
         ),
         const SizedBox(height: AppSpacing.md),

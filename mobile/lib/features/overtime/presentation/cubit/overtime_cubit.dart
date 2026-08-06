@@ -25,7 +25,13 @@ import 'package:mobile/features/overtime/domain/usecases/start_overtime_usecase.
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
+import 'package:mobile/core/services/logger_service.dart';
 import 'package:mobile/features/overtime/data/models/pending_overtime_action_model.dart';
+import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_photo_compressor.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
+import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
+import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 
 GpsSnapshot _toGpsSnapshot(GpsReading reading, {DateTime? trustedUtc}) {
   return GpsSnapshot(
@@ -110,6 +116,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     required SessionQueryCache sessionQueryCache,
     required OvertimeLocalDataSource localDataSource,
     required OvertimeSyncCubit overtimeSyncCubit,
+    required GetOvertimeMediaConfigUseCase getMediaConfigUseCase,
+    required OvertimeUploadPolicyService uploadPolicyService,
+    required LoggerService loggerService,
     OvertimeSessionReminderService? reminderService,
   })  : _getRunningOvertimeUseCase = getRunningOvertimeUseCase,
         _startOvertimeUseCase = startOvertimeUseCase,
@@ -126,10 +135,15 @@ class OvertimeCubit extends Cubit<OvertimeState> {
         _sessionQueryCache = sessionQueryCache,
         _localDataSource = localDataSource,
         _overtimeSyncCubit = overtimeSyncCubit,
+        _getMediaConfigUseCase = getMediaConfigUseCase,
+        _uploadPolicyService = uploadPolicyService,
+        _logger = loggerService,
         _reminderService = reminderService,
         super(const OvertimeState());
 
   static const String _runningCacheKey = 'overtime:running';
+  static const String _mediaConfigCacheKey =
+      'settings:overtime:media_config';
   static const Duration _telemetryRefreshInterval = Duration(seconds: 30);
 
   final GetRunningOvertimeUseCase _getRunningOvertimeUseCase;
@@ -147,6 +161,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   final SessionQueryCache _sessionQueryCache;
   final OvertimeLocalDataSource _localDataSource;
   final OvertimeSyncCubit _overtimeSyncCubit;
+  final GetOvertimeMediaConfigUseCase _getMediaConfigUseCase;
+  final OvertimeUploadPolicyService _uploadPolicyService;
+  final LoggerService _logger;
   final OvertimeSessionReminderService? _reminderService;
 
   Timer? _tickTimer;
@@ -242,6 +259,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     }
 
     unawaited(_deviceTimeGuard.syncSecurityEvents());
+    unawaited(_refreshMediaConfig());
     await _fetchRunning();
     if (!isClosed) {
       emit(state.copyWith(isRefreshing: false));
@@ -249,6 +267,52 @@ class OvertimeCubit extends Cubit<OvertimeState> {
   }
 
   Future<void> refresh() => initialize();
+
+  Future<void> refreshMediaConfig() => _refreshMediaConfig();
+
+  Future<void> _refreshMediaConfig() async {
+    final cached =
+        _sessionQueryCache.get<OvertimeMediaConfigEntity>(_mediaConfigCacheKey);
+    if (cached != null && !isClosed) {
+      _applyMediaConfig(cached);
+    }
+
+    final result = await _getMediaConfigUseCase();
+    switch (result) {
+      case Success(data: final config):
+        _sessionQueryCache.set(_mediaConfigCacheKey, config);
+        _sessionQueryCache.set(
+          'settings:overtime:voice_max_duration_seconds',
+          config.voiceMaxDurationSeconds,
+        );
+        if (!isClosed) {
+          _applyMediaConfig(config);
+        }
+      case Failure(message: final message):
+        _logger.warning(
+          '[OvertimeMedia] config fallback to defaults: $message',
+        );
+    }
+  }
+
+  void _applyMediaConfig(OvertimeMediaConfigEntity config) {
+    emit(
+      state.copyWith(
+        voiceMaxDurationSeconds: OvertimeMediaConfig.normalizeDurationSeconds(
+          config.voiceMaxDurationSeconds,
+        ),
+        voiceRecordingQuality: OvertimeMediaConfig.normalizeVoiceQuality(
+          config.voiceRecordingQuality,
+        ),
+        maxPhotoSize: OvertimeMediaConfig.normalizeMaxPhotoSize(
+          config.maxPhotoSize,
+        ),
+        uploadPolicy: OvertimeMediaConfig.normalizeUploadPolicy(
+          config.uploadPolicy,
+        ),
+      ),
+    );
+  }
 
   Future<void> _fetchRunning() async {
     final result = await _getRunningOvertimeUseCase();
@@ -353,6 +417,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       return;
     }
 
+    await _refreshMediaConfig();
+
     final busy = next == OvertimeCheckpointStage.arrivedAtWorkSite
         ? OvertimeBusyAction.arrivedAtWorkSite
         : OvertimeBusyAction.finishedWork;
@@ -418,6 +484,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
               clearVoiceDraft: true,
             ),
           );
+          unawaited(_refreshMediaConfig());
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
           if (offlineQueued) {
@@ -475,6 +542,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
         return;
       }
     }
+
+    await _refreshMediaConfig();
 
     emit(
       state.copyWith(
@@ -537,6 +606,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
               offerContinueSession: false,
             ),
           );
+          unawaited(_refreshMediaConfig());
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
           if (offlineQueued) {
@@ -611,13 +681,17 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     final geocodeFuture = _addressResolverService.resolveStructured(gps);
     final telemetryFuture = _checkpointTelemetryService.capture();
 
-    late final List<int> photo;
+    late List<int> photo;
     try {
       photo = await _selfieCaptureService.captureLivePhoto(
         watermarkLabel: _watermarkLabelFor(stage, type),
         timestamp: timeCheck.trustedUtc ?? reading.recordedAt,
         latitude: gps.latitude,
         longitude: gps.longitude,
+      );
+      photo = await OvertimePhotoCompressor.compressToPolicy(
+        photo,
+        maxPhotoSize: state.maxPhotoSize,
       );
     } on LivePhotoRequiredException {
       emit(
@@ -699,6 +773,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
       return;
     }
 
+    await _refreshMediaConfig();
+
     emit(
       state.copyWith(
         status: OvertimeLoadStatus.actionInProgress,
@@ -762,6 +838,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
             ),
           );
           _startTicker(session.startAt);
+          unawaited(_refreshMediaConfig());
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
           if (offlineQueued) {
@@ -903,9 +980,11 @@ class OvertimeCubit extends Cubit<OvertimeState> {
     await initialize();
   }
 
-  void _kickPendingSync() {
+  Future<void> _kickPendingSync() async {
     unawaited(_overtimeSyncCubit.refreshPendingCount());
-    unawaited(_overtimeSyncCubit.syncNow());
+    if (await _uploadPolicyService.shouldAutoSync()) {
+      unawaited(_overtimeSyncCubit.syncNow());
+    }
   }
 
   @override

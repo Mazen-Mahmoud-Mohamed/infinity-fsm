@@ -31,3 +31,26 @@ class GetSystemInfoUseCase {
   final SettingsRepository _repository;
   Future<Result<SystemInfo>> call() => _repository.getSystemInfo();
 }
+
+class GetOvertimeSettingsUseCase {
+  GetOvertimeSettingsUseCase(this._repository);
+  final SettingsRepository _repository;
+  Future<Result<OvertimeSettings>> call() => _repository.getOvertimeSettings();
+}
+
+class UpdateOvertimeSettingsUseCase {
+  UpdateOvertimeSettingsUseCase(this._repository);
+  final SettingsRepository _repository;
+  Future<Result<OvertimeSettings>> call(OvertimeSettingsUpdate input) =>
+      _repository.updateOvertimeSettings(input);
+}
+
+class GetOvertimeMediaConfigUseCase {
+  GetOvertimeMediaConfigUseCase(this._repository);
+  final SettingsRepository _repository;
+  Future<Result<OvertimeMediaConfigEntity>> call() =>
+      _repository.getOvertimeMediaConfig();
+}
+
+@Deprecated('Use GetOvertimeMediaConfigUseCase')
+typedef GetOvertimeVoiceMaxDurationUseCase = GetOvertimeMediaConfigUseCase;

@@ -63,6 +63,8 @@ import 'package:mobile/features/overtime/data/datasources/overtime_remote_dataso
 import 'package:mobile/features/overtime/data/repositories/overtime_repository_impl.dart';
 import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_cellular_upload_prompt_service.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
 import 'package:mobile/features/overtime/domain/usecases/approve_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/end_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_overtime_by_id_usecase.dart';
@@ -454,6 +456,18 @@ Future<void> configureDependencies() async {
 
   OvertimeOfflineTrace.bindLogger(getIt<LoggerService>());
 
+  getIt.registerLazySingleton<OvertimeCellularUploadPromptService>(
+    OvertimeCellularUploadPromptService.new,
+  );
+
+  getIt.registerLazySingleton<OvertimeUploadPolicyService>(
+    () => OvertimeUploadPolicyService(
+      connectivity: getIt<ConnectivityService>(),
+      sessionQueryCache: getIt<SessionQueryCache>(),
+      cellularPrompt: getIt<OvertimeCellularUploadPromptService>(),
+    ),
+  );
+
   getIt.registerLazySingleton<OvertimeRepository>(
     () => OvertimeRepositoryImpl(
       remote: getIt<OvertimeRemoteDataSource>(),
@@ -461,6 +475,7 @@ Future<void> configureDependencies() async {
       connectivity: getIt<ConnectivityService>(),
       addressResolver: getIt<AddressResolverService>(),
       gpsAddressSync: getIt<GpsAddressSyncService>(),
+      uploadPolicy: getIt<OvertimeUploadPolicyService>(),
     ),
   );
 
@@ -504,6 +519,7 @@ Future<void> configureDependencies() async {
       repository: getIt<OvertimeRepository>(),
       connectivity: getIt<ConnectivityService>(),
       gpsAddressSync: getIt<GpsAddressSyncService>(),
+      uploadPolicy: getIt<OvertimeUploadPolicyService>(),
     ),
   );
 
@@ -528,6 +544,9 @@ Future<void> configureDependencies() async {
       sessionQueryCache: getIt<SessionQueryCache>(),
       localDataSource: getIt<OvertimeLocalDataSource>(),
       overtimeSyncCubit: getIt<OvertimeSyncCubit>(),
+      getMediaConfigUseCase: getIt<GetOvertimeMediaConfigUseCase>(),
+      uploadPolicyService: getIt<OvertimeUploadPolicyService>(),
+      loggerService: getIt<LoggerService>(),
       reminderService: getIt<OvertimeSessionReminderService>(),
     ),
   );
@@ -1261,6 +1280,15 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(
     () => GetSystemInfoUseCase(getIt<SettingsRepository>()),
   );
+  getIt.registerLazySingleton(
+    () => GetOvertimeSettingsUseCase(getIt<SettingsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => UpdateOvertimeSettingsUseCase(getIt<SettingsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => GetOvertimeMediaConfigUseCase(getIt<SettingsRepository>()),
+  );
   getIt.registerFactory<OrganizationSettingsCubit>(
     () => OrganizationSettingsCubit(
       getSettings: getIt<GetOrganizationSettingsUseCase>(),
@@ -1272,6 +1300,13 @@ Future<void> configureDependencies() async {
   getIt.registerFactory<SystemInfoCubit>(
     () => SystemInfoCubit(
       getSystemInfo: getIt<GetSystemInfoUseCase>(),
+      sessionQueryCache: getIt<SessionQueryCache>(),
+    ),
+  );
+  getIt.registerFactory<OvertimeSettingsCubit>(
+    () => OvertimeSettingsCubit(
+      getSettings: getIt<GetOvertimeSettingsUseCase>(),
+      updateSettings: getIt<UpdateOvertimeSettingsUseCase>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
     ),
   );

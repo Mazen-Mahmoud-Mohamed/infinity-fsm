@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/cache/session_query_cache.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/overtime/domain/constants/overtime_configuration_presets.dart';
+import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 
@@ -250,4 +252,173 @@ class SystemInfoCubit extends Cubit<SystemInfoState> {
         );
     }
   }
+}
+
+enum OvertimeSettingsStatus { initial, loading, saving, success, failure }
+
+class OvertimeSettingsState extends Equatable {
+  const OvertimeSettingsState({
+    this.status = OvertimeSettingsStatus.initial,
+    this.settings,
+    this.message,
+    this.isRefreshing = false,
+    this.activePresetId = OvertimeConfigurationPreset.customId,
+  });
+
+  final OvertimeSettingsStatus status;
+  final OvertimeSettings? settings;
+  final String? message;
+  final bool isRefreshing;
+  final String activePresetId;
+
+  OvertimeSettingsState copyWith({
+    OvertimeSettingsStatus? status,
+    OvertimeSettings? settings,
+    String? message,
+    bool? isRefreshing,
+    String? activePresetId,
+  }) {
+    return OvertimeSettingsState(
+      status: status ?? this.status,
+      settings: settings ?? this.settings,
+      message: message,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+      activePresetId: activePresetId ?? this.activePresetId,
+    );
+  }
+
+  @override
+  List<Object?> get props =>
+      [status, settings, message, isRefreshing, activePresetId];
+}
+
+class OvertimeSettingsCubit extends Cubit<OvertimeSettingsState> {
+  OvertimeSettingsCubit({
+    required this._getSettings,
+    required this._updateSettings,
+    required this._sessionQueryCache,
+  }) : super(const OvertimeSettingsState());
+
+  static const String _cacheKey = 'settings:overtime';
+
+  final GetOvertimeSettingsUseCase _getSettings;
+  final UpdateOvertimeSettingsUseCase _updateSettings;
+  final SessionQueryCache _sessionQueryCache;
+
+  Future<void> load() async {
+    final cached = _sessionQueryCache.get<OvertimeSettings>(_cacheKey);
+    final hasData = cached != null || state.settings != null;
+
+    if (hasData) {
+      emit(
+        state.copyWith(
+          status: OvertimeSettingsStatus.success,
+          settings: cached ?? state.settings,
+          isRefreshing: true,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          status: OvertimeSettingsStatus.loading,
+          isRefreshing: false,
+        ),
+      );
+    }
+
+    final result = await _getSettings();
+    switch (result) {
+      case Success(data: final data):
+        _sessionQueryCache.set(_cacheKey, data);
+        emit(
+          OvertimeSettingsState(
+            status: OvertimeSettingsStatus.success,
+            settings: data,
+            isRefreshing: false,
+            activePresetId: OvertimeConfigurationPreset.detectPresetId(data),
+          ),
+        );
+      case Failure(:final message):
+        emit(
+          OvertimeSettingsState(
+            status: hasData
+                ? OvertimeSettingsStatus.success
+                : OvertimeSettingsStatus.failure,
+            settings: state.settings,
+            message: message,
+            isRefreshing: false,
+          ),
+        );
+    }
+  }
+
+  Future<Result<OvertimeSettings>> _save(OvertimeSettingsUpdate update) async {
+    emit(
+      OvertimeSettingsState(
+        status: OvertimeSettingsStatus.saving,
+        settings: state.settings,
+      ),
+    );
+    final result = await _updateSettings(update);
+    switch (result) {
+      case Success(data: final data):
+        _sessionQueryCache.set(_cacheKey, data);
+        _sessionQueryCache.invalidate('settings:overtime:media_config');
+        _sessionQueryCache.invalidate('settings:overtime:voice_max_duration_seconds');
+        emit(
+          OvertimeSettingsState(
+            status: OvertimeSettingsStatus.success,
+            settings: data,
+            activePresetId: OvertimeConfigurationPreset.detectPresetId(data),
+          ),
+        );
+      case Failure(:final message):
+        emit(
+          OvertimeSettingsState(
+            status: OvertimeSettingsStatus.failure,
+            settings: state.settings,
+            message: message,
+          ),
+        );
+    }
+    return result;
+  }
+
+  Future<Result<OvertimeSettings>> saveVoiceMaxDuration(int minutes) =>
+      _save(
+        OvertimeSettingsUpdate(
+          voiceMaxDurationSeconds:
+              OvertimeMediaConfig.secondsFromMinutes(minutes),
+          configurationPreset: OvertimeConfigurationPreset.customId,
+        ),
+      );
+
+  Future<Result<OvertimeSettings>> saveVoiceQuality(String quality) => _save(
+        OvertimeSettingsUpdate(
+          voiceRecordingQuality: quality,
+          configurationPreset: OvertimeConfigurationPreset.customId,
+        ),
+      );
+
+  Future<Result<OvertimeSettings>> saveMaxPhotoSize(Object size) => _save(
+        OvertimeSettingsUpdate(
+          maxPhotoSize: size,
+          configurationPreset: OvertimeConfigurationPreset.customId,
+        ),
+      );
+
+  Future<Result<OvertimeSettings>> saveUploadPolicy(String policy) => _save(
+        OvertimeSettingsUpdate(
+          uploadPolicy: policy,
+          configurationPreset: OvertimeConfigurationPreset.customId,
+        ),
+      );
+
+  Future<Result<OvertimeSettings>> applyPreset(
+    OvertimeConfigurationPreset preset,
+  ) =>
+      _save(preset.toUpdate());
+
+  Future<Result<OvertimeSettings>> restoreDefaults() =>
+      _save(OvertimeConfigurationPreset.defaultSettingsUpdate());
 }

@@ -80,6 +80,10 @@ class ApiConstants {
   static const String settingsOrganization = '/settings/organization';
   static const String settingsOrganizationLogo = '/settings/organization/logo';
   static const String settingsSystem = '/settings/system';
+  static const String settingsOvertime = '/settings/overtime';
+  static const String settingsOvertimeConfig = '/settings/overtime/config';
+  static const String settingsOvertimeVoiceDuration =
+      '/settings/overtime/voice-duration';
 
   static const String dashboardSummary = '/dashboard/summary';
 

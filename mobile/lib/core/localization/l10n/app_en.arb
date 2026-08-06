@@ -680,6 +680,166 @@
   "settingsPushNotifications": "Push notifications",
   "settingsEmailNotifications": "Email notifications",
   "settingsCompanyInformation": "Company information",
+  "settingsOvertimeTitle": "Overtime Settings",
+  "settingsOvertimeVoiceNotesTitle": "Voice Notes",
+  "settingsOvertimeVoiceNotesSubtitle": "Configure optional voice notes for overtime journey stages.",
+  "settingsOvertimeVoiceMaxDurationTitle": "Maximum Voice Recording Duration",
+  "settingsOvertimeVoiceMaxDurationSubtitle": "Maximum length allowed for each voice note recorded during an overtime stage.",
+  "settingsOvertimeVoiceDurationMinutes": "{minutes} Minutes",
+  "@settingsOvertimeVoiceDurationMinutes": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "settingsOvertimeVoiceCurrentValue": "Current value: {value}",
+  "@settingsOvertimeVoiceCurrentValue": {
+    "placeholders": {
+      "value": { "type": "String" }
+    }
+  },
+  "settingsOvertimeVoiceQualityTitle": "Voice Recording Quality",
+  "settingsOvertimeVoiceQualitySubtitle": "Audio quality used when technicians record voice notes during overtime.",
+  "settingsOvertimeVoiceQualityHigh": "High",
+  "settingsOvertimeVoiceQualityMedium": "Medium",
+  "settingsOvertimeVoiceQualityLow": "Low",
+  "settingsOvertimeMaxPhotoSizeTitle": "Maximum Uploaded Photo Size",
+  "settingsOvertimeMaxPhotoSizeSubtitle": "Photos are compressed before upload to stay within this limit whenever possible.",
+  "settingsOvertimeMaxPhotoSizeMb": "{size} MB",
+  "@settingsOvertimeMaxPhotoSizeMb": {
+    "placeholders": {
+      "size": { "type": "int" }
+    }
+  },
+  "settingsOvertimeMaxPhotoSizeOriginal": "Original",
+  "settingsOvertimeUploadPolicyTitle": "Upload Policy",
+  "settingsOvertimeUploadPolicyImmediately": "Immediately",
+  "settingsOvertimeUploadPolicyImmediatelyHint": "Upload checkpoints as soon as a network connection is available.",
+  "settingsOvertimeUploadPolicyWifiPreferred": "Wi-Fi Preferred",
+  "settingsOvertimeUploadPolicyWifiPreferredHint": "Upload immediately on Wi-Fi. On mobile data, queue until Wi-Fi is available. Technicians can force upload manually.",
+  "settingsOvertimeUploadPolicyManual": "Manual",
+  "settingsOvertimeUploadPolicyManualHint": "Always queue uploads. Sync happens only when the technician presses Sync Now.",
+  "settingsOvertimeUploadPolicyWifiOnly": "Wi-Fi Only",
+  "settingsOvertimeUploadPolicyWifiOnlyHint": "Never upload using mobile data. Queue until Wi-Fi is available.",
+  "settingsOvertimeUploadPolicyAskEveryTime": "Ask Every Time",
+  "settingsOvertimeUploadPolicyAskEveryTimeHint": "When uploading on mobile data, ask the technician each time.",
+  "settingsOvertimeQualityEstimatePerMinute": "≈ {size} / minute",
+  "@settingsOvertimeQualityEstimatePerMinute": {
+    "placeholders": { "size": { "type": "String" } }
+  },
+  "settingsOvertimeEstimatedMaxFileSize": "Estimated Maximum File Size: ≈ {size}",
+  "@settingsOvertimeEstimatedMaxFileSize": {
+    "placeholders": { "size": { "type": "String" } }
+  },
+  "settingsOvertimeEstimateKb": "≈ {size} KB",
+  "@settingsOvertimeEstimateKb": { "placeholders": { "size": { "type": "int" } } },
+  "settingsOvertimeEstimateMb": "≈ {size} MB",
+  "@settingsOvertimeEstimateMb": { "placeholders": { "size": { "type": "String" } } },
+  "settingsOvertimeEstimateTotalMb": "≈ {size} MB",
+  "@settingsOvertimeEstimateTotalMb": { "placeholders": { "size": { "type": "String" } } },
+  "settingsOvertimeFileSizeKb": "{size} KB",
+  "@settingsOvertimeFileSizeKb": { "placeholders": { "size": { "type": "int" } } },
+  "settingsOvertimeFileSizeMb": "{size} MB",
+  "@settingsOvertimeFileSizeMb": { "placeholders": { "size": { "type": "String" } } },
+  "settingsOvertimeFileSizeBytes": "{size} bytes",
+  "@settingsOvertimeFileSizeBytes": { "placeholders": { "size": { "type": "int" } } },
+  "settingsOvertimeLargeRecordingWarning": "Large recordings may increase upload time and mobile data usage.",
+  "settingsOvertimePresetTitle": "Configuration Preset",
+  "settingsOvertimePresetSubtitle": "Apply a recommended profile or customize individual settings.",
+  "settingsOvertimePresetOffice": "Office",
+  "settingsOvertimePresetFieldService": "Field Service",
+  "settingsOvertimePresetHeavyMaintenance": "Heavy Maintenance",
+  "settingsOvertimePresetCustom": "Custom",
+  "settingsOvertimeRestoreDefaults": "Restore Defaults",
+  "settingsOvertimeRestoreDialogTitle": "Restore Voice Settings?",
+  "settingsOvertimeRestoreDialogBody": "This will restore:\n• Recording Duration: 5 Minutes\n• Recording Quality: Medium\n• Maximum Photo Size: 2 MB\n• Upload Policy: Immediately",
+  "settingsOvertimeRestoreConfirm": "Restore",
+  "settingsOvertimeConfigTestingTitle": "Configuration Testing",
+  "settingsOvertimeConfigTestingSubtitle": "Preview the impact of current settings. Nothing is uploaded or saved.",
+  "settingsOvertimeVoiceTestTitle": "Voice Recording Test",
+  "settingsOvertimeVoiceTestRecord": "Test Voice Recording",
+  "settingsOvertimeVoiceTestPlay": "Play",
+  "settingsOvertimeVoiceTestDelete": "Delete",
+  "settingsOvertimeVoiceTestRecordAgain": "Record Again",
+  "settingsOvertimeVoiceTestTimer": "{elapsed} / {max}",
+  "@settingsOvertimeVoiceTestTimer": {
+    "placeholders": {
+      "elapsed": { "type": "String" },
+      "max": { "type": "String" }
+    }
+  },
+  "settingsOvertimeVoiceTestDuration": "Recording Duration",
+  "settingsOvertimeVoiceTestEstimatedSize": "Estimated Size",
+  "settingsOvertimeVoiceTestActualSize": "Actual File Size",
+  "settingsOvertimeVoiceTestEncoding": "Encoding Format",
+  "settingsOvertimeVoiceTestBitrate": "Bitrate",
+  "settingsOvertimeVoiceTestSampleRate": "Sample Rate",
+  "settingsOvertimeVoiceTestBitrateKbps": "{rate} kbps",
+  "@settingsOvertimeVoiceTestBitrateKbps": { "placeholders": { "rate": { "type": "int" } } },
+  "settingsOvertimeVoiceTestSampleRateKhz": "{rate} kHz",
+  "@settingsOvertimeVoiceTestSampleRateKhz": { "placeholders": { "rate": { "type": "int" } } },
+  "settingsOvertimePhotoTestTitle": "Photo Compression Test",
+  "settingsOvertimePhotoTestCamera": "Take Photo",
+  "settingsOvertimePhotoTestGallery": "Choose from Gallery",
+  "settingsOvertimePhotoTestOriginal": "Original",
+  "settingsOvertimePhotoTestCompressed": "Compressed",
+  "settingsOvertimePhotoTestSplit": "Split View",
+  "settingsOvertimePhotoTestResolution": "Resolution: {width} × {height}",
+  "@settingsOvertimePhotoTestResolution": {
+    "placeholders": {
+      "width": { "type": "int" },
+      "height": { "type": "int" }
+    }
+  },
+  "settingsOvertimePhotoTestCompressionRatio": "Compression Ratio: {percent}%",
+  "@settingsOvertimePhotoTestCompressionRatio": {
+    "placeholders": { "percent": { "type": "int" } }
+  },
+  "settingsOvertimePhotoTestEstimatedUpload": "Estimated Upload Size: {size}",
+  "@settingsOvertimePhotoTestEstimatedUpload": {
+    "placeholders": { "size": { "type": "String" } }
+  },
+  "settingsOvertimePhotoTestChooseAnother": "Choose Another Photo",
+  "settingsOvertimePhotoTestRetest": "Retest",
+  "settingsOvertimePhotoTestDeletePreview": "Delete Preview",
+  "settingsOvertimePerformanceInfoTitle": "Performance Information",
+  "settingsOvertimePerformanceVoiceMaxDuration": "Maximum Duration",
+  "settingsOvertimePerformanceVoiceMaxSize": "Estimated Maximum Size",
+  "settingsOvertimePerformancePhotoMaxSize": "Average Maximum Size",
+  "settingsOvertimePerformancePhotoAverageMb": "{size} MB",
+  "@settingsOvertimePerformancePhotoAverageMb": {
+    "placeholders": { "size": { "type": "int" } }
+  },
+  "settingsOvertimePerformanceTotalUpload": "Estimated Total Upload",
+  "overtimeVoiceSettingsInfoTitle": "Voice Recording Settings",
+  "overtimeCellularUploadTitle": "Upload Now?",
+  "overtimeCellularUploadMessage": "You are using mobile data. How would you like to upload this checkpoint?",
+  "overtimeCellularUploadWifiOnly": "Wi-Fi Only",
+  "overtimeCellularUploadMobileData": "Mobile Data",
+  "overtimeCellularUploadLater": "Later",
+  "auditOvertimeVoiceDurationChanged": "Changed voice recording duration from {before} to {after}",
+  "@auditOvertimeVoiceDurationChanged": {
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "auditOvertimeVoiceQualityChanged": "Changed voice quality from {before} to {after}",
+  "@auditOvertimeVoiceQualityChanged": {
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "auditOvertimeUploadPolicyChanged": "Changed upload policy from {before} to {after}",
+  "@auditOvertimeUploadPolicyChanged": {
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "auditOvertimeMaxPhotoSizeChanged": "Changed maximum photo size from {before} to {after}",
+  "@auditOvertimeMaxPhotoSizeChanged": {
+    "placeholders": { "before": { "type": "String" }, "after": { "type": "String" } }
+  },
+  "auditOvertimePresetApplied": "Applied configuration preset: {preset}",
+  "@auditOvertimePresetApplied": { "placeholders": { "preset": { "type": "String" } } },
+  "auditOvertimeRestoredDefaults": "Restored voice settings to defaults",
+  "auditOvertimeVoiceDurationChangedGeneric": "Changed voice recording duration",
+  "auditOvertimeVoiceQualityChangedGeneric": "Changed voice recording quality",
+  "auditOvertimeUploadPolicyChangedGeneric": "Changed upload policy",
+  "auditOvertimeMaxPhotoSizeChangedGeneric": "Changed maximum photo size",
+  "auditOvertimePresetAppliedGeneric": "Applied configuration preset",
   "settingsCompanyLogo": "Company logo",
   "settingsCompanyName": "Company name",
   "settingsContactEmail": "Contact email",
@@ -906,7 +1066,19 @@
   "overtimeVoicePause": "Pause",
   "overtimeVoiceDelete": "Delete",
   "overtimeVoiceRerecord": "Re-record",
-  "overtimeVoiceMaxDurationHint": "Optional. Maximum 2 minutes.",
+  "overtimeVoiceMaxDurationHint": "Optional. Maximum {minutes} minutes.",
+  "@overtimeVoiceMaxDurationHint": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "overtimeVoiceLimitWarning": "Recording will stop in 30 seconds.",
+  "overtimeVoiceMaxRecordingInfo": "Maximum recording: {minutes} minutes",
+  "@overtimeVoiceMaxRecordingInfo": {
+    "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
   "overtimeVoicePermissionDenied": "Microphone permission is required to record a voice note.",
   "overtimeVoiceRecording": "Recording...",
   "overtimeVoiceRecorded": "Voice Recorded",

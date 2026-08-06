@@ -12,6 +12,7 @@ import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
+import 'package:mobile/features/settings/presentation/pages/overtime_settings_page.dart';
 import 'package:mobile/features/settings/presentation/pages/settings_extra_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/system_settings_page.dart';
 import 'package:mobile/features/settings/presentation/utils/admin_settings_unlock_session.dart';
@@ -36,6 +37,7 @@ enum _SettingsEmbedTarget {
   backup,
   danger,
   updates,
+  overtime,
 }
 
 class SettingsHubPage extends StatefulWidget {
@@ -232,6 +234,13 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
               keywords: ['company', 'logo', 'address'],
               onTap: () => context.push(RoutePaths.settingsCompany),
               embedTarget: _SettingsEmbedTarget.organization,
+            ),
+            _SettingsItem(
+              icon: Icons.more_time_outlined,
+              title: l10n.settingsOvertimeTitle,
+              keywords: ['overtime', 'voice', 'recording', 'duration'],
+              onTap: () => context.push(RoutePaths.settingsOvertime),
+              embedTarget: _SettingsEmbedTarget.overtime,
             ),
           ],
         ),
@@ -604,6 +613,8 @@ class _SettingsEmbeddedContent extends StatelessWidget {
         const AccountOverviewPage(embedded: true),
       _SettingsEmbedTarget.organization =>
         const OrganizationSettingsPage(embedded: true),
+      _SettingsEmbedTarget.overtime =>
+        const OvertimeSettingsPage(embedded: true),
       _SettingsEmbedTarget.system => const SystemSettingsPage(embedded: true),
       _SettingsEmbedTarget.language =>
         const LanguageSettingsPage(embedded: true),

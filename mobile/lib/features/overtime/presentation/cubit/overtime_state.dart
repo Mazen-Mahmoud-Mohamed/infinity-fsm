@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
@@ -38,6 +39,11 @@ class OvertimeState extends Equatable {
     this.liveNetworkStatus,
     this.gpsAccuracyMeters,
     this.pendingSyncCount = 0,
+    this.voiceMaxDurationSeconds =
+        OvertimeMediaConfig.defaultMaxDurationSeconds,
+    this.voiceRecordingQuality = OvertimeMediaConfig.defaultVoiceQuality,
+    this.maxPhotoSize = OvertimeMediaConfig.defaultMaxPhotoSizeMb,
+    this.uploadPolicy = OvertimeMediaConfig.defaultUploadPolicy,
   });
 
   final OvertimeLoadStatus status;
@@ -62,6 +68,18 @@ class OvertimeState extends Equatable {
   final String? liveNetworkStatus;
   final double? gpsAccuracyMeters;
   final int pendingSyncCount;
+
+  /// Max voice note length from company settings (seconds).
+  final int voiceMaxDurationSeconds;
+
+  /// Voice recording quality from company settings (high / medium / low).
+  final String voiceRecordingQuality;
+
+  /// Max photo upload size (MB) or [OvertimeMediaConfig.maxPhotoSizeOriginal].
+  final Object maxPhotoSize;
+
+  /// Upload policy from company settings.
+  final String uploadPolicy;
 
   bool get isRunning => session?.isRunning ?? false;
   bool get isBusy => busyAction != null;
@@ -104,6 +122,10 @@ class OvertimeState extends Equatable {
     double? gpsAccuracyMeters,
     bool clearGpsAccuracyMeters = false,
     int? pendingSyncCount,
+    int? voiceMaxDurationSeconds,
+    String? voiceRecordingQuality,
+    Object? maxPhotoSize,
+    String? uploadPolicy,
   }) {
     return OvertimeState(
       status: status ?? this.status,
@@ -131,6 +153,12 @@ class OvertimeState extends Equatable {
           ? null
           : (gpsAccuracyMeters ?? this.gpsAccuracyMeters),
       pendingSyncCount: pendingSyncCount ?? this.pendingSyncCount,
+      voiceMaxDurationSeconds:
+          voiceMaxDurationSeconds ?? this.voiceMaxDurationSeconds,
+      voiceRecordingQuality:
+          voiceRecordingQuality ?? this.voiceRecordingQuality,
+      maxPhotoSize: maxPhotoSize ?? this.maxPhotoSize,
+      uploadPolicy: uploadPolicy ?? this.uploadPolicy,
     );
   }
 
@@ -153,5 +181,9 @@ class OvertimeState extends Equatable {
         liveNetworkStatus,
         gpsAccuracyMeters,
         pendingSyncCount,
+        voiceMaxDurationSeconds,
+        voiceRecordingQuality,
+        maxPhotoSize,
+        uploadPolicy,
       ];
 }

@@ -77,4 +77,49 @@ class SettingsRemoteDataSource {
       response.data?['data'] as Map<String, dynamic>? ?? const {},
     );
   }
+
+  Future<OvertimeSettings> getOvertimeSettings() async {
+    final response = await _client.get<Map<String, dynamic>>(
+      ApiConstants.settingsOvertime,
+    );
+    return OvertimeSettingsModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  Future<OvertimeSettings> updateOvertimeSettings(
+    OvertimeSettingsUpdate input,
+  ) async {
+    final response = await _client.put<Map<String, dynamic>>(
+      ApiConstants.settingsOvertime,
+      data: {
+        if (input.voiceMaxDurationSeconds != null)
+          'voiceMaxDurationSeconds': input.voiceMaxDurationSeconds,
+        if (input.voiceRecordingQuality != null)
+          'voiceRecordingQuality': input.voiceRecordingQuality,
+        if (input.maxPhotoSize != null) 'maxPhotoSize': input.maxPhotoSize,
+        if (input.uploadPolicy != null) 'uploadPolicy': input.uploadPolicy,
+        if (input.configurationPreset != null)
+          'configurationPreset': input.configurationPreset,
+        if (input.restoreDefaults) 'restoreDefaults': true,
+      },
+    );
+    return OvertimeSettingsModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  Future<OvertimeMediaConfigEntity> getOvertimeMediaConfig() async {
+    final response = await _client.get<Map<String, dynamic>>(
+      ApiConstants.settingsOvertimeConfig,
+    );
+    return OvertimeMediaConfigModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  @Deprecated('Use getOvertimeMediaConfig')
+  Future<OvertimeMediaConfigEntity> getOvertimeVoiceDurationConfig() async {
+    return getOvertimeMediaConfig();
+  }
 }

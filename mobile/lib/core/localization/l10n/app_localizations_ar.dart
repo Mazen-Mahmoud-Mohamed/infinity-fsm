@@ -1803,6 +1803,365 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsCompanyInformation => 'معلومات الشركة';
 
   @override
+  String get settingsOvertimeTitle => 'إعدادات العمل الإضافي';
+
+  @override
+  String get settingsOvertimeVoiceNotesTitle => 'الملاحظات الصوتية';
+
+  @override
+  String get settingsOvertimeVoiceNotesSubtitle =>
+      'تهيئة الملاحظات الصوتية الاختيارية لمراحل رحلة العمل الإضافي.';
+
+  @override
+  String get settingsOvertimeVoiceMaxDurationTitle =>
+      'الحد الأقصى لمدة التسجيل الصوتي';
+
+  @override
+  String get settingsOvertimeVoiceMaxDurationSubtitle =>
+      'الحد الأقصى المسموح به لكل ملاحظة صوتية تُسجَّل أثناء مرحلة عمل إضافي.';
+
+  @override
+  String settingsOvertimeVoiceDurationMinutes(int minutes) {
+    return '$minutes دقيقة';
+  }
+
+  @override
+  String settingsOvertimeVoiceCurrentValue(String value) {
+    return 'القيمة الحالية: $value';
+  }
+
+  @override
+  String get settingsOvertimeVoiceQualityTitle => 'جودة التسجيل الصوتي';
+
+  @override
+  String get settingsOvertimeVoiceQualitySubtitle =>
+      'جودة الصوت المستخدمة عند تسجيل الملاحظات الصوتية أثناء العمل الإضافي.';
+
+  @override
+  String get settingsOvertimeVoiceQualityHigh => 'عالية';
+
+  @override
+  String get settingsOvertimeVoiceQualityMedium => 'متوسطة';
+
+  @override
+  String get settingsOvertimeVoiceQualityLow => 'منخفضة';
+
+  @override
+  String get settingsOvertimeMaxPhotoSizeTitle =>
+      'الحد الأقصى لحجم الصورة المرفوعة';
+
+  @override
+  String get settingsOvertimeMaxPhotoSizeSubtitle =>
+      'تُضغط الصور قبل الرفع للبقاء ضمن هذا الحد قدر الإمكان.';
+
+  @override
+  String settingsOvertimeMaxPhotoSizeMb(int size) {
+    return '$size ميغابايت';
+  }
+
+  @override
+  String get settingsOvertimeMaxPhotoSizeOriginal => 'الأصل';
+
+  @override
+  String get settingsOvertimeUploadPolicyTitle => 'سياسة الرفع';
+
+  @override
+  String get settingsOvertimeUploadPolicyImmediately => 'فوراً';
+
+  @override
+  String get settingsOvertimeUploadPolicyImmediatelyHint =>
+      'رفع نقاط التفتيش فور توفر اتصال بالشبكة.';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiPreferred => 'يفضّل Wi-Fi';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiPreferredHint =>
+      'الرفع فوراً عبر Wi-Fi. على بيانات الجوال، تُوضَع في قائمة الانتظار حتى يتوفر Wi-Fi. يمكن للفني فرض الرفع يدوياً.';
+
+  @override
+  String get settingsOvertimeUploadPolicyManual => 'يدوي';
+
+  @override
+  String get settingsOvertimeUploadPolicyManualHint =>
+      'دائماً تُوضَع الرفوعات في قائمة الانتظار. تحدث المزامنة فقط عند ضغط الفني على «مزامنة الآن».';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiOnly => 'Wi-Fi فقط';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiOnlyHint =>
+      'عدم الرفع عبر بيانات الجوال أبداً. تُوضَع في قائمة الانتظار حتى يتوفر Wi-Fi.';
+
+  @override
+  String get settingsOvertimeUploadPolicyAskEveryTime => 'اسأل في كل مرة';
+
+  @override
+  String get settingsOvertimeUploadPolicyAskEveryTimeHint =>
+      'عند الرفع عبر بيانات الجوال، يُسأل الفني في كل مرة.';
+
+  @override
+  String settingsOvertimeQualityEstimatePerMinute(String size) {
+    return '≈ $size / دقيقة';
+  }
+
+  @override
+  String settingsOvertimeEstimatedMaxFileSize(String size) {
+    return 'الحد الأقصى التقديري لحجم الملف: ≈ $size';
+  }
+
+  @override
+  String settingsOvertimeEstimateKb(int size) {
+    return '≈ $size ك.ب';
+  }
+
+  @override
+  String settingsOvertimeEstimateMb(String size) {
+    return '≈ $size م.ب';
+  }
+
+  @override
+  String settingsOvertimeEstimateTotalMb(String size) {
+    return '≈ $size م.ب';
+  }
+
+  @override
+  String settingsOvertimeFileSizeKb(int size) {
+    return '$size ك.ب';
+  }
+
+  @override
+  String settingsOvertimeFileSizeMb(String size) {
+    return '$size م.ب';
+  }
+
+  @override
+  String settingsOvertimeFileSizeBytes(int size) {
+    return '$size بايت';
+  }
+
+  @override
+  String get settingsOvertimeLargeRecordingWarning =>
+      'قد تزيد التسجيلات الكبيرة من وقت الرفع واستخدام بيانات الجوال.';
+
+  @override
+  String get settingsOvertimePresetTitle => 'الإعداد المسبق';
+
+  @override
+  String get settingsOvertimePresetSubtitle =>
+      'طبّق ملفاً موصى به أو خصّص الإعدادات يدوياً.';
+
+  @override
+  String get settingsOvertimePresetOffice => 'مكتب';
+
+  @override
+  String get settingsOvertimePresetFieldService => 'خدمة ميدانية';
+
+  @override
+  String get settingsOvertimePresetHeavyMaintenance => 'صيانة ثقيلة';
+
+  @override
+  String get settingsOvertimePresetCustom => 'مخصص';
+
+  @override
+  String get settingsOvertimeRestoreDefaults => 'استعادة الافتراضي';
+
+  @override
+  String get settingsOvertimeRestoreDialogTitle => 'استعادة إعدادات الصوت؟';
+
+  @override
+  String get settingsOvertimeRestoreDialogBody =>
+      'سيتم استعادة:\n• مدة التسجيل: 5 دقائق\n• جودة التسجيل: متوسطة\n• الحد الأقصى للصورة: 2 م.ب\n• سياسة الرفع: فوراً';
+
+  @override
+  String get settingsOvertimeRestoreConfirm => 'استعادة';
+
+  @override
+  String get settingsOvertimeConfigTestingTitle => 'اختبار الإعدادات';
+
+  @override
+  String get settingsOvertimeConfigTestingSubtitle =>
+      'معاينة تأثير الإعدادات الحالية. لا يتم الرفع أو الحفظ.';
+
+  @override
+  String get settingsOvertimeVoiceTestTitle => 'اختبار التسجيل الصوتي';
+
+  @override
+  String get settingsOvertimeVoiceTestRecord => 'اختبار التسجيل الصوتي';
+
+  @override
+  String get settingsOvertimeVoiceTestPlay => 'تشغيل';
+
+  @override
+  String get settingsOvertimeVoiceTestDelete => 'حذف';
+
+  @override
+  String get settingsOvertimeVoiceTestRecordAgain => 'تسجيل مجدداً';
+
+  @override
+  String settingsOvertimeVoiceTestTimer(String elapsed, String max) {
+    return '$elapsed / $max';
+  }
+
+  @override
+  String get settingsOvertimeVoiceTestDuration => 'مدة التسجيل';
+
+  @override
+  String get settingsOvertimeVoiceTestEstimatedSize => 'الحجم التقديري';
+
+  @override
+  String get settingsOvertimeVoiceTestActualSize => 'الحجم الفعلي';
+
+  @override
+  String get settingsOvertimeVoiceTestEncoding => 'تنسيق الترميز';
+
+  @override
+  String get settingsOvertimeVoiceTestBitrate => 'معدل البت';
+
+  @override
+  String get settingsOvertimeVoiceTestSampleRate => 'معدل العيّنة';
+
+  @override
+  String settingsOvertimeVoiceTestBitrateKbps(int rate) {
+    return '$rate kbps';
+  }
+
+  @override
+  String settingsOvertimeVoiceTestSampleRateKhz(int rate) {
+    return '$rate kHz';
+  }
+
+  @override
+  String get settingsOvertimePhotoTestTitle => 'اختبار ضغط الصور';
+
+  @override
+  String get settingsOvertimePhotoTestCamera => 'التقاط صورة';
+
+  @override
+  String get settingsOvertimePhotoTestGallery => 'اختيار من المعرض';
+
+  @override
+  String get settingsOvertimePhotoTestOriginal => 'الأصل';
+
+  @override
+  String get settingsOvertimePhotoTestCompressed => 'مضغوط';
+
+  @override
+  String get settingsOvertimePhotoTestSplit => 'عرض مقسم';
+
+  @override
+  String settingsOvertimePhotoTestResolution(int width, int height) {
+    return 'الدقة: $width × $height';
+  }
+
+  @override
+  String settingsOvertimePhotoTestCompressionRatio(int percent) {
+    return 'نسبة الضغط: $percent%';
+  }
+
+  @override
+  String settingsOvertimePhotoTestEstimatedUpload(String size) {
+    return 'حجم الرفع التقديري: $size';
+  }
+
+  @override
+  String get settingsOvertimePhotoTestChooseAnother => 'اختيار صورة أخرى';
+
+  @override
+  String get settingsOvertimePhotoTestRetest => 'إعادة الاختبار';
+
+  @override
+  String get settingsOvertimePhotoTestDeletePreview => 'حذف المعاينة';
+
+  @override
+  String get settingsOvertimePerformanceInfoTitle => 'معلومات الأداء';
+
+  @override
+  String get settingsOvertimePerformanceVoiceMaxDuration => 'الحد الأقصى للمدة';
+
+  @override
+  String get settingsOvertimePerformanceVoiceMaxSize =>
+      'الحد الأقصى التقديري للحجم';
+
+  @override
+  String get settingsOvertimePerformancePhotoMaxSize =>
+      'متوسط الحد الأقصى للحجم';
+
+  @override
+  String settingsOvertimePerformancePhotoAverageMb(int size) {
+    return '$size م.ب';
+  }
+
+  @override
+  String get settingsOvertimePerformanceTotalUpload => 'إجمالي الرفع التقديري';
+
+  @override
+  String get overtimeVoiceSettingsInfoTitle => 'إعدادات التسجيل الصوتي';
+
+  @override
+  String get overtimeCellularUploadTitle => 'رفع الآن؟';
+
+  @override
+  String get overtimeCellularUploadMessage =>
+      'أنت تستخدم بيانات الجوال. كيف تريد رفع نقطة التفتيش هذه؟';
+
+  @override
+  String get overtimeCellularUploadWifiOnly => 'Wi-Fi فقط';
+
+  @override
+  String get overtimeCellularUploadMobileData => 'بيانات الجوال';
+
+  @override
+  String get overtimeCellularUploadLater => 'لاحقاً';
+
+  @override
+  String auditOvertimeVoiceDurationChanged(String before, String after) {
+    return 'تم تغيير مدة التسجيل الصوتي من $before إلى $after';
+  }
+
+  @override
+  String auditOvertimeVoiceQualityChanged(String before, String after) {
+    return 'تم تغيير جودة التسجيل من $before إلى $after';
+  }
+
+  @override
+  String auditOvertimeUploadPolicyChanged(String before, String after) {
+    return 'تم تغيير سياسة الرفع من $before إلى $after';
+  }
+
+  @override
+  String auditOvertimeMaxPhotoSizeChanged(String before, String after) {
+    return 'تم تغيير الحد الأقصى لحجم الصورة من $before إلى $after';
+  }
+
+  @override
+  String auditOvertimePresetApplied(String preset) {
+    return 'تم تطبيق الإعداد المسبق: $preset';
+  }
+
+  @override
+  String get auditOvertimeRestoredDefaults =>
+      'تمت استعادة إعدادات الصوت الافتراضية';
+
+  @override
+  String get auditOvertimeVoiceDurationChangedGeneric =>
+      'تم تغيير مدة التسجيل الصوتي';
+
+  @override
+  String get auditOvertimeVoiceQualityChangedGeneric =>
+      'تم تغيير جودة التسجيل الصوتي';
+
+  @override
+  String get auditOvertimeUploadPolicyChangedGeneric => 'تم تغيير سياسة الرفع';
+
+  @override
+  String get auditOvertimeMaxPhotoSizeChangedGeneric =>
+      'تم تغيير الحد الأقصى لحجم الصورة';
+
+  @override
+  String get auditOvertimePresetAppliedGeneric => 'تم تطبيق إعداد مسبق';
+
+  @override
   String get settingsCompanyLogo => 'شعار الشركة';
 
   @override
@@ -2466,7 +2825,17 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeVoiceRerecord => 'إعادة التسجيل';
 
   @override
-  String get overtimeVoiceMaxDurationHint => 'اختياري. الحد الأقصى دقيقتان.';
+  String overtimeVoiceMaxDurationHint(int minutes) {
+    return 'اختياري. الحد الأقصى $minutes دقيقة.';
+  }
+
+  @override
+  String get overtimeVoiceLimitWarning => 'سيتوقف التسجيل خلال 30 ثانية.';
+
+  @override
+  String overtimeVoiceMaxRecordingInfo(int minutes) {
+    return 'الحد الأقصى للتسجيل: $minutes دقيقة';
+  }
 
   @override
   String get overtimeVoicePermissionDenied =>

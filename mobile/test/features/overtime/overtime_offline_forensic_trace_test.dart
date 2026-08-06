@@ -1,3 +1,4 @@
+import 'package:mobile/core/cache/session_query_cache.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
@@ -16,7 +17,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dar
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
-import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 
@@ -343,6 +344,10 @@ void main() {
         connectivity: connectivity,
         addressResolver: _FakeAddressResolver(),
         gpsAddressSync: _FakeGpsAddressSync(),
+        uploadPolicy: OvertimeUploadPolicyService(
+          connectivity: connectivity,
+          sessionQueryCache: SessionQueryCache(),
+        ),
       );
 
       final startAt = DateTime.utc(2026, 8, 3, 18, 0, 0);
@@ -507,6 +512,10 @@ void main() {
         connectivity: connectivity,
         addressResolver: _FakeAddressResolver(),
         gpsAddressSync: _FakeGpsAddressSync(),
+        uploadPolicy: OvertimeUploadPolicyService(
+          connectivity: connectivity,
+          sessionQueryCache: SessionQueryCache(),
+        ),
       );
 
       final startAt = DateTime.utc(2026, 8, 3, 19, 0, 0);

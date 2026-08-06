@@ -46,6 +46,10 @@ const DEFAULT_SETTINGS = [
   { key: 'working_hours.timezone', value: 'Africa/Cairo', group: 'working_hours', dataType: 'string' },
   { key: 'overtime.allowed_types', value: ['REGULAR', 'TRAVEL'], group: 'overtime', dataType: 'array' },
   { key: 'overtime.gps_accuracy_limit_meters', value: 100, group: 'overtime', dataType: 'number' },
+  { key: 'overtime.voice_max_duration_seconds', value: 300, group: 'overtime', dataType: 'number' },
+  { key: 'overtime.voice_recording_quality', value: 'medium', group: 'overtime', dataType: 'string' },
+  { key: 'overtime.max_photo_size_mb', value: 2, group: 'overtime', dataType: 'number' },
+  { key: 'overtime.upload_policy', value: 'immediately', group: 'overtime', dataType: 'string' },
   { key: 'media.max_image_size_mb', value: 5, group: 'media', dataType: 'number' },
   { key: 'offline.retention_days', value: 30, group: 'offline', dataType: 'number' },
 ];

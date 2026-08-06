@@ -12,6 +12,8 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/services/logger_service.dart';
 import 'package:mobile/core/theme/app_colors.dart';
+import 'package:mobile/features/overtime/domain/constants/overtime_voice_config.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_voice_record_config.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -20,8 +22,9 @@ import 'package:record/record.dart';
 
 export 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
 
-/// Max voice note length for overtime journey stages.
-const int kOvertimeVoiceMaxSeconds = 120;
+/// Fallback when server config is unavailable (5 minutes).
+int get kOvertimeVoiceMaxSeconds =>
+    OvertimeVoiceConfig.defaultMaxDurationSeconds;
 
 /// Visual sync badge for a voice note card (presentation only).
 enum OvertimeVoiceSyncBadge {
@@ -44,6 +47,8 @@ class OvertimeVoiceNoteSection extends StatefulWidget {
     this.remoteUrl,
     this.localBytes,
     this.durationSeconds,
+    this.maxDurationSeconds = OvertimeVoiceConfig.defaultMaxDurationSeconds,
+    this.voiceRecordingQuality = OvertimeVoiceConfig.defaultVoiceQuality,
     this.readOnly = false,
     this.enabled = true,
     this.syncBadge = OvertimeVoiceSyncBadge.none,
@@ -58,6 +63,12 @@ class OvertimeVoiceNoteSection extends StatefulWidget {
   final List<int>? localBytes;
 
   final double? durationSeconds;
+
+  /// Maximum recording length in seconds (from company settings).
+  final int maxDurationSeconds;
+
+  /// Voice quality setting (high / medium / low).
+  final String voiceRecordingQuality;
   final bool readOnly;
   final bool enabled;
 
@@ -93,6 +104,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
   String? _localPath;
   List<int>? _bytes;
   double? _durationSeconds;
+  int? _recordingMaxSeconds;
   late final AnimationController _pulseController;
   StreamSubscription<Duration>? _positionSub;
   StreamSubscription<Duration?>? _durationSub;
@@ -122,6 +134,15 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     if (fromPlayer > 0.05) return fromPlayer;
     return (_durationSeconds ?? widget.durationSeconds ?? 0).toDouble();
   }
+
+  double get _maxSeconds =>
+      (_recording && _recordingMaxSeconds != null
+              ? _recordingMaxSeconds!
+              : widget.maxDurationSeconds)
+          .toDouble();
+
+  bool get _showLimitWarning =>
+      _recording && (_maxSeconds - _elapsedSeconds) <= 30 && _elapsedSeconds > 0;
 
   OvertimeVoiceSyncBadge get _effectiveBadge {
     if (widget.syncBadge != OvertimeVoiceSyncBadge.none) {
@@ -218,17 +239,13 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     );
 
     await _recorder.start(
-      const RecordConfig(
-        encoder: AudioEncoder.aacLc,
-        bitRate: 64000,
-        sampleRate: 44100,
-        numChannels: 1,
-      ),
+      OvertimeVoiceRecordConfig.resolve(widget.voiceRecordingQuality),
       path: path,
     );
 
     setState(() {
       _recording = true;
+      _recordingMaxSeconds = widget.maxDurationSeconds;
       _elapsedSeconds = 0;
       _localPath = path;
       _bytes = null;
@@ -249,7 +266,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
       }
       final next = _elapsedSeconds + 1;
       setState(() => _elapsedSeconds = next);
-      if (next >= kOvertimeVoiceMaxSeconds) {
+      if (next >= (_recordingMaxSeconds ?? widget.maxDurationSeconds)) {
         await _stopRecording(hitMaxLimit: true);
       }
     });
@@ -266,6 +283,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
 
     setState(() {
       _recording = false;
+      _recordingMaxSeconds = null;
       _busy = true;
       _hitMaxLimit = hitMaxLimit;
     });
@@ -283,7 +301,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
       }
       final bytes = await file.readAsBytes();
       final duration =
-          _elapsedSeconds.clamp(0, kOvertimeVoiceMaxSeconds).toDouble();
+          _elapsedSeconds.clamp(0, widget.maxDurationSeconds).toDouble();
       final draft = OvertimeVoiceDraft(
         filePath: filePath,
         bytes: bytes,
@@ -483,11 +501,37 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
                 badge: _effectiveBadge,
                 theme: theme,
               ),
+              if (!widget.readOnly) ...[
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    Expanded(
+                      child: Text(
+                        l10n.overtimeVoiceMaxRecordingInfo(
+                          OvertimeMediaConfig.minutesFromSeconds(
+                            widget.maxDurationSeconds,
+                          ),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               const SizedBox(height: AppSpacing.sm),
               if (_recording)
                 _RecordingPanel(
                   elapsedLabel: _formatDuration(_elapsedSeconds),
-                  maxLabel: _formatDuration(kOvertimeVoiceMaxSeconds.toDouble()),
+                  maxLabel: _formatDuration(_maxSeconds),
                   pulse: _pulseController,
                   enabled: !_actionsLocked,
                   iconSize: iconSize,
@@ -495,6 +539,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
                   onStop: () => _stopRecording(),
                   l10n: l10n,
                   isDesktop: isDesktop,
+                  showLimitWarning: _showLimitWarning,
                 )
               else if (!_hasAudio && !widget.readOnly)
                 _IdleRecordButton(
@@ -545,7 +590,9 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
               if (!widget.readOnly && !_hasAudio && !_recording) ...[
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  l10n.overtimeVoiceMaxDurationHint,
+                  l10n.overtimeVoiceMaxDurationHint(
+                    widget.maxDurationSeconds ~/ 60,
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -733,6 +780,7 @@ class _RecordingPanel extends StatelessWidget {
     required this.onStop,
     required this.l10n,
     required this.isDesktop,
+    required this.showLimitWarning,
   });
 
   final String elapsedLabel;
@@ -744,6 +792,7 @@ class _RecordingPanel extends StatelessWidget {
   final VoidCallback onStop;
   final AppLocalizations l10n;
   final bool isDesktop;
+  final bool showLimitWarning;
 
   @override
   Widget build(BuildContext context) {
@@ -821,6 +870,16 @@ class _RecordingPanel extends StatelessWidget {
             ),
           ],
         ),
+        if (showLimitWarning) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            l10n.overtimeVoiceLimitWarning,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.tertiary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ],
     );
   }

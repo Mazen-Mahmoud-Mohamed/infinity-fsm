@@ -1803,6 +1803,364 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCompanyInformation => 'Company information';
 
   @override
+  String get settingsOvertimeTitle => 'Overtime Settings';
+
+  @override
+  String get settingsOvertimeVoiceNotesTitle => 'Voice Notes';
+
+  @override
+  String get settingsOvertimeVoiceNotesSubtitle =>
+      'Configure optional voice notes for overtime journey stages.';
+
+  @override
+  String get settingsOvertimeVoiceMaxDurationTitle =>
+      'Maximum Voice Recording Duration';
+
+  @override
+  String get settingsOvertimeVoiceMaxDurationSubtitle =>
+      'Maximum length allowed for each voice note recorded during an overtime stage.';
+
+  @override
+  String settingsOvertimeVoiceDurationMinutes(int minutes) {
+    return '$minutes Minutes';
+  }
+
+  @override
+  String settingsOvertimeVoiceCurrentValue(String value) {
+    return 'Current value: $value';
+  }
+
+  @override
+  String get settingsOvertimeVoiceQualityTitle => 'Voice Recording Quality';
+
+  @override
+  String get settingsOvertimeVoiceQualitySubtitle =>
+      'Audio quality used when technicians record voice notes during overtime.';
+
+  @override
+  String get settingsOvertimeVoiceQualityHigh => 'High';
+
+  @override
+  String get settingsOvertimeVoiceQualityMedium => 'Medium';
+
+  @override
+  String get settingsOvertimeVoiceQualityLow => 'Low';
+
+  @override
+  String get settingsOvertimeMaxPhotoSizeTitle => 'Maximum Uploaded Photo Size';
+
+  @override
+  String get settingsOvertimeMaxPhotoSizeSubtitle =>
+      'Photos are compressed before upload to stay within this limit whenever possible.';
+
+  @override
+  String settingsOvertimeMaxPhotoSizeMb(int size) {
+    return '$size MB';
+  }
+
+  @override
+  String get settingsOvertimeMaxPhotoSizeOriginal => 'Original';
+
+  @override
+  String get settingsOvertimeUploadPolicyTitle => 'Upload Policy';
+
+  @override
+  String get settingsOvertimeUploadPolicyImmediately => 'Immediately';
+
+  @override
+  String get settingsOvertimeUploadPolicyImmediatelyHint =>
+      'Upload checkpoints as soon as a network connection is available.';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiPreferred => 'Wi-Fi Preferred';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiPreferredHint =>
+      'Upload immediately on Wi-Fi. On mobile data, queue until Wi-Fi is available. Technicians can force upload manually.';
+
+  @override
+  String get settingsOvertimeUploadPolicyManual => 'Manual';
+
+  @override
+  String get settingsOvertimeUploadPolicyManualHint =>
+      'Always queue uploads. Sync happens only when the technician presses Sync Now.';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiOnly => 'Wi-Fi Only';
+
+  @override
+  String get settingsOvertimeUploadPolicyWifiOnlyHint =>
+      'Never upload using mobile data. Queue until Wi-Fi is available.';
+
+  @override
+  String get settingsOvertimeUploadPolicyAskEveryTime => 'Ask Every Time';
+
+  @override
+  String get settingsOvertimeUploadPolicyAskEveryTimeHint =>
+      'When uploading on mobile data, ask the technician each time.';
+
+  @override
+  String settingsOvertimeQualityEstimatePerMinute(String size) {
+    return '≈ $size / minute';
+  }
+
+  @override
+  String settingsOvertimeEstimatedMaxFileSize(String size) {
+    return 'Estimated Maximum File Size: ≈ $size';
+  }
+
+  @override
+  String settingsOvertimeEstimateKb(int size) {
+    return '≈ $size KB';
+  }
+
+  @override
+  String settingsOvertimeEstimateMb(String size) {
+    return '≈ $size MB';
+  }
+
+  @override
+  String settingsOvertimeEstimateTotalMb(String size) {
+    return '≈ $size MB';
+  }
+
+  @override
+  String settingsOvertimeFileSizeKb(int size) {
+    return '$size KB';
+  }
+
+  @override
+  String settingsOvertimeFileSizeMb(String size) {
+    return '$size MB';
+  }
+
+  @override
+  String settingsOvertimeFileSizeBytes(int size) {
+    return '$size bytes';
+  }
+
+  @override
+  String get settingsOvertimeLargeRecordingWarning =>
+      'Large recordings may increase upload time and mobile data usage.';
+
+  @override
+  String get settingsOvertimePresetTitle => 'Configuration Preset';
+
+  @override
+  String get settingsOvertimePresetSubtitle =>
+      'Apply a recommended profile or customize individual settings.';
+
+  @override
+  String get settingsOvertimePresetOffice => 'Office';
+
+  @override
+  String get settingsOvertimePresetFieldService => 'Field Service';
+
+  @override
+  String get settingsOvertimePresetHeavyMaintenance => 'Heavy Maintenance';
+
+  @override
+  String get settingsOvertimePresetCustom => 'Custom';
+
+  @override
+  String get settingsOvertimeRestoreDefaults => 'Restore Defaults';
+
+  @override
+  String get settingsOvertimeRestoreDialogTitle => 'Restore Voice Settings?';
+
+  @override
+  String get settingsOvertimeRestoreDialogBody =>
+      'This will restore:\n• Recording Duration: 5 Minutes\n• Recording Quality: Medium\n• Maximum Photo Size: 2 MB\n• Upload Policy: Immediately';
+
+  @override
+  String get settingsOvertimeRestoreConfirm => 'Restore';
+
+  @override
+  String get settingsOvertimeConfigTestingTitle => 'Configuration Testing';
+
+  @override
+  String get settingsOvertimeConfigTestingSubtitle =>
+      'Preview the impact of current settings. Nothing is uploaded or saved.';
+
+  @override
+  String get settingsOvertimeVoiceTestTitle => 'Voice Recording Test';
+
+  @override
+  String get settingsOvertimeVoiceTestRecord => 'Test Voice Recording';
+
+  @override
+  String get settingsOvertimeVoiceTestPlay => 'Play';
+
+  @override
+  String get settingsOvertimeVoiceTestDelete => 'Delete';
+
+  @override
+  String get settingsOvertimeVoiceTestRecordAgain => 'Record Again';
+
+  @override
+  String settingsOvertimeVoiceTestTimer(String elapsed, String max) {
+    return '$elapsed / $max';
+  }
+
+  @override
+  String get settingsOvertimeVoiceTestDuration => 'Recording Duration';
+
+  @override
+  String get settingsOvertimeVoiceTestEstimatedSize => 'Estimated Size';
+
+  @override
+  String get settingsOvertimeVoiceTestActualSize => 'Actual File Size';
+
+  @override
+  String get settingsOvertimeVoiceTestEncoding => 'Encoding Format';
+
+  @override
+  String get settingsOvertimeVoiceTestBitrate => 'Bitrate';
+
+  @override
+  String get settingsOvertimeVoiceTestSampleRate => 'Sample Rate';
+
+  @override
+  String settingsOvertimeVoiceTestBitrateKbps(int rate) {
+    return '$rate kbps';
+  }
+
+  @override
+  String settingsOvertimeVoiceTestSampleRateKhz(int rate) {
+    return '$rate kHz';
+  }
+
+  @override
+  String get settingsOvertimePhotoTestTitle => 'Photo Compression Test';
+
+  @override
+  String get settingsOvertimePhotoTestCamera => 'Take Photo';
+
+  @override
+  String get settingsOvertimePhotoTestGallery => 'Choose from Gallery';
+
+  @override
+  String get settingsOvertimePhotoTestOriginal => 'Original';
+
+  @override
+  String get settingsOvertimePhotoTestCompressed => 'Compressed';
+
+  @override
+  String get settingsOvertimePhotoTestSplit => 'Split View';
+
+  @override
+  String settingsOvertimePhotoTestResolution(int width, int height) {
+    return 'Resolution: $width × $height';
+  }
+
+  @override
+  String settingsOvertimePhotoTestCompressionRatio(int percent) {
+    return 'Compression Ratio: $percent%';
+  }
+
+  @override
+  String settingsOvertimePhotoTestEstimatedUpload(String size) {
+    return 'Estimated Upload Size: $size';
+  }
+
+  @override
+  String get settingsOvertimePhotoTestChooseAnother => 'Choose Another Photo';
+
+  @override
+  String get settingsOvertimePhotoTestRetest => 'Retest';
+
+  @override
+  String get settingsOvertimePhotoTestDeletePreview => 'Delete Preview';
+
+  @override
+  String get settingsOvertimePerformanceInfoTitle => 'Performance Information';
+
+  @override
+  String get settingsOvertimePerformanceVoiceMaxDuration => 'Maximum Duration';
+
+  @override
+  String get settingsOvertimePerformanceVoiceMaxSize =>
+      'Estimated Maximum Size';
+
+  @override
+  String get settingsOvertimePerformancePhotoMaxSize => 'Average Maximum Size';
+
+  @override
+  String settingsOvertimePerformancePhotoAverageMb(int size) {
+    return '$size MB';
+  }
+
+  @override
+  String get settingsOvertimePerformanceTotalUpload => 'Estimated Total Upload';
+
+  @override
+  String get overtimeVoiceSettingsInfoTitle => 'Voice Recording Settings';
+
+  @override
+  String get overtimeCellularUploadTitle => 'Upload Now?';
+
+  @override
+  String get overtimeCellularUploadMessage =>
+      'You are using mobile data. How would you like to upload this checkpoint?';
+
+  @override
+  String get overtimeCellularUploadWifiOnly => 'Wi-Fi Only';
+
+  @override
+  String get overtimeCellularUploadMobileData => 'Mobile Data';
+
+  @override
+  String get overtimeCellularUploadLater => 'Later';
+
+  @override
+  String auditOvertimeVoiceDurationChanged(String before, String after) {
+    return 'Changed voice recording duration from $before to $after';
+  }
+
+  @override
+  String auditOvertimeVoiceQualityChanged(String before, String after) {
+    return 'Changed voice quality from $before to $after';
+  }
+
+  @override
+  String auditOvertimeUploadPolicyChanged(String before, String after) {
+    return 'Changed upload policy from $before to $after';
+  }
+
+  @override
+  String auditOvertimeMaxPhotoSizeChanged(String before, String after) {
+    return 'Changed maximum photo size from $before to $after';
+  }
+
+  @override
+  String auditOvertimePresetApplied(String preset) {
+    return 'Applied configuration preset: $preset';
+  }
+
+  @override
+  String get auditOvertimeRestoredDefaults =>
+      'Restored voice settings to defaults';
+
+  @override
+  String get auditOvertimeVoiceDurationChangedGeneric =>
+      'Changed voice recording duration';
+
+  @override
+  String get auditOvertimeVoiceQualityChangedGeneric =>
+      'Changed voice recording quality';
+
+  @override
+  String get auditOvertimeUploadPolicyChangedGeneric => 'Changed upload policy';
+
+  @override
+  String get auditOvertimeMaxPhotoSizeChangedGeneric =>
+      'Changed maximum photo size';
+
+  @override
+  String get auditOvertimePresetAppliedGeneric =>
+      'Applied configuration preset';
+
+  @override
   String get settingsCompanyLogo => 'Company logo';
 
   @override
@@ -2471,7 +2829,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeVoiceRerecord => 'Re-record';
 
   @override
-  String get overtimeVoiceMaxDurationHint => 'Optional. Maximum 2 minutes.';
+  String overtimeVoiceMaxDurationHint(int minutes) {
+    return 'Optional. Maximum $minutes minutes.';
+  }
+
+  @override
+  String get overtimeVoiceLimitWarning => 'Recording will stop in 30 seconds.';
+
+  @override
+  String overtimeVoiceMaxRecordingInfo(int minutes) {
+    return 'Maximum recording: $minutes minutes';
+  }
 
   @override
   String get overtimeVoicePermissionDenied =>

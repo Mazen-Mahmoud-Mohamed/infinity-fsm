@@ -238,7 +238,7 @@ class SyncSettingsPage extends StatelessWidget {
                   final overtime = context.read<OvertimeSyncCubit>();
                   final messenger = ScaffoldMessenger.of(context);
                   await attendance.syncNow();
-                  await overtime.syncNow();
+                  await overtime.syncNow(force: true);
                   messenger.showSnackBar(
                     SnackBar(content: Text(l10n.settingsManualSyncDone)),
                   );

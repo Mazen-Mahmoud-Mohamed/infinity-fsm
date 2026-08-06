@@ -1,22 +1,37 @@
 # Infinity FSM
 
-**Production-grade Enterprise Field Service Management (FSM) platform**
+![Flutter](https://img.shields.io/badge/Flutter-3.x-blue)
+![Node.js](https://img.shields.io/badge/Node.js-Express-green)
+![MongoDB](https://img.shields.io/badge/MongoDB-Database-brightgreen)
+![Cloudinary](https://img.shields.io/badge/Cloudinary-Media-blueviolet)
+![License](https://img.shields.io/badge/License-MIT-orange)
+![Platform](https://img.shields.io/badge/Platform-Android%20%7C%20Windows-lightgrey)
+![Offline First](https://img.shields.io/badge/Offline-First-success)
 
-[![Flutter](https://img.shields.io/badge/Flutter-Material%203-02569B?logo=flutter&logoColor=white)](https://flutter.dev)
-[![Node.js](https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
-[![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+**Enterprise Field Service Management for maintenance companies and field service teams**
 
-Infinity FSM is a full-stack enterprise Field Service Management platform for organizations that run technicians in the field. It unifies attendance, offline-first overtime journeys, GPS verification, live camera evidence, work orders, inventory, assets, preventive maintenance, service reports, user administration, and fine-grained RBAC in one coherent product.
+Infinity FSM is a production-grade Field Service Management (FSM) platform that unifies attendance, overtime journeys, work orders, assets, inventory, preventive maintenance, and service reporting in one coherent product. It is built for organizations that dispatch technicians into the field and need reliable evidence capture, offline resilience, and administrator control.
 
-Built with **Flutter** (Android & Windows Desktop), **Node.js / Express**, **MongoDB Atlas**, and **Cloudinary**, with a modern **Material 3** UI, **Arabic & English** localization (RTL/LTR), responsive layouts, OpenStreetMap GPS & maps, and enterprise role-based access control.
+| | |
+|---|---|
+| **Frontend** | Flutter · Material 3 · Clean Architecture · Repository Pattern · BLoC/Cubit |
+| **Backend** | Node.js · Express · MongoDB · JWT · Socket.IO |
+| **Media** | Cloudinary |
+| **Sync** | Offline-first synchronization with pending action queues |
+| **Locales** | English & Arabic (RTL / LTR) |
+| **Platforms** | Android · Windows Desktop |
 
 ---
 
 ## Table of Contents
 
-- [Highlights](#highlights)
+- [Project Overview](#project-overview)
 - [Features](#features)
+- [Voice Notes](#voice-notes)
+- [Overtime](#overtime)
+- [Enterprise Settings](#enterprise-settings)
+- [Excel Reports](#excel-reports)
+- [Windows Support](#windows-support)
 - [Offline Support](#offline-support)
 - [Localization](#localization)
 - [Technology Stack](#technology-stack)
@@ -30,170 +45,315 @@ Built with **Flutter** (Android & Windows Desktop), **Node.js / Express**, **Mon
 - [API Structure](#api-structure)
 - [Security](#security)
 - [Roles & Permissions](#roles--permissions)
-- [Latest Improvements](#latest-improvements)
 - [Roadmap](#roadmap)
 - [License](#license)
 - [Author](#author)
 
 ---
 
-## Highlights
+## Project Overview
 
-| Capability | Support |
-|------------|---------|
-| Android | ✅ |
-| Windows Desktop | ✅ |
-| Responsive phone / tablet / desktop layouts | ✅ |
-| Arabic & English (RTL / LTR) | ✅ |
-| Offline-first overtime (+ attendance sync hooks) | ✅ |
-| Enterprise RBAC with localized permissions | ✅ |
-| GPS, reverse geocoding & OpenStreetMap | ✅ |
-| Cloudinary image storage | ✅ |
-| Material 3 light / dark / system themes | ✅ |
-| Runtime API URL switching (Server Management) | ✅ |
+Infinity FSM is an **Enterprise Field Service Management System** designed for maintenance companies, facility operators, and field service teams that need end-to-end visibility over technician operations.
+
+The platform is built with:
+
+| Layer | Technologies |
+|-------|--------------|
+| Mobile & Desktop UI | **Flutter**, Material 3, **Cubit** (flutter_bloc) |
+| API | **Node.js**, **Express**, JWT, Socket.IO |
+| Database | **MongoDB** (Atlas or self-hosted) with Mongoose |
+| Media | **Cloudinary** for photos, selfies, attachments, and voice notes |
+| Client architecture | **Clean Architecture**, **Repository Pattern**, **GetIt** DI, **GoRouter**, **Dio** |
+| Field resilience | **Offline-first synchronization**, local pending queues, connectivity-aware UI |
+
+Technicians capture GPS-verified evidence on the go. Supervisors review and approve journeys. Administrators configure organization-wide policies, media settings, and access control — all from a single enterprise application.
 
 ---
 
 ## Features
 
-### Authentication
+### Platform
 
-- JWT access + refresh token authentication
-- Secure login with local session persistence
-- Profile management
-- Avatar / profile photo upload (Cloudinary)
-- Change password (authenticated users)
-- Biometric unlock on supported devices (used to protect Server Management access)
+| Feature | Description |
+|---------|-------------|
+| **Authentication** | JWT access + refresh tokens, secure session persistence, profile management, avatar upload |
+| **Role-Based Access Control** | Admin / Supervisor / Technician roles with granular, localized permissions |
+| **Dashboard Analytics** | Role-aware KPI cards, charts, live activity feed, and operational statistics |
+| **Notification Center** | In-app notification feed with unread badges and mark-as-read support |
+| **Global Search** | Cross-module search dialog for fast navigation to records |
+| **Reports Center** | Unified hub for operational reports and export entry points |
+| **Enterprise Excel Reports** | Multi-sheet overtime workbooks with embedded media and hyperlinks |
+| **Audit Logs** | Server-side audit trail for settings, security, and operational events |
+| **Localization** | Full English and Arabic with RTL/LTR support |
+| **Desktop + Mobile** | Responsive layouts for phone, tablet, and Windows desktop |
 
-### Dashboard
+### Operations
 
-- Role-aware enterprise dashboard (Admin / Supervisor / Technician)
-- KPI cards and operational statistics
-- Charts and trend views
-- Quick actions into primary modules
-- In-app notification feed entry points
+| Module | Capabilities |
+|--------|--------------|
+| **Attendance** | GPS clock in/out, live selfie verification, personal & team history, admin review, offline sync |
+| **Overtime Management** | Four-stage journeys, photos, voice notes, GPS, maps, approval workflow, offline sync, history |
+| **Work Orders** | Create, assign, track, complete; staged execution with attachments and timeline |
+| **Assets** | Registry, categories, history, QR-oriented workflows |
+| **Inventory** | Warehouses, spare parts, stock movements, low-stock visibility |
+| **Preventive Maintenance** | PM plans, schedules, history, checklist builder |
+| **Service Reports** | List, dashboard, detail, generation/download, customer signature |
 
-### Attendance
+### Field Evidence & Media
 
-- GPS-backed clock in / out with accuracy checks
-- Live selfie verification for attendance evidence
-- Personal attendance history
-- Team attendance views (permission-scoped)
-- Admin review workflows
-- Offline capture with sync when connectivity returns
+| Capability | Description |
+|------------|-------------|
+| **Offline Sync** | Pending action queues with automatic drain on reconnect |
+| **GPS Tracking** | Accuracy, battery, network status, reverse geocoding per checkpoint |
+| **Journey Timeline** | Visual stage progression with evidence badges |
+| **Cloudinary Media Storage** | Cloud-hosted photos and voice recordings |
+| **Photo Uploads** | Live camera capture with configurable compression |
+| **Stage-Based Voice Notes** | Independent voice note per journey stage |
+| **Configurable Voice Recording** | Admin-controlled duration, quality, and upload policy |
+| **Enterprise Voice Settings** | Presets, estimates, restore defaults, configuration testing lab |
 
-### Overtime
+---
 
-Complete field overtime journey with evidence and admin control:
+## Voice Notes
 
-- Offline-first overtime sessions with automatic synchronization
-- Pending action queue and local persistence
-- Multi-stage GPS checkpoints:
-  - Start Journey
-  - Arrived at Work Site
-  - Finished Work
-  - End Journey
-- Journey Timeline with stage evidence
-- Journey Overview map (markers, polyline, legend)
-- Open Live Location for map viewing
-- Per-checkpoint GPS accuracy, battery, network status, and reverse-geocoded address
-- Stage selfies / photos
-- Normal and travel overtime types
-- Admin approval and rejection
-- Interactive desktop overtime detail layout (timeline + map focus)
+Overtime journeys support **four independent voice notes** — one per checkpoint stage:
 
-### Work Orders
+| Stage | Voice Note |
+|-------|------------|
+| 1 | **Start Journey** |
+| 2 | **Arrived at Work Site** |
+| 3 | **Finished Work** |
+| 4 | **End Journey** |
 
-- Create, assign, track, and complete field work orders
-- Staged execution with attachments, locations, and timeline
-- Desktop split detail layout (execution + context sidebar)
+### Recording & Playback
 
-### Preventive Maintenance
+- Record, pause, play, delete, and re-record per stage
+- Respects administrator-configured **maximum duration** and **recording quality**
+- Countdown timer with warning before auto-stop
+- **Offline recording** — voice drafts stored locally and uploaded on sync
+- **Cloudinary storage** after successful upload
+- Playback in timeline, admin detail views, and Excel export hyperlinks
 
-- PM plans
-- PM schedules
-- PM history
-- Checklist builder
+### Timeline Integration
 
-### Inventory
+Voice notes appear in the **Journey Timeline** alongside GPS, photos, and timestamps. Each stage shows sync status (pending, uploading, uploaded).
 
-- Warehouses
-- Spare parts catalog
-- Stock history / movements
-- Low-stock visibility on operational dashboards
+### Administrator Configuration
 
-### Assets
+Administrators configure voice behavior under **Settings → Overtime Settings → Voice Notes**:
 
-- Asset registry and management
-- Asset categories
-- Asset history
-- QR-oriented asset workflows
+| Setting | Options |
+|---------|---------|
+| **Recording duration** | 2, 5, 10, 15, or 20 minutes |
+| **Recording quality** | High · Medium · Low (with live size estimates) |
+| **Upload policy** | Immediately · Wi-Fi Preferred · Wi-Fi Only · Manual · Ask Every Time |
+| **Photo compression** | 1 MB · 2 MB · 5 MB · Original |
+| **Configuration presets** | Office · Field Service · Heavy Maintenance · Custom |
+| **Restore defaults** | One-click reset with confirmation and audit log |
+| **Configuration testing lab** | Admin-only preview of voice recording and photo compression (no uploads, no persistence) |
 
-### Service Reports
+Technicians see a **read-only information card** on the voice recorder screen showing the active policy (duration, quality, upload policy).
 
-- Service reports list and dashboard
-- Report detail views
-- Generation / download flows (permission-scoped)
-- Customer signature support where enabled
+Cellular upload prompts appear when **Ask Every Time** is selected — the technician chooses Wi-Fi Only, Mobile Data, or Later for that upload only.
 
-### User Management & Organization
+---
 
-- Users lifecycle (view / create / update / delete — permission-scoped)
-- Roles & Permissions administration
-- Departments and organization hierarchy (branches, regions, teams as permitted)
-- Admin password reset permission for user accounts
+## Overtime
 
-### Enterprise RBAC
+Overtime is the most complete offline-first workflow in Infinity FSM.
 
-- Role management (view / create / update / delete)
-- Permission catalog grouped by module
-- Localized permission names (EN / AR)
-- Human-readable permission descriptions (what / where / whose data)
-- Search across permission titles, descriptions, and groups
-- Desktop tooltips and keyboard-accessible descriptions
-- Presentation-only labels — backend permission keys remain unchanged
+### Journey Stages
 
-### Settings
+```
+Start Journey → Arrived at Work Site → Finished Work → End Journey
+```
 
-Enterprise settings hub (responsive list on phone; split panel on desktop):
+Each stage captures:
 
-- Theme (System / Light / Dark) — exclusive control of the real app theme
-- Theme Preview (visual showcase only; does not change app theme)
-- Language (English / Arabic)
-- Notification preferences
-- Organization / company settings
-- Performance overview
-- About
-- Update Center
-- Diagnostics
-- **Server Management** — runtime backend URL configuration, connection test, ping, and diagnostics export **without rebuilding the app** (protected access; biometric unlock on supported devices)
+- **GPS** coordinates with accuracy, battery, and network metadata
+- **Reverse-geocoded address**
+- **Photos** (live camera) with configurable compression
+- **Voice note** (optional, stage-specific)
+- Timestamp and device context
+
+### Maps & Visualization
+
+- **Journey Timeline** — stage cards with evidence summary
+- **Journey Overview map** — markers, polyline, legend (OpenStreetMap)
+- **Open Live Location** — external map viewing
+
+### Types & Workflow
+
+| Aspect | Detail |
+|--------|--------|
+| **Types** | Normal overtime · Travel overtime |
+| **Technician** | Start session, advance stages, capture evidence, end session |
+| **Admin / Supervisor** | Review sessions, approve or reject, inspect timeline + map |
+| **History** | Personal history for technicians; full list for authorized roles |
+| **Offline** | Full lifecycle offline with pending queue and sync on reconnect |
+
+### Technician vs Admin
+
+| Role | Experience |
+|------|------------|
+| **Technician** | Mobile-first journey capture, sync indicator, read-only voice settings card |
+| **Admin / Supervisor** | Review queue, interactive desktop detail (timeline ↔ map), Excel export |
+
+---
+
+## Enterprise Settings
+
+Organization-wide overtime media settings are stored in the backend **settings** collection and propagated to all clients.
+
+### Voice & Media
+
+| Setting | Purpose |
+|---------|---------|
+| **Voice duration** | Maximum recording length per voice note (seconds, UI in minutes) |
+| **Voice quality** | Encoder profile — High / Medium / Low with estimated KB/min preview |
+| **Upload policy** | Controls immediate upload, Wi-Fi gating, manual sync, or per-upload prompt |
+| **Photo compression** | Target max size before Cloudinary upload (or original) |
+
+### Configuration Presets
+
+| Preset | Duration | Quality | Photo | Upload |
+|--------|----------|---------|-------|--------|
+| **Office** | 2 min | Low | 1 MB | Immediately |
+| **Field Service** | 5 min | Medium | 2 MB | Wi-Fi Preferred |
+| **Heavy Maintenance** | 20 min | High | Original | Manual |
+| **Custom** | Any combination | | | |
+
+Manual edits to any preset value automatically switch the active preset to **Custom**.
+
+### Audit Logs
+
+Every configuration change creates a server-side audit entry:
+
+- Voice recording duration changed
+- Voice quality changed
+- Upload policy changed
+- Maximum photo size changed
+- Configuration preset applied
+- Settings restored to defaults
+
+Audit events surface in the dashboard live activity feed and notification center (permission-scoped).
+
+### Restore Defaults
+
+Administrators can restore:
+
+- Recording duration → **5 minutes**
+- Recording quality → **Medium**
+- Maximum photo size → **2 MB**
+- Upload policy → **Immediately**
+
+### Configuration Testing Lab
+
+An administrator-only section at the bottom of Voice Notes settings:
+
+| Tool | Purpose |
+|------|---------|
+| **Voice recording test** | Record with current settings; show duration, estimated size, actual size, encoding details — no Cloudinary upload |
+| **Photo compression test** | Side-by-side original vs compressed preview with resolution and ratio — no upload |
+| **Performance information** | Estimated maximum upload sizes for voice + photo combined |
+
+All test artifacts are temporary and removed when leaving the page.
+
+---
+
+## Excel Reports
+
+Authorized administrators and supervisors can export overtime data as enterprise Excel workbooks (via **ExcelJS** on the backend).
+
+### Workbook Structure
+
+| Mode | Sheets |
+|------|--------|
+| **Summary** | Summary sheet only |
+| **Detailed** | Summary + Sessions Index + one sheet per session |
+
+### Summary Sheet
+
+- Company branding (logo hyperlink when available)
+- Export metadata and date range
+- KPI grid (session counts, durations, statuses)
+- Filter summary
+
+### Session Sheets
+
+Each detailed session sheet includes:
+
+- Session header with technician, type, status, and duration
+- **Journey timeline** table with stage timestamps
+- **Status badges** for session and stage states
+- **Embedded photo thumbnails** per stage
+- **Voice hyperlinks** (🎤) linking to Cloudinary recordings
+- **Google Maps hyperlinks** (📍) for GPS coordinates
+- Key-value evidence rows (GPS, address, photo count, voice duration)
+- Navigation link back to Sessions Index
+
+Exports are triggered from the **Reports Center** or overtime admin views with configurable date, status, and type filters.
+
+---
+
+## Windows Support
+
+Infinity FSM targets both **Android** and **Windows Desktop** from a single Flutter codebase.
+
+| Capability | Android | Windows |
+|------------|---------|---------|
+| Full app shell | ✅ | ✅ |
+| NavigationRail desktop layout | — | ✅ |
+| GPS & maps | ✅ | ✅ (where hardware permits) |
+| Camera / photo capture | ✅ | ✅ |
+| Voice recording | ✅ | ✅ |
+| Voice playback | ✅ native | ✅ via **media_kit** backend |
+| Cloudinary media | ✅ | ✅ |
+| Offline sync | ✅ | ✅ |
+
+### Voice Playback on Windows
+
+Windows uses **`just_audio_media_kit`** with **`media_kit_libs_windows_audio`** as the playback backend for overtime voice notes. This is registered at app bootstrap in `mobile/lib/core/app/bootstrap.dart`.
+
+```bash
+cd mobile
+flutter pub get
+flutter run -d windows
+```
 
 ---
 
 ## Offline Support
 
-Infinity FSM is designed for unreliable field connectivity, with overtime as the primary offline-first workflow:
+Infinity FSM is designed for unreliable field connectivity:
 
-- **Offline overtime sessions** — start / checkpoint / end while offline
-- **Local storage** — SharedPreferences-backed caches and pending queues
-- **Automatic synchronization** — pending actions drain when the device reconnects
-- **Queue visibility** — offline / pending indicators in the UI
-- **Attendance offline hooks** — offline attendance records with later sync
-- **Connectivity awareness** — offline banners and soft-refresh behavior
-- **Repository interfaces** prepared for broader module offline expansion
+| Capability | Status |
+|------------|--------|
+| Offline overtime sessions (start / checkpoint / end) | ✅ Complete |
+| Local pending action queue | ✅ |
+| Automatic sync on reconnect | ✅ |
+| Upload policy–aware sync (Wi-Fi gating, manual) | ✅ |
+| Offline attendance capture | ✅ Hooks present |
+| Offline banners & queue indicators | ✅ |
+| Repository interfaces for broader offline expansion | ✅ Prepared |
 
-> Full offline execution for every module continues to expand; overtime is the most complete offline path today.
+> Overtime is the most complete offline path today. Other modules continue to expand offline coverage.
 
 ---
 
 ## Localization
 
 - **English (LTR)** and **Arabic (RTL)** via Flutter ARB + `gen-l10n`
-- Locale-aware dates and number formatting through shared formatters
-- Enterprise localization pass across primary modules
-- Localized Roles & Permissions (group titles, permission titles, and descriptions)
-- Consistent terminology for core modules (Dashboard, Attendance, Overtime, Work Orders, Inventory, Assets, Maintenance, Settings, etc.)
-- Human-friendly error mapping (`localizeAppMessage`) instead of raw API English on failure screens
+- Locale-aware dates and numbers through shared formatters
+- Localized RBAC permission names, groups, and descriptions
+- Localized audit event labels (`localize_audit_event`)
+- Human-friendly error mapping (`localizeAppMessage`) on failure screens
+- Complete EN/AR coverage for enterprise voice settings, presets, config lab, and cellular upload prompts
+
+```bash
+cd mobile
+flutter gen-l10n
+```
 
 ---
 
@@ -201,32 +361,33 @@ Infinity FSM is designed for unreliable field connectivity, with overtime as the
 
 ### Frontend
 
-| Technology | Role |
-|------------|------|
-| Flutter | Cross-platform UI (Android, Windows) |
-| Dart | Client language |
-| Material 3 | Design system (light / dark) |
-| flutter_bloc (Cubit) | State management |
-| get_it | Dependency injection |
-| Dio | HTTP client |
-| go_router | Navigation (`StatefulShellRoute`) |
+| Technology | Version / Role |
+|------------|----------------|
+| **Flutter** | 3.x · Cross-platform UI (Android, Windows) |
+| **Dart** | ^3.12 · Client language |
+| Material 3 | Design system (light / dark / system) |
+| **flutter_bloc (Cubit)** | State management |
+| **get_it** | Dependency injection |
+| **Dio** | HTTP client |
+| **go_router** | Navigation (`StatefulShellRoute`) |
 | flutter_map | OpenStreetMap rendering |
 | geolocator / geocoding | GPS + reverse geocoding |
+| record / just_audio | Voice recording & playback |
+| just_audio_media_kit | Windows playback backend |
 | SharedPreferences | Local preferences & offline caches |
 | flutter_secure_storage | Secure token storage |
-| local_auth | Biometric unlock (supported devices) |
-| Cloudinary-delivered media | Avatars, selfies, attachments |
+| image / image_picker | Photo capture & compression |
 
 ### Backend
 
-| Technology | Role |
-|------------|------|
-| Node.js 20+ | Runtime |
-| Express | HTTP API |
-| MongoDB Atlas / Mongoose | Primary database |
+| Technology | Version / Role |
+|------------|----------------|
+| **Node.js** | ≥ 20 · Runtime |
+| **Express** | ^4.21 · HTTP API |
+| **MongoDB** | Atlas / self-hosted · Mongoose ODM |
 | JWT | Access + refresh authentication |
-| Cloudinary | Cloud image / media storage |
-| Multer | Multipart upload handling |
+| **Cloudinary** | Cloud image / voice media storage |
+| exceljs | Enterprise Excel workbook generation |
 | Socket.IO | Realtime foundation |
 | Pino | Structured logging |
 | Helmet / rate limiting / CORS | API hardening |
@@ -235,19 +396,19 @@ Infinity FSM is designed for unreliable field connectivity, with overtime as the
 
 ## Architecture
 
-### Flutter — Clean Architecture
+### Design Principles
 
 ```
 Presentation  →  Pages / Widgets + Cubits (flutter_bloc)
 Domain        →  Entities, Use Cases, Repository interfaces
 Data          →  Models, Remote/Local datasources, Repository implementations
+Core          →  Config, network, theme, router, localization, DI, shared widgets
+Shared        →  Cross-feature presentation (profile, app shell helpers)
 ```
 
-Cross-cutting concerns live under `mobile/lib/core/` (config, network, theme, router, localization, shared widgets, DI).
+Each feature module under `mobile/lib/features/` follows this layering. Cross-cutting concerns live in `mobile/lib/core/`. Shared presentation utilities live in `mobile/lib/shared/`.
 
-Routing uses **`go_router`** with a **`StatefulShellRoute.indexedStack`** for the Desktop Shell and phone bottom navigation.
-
-### Backend — Modular API
+### Backend
 
 ```
 Routes → Validators → Controllers → Services → Mongoose Models
@@ -260,12 +421,55 @@ Auth & JWT                             Attendance
 RBAC / Permissions                     Overtime (+ travel OT)
 Organization hierarchy                 Work Orders
 Settings / Configuration               Inventory
-Notifications foundation               Assets
+Notifications                          Assets
 Audit logging                          Preventive Maintenance
 File storage (Cloudinary)              Service Reports
 Maps / GPS utilities                   Dashboard analytics
 Sync foundations                       User Management
 ```
+
+### Folder Tree
+
+```
+infinity-fsm/
+├── backend/
+│   ├── src/
+│   │   ├── config/                    # Env, Cloudinary, database
+│   │   ├── modules/
+│   │   │   ├── core/                  # auth, rbac, settings, audit, dashboard, users, …
+│   │   │   └── business/              # attendance, overtime, work-orders, inventory, …
+│   │   ├── routes/                    # /api/v1 mounting
+│   │   └── shared/                    # middleware, errors, utils
+│   ├── scripts/                       # seed & migrations
+│   └── .env.example
+├── mobile/
+│   ├── lib/
+│   │   ├── core/                      # config · network · theme · router · l10n · DI · widgets
+│   │   ├── features/                  # Clean Architecture feature modules
+│   │   │   ├── auth/
+│   │   │   ├── dashboard/
+│   │   │   ├── attendance/
+│   │   │   ├── overtime/
+│   │   │   ├── work_orders/
+│   │   │   ├── inventory/
+│   │   │   ├── assets/
+│   │   │   ├── service_reports/
+│   │   │   ├── reports_center/
+│   │   │   ├── notifications/
+│   │   │   ├── global_search/
+│   │   │   ├── settings/
+│   │   │   └── …
+│   │   └── shared/                    # profile, cross-feature widgets
+│   ├── windows/                       # Desktop runner
+│   └── assets/
+├── docs/                              # Architecture & API documentation
+├── infra/                             # Docker / CI / deployment planning
+├── screenshots/                       # README screenshot placeholders
+├── README.md
+└── LICENSE
+```
+
+Routing uses **`go_router`** with a **`StatefulShellRoute.indexedStack`** for the Desktop Shell and phone bottom navigation.
 
 ---
 
@@ -287,11 +491,13 @@ Sync foundations                       User Management
 | Tablet | `600–900` | Adaptive padding / compact rail |
 | Desktop | `≥ 900` | Extended `NavigationRail` |
 
-### Primary desktop modules
+### Primary Modules
 
-Dashboard · Attendance · Work Orders · Overtime · Profile · Inventory · Assets · Preventive Maintenance · Service Reports · User Management · Roles & Permissions · Settings
+Dashboard · Attendance · Work Orders · Overtime · Profile · Inventory · Assets · Preventive Maintenance · Service Reports · Reports Center · User Management · Roles & Permissions · Settings
 
 Phone bottom navigation focuses on day-to-day modules: Dashboard, Attendance, Work Orders, Overtime, Profile.
+
+Global search and the notification bell are available from the dashboard app bar.
 
 ---
 
@@ -300,14 +506,17 @@ Phone bottom navigation focuses on day-to-day modules: Dashboard, Attendance, Wo
 > Replace placeholders in `/screenshots` with real captures before publishing.  
 > See [screenshots/README.md](./screenshots/README.md) for suggested filenames.
 
-### Mobile / general
+### Mobile / General
 
 | Screen | Light | Dark |
 |--------|-------|------|
 | Login | ![Login](./screenshots/login.png) | ![Login Dark](./screenshots/login-dark.png) |
 | Dashboard | ![Dashboard](./screenshots/dashboard.png) | ![Dashboard Dark](./screenshots/dashboard-dark.png) |
+| Notification Center | ![Notifications](./screenshots/notifications.png) | |
+| Reports Center | ![Reports Center](./screenshots/reports-center.png) | |
 | Attendance | ![Attendance](./screenshots/attendance.png) | |
 | Overtime Journey | ![Overtime](./screenshots/overtime.png) | |
+| Voice Notes | ![Voice Notes](./screenshots/voice-notes.png) | |
 | Work Orders | ![Work Orders](./screenshots/work-orders.png) | |
 | Inventory | ![Inventory](./screenshots/inventory.png) | |
 | Assets | ![Assets](./screenshots/assets.png) | |
@@ -315,6 +524,14 @@ Phone bottom navigation focuses on day-to-day modules: Dashboard, Attendance, Wo
 | Service Reports | ![Reports](./screenshots/reports.png) | |
 | Roles & Permissions | ![Roles](./screenshots/roles.png) | |
 | Settings / Theme | ![Settings](./screenshots/settings.png) | |
+
+### Enterprise Features (placeholders)
+
+| Screen | Capture |
+|--------|---------|
+| Voice Notes Settings | ![Voice Settings](./screenshots/voice-settings.png) |
+| Configuration Testing Lab | ![Config Lab](./screenshots/config-lab.png) |
+| Excel Export | ![Excel Export](./screenshots/excel-export.png) |
 
 ### Desktop (placeholders)
 
@@ -338,7 +555,7 @@ infinity-fsm/
 │   ├── src/
 │   │   ├── config/               # Env, Cloudinary, DB
 │   │   ├── modules/
-│   │   │   ├── core/             # auth, rbac, organization, settings, dashboard, users, ...
+│   │   │   ├── core/             # auth, rbac, organization, settings, audit, dashboard, users, …
 │   │   │   └── business/         # attendance, overtime, work-orders, inventory, assets, pm, reports
 │   │   ├── routes/               # /api/v1 mounting
 │   │   └── shared/               # middleware, errors, utils, constants
@@ -520,7 +737,7 @@ See [docs/API.md](./docs/API.md) for the full catalog.
 - Device clock skew detection
 - Mandatory live camera capture for attendance / overtime evidence
 - GPS accuracy thresholds
-- Audit logging foundation
+- Server-side audit logging for settings and operational events
 - Secrets via environment variables only
 - Biometric-gated Server Management access on supported devices
 
@@ -530,11 +747,11 @@ See [docs/API.md](./docs/API.md) for the full catalog.
 
 | Role | Typical scope |
 |------|----------------|
-| **Admin** | Company-wide configuration, users, roles, inventory, assets, PM, reports |
-| **Supervisor** | Team attendance, overtime review, work order oversight |
-| **Technician** | Self attendance, overtime, assigned work orders |
+| **Admin** | Company-wide configuration, users, roles, inventory, assets, PM, reports, voice settings |
+| **Supervisor** | Team attendance, overtime review, work order oversight, Excel export |
+| **Technician** | Self attendance, overtime capture, assigned work orders |
 
-User Management and Roles & Permissions are **top-level Desktop Shell modules**. Settings focuses on theme, language, notifications, organization, diagnostics, and about.
+User Management and Roles & Permissions are **top-level Desktop Shell modules**. Settings covers theme, language, notifications, organization, overtime media settings, diagnostics, and about.
 
 The Roles UI presents localized permission groups with searchable titles and one-sentence descriptions so non-technical administrators can understand each grant.
 
@@ -542,49 +759,37 @@ See [docs/RBAC.md](./docs/RBAC.md).
 
 ---
 
-## Latest Improvements
-
-Recent product and UX work reflected in the current codebase:
-
-- Offline overtime queue, local persistence, and automatic sync
-- Journey Overview map (markers, polyline, legend) + Journey Timeline
-- Multi-stage overtime checkpoints with GPS / battery / network / address / selfie evidence
-- Interactive desktop overtime detail (timeline ↔ map focus)
-- Runtime **Server Management** (API URL switching without rebuild)
-- Enterprise Settings hub (theme, language, notifications, organization, performance, diagnostics, update center, about)
-- Theme Preview redesign (visual showcase only; app theme controlled solely by the top selector)
-- Full localization audit (EN / AR, RTL / LTR)
-- Enterprise RBAC localization (permission names, descriptions, groups, search, tooltips)
-- Desktop Shell / NavigationRail polish and responsive settings layouts
-- Avatar upload and profile presentation improvements
-- Biometric protection for sensitive settings entry points
-- Dark mode polish across Material 3 surfaces
-- Human-friendly error localization on failure screens
-
----
-
 ## Roadmap
 
 ### Completed
 
-- [x] Platform core (auth, RBAC, organization, settings)
-- [x] Attendance with GPS + live selfie verification
-- [x] Offline-first overtime journey + admin review
-- [x] Work Orders, Inventory, Assets, PM, Service Reports
-- [x] Desktop Shell + responsive Material 3 UI
-- [x] Arabic / English localization with RTL
-- [x] Cloudinary media pipeline
-- [x] Runtime Server Management & diagnostics
-- [x] Localized Roles & Permissions UX
+- ✅ Voice Notes (four-stage, Cloudinary, offline, enterprise settings)
+- ✅ Notification Center
+- ✅ Global Search
+- ✅ Reports Center
+- ✅ Enterprise Excel Export (Summary · Sessions Index · detailed sheets)
+- ✅ Platform core (auth, RBAC, organization, settings)
+- ✅ Attendance with GPS + live selfie verification
+- ✅ Offline-first overtime journey + admin review
+- ✅ Work Orders, Inventory, Assets, PM, Service Reports
+- ✅ Desktop Shell + responsive Material 3 UI
+- ✅ Arabic / English localization with RTL
+- ✅ Cloudinary media pipeline
+- ✅ Runtime Server Management & diagnostics
+- ✅ Localized Roles & Permissions UX
 
-### Planned
+### In Progress
 
-- [ ] Deeper offline sync and conflict resolution across remaining modules
-- [ ] Push notifications (FCM / APNs)
-- [ ] Advanced analytics and payroll exports
-- [ ] Vehicles module UI
-- [ ] Expanded scheduling and customer CRM
-- [ ] Hardened production deployment (Docker, CI/CD, monitoring)
+- Dashboard Analytics (expanded KPIs, charts, live activity)
+
+### Future
+
+- Real-time Monitoring
+- Advanced Asset Analytics
+- Maintenance Scheduling AI
+- Deeper offline sync across remaining modules
+- Push notifications (FCM / APNs)
+- Hardened production deployment (Docker, CI/CD, monitoring)
 
 See [docs/ROADMAP.md](./docs/ROADMAP.md) and [docs/FUTURE_IMPROVEMENTS.md](./docs/FUTURE_IMPROVEMENTS.md).
 

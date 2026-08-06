@@ -43,6 +43,18 @@ String localizeAuditEvent(AppLocalizations l10n, String? action) {
       return l10n.eventAuthLogout;
     case 'auth.token_refreshed':
       return l10n.eventAuthTokenRefreshed;
+    case 'SETTINGS_OVERTIME_VOICE_DURATION_CHANGED':
+      return l10n.auditOvertimeVoiceDurationChangedGeneric;
+    case 'SETTINGS_OVERTIME_VOICE_QUALITY_CHANGED':
+      return l10n.auditOvertimeVoiceQualityChangedGeneric;
+    case 'SETTINGS_OVERTIME_UPLOAD_POLICY_CHANGED':
+      return l10n.auditOvertimeUploadPolicyChangedGeneric;
+    case 'SETTINGS_OVERTIME_MAX_PHOTO_SIZE_CHANGED':
+      return l10n.auditOvertimeMaxPhotoSizeChangedGeneric;
+    case 'SETTINGS_OVERTIME_PRESET_APPLIED':
+      return l10n.auditOvertimePresetAppliedGeneric;
+    case 'SETTINGS_OVERTIME_RESTORED_DEFAULTS':
+      return l10n.auditOvertimeRestoredDefaults;
   }
 
   final module = raw.contains('.') ? raw.split('.').first.toLowerCase() : '';

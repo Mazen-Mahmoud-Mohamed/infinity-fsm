@@ -7,6 +7,7 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
@@ -61,6 +62,8 @@ class OvertimeJourneyTimeline extends StatelessWidget {
   const OvertimeJourneyTimeline({
     super.key,
     required this.session,
+    this.maxDurationSeconds = OvertimeMediaConfig.defaultMaxDurationSeconds,
+    this.voiceRecordingQuality = OvertimeMediaConfig.defaultVoiceQuality,
     this.compact = false,
     this.pendingActions = const [],
     this.isOffline = false,
@@ -72,6 +75,8 @@ class OvertimeJourneyTimeline extends StatelessWidget {
   });
 
   final OvertimeSession session;
+  final int maxDurationSeconds;
+  final String voiceRecordingQuality;
   final bool compact;
 
   /// Queued offline actions for this device — used to render per-stage
@@ -122,6 +127,8 @@ class OvertimeJourneyTimeline extends StatelessWidget {
           for (var i = 0; i < stages.length; i++) ...[
             _TimelineStageTile(
               stage: stages[i],
+              maxDurationSeconds: maxDurationSeconds,
+              voiceRecordingQuality: voiceRecordingQuality,
               checkpoint: _checkpointFor(session, stages[i]),
               isNext: session.isRunning &&
                   session.effectiveNextCheckpoint == stages[i],
@@ -431,6 +438,8 @@ class _SyncBadgeChip extends StatelessWidget {
 class _TimelineStageTile extends StatelessWidget {
   const _TimelineStageTile({
     required this.stage,
+    required this.maxDurationSeconds,
+    required this.voiceRecordingQuality,
     required this.checkpoint,
     required this.isNext,
     required this.compact,
@@ -448,6 +457,8 @@ class _TimelineStageTile extends StatelessWidget {
   static const double _desktopPhotoHeight = 200;
 
   final OvertimeCheckpointStage stage;
+  final int maxDurationSeconds;
+  final String voiceRecordingQuality;
   final OvertimeCheckpoint? checkpoint;
   final bool isNext;
   final bool compact;
@@ -643,6 +654,8 @@ class _TimelineStageTile extends StatelessWidget {
                           )) ...[
                             const SizedBox(height: AppSpacing.md),
                             OvertimeVoiceNoteSection(
+                              maxDurationSeconds: maxDurationSeconds,
+                              voiceRecordingQuality: voiceRecordingQuality,
                               remoteUrl: _remoteVoiceUrl(checkpoint!.voiceNote),
                               localBytes: pendingAction?.voiceBytes.isNotEmpty ==
                                       true

@@ -3584,6 +3584,588 @@ abstract class AppLocalizations {
   /// **'Company information'**
   String get settingsCompanyInformation;
 
+  /// No description provided for @settingsOvertimeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime Settings'**
+  String get settingsOvertimeTitle;
+
+  /// No description provided for @settingsOvertimeVoiceNotesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Notes'**
+  String get settingsOvertimeVoiceNotesTitle;
+
+  /// No description provided for @settingsOvertimeVoiceNotesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure optional voice notes for overtime journey stages.'**
+  String get settingsOvertimeVoiceNotesSubtitle;
+
+  /// No description provided for @settingsOvertimeVoiceMaxDurationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Voice Recording Duration'**
+  String get settingsOvertimeVoiceMaxDurationTitle;
+
+  /// No description provided for @settingsOvertimeVoiceMaxDurationSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum length allowed for each voice note recorded during an overtime stage.'**
+  String get settingsOvertimeVoiceMaxDurationSubtitle;
+
+  /// No description provided for @settingsOvertimeVoiceDurationMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} Minutes'**
+  String settingsOvertimeVoiceDurationMinutes(int minutes);
+
+  /// No description provided for @settingsOvertimeVoiceCurrentValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Current value: {value}'**
+  String settingsOvertimeVoiceCurrentValue(String value);
+
+  /// No description provided for @settingsOvertimeVoiceQualityTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Recording Quality'**
+  String get settingsOvertimeVoiceQualityTitle;
+
+  /// No description provided for @settingsOvertimeVoiceQualitySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio quality used when technicians record voice notes during overtime.'**
+  String get settingsOvertimeVoiceQualitySubtitle;
+
+  /// No description provided for @settingsOvertimeVoiceQualityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get settingsOvertimeVoiceQualityHigh;
+
+  /// No description provided for @settingsOvertimeVoiceQualityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get settingsOvertimeVoiceQualityMedium;
+
+  /// No description provided for @settingsOvertimeVoiceQualityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get settingsOvertimeVoiceQualityLow;
+
+  /// No description provided for @settingsOvertimeMaxPhotoSizeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Uploaded Photo Size'**
+  String get settingsOvertimeMaxPhotoSizeTitle;
+
+  /// No description provided for @settingsOvertimeMaxPhotoSizeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos are compressed before upload to stay within this limit whenever possible.'**
+  String get settingsOvertimeMaxPhotoSizeSubtitle;
+
+  /// No description provided for @settingsOvertimeMaxPhotoSizeMb.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String settingsOvertimeMaxPhotoSizeMb(int size);
+
+  /// No description provided for @settingsOvertimeMaxPhotoSizeOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get settingsOvertimeMaxPhotoSizeOriginal;
+
+  /// No description provided for @settingsOvertimeUploadPolicyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Policy'**
+  String get settingsOvertimeUploadPolicyTitle;
+
+  /// No description provided for @settingsOvertimeUploadPolicyImmediately.
+  ///
+  /// In en, this message translates to:
+  /// **'Immediately'**
+  String get settingsOvertimeUploadPolicyImmediately;
+
+  /// No description provided for @settingsOvertimeUploadPolicyImmediatelyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload checkpoints as soon as a network connection is available.'**
+  String get settingsOvertimeUploadPolicyImmediatelyHint;
+
+  /// No description provided for @settingsOvertimeUploadPolicyWifiPreferred.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi Preferred'**
+  String get settingsOvertimeUploadPolicyWifiPreferred;
+
+  /// No description provided for @settingsOvertimeUploadPolicyWifiPreferredHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload immediately on Wi-Fi. On mobile data, queue until Wi-Fi is available. Technicians can force upload manually.'**
+  String get settingsOvertimeUploadPolicyWifiPreferredHint;
+
+  /// No description provided for @settingsOvertimeUploadPolicyManual.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual'**
+  String get settingsOvertimeUploadPolicyManual;
+
+  /// No description provided for @settingsOvertimeUploadPolicyManualHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Always queue uploads. Sync happens only when the technician presses Sync Now.'**
+  String get settingsOvertimeUploadPolicyManualHint;
+
+  /// No description provided for @settingsOvertimeUploadPolicyWifiOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi Only'**
+  String get settingsOvertimeUploadPolicyWifiOnly;
+
+  /// No description provided for @settingsOvertimeUploadPolicyWifiOnlyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Never upload using mobile data. Queue until Wi-Fi is available.'**
+  String get settingsOvertimeUploadPolicyWifiOnlyHint;
+
+  /// No description provided for @settingsOvertimeUploadPolicyAskEveryTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Ask Every Time'**
+  String get settingsOvertimeUploadPolicyAskEveryTime;
+
+  /// No description provided for @settingsOvertimeUploadPolicyAskEveryTimeHint.
+  ///
+  /// In en, this message translates to:
+  /// **'When uploading on mobile data, ask the technician each time.'**
+  String get settingsOvertimeUploadPolicyAskEveryTimeHint;
+
+  /// No description provided for @settingsOvertimeQualityEstimatePerMinute.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {size} / minute'**
+  String settingsOvertimeQualityEstimatePerMinute(String size);
+
+  /// No description provided for @settingsOvertimeEstimatedMaxFileSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Maximum File Size: ≈ {size}'**
+  String settingsOvertimeEstimatedMaxFileSize(String size);
+
+  /// No description provided for @settingsOvertimeEstimateKb.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {size} KB'**
+  String settingsOvertimeEstimateKb(int size);
+
+  /// No description provided for @settingsOvertimeEstimateMb.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {size} MB'**
+  String settingsOvertimeEstimateMb(String size);
+
+  /// No description provided for @settingsOvertimeEstimateTotalMb.
+  ///
+  /// In en, this message translates to:
+  /// **'≈ {size} MB'**
+  String settingsOvertimeEstimateTotalMb(String size);
+
+  /// No description provided for @settingsOvertimeFileSizeKb.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} KB'**
+  String settingsOvertimeFileSizeKb(int size);
+
+  /// No description provided for @settingsOvertimeFileSizeMb.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String settingsOvertimeFileSizeMb(String size);
+
+  /// No description provided for @settingsOvertimeFileSizeBytes.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} bytes'**
+  String settingsOvertimeFileSizeBytes(int size);
+
+  /// No description provided for @settingsOvertimeLargeRecordingWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Large recordings may increase upload time and mobile data usage.'**
+  String get settingsOvertimeLargeRecordingWarning;
+
+  /// No description provided for @settingsOvertimePresetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration Preset'**
+  String get settingsOvertimePresetTitle;
+
+  /// No description provided for @settingsOvertimePresetSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply a recommended profile or customize individual settings.'**
+  String get settingsOvertimePresetSubtitle;
+
+  /// No description provided for @settingsOvertimePresetOffice.
+  ///
+  /// In en, this message translates to:
+  /// **'Office'**
+  String get settingsOvertimePresetOffice;
+
+  /// No description provided for @settingsOvertimePresetFieldService.
+  ///
+  /// In en, this message translates to:
+  /// **'Field Service'**
+  String get settingsOvertimePresetFieldService;
+
+  /// No description provided for @settingsOvertimePresetHeavyMaintenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Heavy Maintenance'**
+  String get settingsOvertimePresetHeavyMaintenance;
+
+  /// No description provided for @settingsOvertimePresetCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get settingsOvertimePresetCustom;
+
+  /// No description provided for @settingsOvertimeRestoreDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Defaults'**
+  String get settingsOvertimeRestoreDefaults;
+
+  /// No description provided for @settingsOvertimeRestoreDialogTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore Voice Settings?'**
+  String get settingsOvertimeRestoreDialogTitle;
+
+  /// No description provided for @settingsOvertimeRestoreDialogBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This will restore:\n• Recording Duration: 5 Minutes\n• Recording Quality: Medium\n• Maximum Photo Size: 2 MB\n• Upload Policy: Immediately'**
+  String get settingsOvertimeRestoreDialogBody;
+
+  /// No description provided for @settingsOvertimeRestoreConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get settingsOvertimeRestoreConfirm;
+
+  /// No description provided for @settingsOvertimeConfigTestingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration Testing'**
+  String get settingsOvertimeConfigTestingTitle;
+
+  /// No description provided for @settingsOvertimeConfigTestingSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview the impact of current settings. Nothing is uploaded or saved.'**
+  String get settingsOvertimeConfigTestingSubtitle;
+
+  /// No description provided for @settingsOvertimeVoiceTestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Recording Test'**
+  String get settingsOvertimeVoiceTestTitle;
+
+  /// No description provided for @settingsOvertimeVoiceTestRecord.
+  ///
+  /// In en, this message translates to:
+  /// **'Test Voice Recording'**
+  String get settingsOvertimeVoiceTestRecord;
+
+  /// No description provided for @settingsOvertimeVoiceTestPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get settingsOvertimeVoiceTestPlay;
+
+  /// No description provided for @settingsOvertimeVoiceTestDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get settingsOvertimeVoiceTestDelete;
+
+  /// No description provided for @settingsOvertimeVoiceTestRecordAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Record Again'**
+  String get settingsOvertimeVoiceTestRecordAgain;
+
+  /// No description provided for @settingsOvertimeVoiceTestTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'{elapsed} / {max}'**
+  String settingsOvertimeVoiceTestTimer(String elapsed, String max);
+
+  /// No description provided for @settingsOvertimeVoiceTestDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording Duration'**
+  String get settingsOvertimeVoiceTestDuration;
+
+  /// No description provided for @settingsOvertimeVoiceTestEstimatedSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Size'**
+  String get settingsOvertimeVoiceTestEstimatedSize;
+
+  /// No description provided for @settingsOvertimeVoiceTestActualSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Actual File Size'**
+  String get settingsOvertimeVoiceTestActualSize;
+
+  /// No description provided for @settingsOvertimeVoiceTestEncoding.
+  ///
+  /// In en, this message translates to:
+  /// **'Encoding Format'**
+  String get settingsOvertimeVoiceTestEncoding;
+
+  /// No description provided for @settingsOvertimeVoiceTestBitrate.
+  ///
+  /// In en, this message translates to:
+  /// **'Bitrate'**
+  String get settingsOvertimeVoiceTestBitrate;
+
+  /// No description provided for @settingsOvertimeVoiceTestSampleRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Sample Rate'**
+  String get settingsOvertimeVoiceTestSampleRate;
+
+  /// No description provided for @settingsOvertimeVoiceTestBitrateKbps.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate} kbps'**
+  String settingsOvertimeVoiceTestBitrateKbps(int rate);
+
+  /// No description provided for @settingsOvertimeVoiceTestSampleRateKhz.
+  ///
+  /// In en, this message translates to:
+  /// **'{rate} kHz'**
+  String settingsOvertimeVoiceTestSampleRateKhz(int rate);
+
+  /// No description provided for @settingsOvertimePhotoTestTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photo Compression Test'**
+  String get settingsOvertimePhotoTestTitle;
+
+  /// No description provided for @settingsOvertimePhotoTestCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Take Photo'**
+  String get settingsOvertimePhotoTestCamera;
+
+  /// No description provided for @settingsOvertimePhotoTestGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose from Gallery'**
+  String get settingsOvertimePhotoTestGallery;
+
+  /// No description provided for @settingsOvertimePhotoTestOriginal.
+  ///
+  /// In en, this message translates to:
+  /// **'Original'**
+  String get settingsOvertimePhotoTestOriginal;
+
+  /// No description provided for @settingsOvertimePhotoTestCompressed.
+  ///
+  /// In en, this message translates to:
+  /// **'Compressed'**
+  String get settingsOvertimePhotoTestCompressed;
+
+  /// No description provided for @settingsOvertimePhotoTestSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Split View'**
+  String get settingsOvertimePhotoTestSplit;
+
+  /// No description provided for @settingsOvertimePhotoTestResolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Resolution: {width} × {height}'**
+  String settingsOvertimePhotoTestResolution(int width, int height);
+
+  /// No description provided for @settingsOvertimePhotoTestCompressionRatio.
+  ///
+  /// In en, this message translates to:
+  /// **'Compression Ratio: {percent}%'**
+  String settingsOvertimePhotoTestCompressionRatio(int percent);
+
+  /// No description provided for @settingsOvertimePhotoTestEstimatedUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Upload Size: {size}'**
+  String settingsOvertimePhotoTestEstimatedUpload(String size);
+
+  /// No description provided for @settingsOvertimePhotoTestChooseAnother.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose Another Photo'**
+  String get settingsOvertimePhotoTestChooseAnother;
+
+  /// No description provided for @settingsOvertimePhotoTestRetest.
+  ///
+  /// In en, this message translates to:
+  /// **'Retest'**
+  String get settingsOvertimePhotoTestRetest;
+
+  /// No description provided for @settingsOvertimePhotoTestDeletePreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Preview'**
+  String get settingsOvertimePhotoTestDeletePreview;
+
+  /// No description provided for @settingsOvertimePerformanceInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Performance Information'**
+  String get settingsOvertimePerformanceInfoTitle;
+
+  /// No description provided for @settingsOvertimePerformanceVoiceMaxDuration.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum Duration'**
+  String get settingsOvertimePerformanceVoiceMaxDuration;
+
+  /// No description provided for @settingsOvertimePerformanceVoiceMaxSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Maximum Size'**
+  String get settingsOvertimePerformanceVoiceMaxSize;
+
+  /// No description provided for @settingsOvertimePerformancePhotoMaxSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Average Maximum Size'**
+  String get settingsOvertimePerformancePhotoMaxSize;
+
+  /// No description provided for @settingsOvertimePerformancePhotoAverageMb.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String settingsOvertimePerformancePhotoAverageMb(int size);
+
+  /// No description provided for @settingsOvertimePerformanceTotalUpload.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated Total Upload'**
+  String get settingsOvertimePerformanceTotalUpload;
+
+  /// No description provided for @overtimeVoiceSettingsInfoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice Recording Settings'**
+  String get overtimeVoiceSettingsInfoTitle;
+
+  /// No description provided for @overtimeCellularUploadTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload Now?'**
+  String get overtimeCellularUploadTitle;
+
+  /// No description provided for @overtimeCellularUploadMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You are using mobile data. How would you like to upload this checkpoint?'**
+  String get overtimeCellularUploadMessage;
+
+  /// No description provided for @overtimeCellularUploadWifiOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi Only'**
+  String get overtimeCellularUploadWifiOnly;
+
+  /// No description provided for @overtimeCellularUploadMobileData.
+  ///
+  /// In en, this message translates to:
+  /// **'Mobile Data'**
+  String get overtimeCellularUploadMobileData;
+
+  /// No description provided for @overtimeCellularUploadLater.
+  ///
+  /// In en, this message translates to:
+  /// **'Later'**
+  String get overtimeCellularUploadLater;
+
+  /// No description provided for @auditOvertimeVoiceDurationChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed voice recording duration from {before} to {after}'**
+  String auditOvertimeVoiceDurationChanged(String before, String after);
+
+  /// No description provided for @auditOvertimeVoiceQualityChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed voice quality from {before} to {after}'**
+  String auditOvertimeVoiceQualityChanged(String before, String after);
+
+  /// No description provided for @auditOvertimeUploadPolicyChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed upload policy from {before} to {after}'**
+  String auditOvertimeUploadPolicyChanged(String before, String after);
+
+  /// No description provided for @auditOvertimeMaxPhotoSizeChanged.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed maximum photo size from {before} to {after}'**
+  String auditOvertimeMaxPhotoSizeChanged(String before, String after);
+
+  /// No description provided for @auditOvertimePresetApplied.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied configuration preset: {preset}'**
+  String auditOvertimePresetApplied(String preset);
+
+  /// No description provided for @auditOvertimeRestoredDefaults.
+  ///
+  /// In en, this message translates to:
+  /// **'Restored voice settings to defaults'**
+  String get auditOvertimeRestoredDefaults;
+
+  /// No description provided for @auditOvertimeVoiceDurationChangedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed voice recording duration'**
+  String get auditOvertimeVoiceDurationChangedGeneric;
+
+  /// No description provided for @auditOvertimeVoiceQualityChangedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed voice recording quality'**
+  String get auditOvertimeVoiceQualityChangedGeneric;
+
+  /// No description provided for @auditOvertimeUploadPolicyChangedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed upload policy'**
+  String get auditOvertimeUploadPolicyChangedGeneric;
+
+  /// No description provided for @auditOvertimeMaxPhotoSizeChangedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Changed maximum photo size'**
+  String get auditOvertimeMaxPhotoSizeChangedGeneric;
+
+  /// No description provided for @auditOvertimePresetAppliedGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Applied configuration preset'**
+  String get auditOvertimePresetAppliedGeneric;
+
   /// No description provided for @settingsCompanyLogo.
   ///
   /// In en, this message translates to:
@@ -4883,8 +5465,20 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeVoiceMaxDurationHint.
   ///
   /// In en, this message translates to:
-  /// **'Optional. Maximum 2 minutes.'**
-  String get overtimeVoiceMaxDurationHint;
+  /// **'Optional. Maximum {minutes} minutes.'**
+  String overtimeVoiceMaxDurationHint(int minutes);
+
+  /// No description provided for @overtimeVoiceLimitWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording will stop in 30 seconds.'**
+  String get overtimeVoiceLimitWarning;
+
+  /// No description provided for @overtimeVoiceMaxRecordingInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum recording: {minutes} minutes'**
+  String overtimeVoiceMaxRecordingInfo(int minutes);
 
   /// No description provided for @overtimeVoicePermissionDenied.
   ///

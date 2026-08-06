@@ -14,4 +14,12 @@ abstract class SettingsRepository {
   });
 
   Future<Result<SystemInfo>> getSystemInfo();
+
+  Future<Result<OvertimeSettings>> getOvertimeSettings();
+
+  Future<Result<OvertimeSettings>> updateOvertimeSettings(
+    OvertimeSettingsUpdate input,
+  );
+
+  Future<Result<OvertimeMediaConfigEntity>> getOvertimeMediaConfig();
 }

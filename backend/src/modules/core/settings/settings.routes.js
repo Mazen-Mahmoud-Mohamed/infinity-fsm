@@ -5,7 +5,10 @@ import { validate } from '../../../shared/middleware/validate.middleware.js';
 import { upload } from '../../../config/multer.config.js';
 import PERMISSIONS from '../../../shared/constants/permissions.constants.js';
 import * as settingsController from './settings.controller.js';
-import { updateOrganizationSettingsValidator } from './settings.validator.js';
+import {
+  updateOrganizationSettingsValidator,
+  updateOvertimeSettingsValidator,
+} from './settings.validator.js';
 
 const router = Router();
 
@@ -35,6 +38,29 @@ router.get(
   '/system',
   requirePermission(PERMISSIONS.SETTINGS_VIEW),
   settingsController.getSystemInfo
+);
+
+router.get(
+  '/overtime/config',
+  settingsController.getOvertimeMediaConfig
+);
+
+router.get(
+  '/overtime/voice-duration',
+  settingsController.getOvertimeVoiceDurationConfig
+);
+
+router.get(
+  '/overtime',
+  requirePermission(PERMISSIONS.SETTINGS_VIEW),
+  settingsController.getOvertimeSettings
+);
+
+router.put(
+  '/overtime',
+  requirePermission(PERMISSIONS.SETTINGS_MANAGE),
+  validate(updateOvertimeSettingsValidator),
+  settingsController.updateOvertimeSettings
 );
 
 export default router;

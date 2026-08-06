@@ -29,3 +29,27 @@ export const getSystemInfo = asyncHandler(async (req, res) => {
   const data = await settingsService.getSystemInfo(req.user, req.auth);
   sendSuccess(res, data);
 });
+
+export const getOvertimeSettings = asyncHandler(async (req, res) => {
+  const data = await settingsService.getOvertimeSettings(req.user, req.auth);
+  sendSuccess(res, data);
+});
+
+export const updateOvertimeSettings = asyncHandler(async (req, res) => {
+  const data = await settingsService.updateOvertimeSettings(
+    req.user,
+    req.auth,
+    req.body
+  );
+  sendSuccess(res, data);
+});
+
+export const getOvertimeVoiceDurationConfig = asyncHandler(async (req, res) => {
+  const data = await settingsService.getOvertimeVoiceDurationConfig(req.user);
+  sendSuccess(res, data);
+});
+
+export const getOvertimeMediaConfig = asyncHandler(async (req, res) => {
+  const data = await settingsService.getOvertimeMediaConfig(req.user);
+  sendSuccess(res, data);
+});

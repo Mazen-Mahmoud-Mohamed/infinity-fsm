@@ -1,3 +1,4 @@
+import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 
 class OrganizationSettingsModel extends OrganizationSettings {
@@ -80,3 +81,107 @@ class SystemInfoModel extends SystemInfo {
     );
   }
 }
+
+class OvertimeSettingsModel extends OvertimeSettings {
+  const OvertimeSettingsModel({
+    required super.voiceMaxDurationSeconds,
+    required super.voiceDurationOptionsSeconds,
+    required super.voiceRecordingQuality,
+    required super.voiceQualityOptions,
+    required super.maxPhotoSize,
+    required super.maxPhotoSizeOptions,
+    required super.uploadPolicy,
+    required super.uploadPolicyOptions,
+    super.configurationPreset,
+  });
+
+  factory OvertimeSettingsModel.fromJson(Map<String, dynamic> json) {
+    final durationOptionsRaw = json['voiceDurationOptionsSeconds'];
+    final durationOptions = durationOptionsRaw is List
+        ? durationOptionsRaw
+            .map((e) => (e as num?)?.toInt())
+            .whereType<int>()
+            .toList()
+        : OvertimeMediaConfig.durationOptionsSeconds;
+
+    final qualityOptionsRaw = json['voiceQualityOptions'];
+    final qualityOptions = qualityOptionsRaw is List
+        ? qualityOptionsRaw.map((e) => e.toString()).toList()
+        : OvertimeMediaConfig.voiceQualityOptions;
+
+    final photoOptionsRaw = json['maxPhotoSizeOptions'];
+    final photoOptions = photoOptionsRaw is List
+        ? photoOptionsRaw.map(_parsePhotoSize).toList()
+        : <Object>[
+            ...OvertimeMediaConfig.maxPhotoSizeOptionsMb,
+            OvertimeMediaConfig.maxPhotoSizeOriginal,
+          ];
+
+    final policyOptionsRaw = json['uploadPolicyOptions'];
+    final policyOptions = policyOptionsRaw is List
+        ? policyOptionsRaw.map((e) => e.toString()).toList()
+        : OvertimeMediaConfig.uploadPolicyOptions;
+
+    return OvertimeSettingsModel(
+      voiceMaxDurationSeconds: OvertimeMediaConfig.normalizeDurationSeconds(
+        (json['voiceMaxDurationSeconds'] as num?)?.toInt(),
+      ),
+      voiceDurationOptionsSeconds: durationOptions.isEmpty
+          ? OvertimeMediaConfig.durationOptionsSeconds
+          : durationOptions,
+      voiceRecordingQuality: OvertimeMediaConfig.normalizeVoiceQuality(
+        json['voiceRecordingQuality']?.toString(),
+      ),
+      voiceQualityOptions: qualityOptions.isEmpty
+          ? OvertimeMediaConfig.voiceQualityOptions
+          : qualityOptions,
+      maxPhotoSize: _parsePhotoSize(json['maxPhotoSize']),
+      maxPhotoSizeOptions: photoOptions.isEmpty
+          ? <Object>[
+              ...OvertimeMediaConfig.maxPhotoSizeOptionsMb,
+              OvertimeMediaConfig.maxPhotoSizeOriginal,
+            ]
+          : photoOptions,
+      uploadPolicy: OvertimeMediaConfig.normalizeUploadPolicy(
+        json['uploadPolicy']?.toString(),
+      ),
+      uploadPolicyOptions: policyOptions.isEmpty
+          ? OvertimeMediaConfig.uploadPolicyOptions
+          : policyOptions,
+      configurationPreset: json['configurationPreset']?.toString(),
+    );
+  }
+
+  static Object _parsePhotoSize(Object? value) {
+    return OvertimeMediaConfig.normalizeMaxPhotoSize(value);
+  }
+}
+
+class OvertimeMediaConfigModel extends OvertimeMediaConfigEntity {
+  const OvertimeMediaConfigModel({
+    required super.voiceMaxDurationSeconds,
+    required super.voiceRecordingQuality,
+    required super.maxPhotoSize,
+    required super.uploadPolicy,
+  });
+
+  factory OvertimeMediaConfigModel.fromJson(Map<String, dynamic> json) {
+    final seconds = (json['voiceMaxDurationSeconds'] as num?)?.toInt();
+    final legacyMinutes = (json['voiceMaxDurationMinutes'] as num?)?.toInt();
+    return OvertimeMediaConfigModel(
+      voiceMaxDurationSeconds: OvertimeMediaConfig.normalizeDurationSeconds(
+        seconds ?? (legacyMinutes != null ? legacyMinutes * 60 : null),
+      ),
+      voiceRecordingQuality: OvertimeMediaConfig.normalizeVoiceQuality(
+        json['voiceRecordingQuality']?.toString(),
+      ),
+      maxPhotoSize: OvertimeSettingsModel._parsePhotoSize(json['maxPhotoSize']),
+      uploadPolicy: OvertimeMediaConfig.normalizeUploadPolicy(
+        json['uploadPolicy']?.toString(),
+      ),
+    );
+  }
+}
+
+@Deprecated('Use OvertimeMediaConfigModel')
+typedef OvertimeVoiceDurationConfigModel = OvertimeMediaConfigModel;

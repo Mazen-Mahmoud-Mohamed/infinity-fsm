@@ -7,6 +7,7 @@ import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
 import 'package:mobile/features/overtime/domain/usecases/sync_pending_overtime_usecase.dart';
 import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 
@@ -55,10 +56,12 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
     required OvertimeRepository repository,
     required ConnectivityService connectivity,
     required GpsAddressSyncService gpsAddressSync,
+    required OvertimeUploadPolicyService uploadPolicy,
   })  : _syncUseCase = syncUseCase,
         _repository = repository,
         _connectivity = connectivity,
         _gpsAddressSync = gpsAddressSync,
+        _uploadPolicy = uploadPolicy,
         super(const OvertimeSyncState()) {
     _connectivitySubscription =
         _connectivity.onConnectivityChanged.listen((isOnline) {
@@ -85,6 +88,7 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
   final OvertimeRepository _repository;
   final ConnectivityService _connectivity;
   final GpsAddressSyncService _gpsAddressSync;
+  final OvertimeUploadPolicyService _uploadPolicy;
   StreamSubscription<bool>? _connectivitySubscription;
   Timer? _retryTimer;
   bool _isSyncing = false;
@@ -97,7 +101,7 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
     emit(state.copyWith(pendingCount: pending.length, pendingActions: pending));
   }
 
-  Future<void> syncNow() async {
+  Future<void> syncNow({bool force = false}) async {
     if (_isSyncing || isClosed) {
       OvertimeOfflineTrace.step(
         'SYNC_SCHEDULER',
@@ -114,6 +118,15 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
         detail: 'offline',
       );
       emit(state.copyWith(isOnline: false));
+      return;
+    }
+
+    if (!force && !await _uploadPolicy.shouldAutoSync()) {
+      OvertimeOfflineTrace.step(
+        'SYNC_SCHEDULER',
+        status: 'failure',
+        detail: 'upload policy deferred',
+      );
       return;
     }
 

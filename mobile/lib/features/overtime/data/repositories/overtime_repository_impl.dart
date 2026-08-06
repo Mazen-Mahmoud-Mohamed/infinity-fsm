@@ -17,6 +17,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_calculator.dart';
+import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
 
 class OvertimeRepositoryImpl implements OvertimeRepository {
   OvertimeRepositoryImpl({
@@ -25,17 +26,23 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required ConnectivityService connectivity,
     required AddressResolverService addressResolver,
     required GpsAddressSyncService gpsAddressSync,
+    required OvertimeUploadPolicyService uploadPolicy,
   })  : _remote = remote,
         _local = local,
         _connectivity = connectivity,
         _addressResolver = addressResolver,
-        _gpsAddressSync = gpsAddressSync;
+        _gpsAddressSync = gpsAddressSync,
+        _uploadPolicy = uploadPolicy;
 
   final OvertimeRemoteDataSource _remote;
   final OvertimeLocalDataSource _local;
   final ConnectivityService _connectivity;
   final AddressResolverService _addressResolver;
   final GpsAddressSyncService _gpsAddressSync;
+  final OvertimeUploadPolicyService _uploadPolicy;
+
+  Future<bool> _shouldAttemptRemoteUpload({bool force = false}) =>
+      _uploadPolicy.shouldAttemptImmediateUpload(force: force);
 
   bool _isConnectivityFailure(String? code) {
     return code == 'OFFLINE' ||
@@ -332,8 +339,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     int? batteryLevel,
     String? networkStatus,
   }) async {
-    final isOnline = await _connectivity.isConnected;
-    if (!isOnline) {
+    final shouldUpload = await _shouldAttemptRemoteUpload();
+    if (!shouldUpload) {
       return _queueStart(
         type: type,
         gps: gps,
@@ -480,8 +487,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       );
     }
 
-    final isOnline = await _connectivity.isConnected;
-    if (!isOnline) {
+    final shouldUpload = await _shouldAttemptRemoteUpload();
+    if (!shouldUpload) {
       return _queueCheckpoint(
         sessionId: sessionId,
         stage: stage,
@@ -666,8 +673,8 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     int? batteryLevel,
     String? networkStatus,
   }) async {
-    final isOnline = await _connectivity.isConnected;
-    if (!isOnline) {
+    final shouldUpload = await _shouldAttemptRemoteUpload();
+    if (!shouldUpload) {
       return _queueEnd(
         sessionId: sessionId,
         gps: gps,
