@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 
 class DashboardSection extends StatelessWidget {
   const DashboardSection({
@@ -23,9 +24,7 @@ class DashboardSection extends StatelessWidget {
             Expanded(
               child: Text(
                 title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: DashboardTypography.sectionTitle(context),
               ),
             ),
             ?trailing,

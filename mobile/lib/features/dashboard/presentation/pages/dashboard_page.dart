@@ -14,8 +14,10 @@ import 'package:mobile/features/attendance/presentation/widgets/attendance_summa
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard_cubit.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_dense_widgets.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_period_selector.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_sections.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
@@ -53,7 +55,10 @@ class _DashboardViewState extends State<_DashboardView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.dashboard),
+        title: Text(
+          l10n.dashboard,
+          style: DashboardTypography.pageTitle(context),
+        ),
         actions: [
           const GlobalSearchAction(),
           const NotificationsBellAction(),
@@ -168,30 +173,23 @@ class _DashboardScrollBody extends StatelessWidget {
     final authUser = context.select((AuthCubit cubit) => cubit.state.user);
 
     final children = <Widget>[
-      Text(
-        l10n.welcomeBack,
-        style: theme.textTheme.titleMedium?.copyWith(
-          color: theme.colorScheme.onSurfaceVariant,
+      DashboardPageHeader(
+        userName: authUser?.fullName ?? l10n.profile,
+        periodSelector: DashboardPeriodSelector(
+          period: state.period,
+          customFrom: state.customFrom,
+          customTo: state.customTo,
+          rangeFrom: summary != null && summary.period == state.period
+              ? summary.from
+              : null,
+          rangeTo: summary != null && summary.period == state.period
+              ? summary.to
+              : null,
+          onPeriodSelected: (period) =>
+              context.read<ExecutiveDashboardCubit>().setPeriod(period),
+          onCustomRangeSelected: (from, to) =>
+              context.read<ExecutiveDashboardCubit>().setCustomRange(from, to),
         ),
-      ),
-      const SizedBox(height: AppSpacing.xs),
-      Text(
-        authUser?.fullName ?? l10n.profile,
-        style: theme.textTheme.headlineSmall,
-      ),
-      const SizedBox(height: AppSpacing.md),
-      DashboardPeriodSelector(
-        period: state.period,
-        customFrom: state.customFrom,
-        customTo: state.customTo,
-        rangeFrom:
-            summary != null && summary.period == state.period ? summary.from : null,
-        rangeTo:
-            summary != null && summary.period == state.period ? summary.to : null,
-        onPeriodSelected: (period) =>
-            context.read<ExecutiveDashboardCubit>().setPeriod(period),
-        onCustomRangeSelected: (from, to) =>
-            context.read<ExecutiveDashboardCubit>().setCustomRange(from, to),
       ),
       if (state.message != null) ...[
         const SizedBox(height: AppSpacing.sm),

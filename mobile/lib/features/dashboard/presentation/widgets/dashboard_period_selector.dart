@@ -6,6 +6,7 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/utils/dashboard_period_range.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 
 /// Period chips + optional custom From / To / Apply panel (presentation only).
 class DashboardPeriodSelector extends StatefulWidget {
@@ -129,8 +130,6 @@ class _DashboardPeriodSelectorState extends State<DashboardPeriodSelector> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
 
     final chips = <({DashboardPeriod? period, String label, bool custom})>[
       (
@@ -183,7 +182,11 @@ class _DashboardPeriodSelectorState extends State<DashboardPeriodSelector> {
               for (var i = 0; i < chips.length; i++) ...[
                 if (i > 0) const SizedBox(width: AppSpacing.sm),
                 ChoiceChip(
-                  label: Text(chips[i].label),
+                  label: Text(
+                    chips[i].label,
+                    style: DashboardTypography.windowSelector(context),
+                  ),
+                  labelStyle: DashboardTypography.windowSelector(context),
                   selected: chips[i].custom
                       ? customSelected
                       : !_showCustomPanel && widget.period == chips[i].period,
@@ -225,10 +228,7 @@ class _DashboardPeriodSelectorState extends State<DashboardPeriodSelector> {
         const SizedBox(height: AppSpacing.sm),
         Text(
           reportLine,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w500,
-          ),
+          style: DashboardTypography.secondary(context),
         ),
       ],
     );
@@ -363,18 +363,14 @@ class _DateFieldButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
           label,
-          style: theme.textTheme.labelLarge?.copyWith(
-            color: scheme.onSurfaceVariant,
-            fontWeight: FontWeight.w600,
-          ),
+          style: DashboardTypography.kpiLabel(context),
         ),
         const SizedBox(height: AppSpacing.xs),
         Material(
@@ -408,8 +404,8 @@ class _DateFieldButton extends StatelessWidget {
                       value,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
+                      style: DashboardTypography.body(context).copyWith(
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),

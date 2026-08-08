@@ -11,8 +11,10 @@ import 'package:mobile/features/dashboard/presentation/widgets/dashboard_executi
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_metric_group_card.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_overtime_section.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_dense_widgets.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section_grid.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 import 'package:mobile/features/auth/domain/services/permission_checker.dart';
 
 String formatDashboardNum(num value, [BuildContext? context]) {
@@ -97,207 +99,81 @@ List<Widget> _admin({
   final pm = summary.preventiveMaintenance;
   final inventory = summary.inventory;
   final assets = summary.assets;
-  final cards = <Widget>[];
+  final scheme = Theme.of(context).colorScheme;
 
-  // Hero: most important live signals first.
-  final hero = DashboardHeroMetrics(
-      metrics: [
-        if (kpis != null)
-          DashboardMetric(
-            label: l10n.dashboardKpiCurrentlyWorking,
-            value: '${kpis.employeesCurrentlyWorking}',
-            icon: Icons.work_outline,
-            onTap: () => context.go(RoutePaths.attendance),
+  final kpiStrip = DashboardKpiStrip(
+    items: [
+      if (kpis != null)
+        DashboardKpiItemData(
+          label: l10n.dashboardKpiTotalEmployees,
+          value: '${kpis.totalEmployees}',
+          icon: Icons.groups_outlined,
+        ),
+      if (kpis != null)
+        DashboardKpiItemData(
+          label: l10n.dashboardKpiCurrentlyWorking,
+          value: '${kpis.employeesCurrentlyWorking}',
+          icon: Icons.work_outline,
+          onTap: () => context.go(RoutePaths.attendance),
+        ),
+      if (attendance != null)
+        DashboardKpiItemData(
+          label: l10n.dashboardKpiTotalWorkingHours,
+          value: formatDashboardHours(
+            attendance.totalWorkingHours,
+            l10n,
+            context,
           ),
-        if (kpis != null)
-          DashboardMetric(
-            label: l10n.dashboardKpiOnOvertime,
-            value: '${kpis.employeesOnOvertime}',
-            icon: Icons.more_time_outlined,
-            onTap: () => context.go(RoutePaths.overtime),
+          icon: Icons.schedule_outlined,
+          onTap: () => context.go(RoutePaths.attendance),
+        ),
+      if (overtime != null)
+        DashboardKpiItemData(
+          label: l10n.dashboardKpiTotalApprovedHours,
+          value: formatDashboardHours(
+            overtime.totalOvertimeHours,
+            l10n,
+            context,
           ),
-        if (workOrders != null)
-          DashboardMetric(
-            label: l10n.dashboardKpiWoInProgress,
-            value: '${workOrders.inProgress}',
-            icon: Icons.play_circle_outline,
-            onTap: () => context.go(RoutePaths.workOrders),
+          icon: Icons.more_time_outlined,
+          onTap: () => context.go(RoutePaths.overtime),
+        ),
+      if (attendance != null)
+        DashboardKpiItemData(
+          label: l10n.dashboardKpiAttendanceRate,
+          value: formatDashboardPercent(
+            attendance.attendanceRate,
+            l10n,
+            context,
           ),
-        if (attendance != null)
-          DashboardMetric(
-            label: l10n.dashboardKpiAttendanceRate,
-            value: formatDashboardPercent(attendance.attendanceRate, l10n, context),
-            icon: Icons.percent_outlined,
-            onTap: () => context.go(RoutePaths.attendance),
-          ),
-      ],
-    );
+          icon: Icons.percent_outlined,
+          onTap: () => context.go(RoutePaths.attendance),
+        ),
+    ],
+  );
 
-  if (kpis != null || attendance != null) {
-    cards.add(
-      DashboardMetricGroupCard(
-        title: l10n.dashboardWorkforce,
-        metrics: [
-          if (kpis != null) ...[
-            DashboardMetric(
-              label: l10n.dashboardKpiTotalEmployees,
-              value: '${kpis.totalEmployees}',
-              icon: Icons.groups_outlined,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiActiveEmployees,
-              value: '${kpis.activeEmployees}',
-              icon: Icons.badge_outlined,
-            ),
-          ],
-          if (attendance != null) ...[
-            DashboardMetric(
-              label: l10n.dashboardKpiTotalWorkingHours,
-              value: formatDashboardHours(attendance.totalWorkingHours, l10n, context),
-              icon: Icons.schedule_outlined,
-              onTap: () => context.go(RoutePaths.attendance),
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiAverageWorkingHours,
-              value: formatDashboardHours(attendance.averageWorkingHours, l10n, context),
-              icon: Icons.av_timer_outlined,
-              onTap: () => context.go(RoutePaths.attendance),
-            ),
-          ],
-        ],
+  final mainColumn = <Widget>[
+    if (kpis != null || attendance != null)
+      DashboardWorkforceOverview(
+        totalEmployees: kpis?.totalEmployees ?? 0,
+        activeEmployees: kpis?.activeEmployees ?? 0,
+        currentlyWorking: kpis?.employeesCurrentlyWorking ?? 0,
+        averageWorkingHoursLabel: attendance == null
+            ? '—'
+            : formatDashboardHours(
+                attendance.averageWorkingHours,
+                l10n,
+                context,
+              ),
+        onTap: () => context.go(RoutePaths.attendance),
       ),
-    );
-  }
-
-  if (workOrders != null || pm != null) {
-    cards.add(
-      DashboardMetricGroupCard(
-        title: l10n.dashboardOperations,
-        onHeaderTap: workOrders != null
-            ? () => context.go(RoutePaths.workOrders)
-            : null,
-        metrics: [
-          if (workOrders != null) ...[
-            DashboardMetric(
-              label: l10n.dashboardKpiWoTotal,
-              value: '${workOrders.total}',
-              icon: Icons.assignment_outlined,
-              onTap: () => context.go(RoutePaths.workOrders),
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiWoPending,
-              value: '${workOrders.pending}',
-              icon: Icons.hourglass_empty,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiWoAssigned,
-              value: '${workOrders.assigned}',
-              icon: Icons.person_add_alt_1_outlined,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiWoCompleted,
-              value: '${workOrders.completed}',
-              icon: Icons.check_circle_outline,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiWoCancelled,
-              value: '${workOrders.cancelled}',
-              icon: Icons.cancel_outlined,
-            ),
-          ],
-          if (pm != null) ...[
-            DashboardMetric(
-              label: l10n.dashboardKpiPmDue,
-              value: '${pm.due}',
-              icon: Icons.event_available_outlined,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiPmOverdue,
-              value: '${pm.overdue}',
-              icon: Icons.event_busy_outlined,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  if (inventory != null || assets != null) {
-    cards.add(
-      DashboardMetricGroupCard(
-        title: l10n.dashboardResources,
-        metrics: [
-          if (inventory != null) ...[
-            DashboardMetric(
-              label: l10n.dashboardLowStock,
-              value: '${inventory.lowStock}',
-              icon: Icons.warning_amber_outlined,
-              onTap: () => context.go(RoutePaths.inventory),
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiOutOfStock,
-              value: '${inventory.outOfStock}',
-              icon: Icons.inventory_2_outlined,
-            ),
-          ],
-          if (assets != null) ...[
-            DashboardMetric(
-              label: l10n.dashboardKpiAssetsTotal,
-              value: '${assets.totalAssets}',
-              icon: Icons.precision_manufacturing_outlined,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiAssetsActive,
-              value: '${assets.active}',
-              icon: Icons.check_circle_outline,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiAssetsMaintenance,
-              value: '${assets.underMaintenance}',
-              icon: Icons.build_outlined,
-            ),
-            DashboardMetric(
-              label: l10n.dashboardKpiAssetsRetired,
-              value: '${assets.retired}',
-              icon: Icons.archive_outlined,
-            ),
-          ],
-        ],
-        footer: inventory != null && inventory.recentStockMovements.isNotEmpty
-            ? Column(
-                children: inventory.recentStockMovements
-                    .take(3)
-                    .map(
-                      (m) => ListTile(
-                        dense: true,
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.swap_horiz, size: 20),
-                        title: Text(m.partName ?? m.sku ?? m.type),
-                        trailing: Text('${m.quantityDelta ?? m.quantity ?? ''}'),
-                      ),
-                    )
-                    .toList(),
-              )
-            : null,
-      ),
-    );
-  }
-
-  return [
-    hero,
-    SizedBox(height: sectionGap),
-    DashboardSectionGrid(gap: sectionGap, children: cards),
-    if (overtime != null) ...[
-      SizedBox(height: sectionGap),
-      // Flattened scroll children so phone ListView can lazy-build tech cards.
+    if (overtime != null)
       ...buildDashboardOvertimeItems(
         context: context,
         overtime: overtime,
         hoursOverTime: summary.charts.overtime,
         sectionGap: sectionGap,
       ),
-    ],
-    SizedBox(height: sectionGap),
     ..._trendChartsSection(
       context: context,
       l10n: l10n,
@@ -305,12 +181,116 @@ List<Widget> _admin({
       sectionGap: sectionGap,
       chartWindowDays: chartWindowDays,
       onChartWindowChanged: onChartWindowChanged,
+      asStandaloneSection: true,
     ),
-    ..._recentNotificationsSection(
-      context: context,
-      l10n: l10n,
-      summary: summary,
-      sectionGap: sectionGap,
+  ];
+
+  final sideColumn = <Widget>[
+    if (workOrders != null || pm != null)
+      DashboardPanel(
+        title: l10n.dashboardOperations,
+        trailing: workOrders == null
+            ? null
+            : IconButton(
+                visualDensity: VisualDensity.compact,
+                onPressed: () => context.go(RoutePaths.workOrders),
+                icon: const Icon(Icons.open_in_new_rounded, size: 18),
+              ),
+        child: DashboardStatusList(
+          items: [
+            if (workOrders != null) ...[
+              DashboardStatusItem(
+                label: l10n.dashboardKpiWoTotal,
+                value: '${workOrders.total}',
+                onTap: () => context.go(RoutePaths.workOrders),
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiWoPending,
+                value: '${workOrders.pending}',
+                color: scheme.tertiary,
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiWoAssigned,
+                value: '${workOrders.assigned}',
+                color: scheme.primary,
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiWoCompleted,
+                value: '${workOrders.completed}',
+                color: Colors.greenAccent.shade400,
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiWoCancelled,
+                value: '${workOrders.cancelled}',
+                color: scheme.outline,
+              ),
+            ],
+            if (pm != null) ...[
+              DashboardStatusItem(
+                label: l10n.dashboardKpiPmDue,
+                value: '${pm.due}',
+                color: scheme.secondary,
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiPmOverdue,
+                value: '${pm.overdue}',
+                color: scheme.error,
+              ),
+            ],
+          ],
+        ),
+      ),
+    if (inventory != null || assets != null)
+      DashboardPanel(
+        title: l10n.dashboardResources,
+        child: DashboardStatusList(
+          items: [
+            if (inventory != null) ...[
+              DashboardStatusItem(
+                label: l10n.dashboardLowStock,
+                value: '${inventory.lowStock}',
+                color: scheme.error,
+                onTap: () => context.go(RoutePaths.inventory),
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiOutOfStock,
+                value: '${inventory.outOfStock}',
+                color: scheme.error,
+              ),
+            ],
+            if (assets != null) ...[
+              DashboardStatusItem(
+                label: l10n.dashboardKpiAssetsTotal,
+                value: '${assets.totalAssets}',
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiAssetsActive,
+                value: '${assets.active}',
+                color: Colors.greenAccent.shade400,
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiAssetsMaintenance,
+                value: '${assets.underMaintenance}',
+                color: scheme.tertiary,
+              ),
+              DashboardStatusItem(
+                label: l10n.dashboardKpiAssetsRetired,
+                value: '${assets.retired}',
+              ),
+            ],
+          ],
+        ),
+      ),
+    _notificationsPanel(context: context, l10n: l10n, summary: summary),
+  ];
+
+  return [
+    kpiStrip,
+    SizedBox(height: sectionGap),
+    DashboardTwoColumnBody(
+      gap: sectionGap,
+      main: mainColumn,
+      side: sideColumn,
     ),
     ..._quickActionsSection(
       l10n: l10n,
@@ -641,6 +621,7 @@ List<Widget> _trendChartsSection({
   required double sectionGap,
   required int chartWindowDays,
   required ValueChanged<int> onChartWindowChanged,
+  bool asStandaloneSection = false,
 }) {
   final charts = summary.charts;
   final children = <Widget>[];
@@ -658,6 +639,7 @@ List<Widget> _trendChartsSection({
         title: title,
         points: points,
         windowDays: chartWindowDays,
+        height: asStandaloneSection ? 120 : 140,
       ),
     );
   }
@@ -669,29 +651,78 @@ List<Widget> _trendChartsSection({
 
   if (visibleTrends.isEmpty) return const [];
 
-  children.add(
-    DashboardSection(
-      title: l10n.dashboardTrends,
-      trailing: SegmentedButton<int>(
-        segments: const [
-          ButtonSegment(value: 7, label: Text('7')),
-          ButtonSegment(value: 30, label: Text('30')),
-        ],
-        selected: {chartWindowDays},
-        onSelectionChanged: (value) => onChartWindowChanged(value.first),
-        style: const ButtonStyle(
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
+  final segmentedButton = SegmentedButton<int>(
+    segments: [
+      ButtonSegment(
+        value: 7,
+        label: Text('7', style: DashboardTypography.windowSelector(context)),
       ),
-      child: DashboardSectionGrid(
-        gap: AppSpacing.sm,
-        children: visibleTrends,
+      ButtonSegment(
+        value: 30,
+        label: Text('30', style: DashboardTypography.windowSelector(context)),
+      ),
+    ],
+    selected: {chartWindowDays},
+    onSelectionChanged: (value) => onChartWindowChanged(value.first),
+    style: ButtonStyle(
+      visualDensity: VisualDensity.compact,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      textStyle: WidgetStatePropertyAll(
+        DashboardTypography.windowSelector(context),
       ),
     ),
   );
 
+  final trendGrid = DashboardSectionGrid(
+    gap: asStandaloneSection ? AppSpacing.xs : AppSpacing.sm,
+    children: visibleTrends,
+  );
+
+  if (asStandaloneSection) {
+    children.add(
+      DashboardPanel(
+        title: l10n.dashboardTrends,
+        trailing: segmentedButton,
+        child: trendGrid,
+      ),
+    );
+  } else {
+    children.add(
+      DashboardSection(
+        title: l10n.dashboardTrends,
+        trailing: segmentedButton,
+        child: trendGrid,
+      ),
+    );
+  }
+
   return children;
+}
+
+Widget _notificationsPanel({
+  required BuildContext context,
+  required AppLocalizations l10n,
+  required RoleDashboardSummary summary,
+}) {
+  final previewItems = summary.notifications
+      .where((n) => !isInternalSystemAuditEvent(n.title))
+      .map(
+        (n) => DashboardFeedItem(
+          title: localizeAuditEvent(l10n, n.title),
+          subtitle: localizeNotificationBody(l10n, n.body),
+          icon: Icons.notifications_outlined,
+          onTap: () => context.push(RoutePaths.notifications),
+        ),
+      )
+      .toList(growable: false);
+
+  return DashboardFeedCard(
+    title: l10n.dashboardRecentNotifications,
+    emptyLabel: l10n.dashboardNoNotifications,
+    maxItems: 6,
+    onViewAll: () => context.push(RoutePaths.notifications),
+    items: previewItems,
+  );
 }
 
 List<Widget> _recentNotificationsSection({

@@ -3,6 +3,7 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_metric_group_card.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 
 /// Trend chart that only renders when there is a meaningful multi-day series.
 class DashboardTrendChart extends StatelessWidget {
@@ -38,8 +39,7 @@ class DashboardTrendChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (!_hasTrend) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final series = _windowed;
     final values = List<double>.generate(
       series.length,
@@ -52,9 +52,21 @@ class DashboardTrendChart extends StatelessWidget {
     }
 
     return RepaintBoundary(
-      child: Card(
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+          ),
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.sm,
+            AppSpacing.sm,
+            AppSpacing.sm,
+            AppSpacing.sm,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -63,21 +75,17 @@ class DashboardTrendChart extends StatelessWidget {
                   Expanded(
                     child: Text(
                       title,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: DashboardTypography.chartTitle(context),
                     ),
                   ),
                   Text(
                     AppLocalizations.of(context)
                         .dashboardChartWindowDays(windowDays),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: DashboardTypography.chartMeta(context),
                   ),
                 ],
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.sm),
               SizedBox(
                 height: height,
                 child: CustomPaint(
@@ -97,15 +105,11 @@ class DashboardTrendChart extends StatelessWidget {
                 children: [
                   Text(
                     series.first.label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: DashboardTypography.chartAxis(context),
                   ),
                   Text(
                     series.last.label,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: DashboardTypography.chartAxis(context),
                   ),
                 ],
               ),
@@ -218,12 +222,18 @@ class DashboardFeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final l10n = AppLocalizations.of(context);
+    final scheme = Theme.of(context).colorScheme;
     final visible = items.take(maxItems).toList();
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.28),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -232,21 +242,24 @@ class DashboardFeedCard extends StatelessWidget {
               AppSpacing.md,
               AppSpacing.md,
               AppSpacing.sm,
-              AppSpacing.sm,
+              AppSpacing.xs,
             ),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     title,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: DashboardTypography.sectionTitle(context),
                   ),
                 ),
                 if (onViewAll != null && items.isNotEmpty)
                   TextButton(
                     onPressed: onViewAll,
+                    style: TextButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      textStyle: DashboardTypography.windowSelector(context),
+                    ),
                     child: Text(l10n.dashboardViewAll),
                   ),
               ],
@@ -256,37 +269,80 @@ class DashboardFeedCard extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md,
-                0,
+                AppSpacing.sm,
                 AppSpacing.md,
                 AppSpacing.md,
               ),
               child: Text(
                 emptyLabel,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                style: DashboardTypography.secondary(context),
               ),
             )
           else
-            ...visible.map(
-              (item) => ListTile(
-                dense: true,
-                leading: Icon(item.icon ?? Icons.circle_outlined, size: 20),
-                title: Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                subtitle: item.subtitle == null
-                    ? null
-                    : Text(
-                        item.subtitle!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+            ...visible.asMap().entries.map((entry) {
+              final index = entry.key;
+              final item = entry.value;
+              return Column(
+                children: [
+                  if (index > 0)
+                    Divider(
+                      height: 1,
+                      indent: 48,
+                      color: scheme.outlineVariant.withValues(alpha: 0.35),
+                    ),
+                  InkWell(
+                    onTap: item.onTap,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: 10,
                       ),
-                onTap: item.onTap,
-              ),
-            ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: scheme.primary.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              item.icon ?? Icons.notifications_outlined,
+                              size: 16,
+                              color: scheme.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: DashboardTypography.feedTitle(context),
+                                ),
+                                if (item.subtitle != null) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    item.subtitle!,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: DashboardTypography.secondary(context),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            }),
           const SizedBox(height: AppSpacing.xs),
         ],
       ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 
 class DashboardMetric {
   const DashboardMetric({
@@ -37,8 +38,7 @@ class DashboardMetricGroupCard extends StatelessWidget {
   Widget build(BuildContext context) {
     if (metrics.isEmpty) return const SizedBox.shrink();
 
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -58,17 +58,13 @@ class DashboardMetricGroupCard extends StatelessWidget {
                       children: [
                         Text(
                           title,
-                          style: theme.textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                          style: DashboardTypography.sectionTitle(context),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 2),
                           Text(
                             subtitle!,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colorScheme.onSurfaceVariant,
-                            ),
+                            style: DashboardTypography.secondary(context),
                           ),
                         ],
                       ],
@@ -138,8 +134,7 @@ class _MetricCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final content = ConstrainedBox(
       constraints: const BoxConstraints(minHeight: 72),
@@ -166,9 +161,7 @@ class _MetricCell extends StatelessWidget {
                     metric.label,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
+                    style: DashboardTypography.kpiLabel(context),
                   ),
                 ),
               ],
@@ -179,10 +172,7 @@ class _MetricCell extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               softWrap: false,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                height: 1.15,
-              ),
+              style: DashboardTypography.metricValue(context),
             ),
           ],
         ),
