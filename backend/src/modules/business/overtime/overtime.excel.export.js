@@ -2,8 +2,20 @@ import ExcelJS from 'exceljs';
 import { createRequire } from 'module';
 import {
   resolveApprovedHours,
+  resolveApprovedMinutes,
   workedHoursFromRecord,
 } from './overtime.approved-hours.js';
+import {
+  EXPORT_LANG,
+  normalizeExportLanguage,
+  excelStrings,
+  formatDurationProseFromMinutes,
+  formatDurationProseFromHours,
+  statusLabel,
+  typeLabel,
+  overnightLabel,
+  stageMetaForLang,
+} from './overtime.excel.i18n.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../../../../package.json');
@@ -66,47 +78,6 @@ const STATUS_FILLS = {
   },
 };
 
-const STAGE_META = [
-  {
-    key: 'startJourney',
-    title: '🟢  START',
-    voiceLabel: 'Start Voice',
-    headerArgb: COLORS.start,
-    bodyArgb: COLORS.startBg,
-    legacyPhoto: 'startPhoto',
-    legacyGps: 'startGps',
-    legacyAt: 'startAt',
-    legacyAddress: 'startAddress',
-    legacyDevice: 'startDeviceId',
-  },
-  {
-    key: 'arrivedAtWorkSite',
-    title: '🔵  ARRIVED',
-    voiceLabel: 'Arrived Voice',
-    headerArgb: COLORS.arrived,
-    bodyArgb: COLORS.arrivedBg,
-  },
-  {
-    key: 'finishedWork',
-    title: '🟣  FINISHED WORK',
-    voiceLabel: 'Finished Voice',
-    headerArgb: COLORS.finished,
-    bodyArgb: COLORS.finishedBg,
-  },
-  {
-    key: 'endJourney',
-    title: '🔴  END',
-    voiceLabel: 'End Voice',
-    headerArgb: COLORS.end,
-    bodyArgb: COLORS.endBg,
-    legacyPhoto: 'endPhoto',
-    legacyGps: 'endGps',
-    legacyAt: 'endAt',
-    legacyAddress: 'endAddress',
-    legacyDevice: 'endDeviceId',
-  },
-];
-
 function pad2(n) {
   return String(n).padStart(2, '0');
 }
@@ -138,16 +109,8 @@ function formatDateTimeStamp(value) {
   return `${formatDate(d)}_${pad2(d.getUTCHours())}-${pad2(d.getUTCMinutes())}`;
 }
 
-function minutesToHours(minutes) {
-  if (minutes === null || minutes === undefined || minutes === '') return null;
-  const n = Number(minutes);
-  if (!Number.isFinite(n)) return null;
-  return Math.round((n / 60) * 100) / 100;
-}
-
-function hoursLabel(minutes) {
-  const h = minutesToHours(minutes);
-  return h === null ? '—' : h;
+function hoursLabel(minutes, lang = EXPORT_LANG.EN) {
+  return formatDurationProseFromMinutes(minutes, lang);
 }
 
 function formatVoiceDuration(seconds) {
@@ -168,7 +131,7 @@ function userDisplayName(user) {
 function safeFileToken(value) {
   return String(value || '')
     .trim()
-    .replace(/[^\w\-]+/g, '_')
+    .replace(/[^\w-]+/g, '_')
     .replace(/_+/g, '_')
     .replace(/^_|_$/g, '')
     .slice(0, 48);
@@ -203,11 +166,12 @@ function linkCell(text, url) {
   return { text: text || url, hyperlink: url };
 }
 
-function applyWorksheetFooter(sheet, generatedAt) {
+function applyWorksheetFooter(sheet, generatedAt, lang = EXPORT_LANG.EN) {
+  const t = excelStrings(lang);
   const stamp = formatDateTime(generatedAt);
   sheet.headerFooter = {
-    oddFooter: `&LInfinity FSM — Automatically Generated Report&C${stamp}&RPage &P of &N`,
-    evenFooter: `&LInfinity FSM — Automatically Generated Report&C${stamp}&RPage &P of &N`,
+    oddFooter: `&L${t.footerLeft}&C${stamp}&R${t.footerPage}`,
+    evenFooter: `&L${t.footerLeft}&C${stamp}&R${t.footerPage}`,
   };
 }
 
@@ -246,47 +210,53 @@ function styleStatusBadge(cell, status) {
   cell.alignment = { vertical: 'middle', horizontal: 'center' };
 }
 
-function buildFilterLines(filters) {
+function buildFilterLines(filters, lang = EXPORT_LANG.EN) {
+  const t = excelStrings(lang);
+  const labels = {
+    status: t.status,
+    type: t.type,
+    dateRange: t.dateRange,
+    startDate: t.startDate,
+    endDate: t.endDate,
+    employeeId: t.employeeId,
+    userId: t.employeeName,
+    employeeName: t.employeeName,
+  };
   return Object.entries(filters || {})
     .filter(
       ([k, v]) =>
         k !== 'mode' &&
+        k !== 'language' &&
         v !== undefined &&
         v !== null &&
         String(v).trim() !== '' &&
         String(v).toUpperCase() !== 'ALL'
     )
-    .map(([k, v]) => `${k}: ${v}`)
+    .map(([k, v]) => {
+      let value = v;
+      if (String(v).toUpperCase() === 'ALL') value = t.all;
+      else if (k === 'status') value = statusLabel(v, lang);
+      else if (k === 'type') value = typeLabel(v, lang);
+      return `${labels[k] || k}: ${value}`;
+    })
     .join('  |  ');
 }
 
-function departmentName(record) {
-  const tech = record.userId;
-  const dept = tech?.departmentId;
-  if (dept && typeof dept === 'object' && dept.name) return dept.name;
-  return '—';
-}
-
-function branchName(record) {
-  const fromRecord = record.branchId;
-  if (fromRecord && typeof fromRecord === 'object' && fromRecord.name) {
-    return fromRecord.name;
-  }
-  const fromUser = record.userId?.branchId;
-  if (fromUser && typeof fromUser === 'object' && fromUser.name) {
-    return fromUser.name;
-  }
-  return '—';
+function userEmail(record) {
+  const user = record?.userId;
+  if (!user || typeof user === 'string') return '—';
+  return user.email || '—';
 }
 
 function jobTitle(record) {
   return record.userId?.jobTitle || '—';
 }
 
-function syncStatusLabel(record) {
+function syncStatusLabel(record, lang = EXPORT_LANG.EN) {
+  const t = excelStrings(lang);
   const st = String(record.status || '').toUpperCase();
-  if (st === 'RUNNING') return 'Active Session';
-  return 'Synced';
+  if (st === 'RUNNING') return t.syncActive;
+  return t.syncSynced;
 }
 
 function stagePhotos(record, stageMeta) {
@@ -342,9 +312,9 @@ async function fetchImageBuffer(url, { width, height } = {}) {
   const target =
     width && height ? toCloudinaryThumbUrl(url, width, height) : url;
   try {
-    const controller = new AbortController();
+    const controller = new globalThis.AbortController();
     const timer = setTimeout(() => controller.abort(), IMAGE_FETCH_TIMEOUT_MS);
-    const res = await fetch(target, {
+    const res = await globalThis.fetch(target, {
       signal: controller.signal,
       headers: { Accept: 'image/*' },
     });
@@ -385,18 +355,23 @@ function computeStats(records) {
   };
   let normalCount = 0;
   let travelCount = 0;
+  let overnightTravelCount = 0;
   let totalEligible = 0;
   let totalWorking = 0;
   let totalTravel = 0;
-  let totalApprovedEligible = 0;
+  let totalApprovedMinutes = 0;
   const eligibleSamples = [];
 
   for (const record of records) {
     const st = String(record.status || '').toUpperCase();
     if (statusCounts[st] !== undefined) statusCounts[st] += 1;
     const type = String(record.type || '').toUpperCase();
-    if (type === 'TRAVEL') travelCount += 1;
-    else normalCount += 1;
+    if (type === 'TRAVEL') {
+      travelCount += 1;
+      if (record.isOvernight) overnightTravelCount += 1;
+    } else if (type === 'NORMAL') {
+      normalCount += 1;
+    }
 
     const eligible = Number(record.eligibleOvertimeMinutes);
     if (Number.isFinite(eligible)) {
@@ -404,10 +379,7 @@ function computeStats(records) {
       eligibleSamples.push(eligible);
     }
     if (st === 'APPROVED') {
-      const approved = resolveApprovedHours(record);
-      if (approved !== null && Number.isFinite(approved)) {
-        totalApprovedEligible += approved * 60;
-      }
+      totalApprovedMinutes += resolveApprovedMinutes(record);
     }
     const working = Number(record.workingDurationMinutes);
     if (Number.isFinite(working)) totalWorking += working;
@@ -425,14 +397,78 @@ function computeStats(records) {
     statusCounts,
     normalCount,
     travelCount,
-    averageHours: Math.round((avg / 60) * 100) / 100,
-    maximumHours: Math.round((max / 60) * 100) / 100,
-    minimumHours: Math.round((min / 60) * 100) / 100,
-    totalApprovedHours: Math.round((totalApprovedEligible / 60) * 100) / 100,
-    totalWorkingHours: Math.round((totalWorking / 60) * 100) / 100,
-    totalTravelHours: Math.round((totalTravel / 60) * 100) / 100,
-    totalEligibleHours: Math.round((totalEligible / 60) * 100) / 100,
+    overnightTravelCount,
+    averageMinutes: avg,
+    maximumMinutes: max,
+    minimumMinutes: min,
+    totalApprovedMinutes,
+    totalWorkingMinutes: totalWorking,
+    totalTravelMinutes: totalTravel,
+    totalEligibleMinutes: totalEligible,
   };
+}
+
+/**
+ * Aggregate each overtime record exactly once into its technician summary.
+ */
+export function computeEmployeeSummaries(records = []) {
+  const employees = new Map();
+
+  for (const record of records || []) {
+    const user = record?.userId;
+    const name = userDisplayName(user);
+    const email = userEmail(record);
+    const identity =
+      (typeof user === 'object' && user?._id?.toString?.()) ||
+      (email !== '—' ? email.toLowerCase() : '') ||
+      name;
+    const key = String(identity || '—');
+    let summary = employees.get(key);
+    if (!summary) {
+      summary = {
+        technicianName: name,
+        email,
+        totalApprovedMinutes: 0,
+        totalWorkedMinutes: 0,
+        totalSessions: 0,
+        normalSessions: 0,
+        travelSessions: 0,
+        overnightTrips: 0,
+        approvedSessions: 0,
+        pendingReviewSessions: 0,
+        rejectedSessions: 0,
+      };
+      employees.set(key, summary);
+    }
+
+    const status = String(record?.status || '').toUpperCase();
+    const type = String(record?.type || '').toUpperCase();
+    const eligibleMinutes = Number(record?.eligibleOvertimeMinutes);
+    summary.totalSessions += 1;
+    if (Number.isFinite(eligibleMinutes)) {
+      summary.totalWorkedMinutes += eligibleMinutes;
+    }
+    if (type === 'TRAVEL') {
+      summary.travelSessions += 1;
+      if (record?.isOvernight) summary.overnightTrips += 1;
+    } else if (type === 'NORMAL') {
+      summary.normalSessions += 1;
+    }
+    if (status === 'APPROVED') {
+      summary.approvedSessions += 1;
+      summary.totalApprovedMinutes += resolveApprovedMinutes(record);
+    } else if (status === 'PENDING_REVIEW') {
+      summary.pendingReviewSessions += 1;
+    } else if (status === 'REJECTED') {
+      summary.rejectedSessions += 1;
+    }
+  }
+
+  return [...employees.values()].sort((a, b) =>
+    a.technicianName.localeCompare(b.technicianName, undefined, {
+      sensitivity: 'base',
+    })
+  );
 }
 
 /**
@@ -482,9 +518,9 @@ export function buildOvertimeExportFileName({
   return `Overtime_Report_${stamp}.xlsx`;
 }
 
-function sessionSheetName(index) {
+function sessionSheetName(index, lang = EXPORT_LANG.EN) {
   // Excel sheet name max 31 chars; keep stable & linkable.
-  return `Session ${index}`;
+  return excelStrings(lang).sheetSession(index);
 }
 
 function sessionHyperlink(sheetName) {
@@ -587,12 +623,64 @@ function writeSummaryKpiGrid(sheet, startRow, kpis) {
   return row;
 }
 
+function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
+  const t = excelStrings(lang);
+  const headers = [
+    t.empName,
+    t.empEmail,
+    t.empApprovedHours,
+    t.empWorkedHours,
+    t.empSessions,
+    t.empNormal,
+    t.empTravel,
+    t.empOvernight,
+    t.empApproved,
+    t.empPending,
+    t.empRejected,
+  ];
+  const headerRow = sheet.getRow(startRow);
+  headers.forEach((header, index) => {
+    const cell = headerRow.getCell(index + 1);
+    cell.value = header;
+    cell.font = { bold: true, color: { argb: COLORS.white } };
+    cell.fill = solidFill(COLORS.navy);
+    cell.border = thinBorder();
+    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+  });
+  headerRow.height = 34;
+
+  summaries.forEach((employee, index) => {
+    const row = sheet.getRow(startRow + index + 1);
+    row.values = [
+      null,
+      employee.technicianName,
+      employee.email,
+      formatDurationProseFromMinutes(employee.totalApprovedMinutes, lang),
+      formatDurationProseFromMinutes(employee.totalWorkedMinutes, lang),
+      employee.totalSessions,
+      employee.normalSessions,
+      employee.travelSessions,
+      employee.overnightTrips,
+      employee.approvedSessions,
+      employee.pendingReviewSessions,
+      employee.rejectedSessions,
+    ];
+    row.eachCell((cell) => {
+      cell.border = thinBorder();
+      cell.alignment = { vertical: 'middle', wrapText: true };
+      if (index % 2 === 1) cell.fill = solidFill(COLORS.altRow);
+    });
+  });
+  return startRow + summaries.length + 1;
+}
+
 async function addEmbeddedImage(workbook, sheet, buffer, {
   col,
   row,
   width = THUMB_WIDTH,
   height = THUMB_HEIGHT,
   hyperlink,
+  tooltip,
 }) {
   if (!buffer) return;
   const imageId = workbook.addImage({
@@ -607,7 +695,7 @@ async function addEmbeddedImage(workbook, sheet, buffer, {
   if (hyperlink) {
     opts.hyperlinks = {
       hyperlink,
-      tooltip: 'Open original image',
+      tooltip,
     };
   }
   sheet.addImage(imageId, opts);
@@ -627,7 +715,11 @@ export async function buildOvertimeExcelWorkbook({
   companyLogoUrl = '',
   appVersion = pkg.version || '1.0.0',
   mode = EXPORT_MODE.DETAILED,
+  language = EXPORT_LANG.EN,
 } = {}) {
+  const lang = normalizeExportLanguage(language);
+  const t = excelStrings(lang);
+  const stageMeta = stageMetaForLang(lang);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'Infinity FSM';
   workbook.company = companyName || 'Infinity FSM';
@@ -636,7 +728,8 @@ export async function buildOvertimeExcelWorkbook({
 
   const limited = records.slice(0, MAX_EXPORT_ROWS);
   const stats = computeStats(limited);
-  const filterLines = buildFilterLines(filters);
+  const employeeSummaries = computeEmployeeSummaries(limited);
+  const filterLines = buildFilterLines(filters, lang);
   const exportMode =
     String(mode || '').toLowerCase() === EXPORT_MODE.SUMMARY
       ? EXPORT_MODE.SUMMARY
@@ -658,7 +751,7 @@ export async function buildOvertimeExcelWorkbook({
   if (exportMode === EXPORT_MODE.DETAILED && sheetable.length > 0) {
     const photoUrls = [];
     for (const record of sheetable) {
-      for (const stage of STAGE_META) {
+      for (const stage of stageMeta) {
         photoUrls.push(...stagePhotos(record, stage));
       }
     }
@@ -666,7 +759,7 @@ export async function buildOvertimeExcelWorkbook({
   }
 
   // ——— Summary ———
-  const summary = workbook.addWorksheet('Summary', {
+  const summary = workbook.addWorksheet(t.sheetSummary, {
     views: [{ state: 'frozen', ySplit: 3 }],
     properties: { defaultRowHeight: 18 },
   });
@@ -677,9 +770,14 @@ export async function buildOvertimeExcelWorkbook({
     { width: 28 },
     { width: 18 },
     { width: 18 },
+    { width: 18 },
+    { width: 18 },
+    { width: 18 },
+    { width: 18 },
+    { width: 18 },
   ];
   applyPrintSetup(summary);
-  applyWorksheetFooter(summary, generatedAt);
+  applyWorksheetFooter(summary, generatedAt, lang);
 
   if (logoBuffer) {
     await addEmbeddedImage(workbook, summary, logoBuffer, {
@@ -688,81 +786,95 @@ export async function buildOvertimeExcelWorkbook({
       width: 160,
       height: 58,
       hyperlink: companyLogoUrl || undefined,
+      tooltip: t.openOriginalImage,
     });
     summary.getRow(1).height = 62;
   }
 
   summary.mergeCells(2, 1, 2, 4);
   const titleCell = summary.getRow(2).getCell(1);
-  titleCell.value = 'Infinity FSM — Overtime Executive Report';
+  titleCell.value = t.reportTitle;
   titleCell.font = { bold: true, size: 18, color: { argb: COLORS.navy } };
   summary.getRow(2).height = 28;
 
   summary.mergeCells(3, 1, 3, 4);
   summary.getRow(3).getCell(1).value =
-    companyName || 'Enterprise Field Service Management';
+    companyName || t.companyFallback;
   summary.getRow(3).getCell(1).font = {
     size: 12,
     color: { argb: COLORS.muted },
   };
 
   let cursor = 5;
-  cursor = writeSectionHeader(summary, cursor, 'Report Metadata', COLORS.navy);
+  cursor = writeSectionHeader(summary, cursor, t.sectionReportMetadata, COLORS.navy);
   cursor = writeKvRow(
     summary,
     cursor,
-    'Company Name',
+    t.companyName,
     companyName || '—',
-    'Generated By',
+    t.generatedBy,
     generatedBy || '—'
   );
   cursor = writeKvRow(
     summary,
     cursor,
-    'Generated At',
+    t.generatedAt,
     formatDateTime(generatedAt),
-    'Application Version',
+    t.applicationVersion,
     appVersion || '—'
   );
   cursor = writeKvRow(
     summary,
     cursor,
-    'Export Type',
-    exportMode === EXPORT_MODE.SUMMARY ? 'Summary' : 'Detailed Report',
-    'Date Range',
-    filters.dateRange || 'All'
+    t.exportType,
+    exportMode === EXPORT_MODE.SUMMARY ? t.exportModeSummary : t.exportModeDetailed,
+    t.dateRange,
+    String(filters.dateRange || '').toUpperCase() === 'ALL'
+      ? t.all
+      : filters.dateRange || t.all
   );
   cursor = writeKvRow(
     summary,
     cursor,
-    'Applied Filters',
-    filterLines || 'None',
-    'Sessions in Export',
+    t.appliedFilters,
+    filterLines || t.none,
+    t.sessionsInExport,
     limited.length
+  );
+  cursor = writeKvRow(
+    summary,
+    cursor,
+    t.reportLanguage,
+    lang === EXPORT_LANG.AR ? t.languageArabic : t.languageEnglish
   );
   cursor += 1;
 
   cursor = writeSectionHeader(
     summary,
     cursor,
-    'Key Performance Indicators',
+    t.sectionKpis,
     COLORS.navy
   );
   cursor = writeSummaryKpiGrid(summary, cursor, [
-    { label: 'Total Sessions', value: limited.length },
-    { label: 'Approved', value: stats.statusCounts.APPROVED },
-    { label: 'Pending', value: stats.statusCounts.PENDING_REVIEW },
-    { label: 'Rejected', value: stats.statusCounts.REJECTED },
-    { label: 'Travel Overtime', value: stats.travelCount },
-    { label: 'Normal Overtime', value: stats.normalCount },
-    { label: 'Average Hours', value: stats.averageHours },
-    { label: 'Maximum Hours', value: stats.maximumHours },
-    { label: 'Minimum Hours', value: stats.minimumHours },
-    { label: 'Total Approved Hours', value: stats.totalApprovedHours },
-    { label: 'Total Working Hours', value: stats.totalWorkingHours },
-    { label: 'Total Travel Hours', value: stats.totalTravelHours },
-    { label: 'Total Calculated Hours', value: stats.totalEligibleHours },
+    { label: t.kpiTotalTechnicians, value: employeeSummaries.length },
+    {
+      label: t.kpiTotalOvertimeHours,
+      value: formatDurationProseFromMinutes(stats.totalEligibleMinutes, lang),
+    },
+    { label: t.kpiTotalSessions, value: limited.length },
+    { label: t.kpiTravelTrips, value: stats.travelCount },
+    { label: t.kpiNormalSessions, value: stats.normalCount },
+    { label: t.kpiOvernightTrips, value: stats.overnightTravelCount },
+    { label: t.kpiApprovedSessions, value: stats.statusCounts.APPROVED },
   ]);
+
+  cursor = writeSectionHeader(
+    summary,
+    cursor,
+    t.sectionEmployeeBreakdown,
+    COLORS.navy
+  );
+  writeEmployeeSummaryTable(summary, cursor, employeeSummaries, lang);
 
   if (exportMode === EXPORT_MODE.SUMMARY) {
     const buffer = await workbook.xlsx.writeBuffer();
@@ -770,35 +882,45 @@ export async function buildOvertimeExcelWorkbook({
   }
 
   // ——— Sessions Index ———
-  const indexSheet = workbook.addWorksheet('Sessions Index', {
+  const indexSheet = workbook.addWorksheet(t.sheetSessionsIndex, {
     views: [{ state: 'frozen', ySplit: 1 }],
   });
   applyPrintSetup(indexSheet);
-  applyWorksheetFooter(indexSheet, generatedAt);
+  applyWorksheetFooter(indexSheet, generatedAt, lang);
   indexSheet.columns = [
     { width: 26 },
     { width: 22 },
+    { width: 28 },
     { width: 14 },
+    { width: 12 },
+    { width: 20 },
+    { width: 20 },
+    { width: 20 },
+    { width: 14 },
+    { width: 12 },
+    { width: 12 },
     { width: 18 },
-    { width: 16 },
-    { width: 12 },
-    { width: 16 },
-    { width: 12 },
-    { width: 14 },
+    { width: 18 },
+    { width: 18 },
     { width: 18 },
   ];
 
   const indexHeaders = [
-    'Session ID',
-    'Employee Name',
-    'Employee ID',
-    'Department',
-    'Branch',
-    'Date',
-    'Status',
-    'Type',
-    'Approved Hours',
-    'Worksheet',
+    t.sessionId,
+    t.employeeName,
+    t.email,
+    t.employeeId,
+    t.date,
+    t.startTime,
+    t.endTime,
+    t.createdAt,
+    t.status,
+    t.type,
+    t.overnight,
+    t.workedHours,
+    t.calculatedHours,
+    t.approvedHours,
+    t.worksheet,
   ];
   const headerRow = indexSheet.getRow(1);
   indexHeaders.forEach((h, i) => {
@@ -811,28 +933,34 @@ export async function buildOvertimeExcelWorkbook({
   });
   headerRow.height = 28;
 
+  const indexColCount = indexHeaders.length;
   const indexRows = [];
   limited.forEach((record, i) => {
     const seq = i + 1;
     const hasSheet = i < MAX_SESSION_SHEETS;
-    const sheetName = hasSheet ? sessionSheetName(seq) : 'Additional Sessions';
+    const sheetName = hasSheet ? sessionSheetName(seq, lang) : t.sheetAdditionalSessions;
     const approvedHours =
       String(record.status).toUpperCase() === 'APPROVED'
-        ? (resolveApprovedHours(record) ?? '—')
-        : '—';
+        ? formatDurationProseFromHours(resolveApprovedHours(record), lang)
+        : t.dash;
     const rowValues = [
       record._id?.toString?.() || '',
       userDisplayName(record.userId),
-      record.userId?.employeeId || '—',
-      departmentName(record),
-      branchName(record),
+      userEmail(record),
+      record.userId?.employeeId || t.dash,
       formatDate(record.startAt || record.createdAt),
-      record.status || '—',
-      record.type || '—',
+      formatDateTime(record.startAt),
+      formatDateTime(record.endAt),
+      formatDateTime(record.createdAt),
+      statusLabel(record.status, lang),
+      typeLabel(record.type, lang),
+      overnightLabel(record, lang),
+      formatDurationProseFromHours(workedHoursFromRecord(record), lang),
+      hoursLabel(record.eligibleOvertimeMinutes, lang),
       approvedHours,
       hasSheet
-        ? linkCell(`Open ${sheetName}`, sessionHyperlink(sheetName))
-        : linkCell('See Additional Sessions', "#'Additional Sessions'!A1"),
+        ? linkCell(t.openSheet(sheetName), sessionHyperlink(sheetName))
+        : linkCell(t.seeAdditional, sessionHyperlink(t.sheetAdditionalSessions)),
     ];
     indexRows.push(rowValues);
   });
@@ -842,8 +970,8 @@ export async function buildOvertimeExcelWorkbook({
       const cell = headerRow.getCell(i + 1);
       cell.value = h;
     });
-    indexSheet.getRow(2).getCell(1).value = 'No overtime sessions matched the selected filters.';
-    indexSheet.mergeCells(2, 1, 2, 10);
+    indexSheet.getRow(2).getCell(1).value = t.noSessions;
+    indexSheet.mergeCells(2, 1, 2, indexColCount);
   } else {
     indexSheet.addTable({
       name: 'SessionsIndexTable',
@@ -872,15 +1000,15 @@ export async function buildOvertimeExcelWorkbook({
           };
         }
       });
-      styleStatusBadge(excelRow.getCell(7), limited[i]?.status);
+      styleStatusBadge(excelRow.getCell(9), limited[i]?.status);
       excelRow.alignment = { vertical: 'middle', wrapText: true };
     }
   }
 
   if (overflow.length > 0) {
     const noteRow = indexSheet.getRow(indexRows.length + 3);
-    noteRow.getCell(1).value = `Note: ${overflow.length} additional session(s) appear in “Additional Sessions” (export exceeded ${MAX_SESSION_SHEETS} detailed sheets for performance).`;
-    indexSheet.mergeCells(noteRow.number, 1, noteRow.number, 10);
+    noteRow.getCell(1).value = t.overflowNote(overflow.length, MAX_SESSION_SHEETS);
+    indexSheet.mergeCells(noteRow.number, 1, noteRow.number, indexColCount);
     noteRow.getCell(1).font = { italic: true, color: { argb: COLORS.muted } };
   }
 
@@ -888,11 +1016,11 @@ export async function buildOvertimeExcelWorkbook({
   for (let i = 0; i < sheetable.length; i += 1) {
     const record = sheetable[i];
     const seq = i + 1;
-    const sheet = workbook.addWorksheet(sessionSheetName(seq), {
+    const sheet = workbook.addWorksheet(sessionSheetName(seq, lang), {
       views: [{ state: 'frozen', ySplit: 2 }],
     });
     applyPrintSetup(sheet);
-    applyWorksheetFooter(sheet, generatedAt);
+    applyWorksheetFooter(sheet, generatedAt, lang);
     sheet.columns = [
       { width: 24 },
       { width: 36 },
@@ -903,7 +1031,7 @@ export async function buildOvertimeExcelWorkbook({
     ];
 
     sheet.mergeCells(1, 1, 1, 6);
-    sheet.getRow(1).getCell(1).value = `Overtime Session Report — ${seq}`;
+    sheet.getRow(1).getCell(1).value = t.sessionReportTitle(seq);
     sheet.getRow(1).getCell(1).font = {
       bold: true,
       size: 16,
@@ -912,28 +1040,29 @@ export async function buildOvertimeExcelWorkbook({
     sheet.getRow(1).height = 28;
 
     sheet.mergeCells(2, 1, 2, 6);
-    sheet.getRow(2).getCell(1).value = `Session ID: ${record._id?.toString?.() || '—'}`;
+    sheet.getRow(2).getCell(1).value = t.sessionIdLine(
+      record._id?.toString?.() || t.dash
+    );
     sheet.getRow(2).getCell(1).font = { size: 10, color: { argb: COLORS.muted } };
 
     let r = 4;
-    r = writeSectionHeader(sheet, r, 'Employee Information', COLORS.navy);
+    r = writeSectionHeader(sheet, r, t.sectionEmployeeInfo, COLORS.navy);
     r = writeKvRow(
       sheet,
       r,
-      'Employee Name',
+      t.employeeName,
       userDisplayName(record.userId),
-      'Employee ID',
-      record.userId?.employeeId || '—'
+      t.employeeId,
+      record.userId?.employeeId || t.dash
     );
     r = writeKvRow(
       sheet,
       r,
-      'Department',
-      departmentName(record),
-      'Branch',
-      branchName(record)
+      t.email,
+      userEmail(record),
+      t.jobTitle,
+      jobTitle(record)
     );
-    r = writeKvRow(sheet, r, 'Job Title', jobTitle(record), '', '');
     r += 1;
 
     const reviewer =
@@ -946,69 +1075,88 @@ export async function buildOvertimeExcelWorkbook({
         : record.approvedAt;
     const approvedHours =
       String(record.status).toUpperCase() === 'APPROVED'
-        ? (resolveApprovedHours(record) ?? '—')
-        : '—';
-    const workedHours = workedHoursFromRecord(record) ?? '—';
+        ? formatDurationProseFromHours(resolveApprovedHours(record), lang)
+        : t.dash;
+    const workedHours = formatDurationProseFromHours(
+      workedHoursFromRecord(record),
+      lang
+    );
 
-    r = writeSectionHeader(sheet, r, 'Overtime Information', COLORS.navy);
+    r = writeSectionHeader(sheet, r, t.sectionOvertimeInfo, COLORS.navy);
     const statusRow = r;
     r = writeKvRow(
       sheet,
       r,
-      'Status',
-      record.status || '—',
-      'Type',
-      record.type || '—'
+      t.status,
+      statusLabel(record.status, lang),
+      t.type,
+      typeLabel(record.type, lang)
     );
     styleStatusBadge(sheet.getRow(statusRow).getCell(2), record.status);
 
     r = writeKvRow(
       sheet,
       r,
-      'Created At',
+      t.overnight,
+      overnightLabel(record, lang),
+      t.syncStatus,
+      syncStatusLabel(record, lang)
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      t.startTime,
+      formatDateTime(record.startAt),
+      t.endTime,
+      formatDateTime(record.endAt)
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      t.createdAt,
       formatDateTime(record.createdAt),
-      'Approved / Reviewed By',
+      t.approvedReviewedBy,
       reviewer
     );
     r = writeKvRow(
       sheet,
       r,
-      'Approved / Reviewed At',
+      t.approvedReviewedAt,
       formatDateTime(reviewedAt),
-      'Sync Status',
-      syncStatusLabel(record)
-    );
-    r = writeKvRow(
-      sheet,
-      r,
-      'Worked Hours',
-      workedHours,
-      'Approved Hours',
-      approvedHours
-    );
-    r = writeKvRow(
-      sheet,
-      r,
-      'Calculated Hours',
-      hoursLabel(record.eligibleOvertimeMinutes),
       '',
       ''
     );
     r = writeKvRow(
       sheet,
       r,
-      'Working Hours',
-      hoursLabel(record.workingDurationMinutes),
-      'Travel Hours',
-      hoursLabel(travelMinutes(record))
+      t.workedHours,
+      workedHours,
+      t.approvedHours,
+      approvedHours
     );
     r = writeKvRow(
       sheet,
       r,
-      'Review Notes',
-      record.reviewNotes || '—',
-      'Rejection Reason',
-      record.rejectionReason || '—'
+      t.calculatedHours,
+      hoursLabel(record.eligibleOvertimeMinutes, lang),
+      t.workingHours,
+      hoursLabel(record.workingDurationMinutes, lang)
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      t.totalDuration,
+      hoursLabel(record.totalDurationMinutes, lang),
+      t.travelHours,
+      hoursLabel(travelMinutes(record), lang)
+    );
+    r = writeKvRow(
+      sheet,
+      r,
+      t.reviewNotes,
+      record.reviewNotes || t.dash,
+      t.rejectionReason,
+      record.rejectionReason || t.dash
     );
     // Expand review notes row for long text.
     sheet.getRow(r - 1).height = Math.max(
@@ -1020,33 +1168,33 @@ export async function buildOvertimeExcelWorkbook({
     );
     r += 1;
 
-    r = writeSectionHeader(sheet, r, 'Journey Timeline', COLORS.navy);
+    r = writeSectionHeader(sheet, r, t.sectionJourneyTimeline, COLORS.navy);
 
-    for (const stageMeta of STAGE_META) {
-      const stage = resolveStage(record, stageMeta);
-      r = writeSectionHeader(sheet, r, stageMeta.title, stageMeta.headerArgb);
+    for (const stage of stageMeta) {
+      const stageData = resolveStage(record, stage);
+      r = writeSectionHeader(sheet, r, stage.title, stage.headerArgb);
 
-      const map = mapsUrl(stage.gps?.latitude, stage.gps?.longitude);
-      const voiceUrl = voiceHttpUrl(stage.voiceNote);
-      const voiceDur = formatVoiceDuration(stage.voiceNote?.duration);
+      const map = mapsUrl(stageData.gps?.latitude, stageData.gps?.longitude);
+      const voiceUrl = voiceHttpUrl(stageData.voiceNote);
+      const voiceDur = formatVoiceDuration(stageData.voiceNote?.duration);
       const voiceDisplay = voiceUrl
         ? linkCell(
-            `🎤 ${stageMeta.voiceLabel}${voiceDur ? ` (${voiceDur})` : ''}`,
+            `🎤 ${stage.voiceLabel}${voiceDur ? ` (${voiceDur})` : ''}`,
             voiceUrl
           )
-        : '—';
+        : t.dash;
 
       r = writeKvRow(
         sheet,
         r,
-        'Timestamp',
-        formatDateTime(stage.at),
-        'GPS Accuracy (m)',
-        stage.gps?.accuracy ?? '—'
+        t.timestamp,
+        formatDateTime(stageData.at),
+        t.gpsAccuracy,
+        stageData.gps?.accuracy ?? t.dash
       );
       // Full address — never truncate; wrap + tall row.
       const addrRow = r;
-      r = writeKvRow(sheet, r, 'Full Address', stage.address, '', '');
+      r = writeKvRow(sheet, r, t.fullAddress, stageData.address, '', '');
       sheet.mergeCells(addrRow, 2, addrRow, 4);
       sheet.getRow(addrRow).getCell(2).alignment = {
         wrapText: true,
@@ -1054,31 +1202,31 @@ export async function buildOvertimeExcelWorkbook({
       };
       sheet.getRow(addrRow).height = Math.max(
         36,
-        estimateWrapHeight(stage.address, 55)
+        estimateWrapHeight(stageData.address, 55)
       );
 
       r = writeKvRow(
         sheet,
         r,
-        'Latitude',
-        stage.gps?.latitude ?? '—',
-        'Longitude',
-        stage.gps?.longitude ?? '—'
+        t.latitude,
+        stageData.gps?.latitude ?? t.dash,
+        t.longitude,
+        stageData.gps?.longitude ?? t.dash
       );
       const mapsRow = r;
       r = writeKvRow(
         sheet,
         r,
-        'Google Maps',
-        map ? linkCell('📍 Open in Google Maps', map) : '—',
-        'Battery Level',
-        stage.battery === null || stage.battery === undefined
-          ? '—'
-          : `${stage.battery}%`
+        t.googleMaps,
+        map ? linkCell(t.openMaps, map) : t.dash,
+        t.batteryLevel,
+        stageData.battery === null || stageData.battery === undefined
+          ? t.dash
+          : `${stageData.battery}%`
       );
       const mapsCell = sheet.getRow(mapsRow).getCell(2);
       if (map) {
-        mapsCell.value = { text: '📍 Open in Google Maps', hyperlink: map };
+        mapsCell.value = { text: t.openMaps, hyperlink: map };
         mapsCell.font = {
           color: { argb: COLORS.link },
           underline: true,
@@ -1089,34 +1237,41 @@ export async function buildOvertimeExcelWorkbook({
       r = writeKvRow(
         sheet,
         r,
-        'Network Type',
-        stage.network,
-        'Device ID',
-        stage.deviceId
+        t.networkType,
+        stageData.network,
+        t.deviceId,
+        stageData.deviceId
       );
       r = writeKvRow(
         sheet,
         r,
-        'Device Platform',
-        '—',
-        'Device Model',
-        '—'
+        t.devicePlatform,
+        t.dash,
+        t.deviceModel,
+        t.dash
       );
       r = writeKvRow(
         sheet,
         r,
-        'App Version',
+        t.appVersion,
         appVersion || '—',
-        'Stage Notes',
-        stage.notes
+        t.stageNotes,
+        stageData.notes
       );
 
       const voiceRow = r;
-      r = writeKvRow(sheet, r, 'Voice Recording', voiceDisplay, 'Photo Count', stage.photos.length);
+      r = writeKvRow(
+        sheet,
+        r,
+        t.voiceRecording,
+        voiceDisplay,
+        t.photoCount,
+        stageData.photos.length
+      );
       const voiceCell = sheet.getRow(voiceRow).getCell(2);
       if (voiceUrl) {
         voiceCell.value = {
-          text: `🎤 ${stageMeta.voiceLabel}${voiceDur ? ` (${voiceDur})` : ''}`,
+          text: `🎤 ${stage.voiceLabel}${voiceDur ? ` (${voiceDur})` : ''}`,
           hyperlink: voiceUrl,
         };
         voiceCell.font = {
@@ -1129,31 +1284,31 @@ export async function buildOvertimeExcelWorkbook({
       // Photos section — embed ALL stage thumbnails.
       sheet.mergeCells(r, 1, r, 6);
       sheet.getRow(r).getCell(1).value =
-        stage.photos.length > 0
-          ? `Photos (${stage.photos.length})`
-          : 'Photos';
+        stageData.photos.length > 0
+          ? t.photosCount(stageData.photos.length)
+          : t.photos;
       sheet.getRow(r).getCell(1).font = { bold: true };
-      sheet.getRow(r).getCell(1).fill = solidFill(stageMeta.bodyArgb);
+      sheet.getRow(r).getCell(1).fill = solidFill(stage.bodyArgb);
       for (let c = 1; c <= 6; c += 1) {
-        sheet.getRow(r).getCell(c).fill = solidFill(stageMeta.bodyArgb);
+        sheet.getRow(r).getCell(c).fill = solidFill(stage.bodyArgb);
         sheet.getRow(r).getCell(c).border = thinBorder();
       }
       r += 1;
 
-      if (stage.photos.length === 0) {
-        sheet.getRow(r).getCell(1).value = '—';
+      if (stageData.photos.length === 0) {
+        sheet.getRow(r).getCell(1).value = t.dash;
         r += 1;
       } else {
         const perRow = 4;
-        for (let p = 0; p < stage.photos.length; p += perRow) {
-          const batch = stage.photos.slice(p, p + perRow);
+        for (let p = 0; p < stageData.photos.length; p += perRow) {
+          const batch = stageData.photos.slice(p, p + perRow);
           const labelRowNum = r;
           const imageRowNum = r + 1;
           batch.forEach((url, idx) => {
             const col = idx + 1;
             const labelCell = sheet.getRow(labelRowNum).getCell(col);
             labelCell.value = {
-              text: `Photo ${p + idx + 1}`,
+              text: t.photoN(p + idx + 1),
               hyperlink: url,
             };
             labelCell.font = {
@@ -1163,7 +1318,7 @@ export async function buildOvertimeExcelWorkbook({
               bold: true,
             };
             labelCell.alignment = { horizontal: 'center' };
-            labelCell.fill = solidFill(stageMeta.bodyArgb);
+            labelCell.fill = solidFill(stage.bodyArgb);
             labelCell.border = thinBorder();
 
             const buf = imageCache.get(url);
@@ -1172,7 +1327,7 @@ export async function buildOvertimeExcelWorkbook({
               // exceljs addImage is sync once buffer exists.
             }
             sheet.getRow(imageRowNum).getCell(col).fill = solidFill(
-              stageMeta.bodyArgb
+              stage.bodyArgb
             );
             sheet.getRow(imageRowNum).getCell(col).border = thinBorder();
           });
@@ -1183,7 +1338,7 @@ export async function buildOvertimeExcelWorkbook({
             const buf = imageCache.get(url);
             if (!buf) {
               sheet.getRow(imageRowNum).getCell(idx + 1).value = {
-                text: 'Open image',
+                text: t.openImage,
                 hyperlink: url,
               };
               sheet.getRow(imageRowNum).getCell(idx + 1).font = {
@@ -1203,7 +1358,7 @@ export async function buildOvertimeExcelWorkbook({
               editAs: 'oneCell',
               hyperlinks: {
                 hyperlink: url,
-                tooltip: `Open Photo ${p + idx + 1}`,
+                tooltip: t.openPhoto(p + idx + 1),
               },
             });
           });
@@ -1216,8 +1371,8 @@ export async function buildOvertimeExcelWorkbook({
 
     // Back to index link
     sheet.getRow(r).getCell(1).value = {
-      text: '← Back to Sessions Index',
-      hyperlink: "#'Sessions Index'!A1",
+      text: t.backToIndex,
+      hyperlink: sessionHyperlink(t.sheetSessionsIndex),
     };
     sheet.getRow(r).getCell(1).font = {
       color: { argb: COLORS.link },
@@ -1228,24 +1383,29 @@ export async function buildOvertimeExcelWorkbook({
 
   // ——— Overflow bulk sheet (when > MAX_SESSION_SHEETS) ———
   if (overflow.length > 0) {
-    const bulk = workbook.addWorksheet('Additional Sessions', {
+    const bulk = workbook.addWorksheet(t.sheetAdditionalSessions, {
       views: [{ state: 'frozen', ySplit: 1 }],
     });
     applyPrintSetup(bulk);
-    applyWorksheetFooter(bulk, generatedAt);
+    applyWorksheetFooter(bulk, generatedAt, lang);
     const bulkHeaders = [
-      'Session ID',
-      'Employee Name',
-      'Employee ID',
-      'Department',
-      'Branch',
-      'Date',
-      'Status',
-      'Type',
-      'Calculated Hours',
-      'Approved Hours',
-      'Working Hours',
-      'Travel Hours',
+      t.sessionId,
+      t.employeeName,
+      t.email,
+      t.employeeId,
+      t.date,
+      t.startTime,
+      t.endTime,
+      t.createdAt,
+      t.status,
+      t.type,
+      t.overnight,
+      t.workedHours,
+      t.calculatedHours,
+      t.approvedHours,
+      t.workingHours,
+      t.travelHours,
+      t.reviewNotes,
     ];
     bulk.columns = bulkHeaders.map(() => ({ width: 16 }));
     bulk.getRow(1).values = bulkHeaders;
@@ -1260,20 +1420,25 @@ export async function buildOvertimeExcelWorkbook({
         null,
         record._id?.toString?.() || '',
         userDisplayName(record.userId),
-        record.userId?.employeeId || '—',
-        departmentName(record),
-        branchName(record),
+        userEmail(record),
+        record.userId?.employeeId || t.dash,
         formatDate(record.startAt || record.createdAt),
-        record.status || '—',
-        record.type || '—',
-        hoursLabel(record.eligibleOvertimeMinutes),
+        formatDateTime(record.startAt),
+        formatDateTime(record.endAt),
+        formatDateTime(record.createdAt),
+        statusLabel(record.status, lang),
+        typeLabel(record.type, lang),
+        overnightLabel(record, lang),
+        formatDurationProseFromHours(workedHoursFromRecord(record), lang),
+        hoursLabel(record.eligibleOvertimeMinutes, lang),
         String(record.status).toUpperCase() === 'APPROVED'
-          ? (resolveApprovedHours(record) ?? '—')
-          : '—',
-        hoursLabel(record.workingDurationMinutes),
-        hoursLabel(travelMinutes(record)),
+          ? formatDurationProseFromHours(resolveApprovedHours(record), lang)
+          : t.dash,
+        hoursLabel(record.workingDurationMinutes, lang),
+        hoursLabel(travelMinutes(record), lang),
+        record.reviewNotes || t.dash,
       ];
-      styleStatusBadge(row.getCell(7), record.status);
+      styleStatusBadge(row.getCell(9), record.status);
       row.alignment = { vertical: 'middle', wrapText: true };
     });
   }
@@ -1282,4 +1447,10 @@ export async function buildOvertimeExcelWorkbook({
   return Buffer.from(buffer);
 }
 
-export { MAX_EXPORT_ROWS, MAX_SESSION_SHEETS };
+export {
+  MAX_EXPORT_ROWS,
+  MAX_SESSION_SHEETS,
+  formatDurationProseFromMinutes,
+  formatDurationProseFromHours,
+  overnightLabel,
+};

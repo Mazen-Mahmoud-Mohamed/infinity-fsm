@@ -10,6 +10,22 @@ enum OvertimeExportMode {
   String get apiValue => name;
 }
 
+/// Report language for generated Excel human-readable content.
+enum OvertimeExportLanguage {
+  english,
+  arabic;
+
+  String get apiValue => this == OvertimeExportLanguage.arabic ? 'ar' : 'en';
+
+  /// Defaults from the app locale (`ar` → Arabic, otherwise English).
+  static OvertimeExportLanguage fromLocaleCode(String? localeCode) {
+    if (localeCode?.toLowerCase().startsWith('ar') ?? false) {
+      return OvertimeExportLanguage.arabic;
+    }
+    return OvertimeExportLanguage.english;
+  }
+}
+
 /// Filter set for administrator/supervisor overtime Excel export.
 class OvertimeExportFilters extends Equatable {
   const OvertimeExportFilters({
@@ -18,10 +34,9 @@ class OvertimeExportFilters extends Equatable {
     this.status,
     this.type,
     this.userId,
-    this.departmentId,
-    this.branchId,
     this.search,
     this.mode = OvertimeExportMode.detailed,
+    this.language = OvertimeExportLanguage.english,
   });
 
   final DateTime? startDate;
@@ -29,10 +44,9 @@ class OvertimeExportFilters extends Equatable {
   final OvertimeStatus? status;
   final OvertimeType? type;
   final String? userId;
-  final String? departmentId;
-  final String? branchId;
   final String? search;
   final OvertimeExportMode mode;
+  final OvertimeExportLanguage language;
 
   Map<String, dynamic> toQueryParameters() {
     String? dateOnly(DateTime? d) {
@@ -49,11 +63,9 @@ class OvertimeExportFilters extends Equatable {
       if (status != null) 'status': status!.apiValue,
       if (type != null) 'type': type!.apiValue,
       if (userId != null && userId!.isNotEmpty) 'userId': userId,
-      if (departmentId != null && departmentId!.isNotEmpty)
-        'departmentId': departmentId,
-      if (branchId != null && branchId!.isNotEmpty) 'branchId': branchId,
       if (search != null && search!.trim().isNotEmpty) 'search': search!.trim(),
       'mode': mode.apiValue,
+      'language': language.apiValue,
     };
   }
 
@@ -64,10 +76,9 @@ class OvertimeExportFilters extends Equatable {
         status,
         type,
         userId,
-        departmentId,
-        branchId,
         search,
         mode,
+        language,
       ];
 }
 

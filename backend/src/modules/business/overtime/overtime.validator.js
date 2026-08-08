@@ -161,8 +161,6 @@ export const exportOvertimeValidator = [
     .trim()
     .isIn(['NORMAL', 'TRAVEL', 'normal', 'travel', 'ALL', 'all']),
   query('userId').optional().isMongoId(),
-  query('departmentId').optional().isMongoId(),
-  query('branchId').optional().isMongoId(),
   query('startDate').optional().isISO8601(),
   query('endDate').optional().isISO8601(),
   query('mode')
@@ -170,6 +168,11 @@ export const exportOvertimeValidator = [
     .isString()
     .trim()
     .isIn(['summary', 'detailed', 'SUMMARY', 'DETAILED']),
+  query('language')
+    .optional()
+    .isString()
+    .trim()
+    .isIn(['en', 'ar', 'EN', 'AR', 'english', 'arabic', 'English', 'Arabic']),
 ];
 
 export const rejectOvertimeValidator = [

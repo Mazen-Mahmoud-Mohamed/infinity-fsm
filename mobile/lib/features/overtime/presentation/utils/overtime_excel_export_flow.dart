@@ -16,6 +16,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/usecases/export_overtime_excel_usecase.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
+import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -44,9 +45,23 @@ Future<void> showOvertimeExcelExportFlow(
   final filters = await showDialog<OvertimeExportFilters>(
     context: context,
     barrierDismissible: true,
-    builder: (ctx) => _OvertimeExportFiltersDialog(
-      initial: initialFilters ?? const OvertimeExportFilters(),
-    ),
+    builder: (ctx) {
+      final localeCode = context.read<AppCubit>().state.localeCode;
+      final seed = initialFilters ?? const OvertimeExportFilters();
+      return _OvertimeExportFiltersDialog(
+        initial: OvertimeExportFilters(
+          startDate: seed.startDate,
+          endDate: seed.endDate,
+          status: seed.status,
+          type: seed.type,
+          userId: seed.userId,
+          search: seed.search,
+          mode: seed.mode,
+          language: initialFilters?.language ??
+              OvertimeExportLanguage.fromLocaleCode(localeCode),
+        ),
+      );
+    },
   );
   if (filters == null || !context.mounted) return;
 
@@ -150,21 +165,13 @@ class _OvertimeExportFiltersDialogState
   late OvertimeStatus? _status = widget.initial.status;
   late OvertimeType? _type = widget.initial.type;
   late OvertimeExportMode _mode = widget.initial.mode;
+  late OvertimeExportLanguage _language = widget.initial.language;
   late final TextEditingController _search =
       TextEditingController(text: widget.initial.search ?? '');
-  late final TextEditingController _userId =
-      TextEditingController(text: widget.initial.userId ?? '');
-  late final TextEditingController _departmentId =
-      TextEditingController(text: widget.initial.departmentId ?? '');
-  late final TextEditingController _branchId =
-      TextEditingController(text: widget.initial.branchId ?? '');
 
   @override
   void dispose() {
     _search.dispose();
-    _userId.dispose();
-    _departmentId.dispose();
-    _branchId.dispose();
     super.dispose();
   }
 
@@ -194,12 +201,8 @@ class _OvertimeExportFiltersDialogState
       status: _status,
       type: _type,
       search: _search.text.trim().isEmpty ? null : _search.text.trim(),
-      userId: _userId.text.trim().isEmpty ? null : _userId.text.trim(),
-      departmentId: _departmentId.text.trim().isEmpty
-          ? null
-          : _departmentId.text.trim(),
-      branchId: _branchId.text.trim().isEmpty ? null : _branchId.text.trim(),
       mode: _mode,
+      language: _language,
     );
   }
 
@@ -242,6 +245,28 @@ class _OvertimeExportFiltersDialogState
                 icon: Icons.table_chart_outlined,
                 onTap: () =>
                     setState(() => _mode = OvertimeExportMode.detailed),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              DropdownButtonFormField<OvertimeExportLanguage>(
+                // ignore: deprecated_member_use
+                value: _language,
+                decoration: InputDecoration(
+                  labelText: l10n.overtimeExportReportLanguage,
+                  border: const OutlineInputBorder(),
+                ),
+                items: [
+                  DropdownMenuItem(
+                    value: OvertimeExportLanguage.english,
+                    child: Text(l10n.overtimeExportLanguageEnglish),
+                  ),
+                  DropdownMenuItem(
+                    value: OvertimeExportLanguage.arabic,
+                    child: Text(l10n.overtimeExportLanguageArabic),
+                  ),
+                ],
+                onChanged: (v) {
+                  if (v != null) setState(() => _language = v);
+                },
               ),
               const SizedBox(height: AppSpacing.md),
               Wrap(
@@ -317,33 +342,6 @@ class _OvertimeExportFiltersDialogState
                 controller: _search,
                 decoration: InputDecoration(
                   labelText: l10n.overtimeSearchTechnician,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _userId,
-                decoration: InputDecoration(
-                  labelText: l10n.overtimeExportEmployeeId,
-                  hintText: l10n.overtimeExportOptionalIdHint,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _departmentId,
-                decoration: InputDecoration(
-                  labelText: l10n.overtimeExportDepartmentId,
-                  hintText: l10n.overtimeExportOptionalIdHint,
-                  border: const OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: _branchId,
-                decoration: InputDecoration(
-                  labelText: l10n.overtimeExportBranchId,
-                  hintText: l10n.overtimeExportOptionalIdHint,
                   border: const OutlineInputBorder(),
                 ),
               ),

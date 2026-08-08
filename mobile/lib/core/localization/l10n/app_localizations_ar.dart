@@ -3044,16 +3044,19 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeExportEmployeeId => 'معرّف المستخدم للموظف';
 
   @override
-  String get overtimeExportDepartmentId => 'معرّف القسم';
-
-  @override
-  String get overtimeExportBranchId => 'معرّف الفرع';
-
-  @override
   String get overtimeExportOptionalIdHint => 'معرّف MongoDB اختياري';
 
   @override
   String get overtimeExportModeLabel => 'نوع التصدير';
+
+  @override
+  String get overtimeExportReportLanguage => 'لغة التقرير';
+
+  @override
+  String get overtimeExportLanguageEnglish => 'English';
+
+  @override
+  String get overtimeExportLanguageArabic => 'العربية';
 
   @override
   String get overtimeExportModeSummary => 'تصدير الملخص';

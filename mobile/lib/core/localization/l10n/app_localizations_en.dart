@@ -3050,16 +3050,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeExportEmployeeId => 'Employee user ID';
 
   @override
-  String get overtimeExportDepartmentId => 'Department ID';
-
-  @override
-  String get overtimeExportBranchId => 'Branch ID';
-
-  @override
   String get overtimeExportOptionalIdHint => 'Optional MongoDB ObjectId';
 
   @override
   String get overtimeExportModeLabel => 'Export type';
+
+  @override
+  String get overtimeExportReportLanguage => 'Report language';
+
+  @override
+  String get overtimeExportLanguageEnglish => 'English';
+
+  @override
+  String get overtimeExportLanguageArabic => 'العربية';
 
   @override
   String get overtimeExportModeSummary => 'Export Summary';

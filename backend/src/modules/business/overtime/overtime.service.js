@@ -24,6 +24,7 @@ import {
   EXPORT_MODE,
   MAX_EXPORT_ROWS,
 } from './overtime.excel.export.js';
+import { normalizeExportLanguage } from './overtime.excel.i18n.js';
 import {
   approvedOtMinutesExpr,
   normalizeApprovedHoursInput,
@@ -786,17 +787,18 @@ class OvertimeService {
       search,
       type,
       userId,
-      departmentId,
-      branchId,
       startDate,
       endDate,
       mode: modeRaw,
+      language: languageRaw,
     } = query;
 
     const exportMode =
       String(modeRaw || '').trim().toLowerCase() === EXPORT_MODE.SUMMARY
         ? EXPORT_MODE.SUMMARY
         : EXPORT_MODE.DETAILED;
+
+    const exportLanguage = normalizeExportLanguage(languageRaw);
 
     const filter = { companyId: auth.companyId };
     const statusFilter = mapStatusFilter(status);
@@ -807,10 +809,6 @@ class OvertimeService {
     const normalizedType = type ? String(type).trim().toUpperCase() : '';
     if (normalizedType === 'NORMAL' || normalizedType === 'TRAVEL') {
       filter.type = normalizedType;
-    }
-
-    if (branchId && mongoose.isValidObjectId(branchId)) {
-      filter.branchId = branchId;
     }
 
     if (startDate || endDate) {
@@ -841,17 +839,6 @@ class OvertimeService {
       userIds = [userId];
     }
 
-    if (departmentId && mongoose.isValidObjectId(departmentId)) {
-      const deptUsers = await User.find({
-        companyId: auth.companyId,
-        departmentId,
-      }).select('_id');
-      const deptIds = deptUsers.map((u) => u._id.toString());
-      userIds = userIds
-        ? userIds.filter((id) => deptIds.includes(String(id)))
-        : deptIds;
-    }
-
     if (search && String(search).trim()) {
       const term = escapeRegex(String(search).trim());
       const matchingUsers = await User.find({
@@ -876,14 +863,8 @@ class OvertimeService {
     const records = await OvertimeRecord.find(filter)
       .populate({
         path: 'userId',
-        select:
-          'firstName lastName email roles employeeId departmentId branchId jobTitle',
-        populate: [
-          { path: 'departmentId', select: 'name' },
-          { path: 'branchId', select: 'name' },
-        ],
+        select: 'firstName lastName email roles employeeId jobTitle',
       })
-      .populate('branchId', 'name')
       .populate('approvedBy', 'firstName lastName email')
       .populate('rejectedBy', 'firstName lastName email')
       .sort({ createdAt: -1 })
@@ -921,11 +902,10 @@ class OvertimeService {
       type: normalizedType || 'ALL',
       search: search || '',
       userId: userId || '',
-      departmentId: departmentId || '',
-      branchId: branchId || '',
       startDate: startDate || '',
       endDate: endDate || '',
       mode: exportMode,
+      language: exportLanguage,
     };
 
     const buffer = await buildOvertimeExcelWorkbook({
@@ -936,6 +916,7 @@ class OvertimeService {
       companyLogoUrl: company?.logoUrl || '',
       appVersion: pkg.version || '1.0.0',
       mode: exportMode,
+      language: exportLanguage,
       filters: filterMeta,
     });
 
@@ -963,10 +944,9 @@ class OvertimeService {
           type: normalizedType || 'ALL',
           search: search || null,
           userId: userId || null,
-          departmentId: departmentId || null,
-          branchId: branchId || null,
           startDate: startDate || null,
           endDate: endDate || null,
+          language: exportLanguage,
         },
       },
     });

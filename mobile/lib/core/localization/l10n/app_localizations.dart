@@ -5852,18 +5852,6 @@ abstract class AppLocalizations {
   /// **'Employee user ID'**
   String get overtimeExportEmployeeId;
 
-  /// No description provided for @overtimeExportDepartmentId.
-  ///
-  /// In en, this message translates to:
-  /// **'Department ID'**
-  String get overtimeExportDepartmentId;
-
-  /// No description provided for @overtimeExportBranchId.
-  ///
-  /// In en, this message translates to:
-  /// **'Branch ID'**
-  String get overtimeExportBranchId;
-
   /// No description provided for @overtimeExportOptionalIdHint.
   ///
   /// In en, this message translates to:
@@ -5875,6 +5863,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export type'**
   String get overtimeExportModeLabel;
+
+  /// No description provided for @overtimeExportReportLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Report language'**
+  String get overtimeExportReportLanguage;
+
+  /// No description provided for @overtimeExportLanguageEnglish.
+  ///
+  /// In en, this message translates to:
+  /// **'English'**
+  String get overtimeExportLanguageEnglish;
+
+  /// No description provided for @overtimeExportLanguageArabic.
+  ///
+  /// In en, this message translates to:
+  /// **'العربية'**
+  String get overtimeExportLanguageArabic;
 
   /// No description provided for @overtimeExportModeSummary.
   ///
