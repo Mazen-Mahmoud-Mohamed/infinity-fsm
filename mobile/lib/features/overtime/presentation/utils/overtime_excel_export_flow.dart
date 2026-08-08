@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
@@ -20,6 +21,7 @@ import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// True when the signed-in user may see Overtime Excel export (Admin/Supervisor).
 bool canExportOvertimeExcel(CurrentUser? user) {
@@ -435,7 +437,7 @@ class _ExportModeCard extends StatelessWidget {
   }
 }
 
-class _OvertimeExportReadyDialog extends StatelessWidget {
+class _OvertimeExportReadyDialog extends StatefulWidget {
   const _OvertimeExportReadyDialog({
     required this.file,
     required this.export,
@@ -444,7 +446,34 @@ class _OvertimeExportReadyDialog extends StatelessWidget {
   final File file;
   final OvertimeExcelExportResult export;
 
-  Future<void> _share(BuildContext context) async {
+  @override
+  State<_OvertimeExportReadyDialog> createState() =>
+      _OvertimeExportReadyDialogState();
+}
+
+class _OvertimeExportReadyDialogState extends State<_OvertimeExportReadyDialog> {
+  static const exportMime =
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+  static const _xlsxTypeGroup = XTypeGroup(
+    label: 'Excel',
+    extensions: <String>['xlsx'],
+    mimeTypes: <String>[
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ],
+  );
+
+  String? _statusMessage;
+  bool _busy = false;
+
+  File get file => widget.file;
+  OvertimeExcelExportResult get export => widget.export;
+
+  bool get _supportsNativeSaveAs =>
+      !kIsWeb &&
+      (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
+
+  Future<void> _share() async {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(file.path, mimeType: exportMime)],
@@ -454,100 +483,239 @@ class _OvertimeExportReadyDialog extends StatelessWidget {
   }
 
   Future<void> _openFile() async {
-    if (kIsWeb) return;
-    if (Platform.isWindows) {
-      await Process.start('explorer', [file.path], runInShell: true);
-    } else if (Platform.isMacOS) {
-      await Process.start('open', [file.path]);
-    } else if (Platform.isLinux) {
-      await Process.start('xdg-open', [file.path]);
-    } else {
-      await SharePlus.instance.share(
-        ShareParams(files: [XFile(file.path, mimeType: exportMime)]),
+    final l10n = AppLocalizations.of(context);
+    try {
+      if (kIsWeb) return;
+      final uri = Uri.file(file.path);
+      final launched = await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
       );
+      if (!launched && mounted) {
+        _showError(l10n.overtimeExportOpenFailed);
+      }
+    } on Object {
+      if (!mounted) return;
+      _showError(l10n.overtimeExportOpenFailed);
     }
   }
 
   Future<void> _openFolder() async {
-    if (kIsWeb) return;
-    final folder = file.parent.path;
-    if (Platform.isWindows) {
-      await Process.start('explorer', ['/select,', file.path], runInShell: true);
-    } else if (Platform.isMacOS) {
-      await Process.start('open', ['-R', file.path]);
-    } else if (Platform.isLinux) {
-      await Process.start('xdg-open', [folder]);
-    }
-  }
-
-  Future<void> _saveAs(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     try {
-      final docs = await getApplicationDocumentsDirectory();
-      final dest = File(p.join(docs.path, export.fileName));
-      await dest.writeAsBytes(export.bytes, flush: true);
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.overtimeExportSavedTo(dest.path))),
-      );
+      if (kIsWeb) return;
+      final folder = file.parent.path;
+      if (Platform.isWindows) {
+        await Process.start(
+          'explorer',
+          <String>['/select,', file.path],
+          runInShell: true,
+        );
+      } else if (Platform.isMacOS) {
+        await Process.start('open', <String>['-R', file.path]);
+      } else if (Platform.isLinux) {
+        await Process.start('xdg-open', <String>[folder]);
+      }
     } on Object {
-      if (!context.mounted) return;
-      await _share(context);
+      if (!mounted) return;
+      _showError(l10n.overtimeExportOpenFolderFailed);
     }
   }
 
-  static const exportMime =
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+  /// Native Save As (Windows/macOS/Linux). Cancel returns silently.
+  Future<void> _saveAs() async {
+    if (_busy) return;
+    final l10n = AppLocalizations.of(context);
+
+    if (!_supportsNativeSaveAs) {
+      await _share();
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final FileSaveLocation? location = await getSaveLocation(
+        suggestedName: export.fileName,
+        acceptedTypeGroups: const <XTypeGroup>[_xlsxTypeGroup],
+        confirmButtonText: l10n.overtimeExportSaveAs,
+      );
+      if (!mounted) return;
+      if (location == null) {
+        // User cancelled — keep original temp file and stay on dialog.
+        return;
+      }
+
+      var destPath = location.path;
+      if (!destPath.toLowerCase().endsWith('.xlsx')) {
+        destPath = '$destPath.xlsx';
+      }
+
+      // Prefer copying the generated file so temp stays intact on cancel/errors.
+      if (await file.exists()) {
+        await file.copy(destPath);
+      } else {
+        await File(destPath).writeAsBytes(export.bytes, flush: true);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _statusMessage = l10n.overtimeExportSavedTo(destPath);
+      });
+    } on Object {
+      if (!mounted) return;
+      _showError(l10n.overtimeExportSaveFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     final isDesktop = AppBreakpoints.isDesktopOf(context);
     final rows = export.rowCount;
+    final width = MediaQuery.sizeOf(context).width;
 
     return AlertDialog(
       title: Text(l10n.overtimeExportReady),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(export.fileName),
-          if (rows != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(l10n.overtimeExportRowCount(rows)),
+      content: SizedBox(
+        width: isDesktop ? 440 : width * 0.9,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    Icons.table_view_rounded,
+                    color: scheme.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        export.fileName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (rows != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          l10n.overtimeExportRowCount(rows),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (_statusMessage != null) ...[
+              const SizedBox(height: AppSpacing.md),
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer.withValues(alpha: 0.45),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.sm,
+                    vertical: AppSpacing.sm,
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        size: 18,
+                        color: scheme.primary,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          _statusMessage!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurface,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
       actionsAlignment: MainAxisAlignment.end,
       actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.close),
-        ),
         if (isDesktop) ...[
           TextButton(
-            onPressed: _openFolder,
+            onPressed: _busy ? null : () => Navigator.pop(context),
+            child: Text(l10n.close),
+          ),
+          TextButton(
+            onPressed: _busy ? null : _openFolder,
             child: Text(l10n.overtimeExportOpenFolder),
           ),
           TextButton(
-            onPressed: _openFile,
+            onPressed: _busy ? null : _openFile,
             child: Text(l10n.overtimeExportOpenFile),
           ),
-          FilledButton(
-            onPressed: () => _saveAs(context),
-            child: Text(l10n.overtimeExportSaveAs),
+          FilledButton.icon(
+            onPressed: _busy ? null : _saveAs,
+            icon: _busy
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.save_as_outlined, size: 18),
+            label: Text(l10n.overtimeExportSaveAs),
           ),
         ] else ...[
           TextButton(
-            onPressed: () => _saveAs(context),
-            child: Text(l10n.overtimeExportSave),
+            onPressed: _busy ? null : () => Navigator.pop(context),
+            child: Text(l10n.close),
           ),
           TextButton(
-            onPressed: _openFile,
+            onPressed: _busy ? null : _openFile,
             child: Text(l10n.overtimeExportOpen),
           ),
           FilledButton.icon(
-            onPressed: () => _share(context),
+            onPressed: _busy
+                ? null
+                : () async {
+                    setState(() => _busy = true);
+                    try {
+                      await _share();
+                    } finally {
+                      if (mounted) setState(() => _busy = false);
+                    }
+                  },
             icon: const Icon(Icons.share_outlined),
             label: Text(l10n.overtimeExportShare),
           ),

@@ -5984,6 +5984,24 @@ abstract class AppLocalizations {
   /// **'Saved to {path}'**
   String overtimeExportSavedTo(String path);
 
+  /// No description provided for @overtimeExportSaveFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the Excel file. Please try again.'**
+  String get overtimeExportSaveFailed;
+
+  /// No description provided for @overtimeExportOpenFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the file. Please try again.'**
+  String get overtimeExportOpenFailed;
+
+  /// No description provided for @overtimeExportOpenFolderFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the containing folder.'**
+  String get overtimeExportOpenFolderFailed;
+
   /// No description provided for @overtimeRequiresManualReview.
   ///
   /// In en, this message translates to:

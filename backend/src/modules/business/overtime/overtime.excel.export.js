@@ -583,9 +583,10 @@ function writeSectionHeader(sheet, row, title, fillArgb = COLORS.navy) {
   return row + 1;
 }
 
-function writeSummaryKpiGrid(sheet, startRow, kpis) {
+function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
   let row = startRow;
   const cols = 4;
+  const isAr = normalizeExportLanguage(lang) === EXPORT_LANG.AR;
   for (let i = 0; i < kpis.length; i += cols) {
     const slice = kpis.slice(i, i + cols);
     const labelRow = sheet.getRow(row);
@@ -602,24 +603,29 @@ function writeSummaryKpiGrid(sheet, startRow, kpis) {
       labelRow.getCell(col).alignment = {
         horizontal: 'center',
         vertical: 'middle',
+        wrapText: true,
       };
       labelRow.getCell(col).border = thinBorder();
 
       valueRow.getCell(col).value = kpi.value;
       valueRow.getCell(col).font = {
         bold: true,
-        size: 16,
+        size: 14,
         color: { argb: COLORS.navy },
       };
       valueRow.getCell(col).fill = solidFill(COLORS.kpiBg);
       valueRow.getCell(col).alignment = {
         horizontal: 'center',
         vertical: 'middle',
+        wrapText: true,
+        ...(isAr && typeof kpi.value === 'string' && /ساعة|دقيقة/.test(kpi.value)
+          ? { readingOrder: 'ltr' }
+          : {}),
       };
       valueRow.getCell(col).border = thinBorder();
     });
-    labelRow.height = 20;
-    valueRow.height = 32;
+    labelRow.height = 28;
+    valueRow.height = 30;
     row += 3;
   }
   return row;
@@ -627,11 +633,12 @@ function writeSummaryKpiGrid(sheet, startRow, kpis) {
 
 function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
   const t = excelStrings(lang);
+  const isAr = normalizeExportLanguage(lang) === EXPORT_LANG.AR;
   const headers = [
     t.empName,
     t.empEmail,
-    t.empApprovedHours,
     t.empWorkedHours,
+    t.empApprovedHours,
     t.empSessions,
     t.empNormal,
     t.empTravel,
@@ -653,12 +660,20 @@ function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
 
   summaries.forEach((employee, index) => {
     const row = sheet.getRow(startRow + index + 1);
+    const worked = formatDurationProseFromMinutes(
+      employee.totalWorkedMinutes,
+      lang
+    );
+    const approved = formatDurationProseFromMinutes(
+      employee.totalApprovedMinutes,
+      lang
+    );
     row.values = [
       null,
       employee.technicianName,
       employee.email,
-      formatDurationProseFromMinutes(employee.totalApprovedMinutes, lang),
-      formatDurationProseFromMinutes(employee.totalWorkedMinutes, lang),
+      worked,
+      approved,
       employee.totalSessions,
       employee.normalSessions,
       employee.travelSessions,
@@ -667,9 +682,15 @@ function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
       employee.pendingReviewSessions,
       employee.rejectedSessions,
     ];
-    row.eachCell((cell) => {
+    row.eachCell((cell, colNumber) => {
       cell.border = thinBorder();
-      cell.alignment = { vertical: 'middle', wrapText: true };
+      cell.alignment = {
+        vertical: 'middle',
+        wrapText: true,
+        ...(isAr && (colNumber === 3 || colNumber === 4)
+          ? { readingOrder: 'ltr', horizontal: 'left' }
+          : {}),
+      };
       if (index % 2 === 1) cell.fill = solidFill(COLORS.altRow);
     });
   });
@@ -762,7 +783,13 @@ export async function buildOvertimeExcelWorkbook({
 
   // ——— Summary ———
   const summary = workbook.addWorksheet(t.sheetSummary, {
-    views: [{ state: 'frozen', ySplit: 3 }],
+    views: [
+      {
+        state: 'frozen',
+        ySplit: 3,
+        rightToLeft: lang === EXPORT_LANG.AR,
+      },
+    ],
     properties: { defaultRowHeight: 18 },
   });
   summary.columns = [
@@ -857,18 +884,35 @@ export async function buildOvertimeExcelWorkbook({
     t.sectionKpis,
     COLORS.navy
   );
-  cursor = writeSummaryKpiGrid(summary, cursor, [
-    { label: t.kpiTotalTechnicians, value: employeeSummaries.length },
-    {
-      label: t.kpiTotalOvertimeHours,
-      value: formatDurationProseFromMinutes(stats.totalEligibleMinutes, lang),
-    },
-    { label: t.kpiTotalSessions, value: limited.length },
-    { label: t.kpiTravelTrips, value: stats.travelCount },
-    { label: t.kpiNormalSessions, value: stats.normalCount },
-    { label: t.kpiOvernightTrips, value: stats.overnightTravelCount },
-    { label: t.kpiApprovedSessions, value: stats.statusCounts.APPROVED },
-  ]);
+  cursor = writeSummaryKpiGrid(
+    summary,
+    cursor,
+    [
+      { label: t.kpiTotalTechnicians, value: employeeSummaries.length },
+      {
+        label: t.kpiTotalWorkedHours,
+        value: formatDurationProseFromMinutes(stats.totalEligibleMinutes, lang),
+      },
+      {
+        label: t.kpiTotalApprovedHours,
+        value: formatDurationProseFromMinutes(stats.totalApprovedMinutes, lang),
+      },
+      { label: t.kpiTotalSessions, value: limited.length },
+      { label: t.kpiTravelTrips, value: stats.travelCount },
+      { label: t.kpiNormalSessions, value: stats.normalCount },
+      { label: t.kpiOvernightTrips, value: stats.overnightTravelCount },
+      { label: t.kpiApprovedSessions, value: stats.statusCounts.APPROVED },
+      {
+        label: t.kpiPendingSessions,
+        value: stats.statusCounts.PENDING_REVIEW,
+      },
+      {
+        label: t.kpiRejectedSessions,
+        value: stats.statusCounts.REJECTED,
+      },
+    ],
+    lang
+  );
 
   cursor = writeSectionHeader(
     summary,
@@ -885,7 +929,13 @@ export async function buildOvertimeExcelWorkbook({
 
   // ——— Sessions Index ———
   const indexSheet = workbook.addWorksheet(t.sheetSessionsIndex, {
-    views: [{ state: 'frozen', ySplit: 1 }],
+    views: [
+      {
+        state: 'frozen',
+        ySplit: 1,
+        rightToLeft: lang === EXPORT_LANG.AR,
+      },
+    ],
   });
   applyPrintSetup(indexSheet);
   applyWorksheetFooter(indexSheet, generatedAt, lang);
@@ -1019,7 +1069,13 @@ export async function buildOvertimeExcelWorkbook({
     const record = sheetable[i];
     const seq = i + 1;
     const sheet = workbook.addWorksheet(sessionSheetName(seq, lang), {
-      views: [{ state: 'frozen', ySplit: 2 }],
+      views: [
+        {
+          state: 'frozen',
+          ySplit: 2,
+          rightToLeft: lang === EXPORT_LANG.AR,
+        },
+      ],
     });
     applyPrintSetup(sheet);
     applyWorksheetFooter(sheet, generatedAt, lang);
@@ -1386,7 +1442,13 @@ export async function buildOvertimeExcelWorkbook({
   // ——— Overflow bulk sheet (when > MAX_SESSION_SHEETS) ———
   if (overflow.length > 0) {
     const bulk = workbook.addWorksheet(t.sheetAdditionalSessions, {
-      views: [{ state: 'frozen', ySplit: 1 }],
+      views: [
+        {
+          state: 'frozen',
+          ySplit: 1,
+          rightToLeft: lang === EXPORT_LANG.AR,
+        },
+      ],
     });
     applyPrintSetup(bulk);
     applyWorksheetFooter(bulk, generatedAt, lang);

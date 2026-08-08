@@ -49,22 +49,26 @@ const EN = {
   languageEnglish: 'English',
   languageArabic: 'العربية',
   kpiTotalTechnicians: 'Total Technicians',
+  kpiTotalWorkedHours: 'Total Calculated / Worked Hours',
+  kpiTotalApprovedHours: 'Total Approved Hours',
   kpiTotalOvertimeHours: 'Total Overtime Hours',
   kpiTotalSessions: 'Total Sessions / Trips',
-  kpiTravelTrips: 'Total Travel Trips',
-  kpiNormalSessions: 'Total Normal OT Sessions',
-  kpiOvernightTrips: 'Total Overnight Trips',
-  kpiApprovedSessions: 'Total Approved Sessions',
-  empName: 'Technician Name',
-  empEmail: 'Technician Email',
+  kpiTravelTrips: 'Travel Sessions',
+  kpiNormalSessions: 'Normal Sessions',
+  kpiOvernightTrips: 'Overnight Sessions',
+  kpiApprovedSessions: 'Approved Sessions',
+  kpiPendingSessions: 'Pending / Review Sessions',
+  kpiRejectedSessions: 'Rejected Sessions',
+  empName: 'Employee Name',
+  empEmail: 'Employee Email',
+  empWorkedHours: 'Total Calculated / Worked Hours',
   empApprovedHours: 'Total Approved Hours',
-  empWorkedHours: 'Total Worked Hours',
-  empSessions: 'Total Sessions / Trips',
-  empNormal: 'Normal Overtime Sessions',
-  empTravel: 'Travel Overtime Sessions',
-  empOvernight: 'Overnight Trips',
+  empSessions: 'Total Sessions',
+  empNormal: 'Normal Sessions',
+  empTravel: 'Travel Sessions',
+  empOvernight: 'Overnight Sessions',
   empApproved: 'Approved Sessions',
-  empPending: 'Pending Review Sessions',
+  empPending: 'Pending / Review Sessions',
   empRejected: 'Rejected Sessions',
   sessionId: 'Session ID',
   employeeName: 'Employee Name',
@@ -181,22 +185,26 @@ const AR = {
   languageEnglish: 'English',
   languageArabic: 'العربية',
   kpiTotalTechnicians: 'إجمالي الفنيين',
+  kpiTotalWorkedHours: 'إجمالي الساعات المحسوبة / الفعلية',
+  kpiTotalApprovedHours: 'إجمالي الساعات المعتمدة',
   kpiTotalOvertimeHours: 'إجمالي ساعات العمل الإضافي',
   kpiTotalSessions: 'إجمالي الجلسات / الرحلات',
-  kpiTravelTrips: 'إجمالي رحلات السفر',
-  kpiNormalSessions: 'إجمالي جلسات العمل الإضافي العادي',
-  kpiOvernightTrips: 'إجمالي رحلات المبيت',
-  kpiApprovedSessions: 'إجمالي الجلسات المعتمدة',
-  empName: 'اسم الفني',
-  empEmail: 'بريد الفني',
+  kpiTravelTrips: 'جلسات السفر',
+  kpiNormalSessions: 'الجلسات العادية',
+  kpiOvernightTrips: 'جلسات المبيت',
+  kpiApprovedSessions: 'الجلسات المعتمدة',
+  kpiPendingSessions: 'الجلسات قيد المراجعة',
+  kpiRejectedSessions: 'الجلسات المرفوضة',
+  empName: 'اسم الموظف',
+  empEmail: 'بريد الموظف',
+  empWorkedHours: 'إجمالي الساعات المحسوبة / الفعلية',
   empApprovedHours: 'إجمالي الساعات المعتمدة',
-  empWorkedHours: 'إجمالي الساعات المحسوبة',
-  empSessions: 'إجمالي الجلسات / الرحلات',
-  empNormal: 'جلسات العمل الإضافي العادي',
-  empTravel: 'جلسات عمل السفر الإضافي',
-  empOvernight: 'رحلات المبيت',
+  empSessions: 'إجمالي الجلسات',
+  empNormal: 'الجلسات العادية',
+  empTravel: 'جلسات السفر',
+  empOvernight: 'جلسات المبيت',
   empApproved: 'الجلسات المعتمدة',
-  empPending: 'جلسات قيد المراجعة',
+  empPending: 'الجلسات قيد المراجعة',
   empRejected: 'الجلسات المرفوضة',
   sessionId: 'معرّف الجلسة',
   employeeName: 'اسم الموظف',
@@ -287,14 +295,16 @@ export function excelStrings(lang) {
   return normalizeExportLanguage(lang) === EXPORT_LANG.AR ? AR : EN;
 }
 
-/** Excel-supported directional embedding (isolates are unreliable in Excel). */
+/** Excel-supported directional marks (isolates are unreliable in Excel). */
 const LRE = '\u202A';
 const PDF = '\u202C';
+const LRM = '\u200E';
 
 /**
- * Keep Arabic duration text in logical visual order inside Excel RTL cells.
- * Wraps with LRE…PDF so mixed Latin digits + Arabic words do not reorder to
- * "57 دقيقة 14 ساعة". English strings are returned unchanged.
+ * Keep Arabic duration text in logical visual order inside Excel cells.
+ * - Wrap Latin digit runs with LRM so hours stay before minutes.
+ * - Embed the full phrase with LRE…PDF (Excel-supported).
+ * English strings are returned unchanged.
  */
 export function excelSafeDurationText(text, lang = EXPORT_LANG.EN) {
   if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) return text;
@@ -303,7 +313,8 @@ export function excelSafeDurationText(text, lang = EXPORT_LANG.EN) {
   if (value === '—' || value === AR.dash) return value;
   // Avoid nesting if already protected.
   if (value.startsWith(LRE) && value.endsWith(PDF)) return value;
-  return `${LRE}${value}${PDF}`;
+  const withProtectedDigits = value.replace(/(\d+)/g, `${LRM}$1${LRM}`);
+  return `${LRE}${withProtectedDigits}${PDF}`;
 }
 
 /** Strip Unicode bidi marks for assertions / comparisons. */

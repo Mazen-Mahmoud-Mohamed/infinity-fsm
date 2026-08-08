@@ -1176,6 +1176,9 @@
       "path": { "type": "String" }
     }
   },
+  "overtimeExportSaveFailed": "Could not save the Excel file. Please try again.",
+  "overtimeExportOpenFailed": "Could not open the file. Please try again.",
+  "overtimeExportOpenFolderFailed": "Could not open the containing folder.",
   "overtimeRequiresManualReview": "Requires manual review",
   "overtimeProgress": "Progress",
   "overtimeStatusLabel": "Status",

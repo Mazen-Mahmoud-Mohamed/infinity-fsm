@@ -134,6 +134,18 @@ describe('overtime excel export helpers', () => {
       formatDurationProseFromMinutes(7 * 60 + 44, 'ar'),
       '7 ساعة و 44 دقيقة'
     );
+    expectArabicDuration(
+      formatDurationProseFromMinutes(18 * 60 + 44, 'ar'),
+      '18 ساعة و 44 دقيقة'
+    );
+    expectArabicDuration(
+      formatDurationProseFromMinutes(23 * 60 + 42, 'ar'),
+      '23 ساعة و 42 دقيقة'
+    );
+    expectArabicDuration(
+      formatDurationProseFromMinutes(43 * 60 + 30, 'ar'),
+      '43 ساعة و 30 دقيقة'
+    );
     expectArabicDuration(formatDurationProseFromMinutes(60, 'ar'), 'ساعة واحدة');
     expectArabicDuration(formatDurationProseFromMinutes(40, 'ar'), '40 دقيقة');
     expectArabicDuration(formatDurationProseFromMinutes(0, 'ar'), '0 دقيقة');
@@ -141,6 +153,10 @@ describe('overtime excel export helpers', () => {
       formatDurationProseFromHours(14.95, 'ar'),
       '14 ساعة و 57 دقيقة'
     );
+    // Digit runs are also LRM-protected for Excel display stability.
+    const sample = formatDurationProseFromMinutes(18 * 60 + 44, 'ar');
+    expect(sample.includes('\u200E18\u200E')).toBe(true);
+    expect(sample.includes('\u200E44\u200E')).toBe(true);
   });
 
   test('overnight label is travel-only and localized', () => {
@@ -256,7 +272,11 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(/Overall Report KPIs/);
     expect(joined).toMatch(/Employee Summary/);
     expect(joined).toMatch(/Total Technicians/);
-    expect(joined).toMatch(/Total Overnight Trips/);
+    expect(joined).toMatch(/Total Calculated \/ Worked Hours/);
+    expect(joined).toMatch(/Total Approved Hours/);
+    expect(joined).toMatch(/Pending \/ Review Sessions/);
+    expect(joined).toMatch(/Rejected Sessions/);
+    expect(joined).toMatch(/Overnight Sessions/);
     expect(joined).toMatch(/Ada Lovelace/);
     expect(joined).toMatch(/ada@example\.com/);
     expect(joined).toMatch(/10 hours 20 minutes/);
@@ -275,6 +295,10 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(t.sectionKpis);
     expect(joined).toMatch(t.sectionEmployeeBreakdown);
     expect(joined).toMatch(t.kpiTotalTechnicians);
+    expect(joined).toMatch(t.kpiTotalWorkedHours);
+    expect(joined).toMatch(t.kpiTotalApprovedHours);
+    expect(joined).toMatch(t.kpiPendingSessions);
+    expect(joined).toMatch(t.kpiRejectedSessions);
     expect(stripBidiMarks(joined)).toMatch(/14 ساعة و 57 دقيقة/);
     expect(stripBidiMarks(joined)).toMatch(/10 ساعة و 20 دقيقة/);
     expect(joined).toMatch(/ada@example\.com/);

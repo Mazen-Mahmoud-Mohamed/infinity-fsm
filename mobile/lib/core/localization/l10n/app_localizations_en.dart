@@ -3122,6 +3122,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get overtimeExportSaveFailed =>
+      'Could not save the Excel file. Please try again.';
+
+  @override
+  String get overtimeExportOpenFailed =>
+      'Could not open the file. Please try again.';
+
+  @override
+  String get overtimeExportOpenFolderFailed =>
+      'Could not open the containing folder.';
+
+  @override
   String get overtimeRequiresManualReview => 'Requires manual review';
 
   @override
