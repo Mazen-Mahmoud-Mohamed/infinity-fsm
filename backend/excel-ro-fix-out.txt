@@ -1,0 +1,4 @@
+RTL=True
+C24 before RO=-5003 Text=[23 ساعة و 42 دقيقة]
+After sheet LTR: C24 RO=-5003 Text=[23 ساعة و 42 دقيقة]
+F24=[5] G24=[1] A24=[Field Technician]

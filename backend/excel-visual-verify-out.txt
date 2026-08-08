@@ -1,0 +1,27 @@
+sheetRTL=False
+headerRow=23
+HA=[اسم الموظف]
+HB=[بريد الموظف]
+HC=[إجمالي الساعات المحسوبة / الفعلية]
+HD=[إجمالي الساعات المعتمدة]
+HE=[إجمالي الجلسات]
+HF=[الجلسات العادية]
+HG=[جلسات السفر]
+HH=[جلسات المبيت]
+HI=[الجلسات المعتمدة]
+HJ=[الجلسات قيد المراجعة]
+HK=[الجلسات المرفوضة]
+DA Text=[Field Technician] RO=-5002
+DB Text=[test@gmail.com] RO=-5002
+DC Text=[23 ساعة و 42 دقيقة] RO=-5003
+DD Text=[18 ساعة و 44 دقيقة] RO=-5003
+DE Text=[6] RO=-5002
+DF Text=[5] RO=-5002
+DG Text=[1] RO=-5002
+DH Text=[1] RO=-5002
+DI Text=[3] RO=-5002
+DJ Text=[3] RO=-5002
+DK Text=[0] RO=-5002
+htmlHasDirLTR=True
+htmlHasTdDirRTL=False
+EXCEL_RENDER_DIR=LTR (hours-before-minutes visual base)

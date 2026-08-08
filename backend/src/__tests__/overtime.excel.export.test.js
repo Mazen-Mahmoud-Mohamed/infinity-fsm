@@ -1,10 +1,12 @@
 import {
   formatDurationProseFromHours,
   formatDurationProseFromMinutes,
+  formatExcelDuration,
   overnightLabel,
   buildOvertimeExcelWorkbook,
   computeEmployeeSummaries,
   getEmployeeSummaryColumnDefs,
+  employeeSummaryRowValues,
   EXPORT_MODE,
   stripBidiMarks,
 } from '../modules/business/overtime/overtime.excel.export.js';
@@ -14,26 +16,96 @@ import {
   typeLabel,
 } from '../modules/business/overtime/overtime.excel.i18n.js';
 import ExcelJS from 'exceljs';
+import JSZip from 'jszip';
 
 const LRO = '\u202D';
 const PDF = '\u202C';
 const LRM = '\u200E';
+const RLM = '\u200F';
 
-function expectArabicDuration(actual, expectedLogical) {
-  expect(stripBidiMarks(actual)).toBe(expectedLogical);
-  expect(String(actual).startsWith(LRO)).toBe(true);
-  expect(String(actual).endsWith(PDF)).toBe(true);
-  // No per-digit LRM marks — they break Excel RTL rendering.
-  expect(String(actual).includes(LRM)).toBe(false);
-  // Hours digits must precede minutes digits in logical (storage) order.
-  const hoursMatch = expectedLogical.match(/^(\d+)\s/);
-  const minutesMatch = expectedLogical.match(/و\s+(\d+)\s/);
+function expectPlainArabicDuration(actual, expectedLogical) {
+  const value = String(actual);
+  expect(value).toBe(expectedLogical);
+  expect(value).not.toMatch(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\u061C]/);
+  const hoursMatch = expectedLogical.match(/^(\d+)\s+ساعة/);
+  const minutesMatch = expectedLogical.match(/و\s+(\d+)\s+دقيقة/);
   if (hoursMatch && minutesMatch) {
-    const stripped = stripBidiMarks(actual);
-    expect(stripped.indexOf(hoursMatch[1])).toBeLessThan(
-      stripped.indexOf(minutesMatch[1])
+    expect(value.indexOf(hoursMatch[1])).toBeLessThan(
+      value.indexOf(minutesMatch[1])
     );
+    expect(value.indexOf('ساعة')).toBeLessThan(value.indexOf('دقيقة'));
   }
+}
+
+function makeUser(id, first, last, email) {
+  return {
+    _id: { toString: () => id },
+    firstName: first,
+    lastName: last,
+    email,
+    employeeId: id,
+  };
+}
+
+/** Screenshot regression fixture: Field Technician + test2 test. */
+function makeScreenshotRegressionRecords() {
+  const u1 = makeUser('u1', 'Field', 'Technician', 'test@gmail.com');
+  const u2 = makeUser('u2', 'test2', 'test', 'test2@gmail.com');
+  const records = [];
+  const fieldEligible = [250, 250, 250, 250, 250, 172];
+  for (let i = 0; i < 6; i += 1) {
+    records.push({
+      _id: { toString: () => `f${i}` },
+      type: i === 5 ? 'TRAVEL' : 'NORMAL',
+      status: i < 3 ? 'APPROVED' : 'PENDING_REVIEW',
+      isOvernight: i === 5,
+      startAt: new Date('2026-03-01T08:00:00.000Z'),
+      endAt: new Date('2026-03-01T22:00:00.000Z'),
+      createdAt: new Date('2026-03-01T07:55:00.000Z'),
+      eligibleOvertimeMinutes: fieldEligible[i],
+      workingDurationMinutes: fieldEligible[i],
+      totalDurationMinutes: fieldEligible[i],
+      approvedHours: null,
+      userId: u1,
+    });
+  }
+  records[0].approvedHours = 6;
+  records[1].approvedHours = 6;
+  records[2].approvedHours = (1124 - 720) / 60;
+
+  const test2 = [
+    { id: 't0', eligible: 300, status: 'APPROVED', overnight: true, approvedHours: 14.3 },
+    { id: 't1', eligible: 300, status: 'PENDING_REVIEW', overnight: false },
+    { id: 't2', eligible: 300, status: 'PENDING_REVIEW', overnight: false },
+    { id: 't3', eligible: 288, status: 'PENDING_REVIEW', overnight: false },
+  ];
+  for (const row of test2) {
+    records.push({
+      _id: { toString: () => row.id },
+      type: 'TRAVEL',
+      status: row.status,
+      isOvernight: !!row.overnight,
+      startAt: new Date('2026-03-01T08:00:00.000Z'),
+      endAt: new Date('2026-03-01T22:00:00.000Z'),
+      createdAt: new Date('2026-03-01T07:55:00.000Z'),
+      eligibleOvertimeMinutes: row.eligible,
+      workingDurationMinutes: row.eligible,
+      totalDurationMinutes: row.eligible,
+      approvedHours: row.approvedHours ?? null,
+      userId: u2,
+    });
+  }
+  return records;
+}
+
+function findEmployeeHeaderRow(summary, empName) {
+  let headerRowNumber = 0;
+  summary.eachRow((row, rowNumber) => {
+    if (String(row.getCell(1).value) === empName) {
+      headerRowNumber = rowNumber;
+    }
+  });
+  return headerRowNumber;
 }
 
 function makeRecord(overrides = {}) {
@@ -125,37 +197,47 @@ describe('overtime excel export helpers', () => {
     expect(value.includes(PDF)).toBe(false);
   });
 
-  test('Arabic durations use full-string LRO and keep hours-before-minutes order', () => {
-    expectArabicDuration(formatDurationProseFromMinutes(0, 'ar'), '0 دقيقة');
-    expectArabicDuration(formatDurationProseFromMinutes(1, 'ar'), '1 دقيقة');
-    expectArabicDuration(formatDurationProseFromMinutes(120, 'ar'), '2 ساعة');
-    expectArabicDuration(
+  test('formatExcelDuration always uses hours → ساعة → و → minutes → دقيقة', () => {
+    expect(formatExcelDuration(2, 33)).toBe('2 ساعة و 33 دقيقة');
+    expect(formatExcelDuration(23, 42)).toBe('23 ساعة و 42 دقيقة');
+    expect(formatExcelDuration(18, 44)).toBe('18 ساعة و 44 دقيقة');
+    expect(formatExcelDuration(19, 48)).toBe('19 ساعة و 48 دقيقة');
+    expect(formatExcelDuration(14, 18)).toBe('14 ساعة و 18 دقيقة');
+    expect(formatExcelDuration(0, 40)).toBe('40 دقيقة');
+    expect(formatExcelDuration(2, 0)).toBe('2 ساعة');
+  });
+
+  test('Arabic durations are plain logical strings without bidi marks', () => {
+    expectPlainArabicDuration(formatDurationProseFromMinutes(0, 'ar'), '0 دقيقة');
+    expectPlainArabicDuration(formatDurationProseFromMinutes(1, 'ar'), '1 دقيقة');
+    expectPlainArabicDuration(formatDurationProseFromMinutes(120, 'ar'), '2 ساعة');
+    expectPlainArabicDuration(
       formatDurationProseFromMinutes(2 * 60 + 33, 'ar'),
       '2 ساعة و 33 دقيقة'
     );
-    expectArabicDuration(
+    expectPlainArabicDuration(
       formatDurationProseFromMinutes(14 * 60 + 57, 'ar'),
       '14 ساعة و 57 دقيقة'
     );
-    expectArabicDuration(
-      formatDurationProseFromMinutes(44 * 60 + 18, 'ar'),
-      '44 ساعة و 18 دقيقة'
-    );
-    expectArabicDuration(
+    expectPlainArabicDuration(
       formatDurationProseFromMinutes(18 * 60 + 44, 'ar'),
       '18 ساعة و 44 دقيقة'
     );
-    expectArabicDuration(
+    expectPlainArabicDuration(
       formatDurationProseFromMinutes(23 * 60 + 42, 'ar'),
       '23 ساعة و 42 دقيقة'
     );
-    expectArabicDuration(
-      formatDurationProseFromMinutes(43 * 60 + 30, 'ar'),
-      '43 ساعة و 30 دقيقة'
+    expectPlainArabicDuration(
+      formatDurationProseFromMinutes(19 * 60 + 48, 'ar'),
+      '19 ساعة و 48 دقيقة'
     );
-    expectArabicDuration(formatDurationProseFromMinutes(60, 'ar'), 'ساعة واحدة');
-    expectArabicDuration(formatDurationProseFromMinutes(40, 'ar'), '40 دقيقة');
-    expectArabicDuration(
+    expectPlainArabicDuration(
+      formatDurationProseFromMinutes(14 * 60 + 18, 'ar'),
+      '14 ساعة و 18 دقيقة'
+    );
+    expectPlainArabicDuration(formatDurationProseFromMinutes(60, 'ar'), '1 ساعة');
+    expectPlainArabicDuration(formatDurationProseFromMinutes(40, 'ar'), '40 دقيقة');
+    expectPlainArabicDuration(
       formatDurationProseFromHours(14.95, 'ar'),
       '14 ساعة و 57 دقيقة'
     );
@@ -347,7 +429,7 @@ describe('overtime excel workbook columns', () => {
     expect(String(dataRow.getCell(9).value)).toBe('معتمد');
   });
 
-  test('Arabic workbook duration cells keep protected hours-before-minutes order', async () => {
+  test('Arabic workbook duration cells are plain text with LTR readingOrder', async () => {
     const t = excelStrings('ar');
     const workbook = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'ar' });
     const summary = workbook.getWorksheet(t.sheetSummary);
@@ -356,27 +438,26 @@ describe('overtime excel workbook columns', () => {
       row.eachCell((cell) => {
         const raw = cell.value == null ? '' : String(cell.value);
         if (raw.includes('ساعة') || raw.includes('دقيقة')) {
-          found.push(raw);
+          found.push(cell);
         }
       });
     });
     expect(found.length).toBeGreaterThan(0);
-    for (const value of found) {
-      expect(value.startsWith(LRO)).toBe(true);
-      expect(value.endsWith(PDF)).toBe(true);
-      expect(value.includes(LRM)).toBe(false);
-      const logical = stripBidiMarks(value);
-      const hoursMatch = logical.match(/^(\d+)\s+ساعة/);
-      const minutesMatch = logical.match(/و\s+(\d+)\s+دقيقة/);
+    for (const cell of found) {
+      const value = String(cell.value);
+      expect(value).not.toMatch(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\u061C]/);
+      expect(cell.alignment?.readingOrder).toBe('ltr');
+      const hoursMatch = value.match(/^(\d+)\s+ساعة/);
+      const minutesMatch = value.match(/و\s+(\d+)\s+دقيقة/);
       if (hoursMatch && minutesMatch) {
-        expect(logical.indexOf(hoursMatch[1])).toBeLessThan(
-          logical.indexOf(minutesMatch[1])
+        expect(value.indexOf(hoursMatch[1])).toBeLessThan(
+          value.indexOf(minutesMatch[1])
         );
       }
     }
   });
 
-  test('employee summary headers and row values stay column-aligned', async () => {
+  test('employee summary canonical columns are A:K with normal before travel', () => {
     const columns = getEmployeeSummaryColumnDefs('ar');
     expect(columns).toHaveLength(11);
     expect(columns.map((c) => c.key)).toEqual([
@@ -384,43 +465,168 @@ describe('overtime excel workbook columns', () => {
       'email',
       'workedHours',
       'approvedHours',
-      'sessions',
-      'travel',
-      'normal',
-      'overnight',
-      'approved',
-      'pending',
-      'rejected',
+      'totalSessions',
+      'normalSessions',
+      'travelSessions',
+      'overnightSessions',
+      'approvedSessions',
+      'pendingSessions',
+      'rejectedSessions',
     ]);
-
     const t = excelStrings('ar');
-    const workbook = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'ar' });
+    expect(columns.map((c) => c.header)).toEqual([
+      'اسم الموظف',
+      'بريد الموظف',
+      'إجمالي الساعات المحسوبة / الفعلية',
+      'إجمالي الساعات المعتمدة',
+      'إجمالي الجلسات',
+      'الجلسات العادية',
+      'جلسات السفر',
+      'جلسات المبيت',
+      'الجلسات المعتمدة',
+      'الجلسات قيد المراجعة',
+      'الجلسات المرفوضة',
+    ]);
+    expect(t.empName).toBe(columns[0].header);
+  });
+
+  test('screenshot regression: employee A:K mapping and durations in generated XLSX', async () => {
+    const t = excelStrings('ar');
+    const columns = getEmployeeSummaryColumnDefs('ar');
+    const records = makeScreenshotRegressionRecords();
+    const buffer = await buildOvertimeExcelWorkbook({
+      records,
+      generatedBy: 'Admin',
+      generatedAt: new Date('2026-03-02T00:00:00.000Z'),
+      companyName: 'Infinity',
+      companyLogoUrl: '',
+      appVersion: '1.0.0-test',
+      mode: EXPORT_MODE.SUMMARY,
+      language: 'ar',
+      filters: { dateRange: 'All', status: 'ALL', type: 'ALL' },
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(buffer);
     const summary = workbook.getWorksheet(t.sheetSummary);
     expect(summary).toBeTruthy();
+    // Column-LTR sheet so A is visually on the left (matches A:K semantic order).
+    expect(Boolean(summary.views?.[0]?.rightToLeft)).toBe(false);
 
-    // Locate the employee header row by the canonical first header.
-    let headerRowNumber = 0;
-    summary.eachRow((row, rowNumber) => {
-      if (String(row.getCell(1).value) === t.empName) {
-        headerRowNumber = rowNumber;
-      }
-    });
+    const headerRowNumber = findEmployeeHeaderRow(summary, t.empName);
     expect(headerRowNumber).toBeGreaterThan(0);
 
     const headerRow = summary.getRow(headerRowNumber);
     const headers = columns.map((_, i) => String(headerRow.getCell(i + 1).value ?? ''));
     expect(headers).toEqual(columns.map((c) => c.header));
-    expect(headers).toHaveLength(columns.length);
+    expect(headers[5]).toBe('الجلسات العادية');
+    expect(headers[6]).toBe('جلسات السفر');
+
+    const row1 = summary.getRow(headerRowNumber + 1);
+    const row2 = summary.getRow(headerRowNumber + 2);
+
+    // First employee starts at A, not B — no leading empty cell.
+    expect(row1.getCell(1).value).toBe('Field Technician');
+    expect(row1.getCell(2).value).toBe('test@gmail.com');
+    expect(row1.getCell(1).value).not.toBe('');
+    expect(row1.getCell(1).value).not.toBeNull();
+    const sparse = row1.values;
+    if (Array.isArray(sparse) && sparse.length > 1) {
+      expect(sparse[1]).toBe('Field Technician');
+    }
+
+    expectPlainArabicDuration(row1.getCell(3).value, '23 ساعة و 42 دقيقة');
+    expectPlainArabicDuration(row1.getCell(4).value, '18 ساعة و 44 دقيقة');
+    expect(row1.getCell(5).value).toBe(6);
+    expect(row1.getCell(6).value).toBe(5); // F = normal
+    expect(row1.getCell(7).value).toBe(1); // G = travel
+    expect(row1.getCell(8).value).toBe(1);
+    expect(row1.getCell(9).value).toBe(3);
+    expect(row1.getCell(10).value).toBe(3);
+    expect(row1.getCell(11).value).toBe(0);
+
+    expect(row2.getCell(1).value).toBe('test2 test');
+    expect(row2.getCell(2).value).toBe('test2@gmail.com');
+    expectPlainArabicDuration(row2.getCell(3).value, '19 ساعة و 48 دقيقة');
+    expectPlainArabicDuration(row2.getCell(4).value, '14 ساعة و 18 دقيقة');
+    expect(row2.getCell(5).value).toBe(4);
+    expect(row2.getCell(6).value).toBe(0);
+    expect(row2.getCell(7).value).toBe(4);
+    expect(row2.getCell(8).value).toBe(1);
+    expect(row2.getCell(9).value).toBe(1);
+    expect(row2.getCell(10).value).toBe(3);
+    expect(row2.getCell(11).value).toBe(0);
+
+    expect(row1.getCell(3).alignment?.readingOrder).toBe('ltr');
+    expect(row1.getCell(4).alignment?.readingOrder).toBe('ltr');
+    expect(row2.getCell(3).alignment?.readingOrder).toBe('ltr');
+    expect(row2.getCell(4).alignment?.readingOrder).toBe('ltr');
+
+    // OOXML: column-LTR sheet, duration readingOrder=1, plain strings, A before B.
+    const zip = await JSZip.loadAsync(buffer);
+    const sheetXml = await zip.file('xl/worksheets/sheet1.xml').async('string');
+    const stylesXml = await zip.file('xl/styles.xml').async('string');
+    const sharedXml = await zip.file('xl/sharedStrings.xml').async('string');
+
+    expect(sheetXml).not.toContain('rightToLeft="1"');
+    expect(stylesXml).toContain('readingOrder="1"');
+    expect(sharedXml).not.toContain(LRO);
+    expect(sharedXml).not.toContain(PDF);
+    expect(sharedXml).not.toContain(LRM);
+    expect(sharedXml).not.toContain(RLM);
+    expect(sharedXml).toContain('23 ساعة و 42 دقيقة');
+    expect(sharedXml).toContain('Field Technician');
+    expect(sharedXml).toContain('test2 test');
+    // Hours digit must appear before minutes digit in stored text.
+    const durationIdx = sharedXml.indexOf('23 ساعة و 42 دقيقة');
+    expect(durationIdx).toBeGreaterThan(-1);
+    expect(sharedXml.indexOf('42', durationIdx)).toBeGreaterThan(
+      sharedXml.indexOf('23', durationIdx)
+    );
+
+    const dataRowXml =
+      sheetXml.match(
+        new RegExp(`<row r="${headerRowNumber + 1}"[\\s\\S]*?</row>`)
+      )?.[0] || '';
+    expect(dataRowXml).toContain(`r="A${headerRowNumber + 1}"`);
+    expect(dataRowXml).toContain(`r="B${headerRowNumber + 1}"`);
+    expect(dataRowXml.indexOf(`r="A${headerRowNumber + 1}"`)).toBeLessThan(
+      dataRowXml.indexOf(`r="B${headerRowNumber + 1}"`)
+    );
+    // Duration cells must use a style that includes readingOrder (s index with ltr).
+    expect(dataRowXml).toMatch(
+      new RegExp(`<c r="C${headerRowNumber + 1}" s="\\d+"`)
+    );
+
+    const summaries = computeEmployeeSummaries(records);
+    const field = summaries.find((s) => s.email === 'test@gmail.com');
+    const mapped = employeeSummaryRowValues(field, 'ar');
+    expect(mapped.name).toBe('Field Technician');
+    expect(mapped.normalSessions).toBe(5);
+    expect(mapped.travelSessions).toBe(1);
+    expect(Object.keys(mapped)).toEqual(columns.map((c) => c.key));
+  });
+
+  test('employee summary headers and row values stay column-aligned', async () => {
+    const columns = getEmployeeSummaryColumnDefs('ar');
+    const t = excelStrings('ar');
+    const workbook = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'ar' });
+    const summary = workbook.getWorksheet(t.sheetSummary);
+    expect(summary).toBeTruthy();
+
+    const headerRowNumber = findEmployeeHeaderRow(summary, t.empName);
+    expect(headerRowNumber).toBeGreaterThan(0);
+
+    const headerRow = summary.getRow(headerRowNumber);
+    const headers = columns.map((_, i) => String(headerRow.getCell(i + 1).value ?? ''));
+    expect(headers).toEqual(columns.map((c) => c.header));
 
     const dataRow = summary.getRow(headerRowNumber + 1);
     const values = columns.map((_, i) => dataRow.getCell(i + 1).value);
-    expect(values).toHaveLength(headers.length);
     expect(values[0]).toBe('Ada Lovelace');
     expect(values[1]).toBe('ada@example.com');
-    expect(stripBidiMarks(String(values[2]))).toMatch(/ساعة|دقيقة/);
-    expect(stripBidiMarks(String(values[3]))).toMatch(/ساعة|دقيقة/);
-
-    // Ensure no off-by-one empty name column.
+    expect(String(values[2])).toMatch(/ساعة|دقيقة/);
+    expect(String(values[3])).toMatch(/ساعة|دقيقة/);
     expect(values[0]).not.toBeNull();
     expect(values[0]).not.toBe('');
     expect(String(values[0])).not.toMatch(/@/);

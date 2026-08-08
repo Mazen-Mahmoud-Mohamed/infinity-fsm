@@ -16,6 +16,7 @@ import {
   overnightLabel,
   stageMetaForLang,
   excelSafeDurationText,
+  formatExcelDuration,
   stripBidiMarks,
 } from './overtime.excel.i18n.js';
 
@@ -584,17 +585,34 @@ function writeSectionHeader(sheet, row, title, fillArgb = COLORS.navy, colSpan =
   return row + 1;
 }
 
+/**
+ * Arabic worksheets stay column-LTR (A on the left) so the employee table's
+ * visual order matches logical A:K. Duration cells still set readingOrder=ltr
+ * because context-dependent direction picks RTL from the first Arabic letter
+ * (digits are not strong), which visually reverses "23 ساعة و 42 دقيقة".
+ */
+function sheetUsesRightToLeft(lang) {
+  // Intentionally false for Arabic: sheet RTL mirrors columns and makes A:K
+  // appear semantically wrong when read left-to-right in Excel.
+  void lang;
+  return false;
+}
+
 function durationCellAlignment(lang) {
   if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) {
     return { vertical: 'middle', wrapText: true, horizontal: 'center' };
   }
-  // Full-string LRO is applied in the text; keep the cell LTR so Excel honors it.
   return {
     vertical: 'middle',
     wrapText: true,
     horizontal: 'left',
     readingOrder: 'ltr',
   };
+}
+
+function isDurationCellValue(value) {
+  if (typeof value !== 'string') return false;
+  return /ساعة|دقيقة|hour|minute/i.test(value);
 }
 
 function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
@@ -627,11 +645,7 @@ function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
         color: { argb: COLORS.navy },
       };
       valueRow.getCell(col).fill = solidFill(COLORS.kpiBg);
-      const isDuration =
-        typeof kpi.value === 'string' &&
-        (/ساعة|دقيقة|hour|minute/i.test(kpi.value) ||
-          String(kpi.value).includes('\u202D'));
-      valueRow.getCell(col).alignment = isDuration
+      valueRow.getCell(col).alignment = isDurationCellValue(kpi.value)
         ? durationCellAlignment(lang)
         : {
             horizontal: 'center',
@@ -648,80 +662,56 @@ function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
 }
 
 /**
- * Canonical employee-summary columns — headers and values MUST share this order.
+ * Canonical employee-summary columns — ONE source for headers, values,
+ * widths, and tests. Logical + visual A:K (sheet is column-LTR).
  * ExcelJS `row.values = [null, …]` is forbidden (null occupies column A and shifts data).
  */
 export function getEmployeeSummaryColumnDefs(lang = EXPORT_LANG.EN) {
   const t = excelStrings(lang);
   return [
-    {
-      key: 'name',
-      header: t.empName,
-      getValue: (employee) => employee.technicianName,
-    },
-    {
-      key: 'email',
-      header: t.empEmail,
-      getValue: (employee) => employee.email,
-    },
-    {
-      key: 'workedHours',
-      header: t.empWorkedHours,
-      isDuration: true,
-      getValue: (employee) =>
-        formatDurationProseFromMinutes(employee.totalWorkedMinutes, lang),
-    },
-    {
-      key: 'approvedHours',
-      header: t.empApprovedHours,
-      isDuration: true,
-      getValue: (employee) =>
-        formatDurationProseFromMinutes(employee.totalApprovedMinutes, lang),
-    },
-    {
-      key: 'sessions',
-      header: t.empSessions,
-      getValue: (employee) => employee.totalSessions,
-    },
-    {
-      key: 'travel',
-      header: t.empTravel,
-      getValue: (employee) => employee.travelSessions,
-    },
-    {
-      key: 'normal',
-      header: t.empNormal,
-      getValue: (employee) => employee.normalSessions,
-    },
-    {
-      key: 'overnight',
-      header: t.empOvernight,
-      getValue: (employee) => employee.overnightTrips,
-    },
-    {
-      key: 'approved',
-      header: t.empApproved,
-      getValue: (employee) => employee.approvedSessions,
-    },
-    {
-      key: 'pending',
-      header: t.empPending,
-      getValue: (employee) => employee.pendingReviewSessions,
-    },
-    {
-      key: 'rejected',
-      header: t.empRejected,
-      getValue: (employee) => employee.rejectedSessions,
-    },
+    { key: 'name', header: t.empName, width: 22 },
+    { key: 'email', header: t.empEmail, width: 28 },
+    { key: 'workedHours', header: t.empWorkedHours, isDuration: true, width: 26 },
+    { key: 'approvedHours', header: t.empApprovedHours, isDuration: true, width: 24 },
+    { key: 'totalSessions', header: t.empSessions, width: 14 },
+    { key: 'normalSessions', header: t.empNormal, width: 14 },
+    { key: 'travelSessions', header: t.empTravel, width: 14 },
+    { key: 'overnightSessions', header: t.empOvernight, width: 14 },
+    { key: 'approvedSessions', header: t.empApproved, width: 14 },
+    { key: 'pendingSessions', header: t.empPending, width: 16 },
+    { key: 'rejectedSessions', header: t.empRejected, width: 14 },
   ];
+}
+
+/** Map aggregated employee summary → canonical A:K cell values. */
+export function employeeSummaryRowValues(employee, lang = EXPORT_LANG.EN) {
+  return {
+    name: employee.technicianName,
+    email: employee.email,
+    workedHours: formatDurationProseFromMinutes(
+      employee.totalWorkedMinutes,
+      lang
+    ),
+    approvedHours: formatDurationProseFromMinutes(
+      employee.totalApprovedMinutes,
+      lang
+    ),
+    totalSessions: employee.totalSessions,
+    normalSessions: employee.normalSessions,
+    travelSessions: employee.travelSessions,
+    overnightSessions: employee.overnightTrips,
+    approvedSessions: employee.approvedSessions,
+    pendingSessions: employee.pendingReviewSessions,
+    rejectedSessions: employee.rejectedSessions,
+  };
 }
 
 function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
   const columns = getEmployeeSummaryColumnDefs(lang);
   const headerRow = sheet.getRow(startRow);
-  columns.forEach((column, index) => {
-    const cell = headerRow.getCell(index + 1);
-    cell.value = column.header;
+  for (let i = 0; i < columns.length; i += 1) {
+    const cell = headerRow.getCell(i + 1);
+    cell.value = columns[i].header;
     cell.font = { bold: true, color: { argb: COLORS.white } };
     cell.fill = solidFill(COLORS.navy);
     cell.border = thinBorder();
@@ -730,20 +720,22 @@ function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
       horizontal: 'center',
       wrapText: true,
     };
-  });
+  }
   headerRow.height = 34;
 
   summaries.forEach((employee, index) => {
     const row = sheet.getRow(startRow + index + 1);
-    columns.forEach((column, colIndex) => {
-      const cell = row.getCell(colIndex + 1);
-      cell.value = column.getValue(employee);
+    const values = employeeSummaryRowValues(employee, lang);
+    for (let i = 0; i < columns.length; i += 1) {
+      const column = columns[i];
+      const cell = row.getCell(i + 1);
+      cell.value = values[column.key];
       cell.border = thinBorder();
       cell.alignment = column.isDuration
         ? durationCellAlignment(lang)
         : { vertical: 'middle', wrapText: true };
       if (index % 2 === 1) cell.fill = solidFill(COLORS.altRow);
-    });
+    }
   });
   return startRow + summaries.length + 1;
 }
@@ -857,29 +849,16 @@ export async function buildOvertimeExcelWorkbook({
       {
         state: 'frozen',
         ySplit: 3,
-        rightToLeft: lang === EXPORT_LANG.AR,
+        rightToLeft: sheetUsesRightToLeft(lang),
         activeCell: 'A1',
       },
     ],
     properties: {
       defaultRowHeight: 18,
-      // Keep unused columns narrow so RTL sheets are not dominated by empty space.
       defaultColWidth: 8,
     },
   });
-  summary.columns = [
-    { width: 22 }, // name
-    { width: 28 }, // email
-    { width: 24 }, // worked hours
-    { width: 22 }, // approved hours
-    { width: 14 }, // sessions
-    { width: 12 }, // travel
-    { width: 12 }, // normal
-    { width: 12 }, // overnight
-    { width: 12 }, // approved
-    { width: 14 }, // pending
-    { width: 12 }, // rejected
-  ].slice(0, summaryColCount);
+  summary.columns = employeeColumns.map((column) => ({ width: column.width }));
   applyPrintSetup(summary);
   applyWorksheetFooter(summary, generatedAt, lang);
 
@@ -1022,7 +1001,7 @@ export async function buildOvertimeExcelWorkbook({
       {
         state: 'frozen',
         ySplit: 1,
-        rightToLeft: lang === EXPORT_LANG.AR,
+        rightToLeft: sheetUsesRightToLeft(lang),
       },
     ],
   });
@@ -1174,7 +1153,7 @@ export async function buildOvertimeExcelWorkbook({
         {
           state: 'frozen',
           ySplit: 2,
-          rightToLeft: lang === EXPORT_LANG.AR,
+          rightToLeft: sheetUsesRightToLeft(lang),
         },
       ],
     });
@@ -1547,7 +1526,7 @@ export async function buildOvertimeExcelWorkbook({
         {
           state: 'frozen',
           ySplit: 1,
-          rightToLeft: lang === EXPORT_LANG.AR,
+          rightToLeft: sheetUsesRightToLeft(lang),
         },
       ],
     });
@@ -1629,6 +1608,7 @@ export {
   MAX_SESSION_SHEETS,
   formatDurationProseFromMinutes,
   formatDurationProseFromHours,
+  formatExcelDuration,
   overnightLabel,
   excelSafeDurationText,
   stripBidiMarks,

@@ -1,0 +1,49 @@
+Excel version: 16.0
+Sheet name: الملخص
+DisplayRightToLeft: True
+A20 Text=[6] RO=-5002 Val=[6]
+B20 Text=[0] RO=-5002 Val=[0]
+A22 Text=[ملخص الموظفين] RO=-5002 Val=[ملخص الموظفين]
+A23 Text=[اسم الموظف] RO=-5002 Val=[اسم الموظف]
+B23 Text=[بريد الموظف] RO=-5002 Val=[بريد الموظف]
+C23 Text=[إجمالي الساعات المحسوبة / الفعلية] RO=-5002 Val=[إجمالي الساعات المحسوبة / الفعلية]
+D23 Text=[إجمالي الساعات المعتمدة] RO=-5002 Val=[إجمالي الساعات المعتمدة]
+E23 Text=[إجمالي الجلسات] RO=-5002 Val=[إجمالي الجلسات]
+F23 Text=[الجلسات العادية] RO=-5002 Val=[الجلسات العادية]
+G23 Text=[جلسات السفر] RO=-5002 Val=[جلسات السفر]
+H23 Text=[جلسات المبيت] RO=-5002 Val=[جلسات المبيت]
+I23 Text=[الجلسات المعتمدة] RO=-5002 Val=[الجلسات المعتمدة]
+J23 Text=[الجلسات قيد المراجعة] RO=-5002 Val=[الجلسات قيد المراجعة]
+K23 Text=[الجلسات المرفوضة] RO=-5002 Val=[الجلسات المرفوضة]
+A24 Text=[Field Technician] RO=-5002 Val=[Field Technician]
+B24 Text=[test@gmail.com] RO=-5002 Val=[test@gmail.com]
+C24 Text=[23 ساعة و 42 دقيقة] RO=-5003 Val=[23 ساعة و 42 دقيقة]
+D24 Text=[18 ساعة و 44 دقيقة] RO=-5003 Val=[18 ساعة و 44 دقيقة]
+E24 Text=[6] RO=-5002 Val=[6]
+F24 Text=[5] RO=-5002 Val=[5]
+G24 Text=[1] RO=-5002 Val=[1]
+H24 Text=[1] RO=-5002 Val=[1]
+I24 Text=[3] RO=-5002 Val=[3]
+J24 Text=[3] RO=-5002 Val=[3]
+K24 Text=[0] RO=-5002 Val=[0]
+A25 Text=[test2 test] RO=-5002 Val=[test2 test]
+B25 Text=[test2@gmail.com] RO=-5002 Val=[test2@gmail.com]
+C25 Text=[19 ساعة و 48 دقيقة] RO=-5003 Val=[19 ساعة و 48 دقيقة]
+D25 Text=[14 ساعة و 18 دقيقة] RO=-5003 Val=[14 ساعة و 18 دقيقة]
+E25 Text=[4] RO=-5002 Val=[4]
+F25 Text=[0] RO=-5002 Val=[0]
+G25 Text=[4] RO=-5002 Val=[4]
+H25 Text=[1] RO=-5002 Val=[1]
+I25 Text=[1] RO=-5002 Val=[1]
+J25 Text=[3] RO=-5002 Val=[3]
+K25 Text=[0] RO=-5002 Val=[0]
+PROBE C24 Text=[23 ساعة و 42 دقيقة] RO=-5003 HAlign=-4131
+PROBE D24 Text=[18 ساعة و 44 دقيقة] RO=-5003 HAlign=-4131
+PROBE C25 Text=[19 ساعة و 48 دقيقة] RO=-5003 HAlign=-4131
+PROBE D25 Text=[14 ساعة و 18 دقيقة] RO=-5003 HAlign=-4131
+PROBE A24 Text=[Field Technician] RO=-5002 HAlign=1
+PROBE F24 Text=[5] RO=-5002 HAlign=1
+PROBE G24 Text=[1] RO=-5002 HAlign=1
+PROBE A23 Text=[اسم الموظف] RO=-5002 HAlign=-4108
+PROBE F23 Text=[الجلسات العادية] RO=-5002 HAlign=-4108
+PROBE G23 Text=[جلسات السفر] RO=-5002 HAlign=-4108

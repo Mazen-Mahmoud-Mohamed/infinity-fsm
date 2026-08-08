@@ -1,0 +1,6 @@
+FILE tmp-strategy-rtl-ro-ltr.xlsx sheetRTL=True cell=C2 RO=-5003 Text=[23 ساعة و 42 دقيقة] A=[Field Technician] F=[5] G=[1] htmlDir= td=
+FILE tmp-strategy-rtl-no-ro.xlsx sheetRTL=True cell=C2 RO=-5002 Text=[23 ساعة و 42 دقيقة] A=[Field Technician] F=[5] G=[1] htmlDir= td=
+FILE tmp-strategy-rtl-ro-rtl.xlsx sheetRTL=True cell=C2 RO=-5004 Text=[23 ساعة و 42 دقيقة] A=[Field Technician] F=[5] G=[1] htmlDir= td=
+FILE tmp-strategy-ltr-no-ro.xlsx sheetRTL=False cell=C2 RO=-5002 Text=[23 ساعة و 42 دقيقة] A=[Field Technician] F=[5] G=[1] htmlDir= td=
+FILE tmp-strategy-ltr-ro-ltr.xlsx sheetRTL=False cell=C2 RO=-5003 Text=[23 ساعة و 42 دقيقة] A=[Field Technician] F=[5] G=[1] htmlDir= td=
+FILE tmp-inspect.xlsx sheetRTL=True cell=C24 RO=-5003 Text=[23 ساعة و 42 دقيقة] A=[Field Technician] F=[5] G=[1] htmlDir= td=

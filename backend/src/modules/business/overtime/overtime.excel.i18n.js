@@ -199,7 +199,7 @@ const AR = {
   empEmail: 'بريد الموظف',
   empWorkedHours: 'إجمالي الساعات المحسوبة / الفعلية',
   empApprovedHours: 'إجمالي الساعات المعتمدة',
-  empSessions: 'إجمالي الجلسات / الرحلات',
+  empSessions: 'إجمالي الجلسات',
   empNormal: 'الجلسات العادية',
   empTravel: 'جلسات السفر',
   empOvernight: 'جلسات المبيت',
@@ -295,30 +295,39 @@ export function excelStrings(lang) {
   return normalizeExportLanguage(lang) === EXPORT_LANG.AR ? AR : EN;
 }
 
-/**
- * Excel-supported Left-to-Right Override around the *entire* duration string.
- * Per-digit LRM marks are intentionally NOT used — they reorder badly in Excel RTL.
- * English strings are returned unchanged.
- */
-const LRO = '\u202D';
-const PDF = '\u202C';
-
-export function excelSafeDurationText(text, lang = EXPORT_LANG.EN) {
-  if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) return text;
-  if (text === null || text === undefined || text === '') return text;
-  const value = String(text);
-  if (value === '—' || value === AR.dash) return value;
-  // Strip any prior marks, then wrap once with a full-string LRO…PDF.
-  const plain = stripBidiMarks(value);
-  return `${LRO}${plain}${PDF}`;
-}
-
 /** Strip Unicode bidi marks for assertions / comparisons. */
 export function stripBidiMarks(text) {
   return String(text ?? '').replace(
     /[\u200E\u200F\u202A-\u202E\u2066-\u2069\u061C]/g,
     ''
   );
+}
+
+/**
+ * Deterministic Arabic duration string for Excel cells.
+ * Logical order is always: hours → ساعة → و → minutes → دقيقة.
+ * Do NOT inject LRO/LRM/RLM/PDF — Excel cell readingOrder=ltr handles display
+ * on RTL worksheets.
+ */
+export function formatExcelDuration(hours, minutes) {
+  const h = Math.max(0, Math.trunc(Number(hours) || 0));
+  const m = Math.max(0, Math.trunc(Number(minutes) || 0));
+  if (h === 0 && m === 0) return '0 دقيقة';
+  if (h === 0) return `${m} دقيقة`;
+  if (m === 0) return `${h} ساعة`;
+  return `${h} ساعة و ${m} دقيقة`;
+}
+
+/**
+ * Legacy helper: returns plain text only (no bidi control characters).
+ * Duration cells rely on worksheet cell alignment.readingOrder = 'ltr'.
+ */
+export function excelSafeDurationText(text, lang = EXPORT_LANG.EN) {
+  if (text === null || text === undefined || text === '') return text;
+  if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) return text;
+  const value = String(text);
+  if (value === '—' || value === AR.dash) return value;
+  return stripBidiMarks(value);
 }
 
 /** Human-readable duration for Excel text cells (never decimal hours). */
@@ -332,19 +341,16 @@ export function formatDurationProseFromMinutes(minutes, lang = EXPORT_LANG.EN) {
   const safe = Math.max(0, Math.round(n));
   const h = Math.floor(safe / 60);
   const m = safe % 60;
-  let prose;
-  if (h === 0) {
-    prose = m === 1 ? t.minuteOne : t.minutes(m);
-  } else {
-    const hLabel = h === 1 ? t.hourOne : t.hours(h);
-    if (m === 0) {
-      prose = hLabel;
-    } else {
-      const mLabel = m === 1 ? t.minuteOne : t.minutes(m);
-      prose = t.hoursAndMinutes(h, hLabel, m, mLabel);
-    }
+  if (normalizeExportLanguage(lang) === EXPORT_LANG.AR) {
+    return formatExcelDuration(h, m);
   }
-  return excelSafeDurationText(prose, lang);
+  if (h === 0) {
+    return m === 1 ? t.minuteOne : t.minutes(m);
+  }
+  const hLabel = h === 1 ? t.hourOne : t.hours(h);
+  if (m === 0) return hLabel;
+  const mLabel = m === 1 ? t.minuteOne : t.minutes(m);
+  return t.hoursAndMinutes(h, hLabel, m, mLabel);
 }
 
 export function formatDurationProseFromHours(hours, lang = EXPORT_LANG.EN) {
