@@ -336,6 +336,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
         } else {
           _stopTicker();
         }
+        // getRunning may have drained pending actions already confirmed on
+        // the server — refresh the sync chip / timeline badges.
+        unawaited(_overtimeSyncCubit.refreshPendingCount());
       case Failure(message: final message, code: final code):
         if (_isConnectivityCode(code)) {
           final cached = state.session ?? _localDataSource.readRunningSession();

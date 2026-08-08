@@ -125,25 +125,27 @@ class DashboardQuickActionsGrid extends StatelessWidget {
                 : width < 600
                     ? 1.05
                     : 1.2;
+        final tileWidth =
+            (width - spacing * (columns - 1)) / columns;
 
-        return GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: actions.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            mainAxisSpacing: spacing,
-            crossAxisSpacing: spacing,
-            childAspectRatio: aspectRatio,
-          ),
-          itemBuilder: (context, index) {
-            final action = actions[index];
-            return _QuickActionTile(
-              label: action.label,
-              icon: action.icon,
-              onTap: () => context.push(action.route),
-            );
-          },
+        // Avoid shrinkWrap GridView inside outer scroll (extra layout pass).
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final action in actions)
+              SizedBox(
+                width: tileWidth,
+                child: AspectRatio(
+                  aspectRatio: aspectRatio,
+                  child: _QuickActionTile(
+                    label: action.label,
+                    icon: action.icon,
+                    onTap: () => context.push(action.route),
+                  ),
+                ),
+              ),
+          ],
         );
       },
     );

@@ -41,69 +41,76 @@ class DashboardTrendChart extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final series = _windowed;
-    final maxValue = series.fold<double>(
-      0,
-      (prev, p) => p.value > prev ? p.value : prev,
+    final values = List<double>.generate(
+      series.length,
+      (i) => series[i].value,
+      growable: false,
     );
+    var maxValue = 0.0;
+    for (final v in values) {
+      if (v > maxValue) maxValue = v;
+    }
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+    return RepaintBoundary(
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
-                ),
-                Text(
-                  AppLocalizations.of(context)
-                      .dashboardChartWindowDays(windowDays),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+                  Text(
+                    AppLocalizations.of(context)
+                        .dashboardChartWindowDays(windowDays),
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            SizedBox(
-              height: height,
-              child: CustomPaint(
-                painter: _TrendLinePainter(
-                  values: series.map((p) => p.value).toList(),
-                  maxValue: maxValue <= 0 ? 1 : maxValue,
-                  lineColor: colorScheme.primary,
-                  fillColor: colorScheme.primary.withValues(alpha: 0.12),
-                  gridColor: colorScheme.outlineVariant,
-                ),
-                child: const SizedBox.expand(),
+                ],
               ),
-            ),
-            const SizedBox(height: AppSpacing.xs),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  series.first.label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+              const SizedBox(height: AppSpacing.md),
+              SizedBox(
+                height: height,
+                child: CustomPaint(
+                  painter: _TrendLinePainter(
+                    values: values,
+                    maxValue: maxValue <= 0 ? 1 : maxValue,
+                    lineColor: colorScheme.primary,
+                    fillColor: colorScheme.primary.withValues(alpha: 0.12),
+                    gridColor: colorScheme.outlineVariant,
                   ),
+                  child: const SizedBox.expand(),
                 ),
-                Text(
-                  series.last.label,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    series.first.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  Text(
+                    series.last.label,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -289,7 +289,9 @@ List<Widget> _admin({
     DashboardSectionGrid(gap: sectionGap, children: cards),
     if (overtime != null) ...[
       SizedBox(height: sectionGap),
-      DashboardOvertimeSection(
+      // Flattened scroll children so phone ListView can lazy-build tech cards.
+      ...buildDashboardOvertimeItems(
+        context: context,
         overtime: overtime,
         hoursOverTime: summary.charts.overtime,
         sectionGap: sectionGap,

@@ -100,6 +100,7 @@ class _FakeRemote extends Fake implements OvertimeRemoteDataSource {
     required String deviceId,
     required String clientRequestId,
     required String? address,
+    bool isOvernight = false,
     DateTime? startedAt,
     DateTime? endedAt,
     int? durationSeconds,

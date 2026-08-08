@@ -11,7 +11,118 @@ import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_se
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_section_grid.dart';
 
+/// Builds overtime analytics as separate scroll children so phone ListViews
+/// can lazy-build technician cards (same visual order as before).
+List<Widget> buildDashboardOvertimeItems({
+  required BuildContext context,
+  required DashboardOvertimeSummary overtime,
+  required List<DashboardChartPoint> hoursOverTime,
+  required double sectionGap,
+}) {
+  final l10n = AppLocalizations.of(context);
+  final theme = Theme.of(context);
+  final width = MediaQuery.sizeOf(context).width;
+  final columns = width >= AppBreakpoints.tabletMax
+      ? 3
+      : width >= AppBreakpoints.phoneMax
+          ? 2
+          : 1;
+
+  final hoursPoints = overtime.hoursPerTechnician.isNotEmpty
+      ? overtime.hoursPerTechnician
+      : overtime.topOvertimeEmployees
+          .map(
+            (e) => DashboardChartPoint(label: e.fullName, value: e.hours),
+          )
+          .toList(growable: false);
+  final tripsPoints = overtime.tripsPerTechnician.isNotEmpty
+      ? overtime.tripsPerTechnician
+      : overtime.topOvertimeEmployees
+          .map(
+            (e) => DashboardChartPoint(
+              label: e.fullName,
+              value: e.trips.toDouble(),
+            ),
+          )
+          .toList(growable: false);
+
+  final items = <Widget>[
+    DashboardSection(
+      title: l10n.dashboardOvertimeAnalytics,
+      trailing: IconButton(
+        tooltip: l10n.overtime,
+        onPressed: () => context.go(RoutePaths.overtime),
+        icon: const Icon(Icons.open_in_new_rounded, size: 20),
+      ),
+      child: _OvertimeSummaryCards(overtime: overtime),
+    ),
+  ];
+
+  if (overtime.topOvertimeEmployees.isNotEmpty) {
+    items.add(SizedBox(height: sectionGap));
+    items.add(
+      Text(
+        l10n.dashboardTechnicianSummary,
+        style: theme.textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+        ),
+      ),
+    );
+    items.add(const SizedBox(height: AppSpacing.md));
+
+    if (columns == 1) {
+      // Phone: one card per list child → lazy mount while scrolling.
+      for (var i = 0; i < overtime.topOvertimeEmployees.length; i++) {
+        if (i > 0) items.add(const SizedBox(height: AppSpacing.md));
+        final employee = overtime.topOvertimeEmployees[i];
+        items.add(
+          _TechnicianCard(
+            key: ValueKey<String>('ot-tech-${employee.userId}'),
+            employee: employee,
+          ),
+        );
+      }
+    } else {
+      items.add(
+        _TechnicianSummaryGrid(
+          employees: overtime.topOvertimeEmployees,
+          columns: columns,
+        ),
+      );
+    }
+  }
+
+  items.add(SizedBox(height: sectionGap));
+  items.add(
+    DashboardSectionGrid(
+      gap: AppSpacing.md,
+      children: [
+        DashboardMiniChart(
+          title: l10n.dashboardChartHoursPerTechnician,
+          height: 180,
+          points: hoursPoints,
+        ),
+        DashboardMiniChart(
+          title: l10n.dashboardChartTripsPerTechnician,
+          height: 180,
+          points: tripsPoints,
+        ),
+        if (hoursOverTime.isNotEmpty)
+          DashboardMiniChart(
+            title: l10n.dashboardChartHoursOverTime,
+            height: 180,
+            points: hoursOverTime,
+          ),
+      ],
+    ),
+  );
+
+  return items;
+}
+
 /// Admin overtime analytics — summary cards, technician cards, charts.
+/// Prefer [buildDashboardOvertimeItems] inside scrollable dashboards.
 class DashboardOvertimeSection extends StatelessWidget {
   const DashboardOvertimeSection({
     super.key,
@@ -26,75 +137,13 @@ class DashboardOvertimeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final theme = Theme.of(context);
-
-    return DashboardSection(
-      title: l10n.dashboardOvertimeAnalytics,
-      trailing: IconButton(
-        tooltip: l10n.overtime,
-        onPressed: () => context.go(RoutePaths.overtime),
-        icon: const Icon(Icons.open_in_new_rounded, size: 20),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _OvertimeSummaryCards(overtime: overtime),
-          if (overtime.topOvertimeEmployees.isNotEmpty) ...[
-            SizedBox(height: sectionGap),
-            Text(
-              l10n.dashboardTechnicianSummary,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.1,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _TechnicianSummaryGrid(
-              employees: overtime.topOvertimeEmployees,
-            ),
-          ],
-          SizedBox(height: sectionGap),
-          DashboardSectionGrid(
-            gap: AppSpacing.md,
-            children: [
-              DashboardMiniChart(
-                title: l10n.dashboardChartHoursPerTechnician,
-                height: 180,
-                points: overtime.hoursPerTechnician.isNotEmpty
-                    ? overtime.hoursPerTechnician
-                    : overtime.topOvertimeEmployees
-                        .map(
-                          (e) => DashboardChartPoint(
-                            label: e.fullName,
-                            value: e.hours,
-                          ),
-                        )
-                        .toList(),
-              ),
-              DashboardMiniChart(
-                title: l10n.dashboardChartTripsPerTechnician,
-                height: 180,
-                points: overtime.tripsPerTechnician.isNotEmpty
-                    ? overtime.tripsPerTechnician
-                    : overtime.topOvertimeEmployees
-                        .map(
-                          (e) => DashboardChartPoint(
-                            label: e.fullName,
-                            value: e.trips.toDouble(),
-                          ),
-                        )
-                        .toList(),
-              ),
-              if (hoursOverTime.isNotEmpty)
-                DashboardMiniChart(
-                  title: l10n.dashboardChartHoursOverTime,
-                  height: 180,
-                  points: hoursOverTime,
-                ),
-            ],
-          ),
-        ],
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: buildDashboardOvertimeItems(
+        context: context,
+        overtime: overtime,
+        hoursOverTime: hoursOverTime,
+        sectionGap: sectionGap,
       ),
     );
   }
@@ -168,20 +217,18 @@ class _OvertimeSummaryCards extends StatelessWidget {
               padding: EdgeInsets.only(
                 bottom: i + columns < items.length ? AppSpacing.md : 0,
               ),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var j = 0; j < columns; j++) ...[
-                      if (j > 0) const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: j < slice.length
-                            ? _OvertimeStatCard(data: slice[j])
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var j = 0; j < columns; j++) ...[
+                    if (j > 0) const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: j < slice.length
+                          ? _OvertimeStatCard(data: slice[j])
+                          : const SizedBox.shrink(),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           );
@@ -235,6 +282,7 @@ class _OvertimeStatCard extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 width: 36,
@@ -245,8 +293,7 @@ class _OvertimeStatCard extends StatelessWidget {
                 ),
                 child: Icon(data.icon, color: scheme.primary, size: 20),
               ),
-              const Spacer(),
-              const SizedBox(height: AppSpacing.sm),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 data.value,
                 maxLines: 1,
@@ -275,69 +322,52 @@ class _OvertimeStatCard extends StatelessWidget {
 }
 
 class _TechnicianSummaryGrid extends StatelessWidget {
-  const _TechnicianSummaryGrid({required this.employees});
+  const _TechnicianSummaryGrid({
+    required this.employees,
+    required this.columns,
+  });
 
   final List<DashboardTopOvertimeEmployee> employees;
+  final int columns;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final columns = width >= AppBreakpoints.tabletMax
-            ? 3
-            : width >= AppBreakpoints.phoneMax
-                ? 2
-                : 1;
-
-        if (columns == 1) {
-          return Column(
+    final rows = <Widget>[];
+    for (var i = 0; i < employees.length; i += columns) {
+      final slice = employees.skip(i).take(columns).toList();
+      rows.add(
+        Padding(
+          padding: EdgeInsets.only(
+            bottom: i + columns < employees.length ? AppSpacing.md : 0,
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              for (var i = 0; i < employees.length; i++) ...[
-                if (i > 0) const SizedBox(height: AppSpacing.md),
-                _TechnicianCard(employee: employees[i]),
+              for (var j = 0; j < columns; j++) ...[
+                if (j > 0) const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: j < slice.length
+                      ? _TechnicianCard(
+                          key: ValueKey<String>('ot-tech-${slice[j].userId}'),
+                          employee: slice[j],
+                        )
+                      : const SizedBox.shrink(),
+                ),
               ],
             ],
-          );
-        }
-
-        final rows = <Widget>[];
-        for (var i = 0; i < employees.length; i += columns) {
-          final slice = employees.skip(i).take(columns).toList();
-          rows.add(
-            Padding(
-              padding: EdgeInsets.only(
-                bottom: i + columns < employees.length ? AppSpacing.md : 0,
-              ),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var j = 0; j < columns; j++) ...[
-                      if (j > 0) const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: j < slice.length
-                            ? _TechnicianCard(employee: slice[j])
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-          );
-        }
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: rows,
-        );
-      },
+          ),
+        ),
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: rows,
     );
   }
 }
 
 class _TechnicianCard extends StatelessWidget {
-  const _TechnicianCard({required this.employee});
+  const _TechnicianCard({super.key, required this.employee});
 
   final DashboardTopOvertimeEmployee employee;
 

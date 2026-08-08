@@ -272,11 +272,16 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       final session = await _remote.getRunning();
       if (session != null) {
         await _local.saveRunningSession(_asModel(session));
+        // Server is authoritative for confirmed stages: drop local pending
+        // actions that the server already applied (fixes Sync Failed when the
+        // POST succeeded but the client never got the success response).
+        final reconciled = await _reconcilePendingQueueWithServerSession(session);
         OvertimeOfflineTrace.step(
           'GET_RUNNING',
           status: 'success',
           serverId: session.id,
-          detail: 'remote running adopted',
+          detail:
+              'remote running adopted; reconciledPending=$reconciled',
         );
         return Success(session);
       }
@@ -572,6 +577,19 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           batteryLevel: batteryLevel,
           networkStatus: networkStatus,
         );
+      }
+
+      // Timeout/race: server may already have the stage while the client saw
+      // CONFLICT / order error. Reconcile against authoritative session state.
+      if (_isOrderBlockingFailure(failure.code, failure.message)) {
+        final resolved = await _resolveCheckpointAlreadyOnServer(
+          sessionId: sessionId,
+          stage: stage,
+          clientRequestId: clientRequestId,
+        );
+        if (resolved != null) {
+          return Success(resolved);
+        }
       }
       return failure;
     }
@@ -1438,6 +1456,28 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         if (_isConnectivityFailure(failure.code)) {
           break;
         }
+
+        // Server may already have applied this stage (timeout after success,
+        // or a different clientRequestId racing the same stage). Treat that
+        // as synced — do not leave Sync Failed forever.
+        if (_isOrderBlockingFailure(failure.code, failure.message) &&
+            (action.isMidCheckpoint ||
+                action.type == PendingOvertimeActionType.end ||
+                action.type == PendingOvertimeActionType.start)) {
+          final resolved = await _tryResolvePendingAgainstServer(action);
+          if (resolved) {
+            synced += 1;
+            OvertimeOfflineTrace.step(
+              'SYNC_RECONCILE',
+              status: 'success',
+              objectId: action.id,
+              detail:
+                  'server already confirmed ${action.type.name}; dequeued',
+            );
+            continue;
+          }
+        }
+
         await _local.updateQueueItem(
           PendingOvertimeActionModel.fromEntity(
             action.copyWith(
@@ -1456,6 +1496,194 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     }
 
     return Success(synced);
+  }
+
+  /// Drops pending actions already reflected on [session]. Returns count removed.
+  ///
+  /// Does **not** clear the queue blindly — only stages the server has confirmed.
+  Future<int> _reconcilePendingQueueWithServerSession(
+    OvertimeSession session,
+  ) async {
+    final localIdMap = <String, String>{..._local.readLocalIdMap()};
+    _seedLocalIdMapFromCaches(localIdMap);
+
+    final queue = _local.readQueue();
+    if (queue.isEmpty) {
+      return 0;
+    }
+
+    var removed = 0;
+    for (final action in queue) {
+      if (!_pendingBelongsToSession(action, session, localIdMap)) {
+        continue;
+      }
+      if (!_serverConfirmsPendingAction(session, action)) {
+        continue;
+      }
+      await _local.removeFromQueue(action.id);
+      removed += 1;
+      OvertimeOfflineTrace.step(
+        'SYNC_RECONCILE',
+        status: 'success',
+        objectId: action.id,
+        serverId: session.id,
+        detail: 'getRunning drained ${action.type.name}',
+      );
+    }
+    return removed;
+  }
+
+  bool _pendingBelongsToSession(
+    PendingOvertimeAction action,
+    OvertimeSession session,
+    Map<String, String> localIdMap,
+  ) {
+    final sid = action.sessionId;
+    if (sid != null && sid.isNotEmpty) {
+      if (sid == session.id) {
+        return true;
+      }
+      if (localIdMap[sid] == session.id) {
+        return true;
+      }
+    }
+    if (action.type == PendingOvertimeActionType.start) {
+      final startId =
+          session.checkpoints?.startJourney?.clientRequestId?.trim();
+      if (startId != null &&
+          startId.isNotEmpty &&
+          startId == action.clientRequestId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// True when the server session already contains the outcome of [action].
+  bool _serverConfirmsPendingAction(
+    OvertimeSession session,
+    PendingOvertimeAction action,
+  ) {
+    switch (action.type) {
+      case PendingOvertimeActionType.start:
+        final startId =
+            session.checkpoints?.startJourney?.clientRequestId?.trim();
+        return startId != null &&
+            startId.isNotEmpty &&
+            startId == action.clientRequestId;
+      case PendingOvertimeActionType.arrivedAtWorkSite:
+        return session.checkpoints?.arrivedAtWorkSite != null;
+      case PendingOvertimeActionType.finishedWork:
+        return session.checkpoints?.finishedWork != null;
+      case PendingOvertimeActionType.end:
+        return !session.isRunning && session.endAt != null;
+    }
+  }
+
+  Future<bool> _tryResolvePendingAgainstServer(
+    PendingOvertimeAction action,
+  ) async {
+    try {
+      OvertimeSession? remote;
+      final rawSessionId = action.sessionId;
+      if (rawSessionId != null &&
+          rawSessionId.isNotEmpty &&
+          !rawSessionId.startsWith('local-')) {
+        try {
+          remote = await _remote.getById(rawSessionId);
+        } on Object {
+          remote = null;
+        }
+      }
+      remote ??= await _remote.getRunning();
+      if (remote == null) {
+        return false;
+      }
+
+      final localIdMap = <String, String>{..._local.readLocalIdMap()};
+      _seedLocalIdMapFromCaches(localIdMap);
+      final resolvedSessionId = action.sessionId == null || action.sessionId!.isEmpty
+          ? ''
+          : _resolveSyncedSessionId(action.sessionId!, localIdMap);
+      final belongs = _pendingBelongsToSession(action, remote, localIdMap) ||
+          resolvedSessionId == remote.id;
+      if (!belongs) {
+        return false;
+      }
+      if (!_serverConfirmsPendingAction(remote, action)) {
+        return false;
+      }
+
+      final model = _asModel(remote);
+      final running = _local.readRunningSession();
+      if (running != null &&
+          (running.id == remote.id ||
+              running.id == action.sessionId ||
+              localIdMap[running.id] == remote.id)) {
+        await _local.saveRunningSession(
+          _copySession(
+            model,
+            id: remote.id,
+            startAt: running.startAt,
+            checkpoints: remote.checkpoints ?? running.checkpoints,
+            nextCheckpoint: remote.nextCheckpoint,
+            requiresManualReview: remote.requiresManualReview,
+            reviewReason: remote.reviewReason,
+          ),
+        );
+      } else if (remote.isRunning) {
+        await _local.saveRunningSession(model);
+      }
+
+      await _local.removeFromQueue(action.id);
+      return true;
+    } on Object {
+      return false;
+    }
+  }
+
+  Future<OvertimeSessionModel?> _resolveCheckpointAlreadyOnServer({
+    required String sessionId,
+    required OvertimeCheckpointStage stage,
+    required String clientRequestId,
+  }) async {
+    try {
+      OvertimeSession? remote;
+      if (!sessionId.startsWith('local-')) {
+        try {
+          remote = await _remote.getById(sessionId);
+        } on Object {
+          remote = null;
+        }
+      }
+      remote ??= await _remote.getRunning();
+      if (remote == null) {
+        return null;
+      }
+
+      final confirmed = stage == OvertimeCheckpointStage.arrivedAtWorkSite
+          ? remote.checkpoints?.arrivedAtWorkSite != null
+          : remote.checkpoints?.finishedWork != null;
+      if (!confirmed) {
+        return null;
+      }
+
+      OvertimeOfflineTrace.step(
+        'SYNC_RECONCILE',
+        status: 'success',
+        objectId: clientRequestId,
+        serverId: remote.id,
+        detail: 'online CONFLICT resolved; server has ${stage.apiValue}',
+      );
+
+      final model = _asModel(remote);
+      await _local.saveRunningSession(model);
+      // Drain any queued twin for this stage (same or different clientRequestId).
+      await _reconcilePendingQueueWithServerSession(remote);
+      return model;
+    } on Object {
+      return null;
+    }
   }
 
   void _seedLocalIdMapFromCaches(Map<String, String> localIdMap) {

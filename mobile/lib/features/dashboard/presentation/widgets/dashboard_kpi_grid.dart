@@ -66,26 +66,24 @@ class DashboardKpiGrid extends StatelessWidget {
               padding: EdgeInsets.only(
                 bottom: i + crossAxisCount < items.length ? AppSpacing.md : 0,
               ),
-              child: IntrinsicHeight(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    for (var j = 0; j < crossAxisCount; j++) ...[
-                      if (j > 0) const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: j < rowItems.length
-                            ? DashboardQuickCard(
-                                title: rowItems[j].title,
-                                subtitle: rowItems[j].value,
-                                icon: rowItems[j].icon,
-                                compact: compact,
-                                onTap: rowItems[j].onTap ?? () {},
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-                    ],
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  for (var j = 0; j < crossAxisCount; j++) ...[
+                    if (j > 0) const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: j < rowItems.length
+                          ? DashboardQuickCard(
+                              title: rowItems[j].title,
+                              subtitle: rowItems[j].value,
+                              icon: rowItems[j].icon,
+                              compact: compact,
+                              onTap: rowItems[j].onTap ?? () {},
+                            )
+                          : const SizedBox.shrink(),
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           );

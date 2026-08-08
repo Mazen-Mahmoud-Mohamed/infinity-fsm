@@ -26,9 +26,6 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      'DashboardPage.build width=${MediaQuery.sizeOf(context).width}',
-    );
     return BlocProvider(
       create: (_) => getIt<ExecutiveDashboardCubit>()..load(),
       child: const _DashboardView(),
@@ -49,15 +46,10 @@ class _DashboardViewState extends State<_DashboardView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final authUser = context.watch<AuthCubit>().state.user;
     final width = MediaQuery.sizeOf(context).width;
     final isPhone = AppBreakpoints.isPhone(width);
     final pagePadding = AppBreakpoints.pagePadding(width);
     final sectionGap = isPhone ? AppSpacing.md : AppSpacing.lg;
-
-    debugPrint(
-      '_DashboardView.build width=$width isPhone=$isPhone',
-    );
 
     return Scaffold(
       appBar: AppBar(
@@ -72,179 +64,185 @@ class _DashboardViewState extends State<_DashboardView> {
           ),
         ],
       ),
-      body: BlocConsumer<ExecutiveDashboardCubit, ExecutiveDashboardState>(
-        listenWhen: (previous, current) =>
-            previous.status != current.status ||
-            previous.message != current.message ||
-            previous.summary != current.summary,
-        listener: (context, state) {
-          debugPrint(
-            'DashboardCubit state → status=${state.status} '
-            'hasSummary=${state.summary != null} '
-            'hasLoadedOnce=${state.hasLoadedOnce} '
-            'refreshing=${state.isRefreshing} '
-            'message=${state.message}',
-          );
-        },
-        buildWhen: (previous, current) =>
-            previous.status != current.status ||
-            previous.summary != current.summary ||
-            previous.period != current.period ||
-            previous.customFrom != current.customFrom ||
-            previous.customTo != current.customTo ||
-            previous.isRefreshing != current.isRefreshing ||
-            previous.message != current.message,
-        builder: (context, state) {
-          debugPrint(
-            'Dashboard body builder status=${state.status} '
-            'summary=${state.summary != null}',
-          );
+      body: Column(
+        children: [
+          // Isolate refresh indicator so isRefreshing does not rebuild content.
+          BlocBuilder<ExecutiveDashboardCubit, ExecutiveDashboardState>(
+            buildWhen: (previous, current) =>
+                previous.isRefreshing != current.isRefreshing,
+            builder: (context, state) {
+              return AppRefreshBar(visible: state.isRefreshing);
+            },
+          ),
+          Expanded(
+            child: BlocBuilder<ExecutiveDashboardCubit, ExecutiveDashboardState>(
+              buildWhen: (previous, current) =>
+                  previous.status != current.status ||
+                  previous.summary != current.summary ||
+                  previous.period != current.period ||
+                  previous.customFrom != current.customFrom ||
+                  previous.customTo != current.customTo ||
+                  previous.message != current.message,
+              builder: (context, state) {
+                if (state.status == ExecutiveDashboardStatus.initial ||
+                    (state.status == ExecutiveDashboardStatus.loading &&
+                        state.summary == null)) {
+                  return AppLoader(message: l10n.dashboardLoading);
+                }
 
-          if (state.status == ExecutiveDashboardStatus.initial ||
-              (state.status == ExecutiveDashboardStatus.loading &&
-                  state.summary == null)) {
-            return AppLoader(message: l10n.dashboardLoading);
-          }
-
-          if (state.status == ExecutiveDashboardStatus.failure &&
-              state.summary == null) {
-            return Center(
-              child: Padding(
-                padding: EdgeInsets.all(pagePadding),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      size: 40,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      state.message != null
-                          ? localizeAppMessage(l10n, state.message)
-                          : l10n.errorGeneric,
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    FilledButton(
-                      onPressed: () =>
-                          context.read<ExecutiveDashboardCubit>().load(),
-                      child: Text(l10n.retry),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final summary = state.summary;
-          final isTechnician =
-              summary?.viewRole == DashboardViewRole.technician;
-
-          // Content always visible once we have a non-failure state.
-          // Width-capped via Align/ConstrainedBox (not AppPageFrame height lock).
-          return Column(
-            children: [
-              AppRefreshBar(visible: state.isRefreshing),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () =>
-                      context.read<ExecutiveDashboardCubit>().load(),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: AppBreakpoints.contentWideMax,
-                      ),
-                      child: ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: AppScrollPadding.resolve(
-                          context,
-                          base: EdgeInsets.all(pagePadding),
-                          chrome: AppBottomChrome.system,
-                        ),
+                if (state.status == ExecutiveDashboardStatus.failure &&
+                    state.summary == null) {
+                  return Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(pagePadding),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(
-                            l10n.welcomeBack,
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
-                          ),
-                          const SizedBox(height: AppSpacing.xs),
-                          Text(
-                            authUser?.fullName ?? l10n.profile,
-                            style: Theme.of(context).textTheme.headlineSmall,
+                          Icon(
+                            Icons.error_outline,
+                            size: 40,
+                            color: Theme.of(context).colorScheme.error,
                           ),
                           const SizedBox(height: AppSpacing.md),
-                          DashboardPeriodSelector(
-                            period: state.period,
-                            customFrom: state.customFrom,
-                            customTo: state.customTo,
-                            rangeFrom: summary != null &&
-                                    summary.period == state.period
-                                ? summary.from
-                                : null,
-                            rangeTo: summary != null &&
-                                    summary.period == state.period
-                                ? summary.to
-                                : null,
-                            onPeriodSelected: (period) => context
-                                .read<ExecutiveDashboardCubit>()
-                                .setPeriod(period),
-                            onCustomRangeSelected: (from, to) => context
-                                .read<ExecutiveDashboardCubit>()
-                                .setCustomRange(from, to),
+                          Text(
+                            state.message != null
+                                ? localizeAppMessage(l10n, state.message)
+                                : l10n.errorGeneric,
+                            textAlign: TextAlign.center,
                           ),
-                          if (state.message != null) ...[
-                            const SizedBox(height: AppSpacing.sm),
-                            Text(
-                              state.message!,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.error,
-                                  ),
-                            ),
-                          ],
-                          if (isTechnician) ...[
-                            SizedBox(height: sectionGap),
-                            const AttendanceSummaryCard(),
-                          ],
-                          if (summary != null) ...[
-                            SizedBox(height: sectionGap),
-                            ...buildRoleDashboardSections(
-                              context: context,
-                              l10n: l10n,
-                              summary: summary,
-                              sectionGap: sectionGap,
-                              chartWindowDays: _chartWindowDays,
-                              onChartWindowChanged: (days) {
-                                setState(() => _chartWindowDays = days);
-                              },
-                              permissions: authUser?.permissionChecker,
-                              showQuickActions: isPhone,
-                            ),
-                          ] else ...[
-                            SizedBox(height: sectionGap),
-                            AppLoader(message: l10n.dashboardLoading),
-                          ],
+                          const SizedBox(height: AppSpacing.md),
+                          FilledButton(
+                            onPressed: () =>
+                                context.read<ExecutiveDashboardCubit>().load(),
+                            child: Text(l10n.retry),
+                          ),
                         ],
                       ),
                     ),
-                  ),
-                ),
-              ),
-            ],
-          );
-        },
+                  );
+                }
+
+                return _DashboardScrollBody(
+                  state: state,
+                  pagePadding: pagePadding,
+                  sectionGap: sectionGap,
+                  isPhone: isPhone,
+                  chartWindowDays: _chartWindowDays,
+                  onChartWindowChanged: (days) {
+                    setState(() => _chartWindowDays = days);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Lazy-built dashboard content. Keeps expensive sections off-screen unmounted.
+class _DashboardScrollBody extends StatelessWidget {
+  const _DashboardScrollBody({
+    required this.state,
+    required this.pagePadding,
+    required this.sectionGap,
+    required this.isPhone,
+    required this.chartWindowDays,
+    required this.onChartWindowChanged,
+  });
+
+  final ExecutiveDashboardState state;
+  final double pagePadding;
+  final double sectionGap;
+  final bool isPhone;
+  final int chartWindowDays;
+  final ValueChanged<int> onChartWindowChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final summary = state.summary;
+    final isTechnician = summary?.viewRole == DashboardViewRole.technician;
+    final authUser = context.select((AuthCubit cubit) => cubit.state.user);
+
+    final children = <Widget>[
+      Text(
+        l10n.welcomeBack,
+        style: theme.textTheme.titleMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      const SizedBox(height: AppSpacing.xs),
+      Text(
+        authUser?.fullName ?? l10n.profile,
+        style: theme.textTheme.headlineSmall,
+      ),
+      const SizedBox(height: AppSpacing.md),
+      DashboardPeriodSelector(
+        period: state.period,
+        customFrom: state.customFrom,
+        customTo: state.customTo,
+        rangeFrom:
+            summary != null && summary.period == state.period ? summary.from : null,
+        rangeTo:
+            summary != null && summary.period == state.period ? summary.to : null,
+        onPeriodSelected: (period) =>
+            context.read<ExecutiveDashboardCubit>().setPeriod(period),
+        onCustomRangeSelected: (from, to) =>
+            context.read<ExecutiveDashboardCubit>().setCustomRange(from, to),
+      ),
+      if (state.message != null) ...[
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          state.message!,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.error,
+          ),
+        ),
+      ],
+      if (isTechnician) ...[
+        SizedBox(height: sectionGap),
+        const AttendanceSummaryCard(),
+      ],
+      if (summary != null) ...[
+        SizedBox(height: sectionGap),
+        ...buildRoleDashboardSections(
+          context: context,
+          l10n: l10n,
+          summary: summary,
+          sectionGap: sectionGap,
+          chartWindowDays: chartWindowDays,
+          onChartWindowChanged: onChartWindowChanged,
+          permissions: authUser?.permissionChecker,
+          showQuickActions: isPhone,
+        ),
+      ] else ...[
+        SizedBox(height: sectionGap),
+        AppLoader(message: l10n.dashboardLoading),
+      ],
+    ];
+
+    return RefreshIndicator(
+      onRefresh: () => context.read<ExecutiveDashboardCubit>().load(),
+      child: Align(
+        alignment: Alignment.topCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxWidth: AppBreakpoints.contentWideMax,
+          ),
+          child: ListView.builder(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: AppScrollPadding.resolve(
+              context,
+              base: EdgeInsets.all(pagePadding),
+              chrome: AppBottomChrome.system,
+            ),
+            itemCount: children.length,
+            itemBuilder: (context, index) => children[index],
+          ),
+        ),
       ),
     );
   }

@@ -93,25 +93,24 @@ class DashboardMetricGroupCard extends StatelessWidget {
                 final rows = <Widget>[];
                 for (var i = 0; i < metrics.length; i += columns) {
                   final slice = metrics.skip(i).take(columns).toList();
+                  // Avoid IntrinsicHeight (2× layout cost on every rebuild).
                   rows.add(
                     Padding(
                       padding: EdgeInsets.only(
                         bottom: i + columns < metrics.length ? AppSpacing.sm : 0,
                       ),
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (var j = 0; j < columns; j++) ...[
-                              if (j > 0) const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: j < slice.length
-                                    ? _MetricCell(metric: slice[j])
-                                    : const SizedBox.shrink(),
-                              ),
-                            ],
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          for (var j = 0; j < columns; j++) ...[
+                            if (j > 0) const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              child: j < slice.length
+                                  ? _MetricCell(metric: slice[j])
+                                  : const SizedBox.shrink(),
+                            ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   );
@@ -142,48 +141,51 @@ class _MetricCell extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final content = Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.sm,
-        vertical: AppSpacing.sm,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              if (metric.icon != null) ...[
-                Icon(
-                  metric.icon,
-                  size: 16,
-                  color: colorScheme.primary,
-                ),
-                const SizedBox(width: 4),
-              ],
-              Expanded(
-                child: Text(
-                  metric.label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 72),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.sm,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (metric.icon != null) ...[
+                  Icon(
+                    metric.icon,
+                    size: 16,
+                    color: colorScheme.primary,
+                  ),
+                  const SizedBox(width: 4),
+                ],
+                Expanded(
+                  child: Text(
+                    metric.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            metric.value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            softWrap: false,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w700,
-              height: 1.15,
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              metric.value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                height: 1.15,
+              ),
+            ),
+          ],
+        ),
       ),
     );
 
