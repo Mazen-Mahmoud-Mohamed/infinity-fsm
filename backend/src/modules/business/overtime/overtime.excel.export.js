@@ -568,25 +568,38 @@ function estimateWrapHeight(text, charsPerLine) {
   return Math.min(90, 18 + (lines - 1) * 14);
 }
 
-function writeSectionHeader(sheet, row, title, fillArgb = COLORS.navy) {
-  sheet.mergeCells(row, 1, row, 6);
+function writeSectionHeader(sheet, row, title, fillArgb = COLORS.navy, colSpan = 6) {
+  const span = Math.max(1, colSpan);
+  sheet.mergeCells(row, 1, row, span);
   const cell = sheet.getRow(row).getCell(1);
   cell.value = title;
   cell.font = { bold: true, color: { argb: COLORS.white }, size: 12 };
   cell.fill = solidFill(fillArgb);
   cell.alignment = { vertical: 'middle', horizontal: 'left', indent: 1 };
   sheet.getRow(row).height = 26;
-  for (let c = 1; c <= 6; c += 1) {
+  for (let c = 1; c <= span; c += 1) {
     sheet.getRow(row).getCell(c).fill = solidFill(fillArgb);
     sheet.getRow(row).getCell(c).border = thinBorder();
   }
   return row + 1;
 }
 
+function durationCellAlignment(lang) {
+  if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) {
+    return { vertical: 'middle', wrapText: true, horizontal: 'center' };
+  }
+  // Full-string LRO is applied in the text; keep the cell LTR so Excel honors it.
+  return {
+    vertical: 'middle',
+    wrapText: true,
+    horizontal: 'left',
+    readingOrder: 'ltr',
+  };
+}
+
 function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
   let row = startRow;
   const cols = 4;
-  const isAr = normalizeExportLanguage(lang) === EXPORT_LANG.AR;
   for (let i = 0; i < kpis.length; i += cols) {
     const slice = kpis.slice(i, i + cols);
     const labelRow = sheet.getRow(row);
@@ -614,14 +627,17 @@ function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
         color: { argb: COLORS.navy },
       };
       valueRow.getCell(col).fill = solidFill(COLORS.kpiBg);
-      valueRow.getCell(col).alignment = {
-        horizontal: 'center',
-        vertical: 'middle',
-        wrapText: true,
-        ...(isAr && typeof kpi.value === 'string' && /ساعة|دقيقة/.test(kpi.value)
-          ? { readingOrder: 'ltr' }
-          : {}),
-      };
+      const isDuration =
+        typeof kpi.value === 'string' &&
+        (/ساعة|دقيقة|hour|minute/i.test(kpi.value) ||
+          String(kpi.value).includes('\u202D'));
+      valueRow.getCell(col).alignment = isDuration
+        ? durationCellAlignment(lang)
+        : {
+            horizontal: 'center',
+            vertical: 'middle',
+            wrapText: true,
+          };
       valueRow.getCell(col).border = thinBorder();
     });
     labelRow.height = 28;
@@ -631,70 +647,122 @@ function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
   return row;
 }
 
-function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
+/**
+ * Canonical employee-summary columns — headers and values MUST share this order.
+ * ExcelJS `row.values = [null, …]` is forbidden (null occupies column A and shifts data).
+ */
+export function getEmployeeSummaryColumnDefs(lang = EXPORT_LANG.EN) {
   const t = excelStrings(lang);
-  const isAr = normalizeExportLanguage(lang) === EXPORT_LANG.AR;
-  const headers = [
-    t.empName,
-    t.empEmail,
-    t.empWorkedHours,
-    t.empApprovedHours,
-    t.empSessions,
-    t.empNormal,
-    t.empTravel,
-    t.empOvernight,
-    t.empApproved,
-    t.empPending,
-    t.empRejected,
+  return [
+    {
+      key: 'name',
+      header: t.empName,
+      getValue: (employee) => employee.technicianName,
+    },
+    {
+      key: 'email',
+      header: t.empEmail,
+      getValue: (employee) => employee.email,
+    },
+    {
+      key: 'workedHours',
+      header: t.empWorkedHours,
+      isDuration: true,
+      getValue: (employee) =>
+        formatDurationProseFromMinutes(employee.totalWorkedMinutes, lang),
+    },
+    {
+      key: 'approvedHours',
+      header: t.empApprovedHours,
+      isDuration: true,
+      getValue: (employee) =>
+        formatDurationProseFromMinutes(employee.totalApprovedMinutes, lang),
+    },
+    {
+      key: 'sessions',
+      header: t.empSessions,
+      getValue: (employee) => employee.totalSessions,
+    },
+    {
+      key: 'travel',
+      header: t.empTravel,
+      getValue: (employee) => employee.travelSessions,
+    },
+    {
+      key: 'normal',
+      header: t.empNormal,
+      getValue: (employee) => employee.normalSessions,
+    },
+    {
+      key: 'overnight',
+      header: t.empOvernight,
+      getValue: (employee) => employee.overnightTrips,
+    },
+    {
+      key: 'approved',
+      header: t.empApproved,
+      getValue: (employee) => employee.approvedSessions,
+    },
+    {
+      key: 'pending',
+      header: t.empPending,
+      getValue: (employee) => employee.pendingReviewSessions,
+    },
+    {
+      key: 'rejected',
+      header: t.empRejected,
+      getValue: (employee) => employee.rejectedSessions,
+    },
   ];
+}
+
+function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
+  const columns = getEmployeeSummaryColumnDefs(lang);
   const headerRow = sheet.getRow(startRow);
-  headers.forEach((header, index) => {
+  columns.forEach((column, index) => {
     const cell = headerRow.getCell(index + 1);
-    cell.value = header;
+    cell.value = column.header;
     cell.font = { bold: true, color: { argb: COLORS.white } };
     cell.fill = solidFill(COLORS.navy);
     cell.border = thinBorder();
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
+    cell.alignment = {
+      vertical: 'middle',
+      horizontal: 'center',
+      wrapText: true,
+    };
   });
   headerRow.height = 34;
 
   summaries.forEach((employee, index) => {
     const row = sheet.getRow(startRow + index + 1);
-    const worked = formatDurationProseFromMinutes(
-      employee.totalWorkedMinutes,
-      lang
-    );
-    const approved = formatDurationProseFromMinutes(
-      employee.totalApprovedMinutes,
-      lang
-    );
-    row.values = [
-      null,
-      employee.technicianName,
-      employee.email,
-      worked,
-      approved,
-      employee.totalSessions,
-      employee.normalSessions,
-      employee.travelSessions,
-      employee.overnightTrips,
-      employee.approvedSessions,
-      employee.pendingReviewSessions,
-      employee.rejectedSessions,
-    ];
-    row.eachCell((cell, colNumber) => {
+    columns.forEach((column, colIndex) => {
+      const cell = row.getCell(colIndex + 1);
+      cell.value = column.getValue(employee);
       cell.border = thinBorder();
-      cell.alignment = {
-        vertical: 'middle',
-        wrapText: true,
-        ...(isAr && (colNumber === 3 || colNumber === 4)
-          ? { readingOrder: 'ltr', horizontal: 'left' }
-          : {}),
-      };
+      cell.alignment = column.isDuration
+        ? durationCellAlignment(lang)
+        : { vertical: 'middle', wrapText: true };
       if (index % 2 === 1) cell.fill = solidFill(COLORS.altRow);
     });
   });
   return startRow + summaries.length + 1;
+}
+
+function colLetter(colNumber) {
+  let n = colNumber;
+  let out = '';
+  while (n > 0) {
+    const rem = (n - 1) % 26;
+    out = String.fromCharCode(65 + rem) + out;
+    n = Math.floor((n - 1) / 26);
+  }
+  return out;
+}
+
+function tightenWorksheetUsedRange(sheet, lastRow, lastCol) {
+  const end = `${colLetter(lastCol)}${Math.max(1, lastRow)}`;
+  sheet.pageSetup.printArea = `A1:${end}`;
+  sheet.autoFilter = undefined;
 }
 
 async function addEmbeddedImage(workbook, sheet, buffer, {
@@ -782,29 +850,36 @@ export async function buildOvertimeExcelWorkbook({
   }
 
   // ——— Summary ———
+  const employeeColumns = getEmployeeSummaryColumnDefs(lang);
+  const summaryColCount = employeeColumns.length;
   const summary = workbook.addWorksheet(t.sheetSummary, {
     views: [
       {
         state: 'frozen',
         ySplit: 3,
         rightToLeft: lang === EXPORT_LANG.AR,
+        activeCell: 'A1',
       },
     ],
-    properties: { defaultRowHeight: 18 },
+    properties: {
+      defaultRowHeight: 18,
+      // Keep unused columns narrow so RTL sheets are not dominated by empty space.
+      defaultColWidth: 8,
+    },
   });
   summary.columns = [
-    { width: 28 },
-    { width: 28 },
-    { width: 28 },
-    { width: 28 },
-    { width: 18 },
-    { width: 18 },
-    { width: 18 },
-    { width: 18 },
-    { width: 18 },
-    { width: 18 },
-    { width: 18 },
-  ];
+    { width: 22 }, // name
+    { width: 28 }, // email
+    { width: 24 }, // worked hours
+    { width: 22 }, // approved hours
+    { width: 14 }, // sessions
+    { width: 12 }, // travel
+    { width: 12 }, // normal
+    { width: 12 }, // overnight
+    { width: 12 }, // approved
+    { width: 14 }, // pending
+    { width: 12 }, // rejected
+  ].slice(0, summaryColCount);
   applyPrintSetup(summary);
   applyWorksheetFooter(summary, generatedAt, lang);
 
@@ -820,13 +895,13 @@ export async function buildOvertimeExcelWorkbook({
     summary.getRow(1).height = 62;
   }
 
-  summary.mergeCells(2, 1, 2, 4);
+  summary.mergeCells(2, 1, 2, Math.min(4, summaryColCount));
   const titleCell = summary.getRow(2).getCell(1);
   titleCell.value = t.reportTitle;
   titleCell.font = { bold: true, size: 18, color: { argb: COLORS.navy } };
   summary.getRow(2).height = 28;
 
-  summary.mergeCells(3, 1, 3, 4);
+  summary.mergeCells(3, 1, 3, Math.min(4, summaryColCount));
   summary.getRow(3).getCell(1).value =
     companyName || t.companyFallback;
   summary.getRow(3).getCell(1).font = {
@@ -835,7 +910,13 @@ export async function buildOvertimeExcelWorkbook({
   };
 
   let cursor = 5;
-  cursor = writeSectionHeader(summary, cursor, t.sectionReportMetadata, COLORS.navy);
+  cursor = writeSectionHeader(
+    summary,
+    cursor,
+    t.sectionReportMetadata,
+    COLORS.navy,
+    Math.min(6, summaryColCount)
+  );
   cursor = writeKvRow(
     summary,
     cursor,
@@ -882,7 +963,8 @@ export async function buildOvertimeExcelWorkbook({
     summary,
     cursor,
     t.sectionKpis,
-    COLORS.navy
+    COLORS.navy,
+    Math.min(6, summaryColCount)
   );
   cursor = writeSummaryKpiGrid(
     summary,
@@ -918,9 +1000,16 @@ export async function buildOvertimeExcelWorkbook({
     summary,
     cursor,
     t.sectionEmployeeBreakdown,
-    COLORS.navy
+    COLORS.navy,
+    summaryColCount
   );
-  writeEmployeeSummaryTable(summary, cursor, employeeSummaries, lang);
+  cursor = writeEmployeeSummaryTable(
+    summary,
+    cursor,
+    employeeSummaries,
+    lang
+  );
+  tightenWorksheetUsedRange(summary, cursor, summaryColCount);
 
   if (exportMode === EXPORT_MODE.SUMMARY) {
     const buffer = await workbook.xlsx.writeBuffer();
@@ -1053,9 +1142,21 @@ export async function buildOvertimeExcelWorkbook({
         }
       });
       styleStatusBadge(excelRow.getCell(9), limited[i]?.status);
-      excelRow.alignment = { vertical: 'middle', wrapText: true };
+      excelRow.eachCell((cell) => {
+        cell.alignment = { vertical: 'middle', wrapText: true };
+      });
+      // Duration columns: worked / calculated / approved
+      for (const col of [12, 13, 14]) {
+        excelRow.getCell(col).alignment = durationCellAlignment(lang);
+      }
     }
   }
+
+  tightenWorksheetUsedRange(
+    indexSheet,
+    Math.max(2, indexRows.length + 1),
+    indexColCount
+  );
 
   if (overflow.length > 0) {
     const noteRow = indexSheet.getRow(indexRows.length + 3);
@@ -1480,8 +1581,7 @@ export async function buildOvertimeExcelWorkbook({
     });
     overflow.forEach((record, idx) => {
       const row = bulk.getRow(idx + 2);
-      row.values = [
-        null,
+      const values = [
         record._id?.toString?.() || '',
         userDisplayName(record.userId),
         userEmail(record),
@@ -1502,9 +1602,22 @@ export async function buildOvertimeExcelWorkbook({
         hoursLabel(travelMinutes(record), lang),
         record.reviewNotes || t.dash,
       ];
+      values.forEach((value, colIdx) => {
+        const cell = row.getCell(colIdx + 1);
+        cell.value = value;
+        cell.border = thinBorder();
+        cell.alignment =
+          colIdx >= 11 && colIdx <= 15
+            ? durationCellAlignment(lang)
+            : { vertical: 'middle', wrapText: true };
+      });
       styleStatusBadge(row.getCell(9), record.status);
-      row.alignment = { vertical: 'middle', wrapText: true };
     });
+    tightenWorksheetUsedRange(
+      bulk,
+      overflow.length + 1,
+      bulkHeaders.length
+    );
   }
 
   const buffer = await workbook.xlsx.writeBuffer();

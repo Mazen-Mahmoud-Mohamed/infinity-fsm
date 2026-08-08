@@ -63,7 +63,7 @@ const EN = {
   empEmail: 'Employee Email',
   empWorkedHours: 'Total Calculated / Worked Hours',
   empApprovedHours: 'Total Approved Hours',
-  empSessions: 'Total Sessions',
+  empSessions: 'Total Sessions / Trips',
   empNormal: 'Normal Sessions',
   empTravel: 'Travel Sessions',
   empOvernight: 'Overnight Sessions',
@@ -199,7 +199,7 @@ const AR = {
   empEmail: 'بريد الموظف',
   empWorkedHours: 'إجمالي الساعات المحسوبة / الفعلية',
   empApprovedHours: 'إجمالي الساعات المعتمدة',
-  empSessions: 'إجمالي الجلسات',
+  empSessions: 'إجمالي الجلسات / الرحلات',
   empNormal: 'الجلسات العادية',
   empTravel: 'جلسات السفر',
   empOvernight: 'جلسات المبيت',
@@ -295,26 +295,22 @@ export function excelStrings(lang) {
   return normalizeExportLanguage(lang) === EXPORT_LANG.AR ? AR : EN;
 }
 
-/** Excel-supported directional marks (isolates are unreliable in Excel). */
-const LRE = '\u202A';
-const PDF = '\u202C';
-const LRM = '\u200E';
-
 /**
- * Keep Arabic duration text in logical visual order inside Excel cells.
- * - Wrap Latin digit runs with LRM so hours stay before minutes.
- * - Embed the full phrase with LRE…PDF (Excel-supported).
+ * Excel-supported Left-to-Right Override around the *entire* duration string.
+ * Per-digit LRM marks are intentionally NOT used — they reorder badly in Excel RTL.
  * English strings are returned unchanged.
  */
+const LRO = '\u202D';
+const PDF = '\u202C';
+
 export function excelSafeDurationText(text, lang = EXPORT_LANG.EN) {
   if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) return text;
   if (text === null || text === undefined || text === '') return text;
   const value = String(text);
   if (value === '—' || value === AR.dash) return value;
-  // Avoid nesting if already protected.
-  if (value.startsWith(LRE) && value.endsWith(PDF)) return value;
-  const withProtectedDigits = value.replace(/(\d+)/g, `${LRM}$1${LRM}`);
-  return `${LRE}${withProtectedDigits}${PDF}`;
+  // Strip any prior marks, then wrap once with a full-string LRO…PDF.
+  const plain = stripBidiMarks(value);
+  return `${LRO}${plain}${PDF}`;
 }
 
 /** Strip Unicode bidi marks for assertions / comparisons. */

@@ -4,6 +4,7 @@ import {
   overnightLabel,
   buildOvertimeExcelWorkbook,
   computeEmployeeSummaries,
+  getEmployeeSummaryColumnDefs,
   EXPORT_MODE,
   stripBidiMarks,
 } from '../modules/business/overtime/overtime.excel.export.js';
@@ -14,13 +15,16 @@ import {
 } from '../modules/business/overtime/overtime.excel.i18n.js';
 import ExcelJS from 'exceljs';
 
-const LRE = '\u202A';
+const LRO = '\u202D';
 const PDF = '\u202C';
+const LRM = '\u200E';
 
 function expectArabicDuration(actual, expectedLogical) {
   expect(stripBidiMarks(actual)).toBe(expectedLogical);
-  expect(String(actual).startsWith(LRE)).toBe(true);
+  expect(String(actual).startsWith(LRO)).toBe(true);
   expect(String(actual).endsWith(PDF)).toBe(true);
+  // No per-digit LRM marks — they break Excel RTL rendering.
+  expect(String(actual).includes(LRM)).toBe(false);
   // Hours digits must precede minutes digits in logical (storage) order.
   const hoursMatch = expectedLogical.match(/^(\d+)\s/);
   const minutesMatch = expectedLogical.match(/و\s+(\d+)\s/);
@@ -117,22 +121,25 @@ describe('overtime excel export helpers', () => {
   test('English durations are not wrapped with bidi marks', () => {
     const value = formatDurationProseFromMinutes(897, 'en');
     expect(value).toBe('14 hours 57 minutes');
-    expect(value.includes(LRE)).toBe(false);
+    expect(value.includes(LRO)).toBe(false);
     expect(value.includes(PDF)).toBe(false);
   });
 
-  test('Arabic durations keep hours-before-minutes logical order with Excel LRE/PDF', () => {
+  test('Arabic durations use full-string LRO and keep hours-before-minutes order', () => {
+    expectArabicDuration(formatDurationProseFromMinutes(0, 'ar'), '0 دقيقة');
+    expectArabicDuration(formatDurationProseFromMinutes(1, 'ar'), '1 دقيقة');
+    expectArabicDuration(formatDurationProseFromMinutes(120, 'ar'), '2 ساعة');
+    expectArabicDuration(
+      formatDurationProseFromMinutes(2 * 60 + 33, 'ar'),
+      '2 ساعة و 33 دقيقة'
+    );
     expectArabicDuration(
       formatDurationProseFromMinutes(14 * 60 + 57, 'ar'),
       '14 ساعة و 57 دقيقة'
     );
     expectArabicDuration(
-      formatDurationProseFromMinutes(19 * 60 + 48, 'ar'),
-      '19 ساعة و 48 دقيقة'
-    );
-    expectArabicDuration(
-      formatDurationProseFromMinutes(7 * 60 + 44, 'ar'),
-      '7 ساعة و 44 دقيقة'
+      formatDurationProseFromMinutes(44 * 60 + 18, 'ar'),
+      '44 ساعة و 18 دقيقة'
     );
     expectArabicDuration(
       formatDurationProseFromMinutes(18 * 60 + 44, 'ar'),
@@ -148,15 +155,10 @@ describe('overtime excel export helpers', () => {
     );
     expectArabicDuration(formatDurationProseFromMinutes(60, 'ar'), 'ساعة واحدة');
     expectArabicDuration(formatDurationProseFromMinutes(40, 'ar'), '40 دقيقة');
-    expectArabicDuration(formatDurationProseFromMinutes(0, 'ar'), '0 دقيقة');
     expectArabicDuration(
       formatDurationProseFromHours(14.95, 'ar'),
       '14 ساعة و 57 دقيقة'
     );
-    // Digit runs are also LRM-protected for Excel display stability.
-    const sample = formatDurationProseFromMinutes(18 * 60 + 44, 'ar');
-    expect(sample.includes('\u200E18\u200E')).toBe(true);
-    expect(sample.includes('\u200E44\u200E')).toBe(true);
   });
 
   test('overnight label is travel-only and localized', () => {
@@ -360,8 +362,9 @@ describe('overtime excel workbook columns', () => {
     });
     expect(found.length).toBeGreaterThan(0);
     for (const value of found) {
-      expect(value.startsWith(LRE)).toBe(true);
+      expect(value.startsWith(LRO)).toBe(true);
       expect(value.endsWith(PDF)).toBe(true);
+      expect(value.includes(LRM)).toBe(false);
       const logical = stripBidiMarks(value);
       const hoursMatch = logical.match(/^(\d+)\s+ساعة/);
       const minutesMatch = logical.match(/و\s+(\d+)\s+دقيقة/);
@@ -371,6 +374,83 @@ describe('overtime excel workbook columns', () => {
         );
       }
     }
+  });
+
+  test('employee summary headers and row values stay column-aligned', async () => {
+    const columns = getEmployeeSummaryColumnDefs('ar');
+    expect(columns).toHaveLength(11);
+    expect(columns.map((c) => c.key)).toEqual([
+      'name',
+      'email',
+      'workedHours',
+      'approvedHours',
+      'sessions',
+      'travel',
+      'normal',
+      'overnight',
+      'approved',
+      'pending',
+      'rejected',
+    ]);
+
+    const t = excelStrings('ar');
+    const workbook = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'ar' });
+    const summary = workbook.getWorksheet(t.sheetSummary);
+    expect(summary).toBeTruthy();
+
+    // Locate the employee header row by the canonical first header.
+    let headerRowNumber = 0;
+    summary.eachRow((row, rowNumber) => {
+      if (String(row.getCell(1).value) === t.empName) {
+        headerRowNumber = rowNumber;
+      }
+    });
+    expect(headerRowNumber).toBeGreaterThan(0);
+
+    const headerRow = summary.getRow(headerRowNumber);
+    const headers = columns.map((_, i) => String(headerRow.getCell(i + 1).value ?? ''));
+    expect(headers).toEqual(columns.map((c) => c.header));
+    expect(headers).toHaveLength(columns.length);
+
+    const dataRow = summary.getRow(headerRowNumber + 1);
+    const values = columns.map((_, i) => dataRow.getCell(i + 1).value);
+    expect(values).toHaveLength(headers.length);
+    expect(values[0]).toBe('Ada Lovelace');
+    expect(values[1]).toBe('ada@example.com');
+    expect(stripBidiMarks(String(values[2]))).toMatch(/ساعة|دقيقة/);
+    expect(stripBidiMarks(String(values[3]))).toMatch(/ساعة|دقيقة/);
+
+    // Ensure no off-by-one empty name column.
+    expect(values[0]).not.toBeNull();
+    expect(values[0]).not.toBe('');
+    expect(String(values[0])).not.toMatch(/@/);
+
+    const joined = sheetText(summary);
+    expect(joined).not.toMatch(/Department/i);
+    expect(joined).not.toMatch(/Branch/i);
+    expect(joined).not.toMatch(/قسم|فرع/);
+  });
+
+  test('sessions index headers align with row values and exclude branch/department', async () => {
+    const t = excelStrings('ar');
+    const workbook = await loadWorkbook({ mode: EXPORT_MODE.DETAILED, language: 'ar' });
+    const index = workbook.getWorksheet(t.sheetSessionsIndex);
+    const headers = headerValues(index);
+    expect(headers[0]).toBe(t.sessionId);
+    expect(headers[1]).toBe(t.employeeName);
+    expect(headers[2]).toBe(t.email);
+    expect(headers).toHaveLength(15);
+    expect(headers).not.toContain('Department');
+    expect(headers).not.toContain('Branch');
+    expect(headers.join(' ')).not.toMatch(/قسم|فرع/);
+
+    const dataRow = index.getRow(2);
+    expect(dataRow.getCell(1).value).toBeTruthy();
+    expect(dataRow.getCell(2).value).toBe('Ada Lovelace');
+    expect(dataRow.getCell(3).value).toBe('ada@example.com');
+    expect(String(dataRow.getCell(9).value)).toBe(t.statusApproved);
+    expect(String(dataRow.getCell(10).value)).toBe(t.typeTravel);
+    expect(String(dataRow.getCell(11).value)).toBe(t.yes);
   });
 
   test('detailed session sheet includes email, overnight, times, and no department/branch', async () => {
