@@ -5570,6 +5570,12 @@ abstract class AppLocalizations {
   /// **'Overnight Stay'**
   String get overtimeOvernightStay;
 
+  /// No description provided for @overtimeOvernight.
+  ///
+  /// In en, this message translates to:
+  /// **'Overnight'**
+  String get overtimeOvernight;
+
   /// No description provided for @overtimeEnd.
   ///
   /// In en, this message translates to:
@@ -6029,7 +6035,7 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeApprovedHours.
   ///
   /// In en, this message translates to:
-  /// **'Approved Hours'**
+  /// **'Accepted hours'**
   String get overtimeApprovedHours;
 
   /// No description provided for @overtimeApprovePartial.
@@ -6047,13 +6053,19 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeApprovedHoursHint.
   ///
   /// In en, this message translates to:
-  /// **'Enter hours to approve'**
+  /// **'14:30'**
   String get overtimeApprovedHoursHint;
+
+  /// No description provided for @overtimeApprovedHoursHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Example: 14 hours and 30 minutes'**
+  String get overtimeApprovedHoursHelper;
 
   /// No description provided for @overtimeApprovedHoursInvalid.
   ///
   /// In en, this message translates to:
-  /// **'Enter a valid number between 0 and worked hours.'**
+  /// **'Enter a valid duration as HH:MM (minutes 0–59) that does not exceed worked hours.'**
   String get overtimeApprovedHoursInvalid;
 
   /// No description provided for @overtimeTypeNormal.
@@ -7721,8 +7733,20 @@ abstract class AppLocalizations {
   /// No description provided for @durationMinutesOnly.
   ///
   /// In en, this message translates to:
-  /// **'{minutes} min'**
+  /// **'{minutes, plural, =0{0 minutes} =1{1 minute} other{{minutes} minutes}}'**
   String durationMinutesOnly(int minutes);
+
+  /// No description provided for @durationHoursOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, =1{1 hour} other{{hours} hours}}'**
+  String durationHoursOnly(int hours);
+
+  /// No description provided for @durationHoursAndMinutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours, plural, =1{1 hour} other{{hours} hours}} {minutes, plural, =1{1 minute} other{{minutes} minutes}}'**
+  String durationHoursAndMinutes(int hours, int minutes);
 
   /// No description provided for @durationHoursMinutes.
   ///

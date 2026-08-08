@@ -17,6 +17,7 @@ import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_admin_cubit.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_excel_export_flow.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
@@ -351,18 +352,25 @@ class _AdminSessionCard extends StatelessWidget {
                 icon: Icons.category_outlined,
                 label: overtimeTypeLabel(l10n, session.type),
               ),
+              if (session.type == OvertimeType.travel)
+                _MetaChip(
+                  icon: Icons.nightlight_round,
+                  label:
+                      '${l10n.overtimeOvernight}: '
+                      '${session.isOvernight ? l10n.yes : l10n.no}',
+                ),
               _MetaChip(
                 icon: Icons.timer_outlined,
                 label:
                     '${l10n.overtimeWorkedHours}: '
-                    '${OvertimeFormatters.hoursValue(session.workedHours)}',
+                    '${OvertimeFormatters.hoursValue(session.workedHours, l10n)}',
               ),
               if (session.status == OvertimeStatus.approved)
                 _MetaChip(
                   icon: Icons.verified_outlined,
                   label:
                       '${l10n.overtimeApprovedHours}: '
-                      '${OvertimeFormatters.hoursValue(session.effectiveApprovedHours)}',
+                      '${OvertimeFormatters.hoursValue(session.effectiveApprovedHours, l10n)}',
                 ),
             ],
           ),

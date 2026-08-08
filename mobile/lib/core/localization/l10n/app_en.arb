@@ -1087,6 +1087,7 @@
   "overtimeStart": "Start Overtime",
   "overtimeTravel": "Travel",
   "overtimeOvernightStay": "Overnight Stay",
+  "overtimeOvernight": "Overnight",
   "overtimeEnd": "End Journey",
   "overtimeArrivedAtWorkSite": "Arrived at Work Site",
   "overtimeFinishedWork": "Finish Work",
@@ -1183,11 +1184,12 @@
   "overtimeLastSessionSummary": "Last session summary",
   "overtimeEligible": "Eligible overtime",
   "overtimeWorkedHours": "Worked Hours",
-  "overtimeApprovedHours": "Approved Hours",
+  "overtimeApprovedHours": "Accepted hours",
   "overtimeApprovePartial": "Approve Partial",
   "overtimeApprovePartialTitle": "Approve Partial Hours",
-  "overtimeApprovedHoursHint": "Enter hours to approve",
-  "overtimeApprovedHoursInvalid": "Enter a valid number between 0 and worked hours.",
+  "overtimeApprovedHoursHint": "14:30",
+  "overtimeApprovedHoursHelper": "Example: 14 hours and 30 minutes",
+  "overtimeApprovedHoursInvalid": "Enter a valid duration as HH:MM (minutes 0–59) that does not exceed worked hours.",
   "overtimeTypeNormal": "Normal Overtime",
   "overtimeTypeTravel": "Travel Overtime",
 
@@ -1520,9 +1522,22 @@
 
   "valueNotSet": "Not set",
   "workOrderAttachmentFallback": "Attachment",
-  "durationMinutesOnly": "{minutes} min",
+  "durationMinutesOnly": "{minutes, plural, =0{0 minutes} =1{1 minute} other{{minutes} minutes}}",
   "@durationMinutesOnly": {
     "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationHoursOnly": "{hours, plural, =1{1 hour} other{{hours} hours}}",
+  "@durationHoursOnly": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "durationHoursAndMinutes": "{hours, plural, =1{1 hour} other{{hours} hours}} {minutes, plural, =1{1 minute} other{{minutes} minutes}}",
+  "@durationHoursAndMinutes": {
+    "placeholders": {
+      "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
   },

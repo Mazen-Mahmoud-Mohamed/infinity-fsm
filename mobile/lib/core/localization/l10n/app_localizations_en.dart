@@ -2900,6 +2900,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeOvernightStay => 'Overnight Stay';
 
   @override
+  String get overtimeOvernight => 'Overnight';
+
+  @override
   String get overtimeEnd => 'End Journey';
 
   @override
@@ -3143,7 +3146,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeWorkedHours => 'Worked Hours';
 
   @override
-  String get overtimeApprovedHours => 'Approved Hours';
+  String get overtimeApprovedHours => 'Accepted hours';
 
   @override
   String get overtimeApprovePartial => 'Approve Partial';
@@ -3152,11 +3155,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeApprovePartialTitle => 'Approve Partial Hours';
 
   @override
-  String get overtimeApprovedHoursHint => 'Enter hours to approve';
+  String get overtimeApprovedHoursHint => '14:30';
+
+  @override
+  String get overtimeApprovedHoursHelper => 'Example: 14 hours and 30 minutes';
 
   @override
   String get overtimeApprovedHoursInvalid =>
-      'Enter a valid number between 0 and worked hours.';
+      'Enter a valid duration as HH:MM (minutes 0–59) that does not exceed worked hours.';
 
   @override
   String get overtimeTypeNormal => 'Normal Overtime';
@@ -4055,7 +4061,42 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String durationMinutesOnly(int minutes) {
-    return '$minutes min';
+    String _temp0 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+      zero: '0 minutes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHoursOnly(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours',
+      one: '1 hour',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHoursAndMinutes(int hours, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours hours',
+      one: '1 hour',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      minutes,
+      locale: localeName,
+      other: '$minutes minutes',
+      one: '1 minute',
+    );
+    return '$_temp0 $_temp1';
   }
 
   @override

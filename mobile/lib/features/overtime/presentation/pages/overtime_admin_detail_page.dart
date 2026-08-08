@@ -12,8 +12,11 @@ import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
+import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_detail_cubit.dart';
+import 'package:mobile/features/overtime/presentation/utils/approved_hours_hhmm.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_fullscreen_image.dart';
@@ -151,6 +154,11 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                   label: l10n.labelType,
                   value: overtimeTypeLabel(l10n, session.type),
                 ),
+                if (session.type == OvertimeType.travel)
+                  _DetailRow(
+                    label: l10n.overtimeOvernight,
+                    value: session.isOvernight ? l10n.yes : l10n.no,
+                  ),
                 _DetailRow(
                   label: l10n.overtimeStartTime,
                   value: dateFormat.format(session.startAt.toLocal()),
@@ -184,13 +192,14 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                 ),
                 _DetailRow(
                   label: l10n.overtimeWorkedHours,
-                  value: OvertimeFormatters.hoursValue(session.workedHours),
+                  value: OvertimeFormatters.hoursValue(session.workedHours, l10n),
                 ),
                 if (session.status == OvertimeStatus.approved)
                   _DetailRow(
                     label: l10n.overtimeApprovedHours,
                     value: OvertimeFormatters.hoursValue(
                       session.effectiveApprovedHours,
+                      l10n,
                     ),
                   ),
                 if (session.rejectionReason != null &&
@@ -359,7 +368,18 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                                 onPressed: state.isBusy
                                     ? null
                                     : () => _showApprovePartialDialog(context),
-                                child: Text(l10n.overtimeApprovePartial),
+                                child: state.isApprovingPartial
+                                    ? SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .primary,
+                                        ),
+                                      )
+                                    : Text(l10n.overtimeApprovePartial),
                               )
                             : null;
                         final approveBtn = canApprove
@@ -438,7 +458,7 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
               if (session != null) ...[
                 Text(
                   '${l10n.overtimeWorkedHours}: '
-                  '${OvertimeFormatters.hoursValue(session.workedHours)}',
+                  '${OvertimeFormatters.hoursValue(session.workedHours, l10n)}',
                 ),
                 const SizedBox(height: AppSpacing.md),
               ],
@@ -479,84 +499,20 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
   }
 
   Future<void> _showApprovePartialDialog(BuildContext context) async {
-    final l10n = AppLocalizations.of(context);
-    final session = context.read<OvertimeDetailCubit>().state.session;
+    final cubit = context.read<OvertimeDetailCubit>();
+    final session = cubit.state.session;
     if (session == null) return;
 
-    final worked = session.workedHours ?? 0;
-    final hoursController = TextEditingController(
-      text: OvertimeFormatters.hoursValue(worked),
-    );
-    final formKey = GlobalKey<FormState>();
-
-    final confirmed = await showDialog<bool>(
+    await showDialog<void>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(l10n.overtimeApprovePartialTitle),
-          content: Form(
-            key: formKey,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  '${l10n.overtimeWorkedHours}: '
-                  '${OvertimeFormatters.hoursValue(worked)}',
-                  style: Theme.of(dialogContext).textTheme.titleMedium,
-                ),
-                const SizedBox(height: AppSpacing.md),
-                TextFormField(
-                  controller: hoursController,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
-                  ],
-                  decoration: InputDecoration(
-                    labelText: l10n.overtimeApprovedHours,
-                    hintText: l10n.overtimeApprovedHoursHint,
-                    border: const OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    final parsed = double.tryParse(value?.trim() ?? '');
-                    if (parsed == null || parsed < 0 || parsed > worked) {
-                      return l10n.overtimeApprovedHoursInvalid;
-                    }
-                    return null;
-                  },
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.cancel),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (formKey.currentState?.validate() != true) return;
-                Navigator.of(dialogContext).pop(true);
-              },
-              child: Text(l10n.approve),
-            ),
-          ],
+        return _PartialApproveDialog(
+          cubit: cubit,
+          session: session,
         );
       },
     );
-
-    if (confirmed != true || !context.mounted) {
-      return;
-    }
-
-    final parsed = double.tryParse(hoursController.text.trim());
-    if (parsed == null) return;
-
-    await context.read<OvertimeDetailCubit>().approve(
-          approvedHours: parsed,
-        );
   }
 
   Future<void> _showRejectDialog(BuildContext context) async {
@@ -615,6 +571,138 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
           rejectionReason: reason.isEmpty ? null : reason,
           reviewNotes: notes.isEmpty ? null : notes,
         );
+  }
+}
+
+/// Partial Approve dialog with safe lifecycle.
+///
+/// Awaits [OvertimeDetailCubit.approvePartial] and only then pops — never from
+/// a [BlocListener] during `emit`, which caused `_dependents.isEmpty`.
+class _PartialApproveDialog extends StatefulWidget {
+  const _PartialApproveDialog({
+    required this.cubit,
+    required this.session,
+  });
+
+  final OvertimeDetailCubit cubit;
+  final OvertimeSession session;
+
+  @override
+  State<_PartialApproveDialog> createState() => _PartialApproveDialogState();
+}
+
+class _PartialApproveDialogState extends State<_PartialApproveDialog> {
+  late final TextEditingController _hoursController;
+  final _formKey = GlobalKey<FormState>();
+  var _submitting = false;
+
+  OvertimeSession get _session => widget.session;
+  int get _workedMinutes => _session.eligibleOvertimeMinutes ?? 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _hoursController = TextEditingController(
+      text: ApprovedHoursHhMm.formatFromMinutes(_workedMinutes),
+    );
+  }
+
+  @override
+  void dispose() {
+    _hoursController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onConfirm() async {
+    if (_submitting) return;
+    if (_formKey.currentState?.validate() != true) return;
+
+    final parsed = ApprovedHoursHhMm.parseAndValidateAgainstWorked(
+      raw: _hoursController.text,
+      workedMinutes: _workedMinutes,
+    );
+    final apiHours = parsed.apiHours;
+    if (apiHours == null) return;
+
+    setState(() => _submitting = true);
+
+    await widget.cubit.approvePartial(approvedHours: apiHours);
+
+    if (!mounted) return;
+
+    if (widget.cubit.state.isError) {
+      setState(() => _submitting = false);
+      return;
+    }
+
+    // Pop only after the cubit emit + notifyListeners cycle has finished.
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final submitting = _submitting || widget.cubit.state.isApprovingPartial;
+
+    return AlertDialog(
+      title: Text(l10n.overtimeApprovePartialTitle),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              '${l10n.overtimeWorkedHours}: '
+              '${OvertimeFormatters.hoursValue(_session.workedHours, l10n)}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            TextFormField(
+              controller: _hoursController,
+              enabled: !submitting,
+              keyboardType: TextInputType.datetime,
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'[0-9:]')),
+              ],
+              decoration: InputDecoration(
+                labelText: l10n.overtimeApprovedHours,
+                hintText: l10n.overtimeApprovedHoursHint,
+                helperText: l10n.overtimeApprovedHoursHelper,
+                border: const OutlineInputBorder(),
+              ),
+              validator: (value) {
+                final parsed =
+                    ApprovedHoursHhMm.parseAndValidateAgainstWorked(
+                  raw: value,
+                  workedMinutes: _workedMinutes,
+                );
+                if (!parsed.isValid) {
+                  return l10n.overtimeApprovedHoursInvalid;
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: submitting ? null : () => Navigator.of(context).pop(),
+          child: Text(l10n.cancel),
+        ),
+        ElevatedButton(
+          onPressed: submitting ? null : _onConfirm,
+          child: submitting
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(l10n.approve),
+        ),
+      ],
+    );
   }
 }
 

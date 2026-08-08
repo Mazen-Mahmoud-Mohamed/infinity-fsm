@@ -2894,6 +2894,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeOvernightStay => 'مبيت ليلي';
 
   @override
+  String get overtimeOvernight => 'البيات';
+
+  @override
   String get overtimeEnd => 'إنهاء الرحلة';
 
   @override
@@ -3137,7 +3140,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeWorkedHours => 'ساعات العمل';
 
   @override
-  String get overtimeApprovedHours => 'الساعات المعتمدة';
+  String get overtimeApprovedHours => 'عدد الساعات المقبولة';
 
   @override
   String get overtimeApprovePartial => 'اعتماد جزئي';
@@ -3146,11 +3149,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeApprovePartialTitle => 'اعتماد ساعات جزئية';
 
   @override
-  String get overtimeApprovedHoursHint => 'أدخل الساعات المراد اعتمادها';
+  String get overtimeApprovedHoursHint => '14:30';
+
+  @override
+  String get overtimeApprovedHoursHelper => 'مثال: 14 ساعة و30 دقيقة';
 
   @override
   String get overtimeApprovedHoursInvalid =>
-      'أدخل رقمًا صالحًا بين 0 وساعات العمل.';
+      'أدخل مدة بصيغة سس:دد (الدقائق 0–59) لا تتجاوز ساعات العمل.';
 
   @override
   String get overtimeTypeNormal => 'عمل إضافي عادي';
@@ -4044,6 +4050,28 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String durationMinutesOnly(int minutes) {
     return '$minutes دقيقة';
+  }
+
+  @override
+  String durationHoursOnly(int hours) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours ساعة',
+      one: 'ساعة واحدة',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String durationHoursAndMinutes(int hours, int minutes) {
+    String _temp0 = intl.Intl.pluralLogic(
+      hours,
+      locale: localeName,
+      other: '$hours ساعة و $minutes دقيقة',
+      one: 'ساعة واحدة و $minutes دقيقة',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -50,6 +50,11 @@ class OvertimeSyncState extends Equatable {
       [status, pendingCount, pendingActions, isOnline, message];
 }
 
+/// Serializes overtime pending-queue uploads.
+///
+/// Concurrent [syncNow] calls while a cycle is running are coalesced into a
+/// single follow-up pass so actions enqueued mid-sync (e.g. Finish Work) are
+/// never discarded.
 class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
   OvertimeSyncCubit({
     required SyncPendingOvertimeUseCase syncUseCase,
@@ -91,7 +96,14 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
   final OvertimeUploadPolicyService _uploadPolicy;
   StreamSubscription<bool>? _connectivitySubscription;
   Timer? _retryTimer;
+
   bool _isSyncing = false;
+
+  /// Set when [syncNow] is requested while a cycle is already running.
+  bool _syncRequestedAgain = false;
+
+  /// Safety cap for follow-up cycles within one worker entry.
+  static const int _maxCyclesPerEntry = 8;
 
   Future<void> refreshPendingCount() async {
     final pending = await _repository.getPendingActions();
@@ -102,11 +114,22 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
   }
 
   Future<void> syncNow({bool force = false}) async {
-    if (_isSyncing || isClosed) {
+    if (isClosed) {
       OvertimeOfflineTrace.step(
         'SYNC_SCHEDULER',
         status: 'failure',
-        detail: _isSyncing ? 'already syncing' : 'cubit closed',
+        detail: 'cubit closed',
+      );
+      return;
+    }
+
+    if (_isSyncing) {
+      _syncRequestedAgain = true;
+      OvertimeOfflineTrace.step(
+        'SYNC_SCHEDULER',
+        status: 'failure',
+        detail: 'already syncing | queued follow-up request',
+        queueLength: state.pendingCount,
       );
       return;
     }
@@ -117,7 +140,9 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
         status: 'failure',
         detail: 'offline',
       );
-      emit(state.copyWith(isOnline: false));
+      if (!isClosed) {
+        emit(state.copyWith(isOnline: false));
+      }
       return;
     }
 
@@ -130,89 +155,230 @@ class OvertimeSyncCubit extends Cubit<OvertimeSyncState> {
       return;
     }
 
-    final pendingBefore = await _repository.getPendingActions();
-    OvertimeOfflineTrace.step(
-      'SYNC_SCHEDULER',
-      status: 'entered',
-      queueLength: pendingBefore.length,
-      detail: 'connectivity online',
-    );
-    if (pendingBefore.isEmpty) {
-      unawaited(_gpsAddressSync.processQueue());
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            status: OvertimeSyncStatus.idle,
-            pendingCount: 0,
-            pendingActions: const [],
-            isOnline: true,
-          ),
-        );
-      }
-      return;
+    _isSyncing = true;
+    if (!isClosed) {
+      emit(state.copyWith(status: OvertimeSyncStatus.syncing, isOnline: true));
     }
 
-    _isSyncing = true;
-    emit(state.copyWith(status: OvertimeSyncStatus.syncing, isOnline: true));
-
     try {
-      final result = await _syncUseCase();
-      unawaited(_gpsAddressSync.processQueue());
-      if (isClosed) {
-        return;
-      }
+      OvertimeOfflineTrace.step(
+        'SYNC_LOOP',
+        status: 'entered',
+        detail: 'started',
+      );
 
-      switch (result) {
-        case Success(data: final synced):
-          final pending = await _repository.getPendingActions();
+      var cycles = 0;
+      while (!isClosed && cycles < _maxCyclesPerEntry) {
+        cycles += 1;
+        _syncRequestedAgain = false;
+
+        if (!await _connectivity.isConnected) {
           OvertimeOfflineTrace.step(
-            'SYNC_SCHEDULER',
+            'SYNC_LOOP',
+            status: 'failure',
+            detail: 'offline mid-loop',
+          );
+          if (!isClosed) {
+            emit(state.copyWith(isOnline: false));
+          }
+          break;
+        }
+
+        final pendingBefore = await _repository.getPendingActions();
+        if (pendingBefore.isEmpty) {
+          unawaited(_gpsAddressSync.processQueue());
+          OvertimeOfflineTrace.step(
+            'SYNC_LOOP',
             status: 'success',
-            queueLength: pending.length,
-            detail: 'syncedCount=$synced',
+            queueLength: 0,
+            detail: 'drained',
           );
-          emit(
-            state.copyWith(
-              status: OvertimeSyncStatus.success,
-              pendingCount: pending.length,
-              pendingActions: pending,
-              clearMessage: true,
-            ),
+          if (!isClosed) {
+            emit(
+              state.copyWith(
+                status: OvertimeSyncStatus.idle,
+                pendingCount: 0,
+                pendingActions: const [],
+                isOnline: true,
+              ),
+            );
+          }
+          break;
+        }
+
+        for (final action in pendingBefore) {
+          OvertimeOfflineTrace.step(
+            'SYNC_LOOP',
+            status: 'entered',
+            objectId: action.id,
+            detail: 'processing | type=${action.type.name}',
+            queueLength: pendingBefore.length,
           );
-        case Failure(message: final message, code: final code):
-          final offline = code == 'OFFLINE' ||
-              code == 'TIMEOUT' ||
-              code == 'NETWORK_ERROR';
+        }
+
+        OvertimeOfflineTrace.step(
+          'SYNC_SCHEDULER',
+          status: 'entered',
+          queueLength: pendingBefore.length,
+          detail: 'connectivity online | cycle=$cycles',
+        );
+
+        late final Result<int> result;
+        try {
+          result = await _syncUseCase();
+        } on Object catch (error) {
           OvertimeOfflineTrace.step(
             'SYNC_SCHEDULER',
             status: 'failure',
-            detail: 'code=$code message=$message',
+            detail: error.toString(),
           );
-          emit(
-            state.copyWith(
-              status: OvertimeSyncStatus.failure,
-              clearMessage: offline,
-              message: offline ? null : message,
-              isOnline: !offline,
-            ),
-          );
-      }
-    } on Object catch (error) {
-      OvertimeOfflineTrace.step(
-        'SYNC_SCHEDULER',
-        status: 'failure',
-        detail: error.toString(),
-      );
-      if (!isClosed) {
-        emit(
-          state.copyWith(
-            status: OvertimeSyncStatus.failure,
-            message: error.toString(),
-          ),
+          if (!isClosed) {
+            emit(
+              state.copyWith(
+                status: OvertimeSyncStatus.failure,
+                message: error.toString(),
+              ),
+            );
+          }
+          // Still honour coalesced requests after an unexpected throw.
+          if (_syncRequestedAgain) {
+            OvertimeOfflineTrace.step(
+              'SYNC_LOOP',
+              status: 'entered',
+              detail: 'follow-up required',
+            );
+            OvertimeOfflineTrace.step(
+              'SYNC_SCHEDULER',
+              status: 'entered',
+              detail: 'follow-up started',
+            );
+            continue;
+          }
+          break;
+        }
+
+        unawaited(_gpsAddressSync.processQueue());
+        if (isClosed) {
+          break;
+        }
+
+        final pendingAfter = await _repository.getPendingActions();
+        OvertimeOfflineTrace.step(
+          'SYNC_LOOP',
+          status: 'success',
+          queueLength: pendingAfter.length,
+          detail: 'completed | remainingQueue=${pendingAfter.length}',
         );
+
+        var syncedCount = 0;
+        var hardFailure = false;
+        var offlineFailure = false;
+
+        switch (result) {
+          case Success(data: final synced):
+            syncedCount = synced;
+            OvertimeOfflineTrace.step(
+              'SYNC_SCHEDULER',
+              status: 'success',
+              queueLength: pendingAfter.length,
+              detail: 'syncedCount=$synced | cycle=$cycles',
+            );
+            if (!isClosed) {
+              emit(
+                state.copyWith(
+                  status: pendingAfter.isEmpty
+                      ? OvertimeSyncStatus.success
+                      : OvertimeSyncStatus.syncing,
+                  pendingCount: pendingAfter.length,
+                  pendingActions: pendingAfter,
+                  clearMessage: true,
+                  isOnline: true,
+                ),
+              );
+            }
+          case Failure(message: final message, code: final code):
+            hardFailure = true;
+            offlineFailure = code == 'OFFLINE' ||
+                code == 'TIMEOUT' ||
+                code == 'NETWORK_ERROR';
+            OvertimeOfflineTrace.step(
+              'SYNC_SCHEDULER',
+              status: 'failure',
+              detail: 'code=$code message=$message',
+              queueLength: pendingAfter.length,
+            );
+            if (!isClosed) {
+              emit(
+                state.copyWith(
+                  status: OvertimeSyncStatus.failure,
+                  pendingCount: pendingAfter.length,
+                  pendingActions: pendingAfter,
+                  clearMessage: offlineFailure,
+                  message: offlineFailure ? null : message,
+                  isOnline: !offlineFailure,
+                ),
+              );
+            }
+        }
+
+        if (pendingAfter.isEmpty && !_syncRequestedAgain) {
+          OvertimeOfflineTrace.step(
+            'SYNC_LOOP',
+            status: 'success',
+            queueLength: 0,
+            detail: 'drained',
+          );
+          break;
+        }
+
+        // Coalesced enqueue during this cycle — must process new snapshot.
+        if (_syncRequestedAgain) {
+          OvertimeOfflineTrace.step(
+            'SYNC_LOOP',
+            status: 'entered',
+            queueLength: pendingAfter.length,
+            detail: 'follow-up required',
+          );
+          OvertimeOfflineTrace.step(
+            'SYNC_SCHEDULER',
+            status: 'entered',
+            queueLength: pendingAfter.length,
+            detail: 'follow-up started',
+          );
+          continue;
+        }
+
+        // Made progress with leftovers (e.g. START then mid-stage on next
+        // snapshot) — one more pass. Stop on no-progress to avoid spinning
+        // forever on a legitimate blocking API error.
+        if (!hardFailure &&
+            !offlineFailure &&
+            syncedCount > 0 &&
+            pendingAfter.isNotEmpty) {
+          OvertimeOfflineTrace.step(
+            'SYNC_LOOP',
+            status: 'entered',
+            queueLength: pendingAfter.length,
+            detail: 'follow-up required',
+          );
+          continue;
+        }
+
+        break;
       }
     } finally {
       _isSyncing = false;
+      // Race: another caller set the flag after the loop last cleared it while
+      // we still held _isSyncing. Schedule exactly one non-recursive follow-up.
+      if (_syncRequestedAgain && !isClosed) {
+        _syncRequestedAgain = false;
+        OvertimeOfflineTrace.step(
+          'SYNC_SCHEDULER',
+          status: 'entered',
+          detail: 'follow-up started',
+        );
+        unawaited(Future<void>.microtask(() => syncNow(force: force)));
+      }
     }
   }
 

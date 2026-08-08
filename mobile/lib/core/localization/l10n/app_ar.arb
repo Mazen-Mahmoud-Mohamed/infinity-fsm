@@ -1059,6 +1059,7 @@
   "overtimeStart": "بدء العمل الإضافي",
   "overtimeTravel": "سفر",
   "overtimeOvernightStay": "مبيت ليلي",
+  "overtimeOvernight": "البيات",
   "overtimeEnd": "إنهاء الرحلة",
   "overtimeArrivedAtWorkSite": "الوصول لموقع العمل",
   "overtimeFinishedWork": "إنهاء العمل",
@@ -1155,11 +1156,12 @@
   "overtimeLastSessionSummary": "ملخص آخر جلسة",
   "overtimeEligible": "العمل الإضافي المؤهل",
   "overtimeWorkedHours": "ساعات العمل",
-  "overtimeApprovedHours": "الساعات المعتمدة",
+  "overtimeApprovedHours": "عدد الساعات المقبولة",
   "overtimeApprovePartial": "اعتماد جزئي",
   "overtimeApprovePartialTitle": "اعتماد ساعات جزئية",
-  "overtimeApprovedHoursHint": "أدخل الساعات المراد اعتمادها",
-  "overtimeApprovedHoursInvalid": "أدخل رقمًا صالحًا بين 0 وساعات العمل.",
+  "overtimeApprovedHoursHint": "14:30",
+  "overtimeApprovedHoursHelper": "مثال: 14 ساعة و30 دقيقة",
+  "overtimeApprovedHoursInvalid": "أدخل مدة بصيغة سس:دد (الدقائق 0–59) لا تتجاوز ساعات العمل.",
   "overtimeTypeNormal": "عمل إضافي عادي",
   "overtimeTypeTravel": "عمل إضافي للسفر",
 
@@ -1495,6 +1497,19 @@
   "durationMinutesOnly": "{minutes} دقيقة",
   "@durationMinutesOnly": {
     "placeholders": {
+      "minutes": { "type": "int" }
+    }
+  },
+  "durationHoursOnly": "{hours, plural, =1{ساعة واحدة} other{{hours} ساعة}}",
+  "@durationHoursOnly": {
+    "placeholders": {
+      "hours": { "type": "int" }
+    }
+  },
+  "durationHoursAndMinutes": "{hours, plural, =1{ساعة واحدة و {minutes} دقيقة} other{{hours} ساعة و {minutes} دقيقة}}",
+  "@durationHoursAndMinutes": {
+    "placeholders": {
+      "hours": { "type": "int" },
       "minutes": { "type": "int" }
     }
   },

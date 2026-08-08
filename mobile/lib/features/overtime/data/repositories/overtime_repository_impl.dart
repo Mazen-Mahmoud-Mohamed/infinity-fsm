@@ -271,19 +271,28 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     try {
       final session = await _remote.getRunning();
       if (session != null) {
-        await _local.saveRunningSession(_asModel(session));
+        final adopted = await _adoptRemoteRunningSession(session);
         // Server is authoritative for confirmed stages: drop local pending
         // actions that the server already applied (fixes Sync Failed when the
         // POST succeeded but the client never got the success response).
-        final reconciled = await _reconcilePendingQueueWithServerSession(session);
+        final reconciled =
+            await _reconcilePendingQueueWithServerSession(session);
+        await _dedupePendingActionsForSession(session);
         OvertimeOfflineTrace.step(
           'GET_RUNNING',
           status: 'success',
           serverId: session.id,
           detail:
-              'remote running adopted; reconciledPending=$reconciled',
+              'remote running adopted; reconciledPending=$reconciled '
+              'next=${adopted.effectiveNextCheckpoint?.apiValue}',
         );
-        return Success(session);
+        _logForensicStage(
+          label: 'GET_RUNNING',
+          local: _local.readRunningSession(),
+          remote: session,
+          resolved: adopted,
+        );
+        return Success(adopted);
       }
 
       // Do not wipe an optimistic offline running session while its pending
@@ -292,6 +301,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       if (cached != null &&
           (cached.id.startsWith('local-') ||
               _local.hasPendingActionsForSession(cached.id))) {
+        final normalized = _normalizeRunningSession(cached);
+        if (normalized != cached) {
+          await _local.saveRunningSession(normalized);
+        }
         OvertimeOfflineTrace.step(
           'GET_RUNNING',
           status: 'success',
@@ -299,7 +312,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           queueLength: _local.readQueue().length,
           detail: 'kept local running; remote null',
         );
-        return Success(cached);
+        return Success(normalized);
       }
 
       await _local.saveRunningSession(null);
@@ -320,10 +333,10 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           localId: cached?.id,
           detail: 'connectivity failure; returned cache',
         );
-        return Success(cached);
+        return Success(cached == null ? null : _normalizeRunningSession(cached));
       }
       if (cached != null) {
-        return Success(cached);
+        return Success(_normalizeRunningSession(cached));
       }
       OvertimeOfflineTrace.step(
         'GET_RUNNING',
@@ -1282,8 +1295,13 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                 startPhotoUrl: running.startPhotoUrl ?? session.startPhotoUrl,
                 workflowVersion: session.workflowVersion,
                 checkpoints: running.checkpoints ?? session.checkpoints,
-                nextCheckpoint:
-                    running.nextCheckpoint ?? session.nextCheckpoint,
+                // Derive next from checkpoints — never keep a stale local field
+                // that can regress behind completed stages.
+                nextCheckpoint: (running.checkpoints ?? session.checkpoints)
+                    ?.nextStage,
+                clearNextCheckpoint: (running.checkpoints ?? session.checkpoints)
+                        ?.nextStage ==
+                    null,
                 requiresManualReview: session.requiresManualReview,
                 reviewReason: session.reviewReason,
               ),
@@ -1346,7 +1364,11 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
                 id: sessionId,
                 startAt: running.startAt,
                 checkpoints: remote.checkpoints ?? running.checkpoints,
-                nextCheckpoint: remote.nextCheckpoint,
+                nextCheckpoint:
+                    (remote.checkpoints ?? running.checkpoints)?.nextStage,
+                clearNextCheckpoint:
+                    (remote.checkpoints ?? running.checkpoints)?.nextStage ==
+                        null,
                 requiresManualReview: remote.requiresManualReview,
                 reviewReason: remote.reviewReason,
               ),
@@ -1496,6 +1518,210 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     }
 
     return Success(synced);
+  }
+
+  /// Adopts remote running session without wiping optimistic local stages that
+  /// still have matching pending queue items (Finish Work enqueued but not yet
+  /// confirmed by the server).
+  Future<OvertimeSessionModel> _adoptRemoteRunningSession(
+    OvertimeSession remote,
+  ) async {
+    final local = _local.readRunningSession();
+    final localIdMap = <String, String>{..._local.readLocalIdMap()};
+    _seedLocalIdMapFromCaches(localIdMap);
+
+    final sameSession = local != null &&
+        (local.id == remote.id || localIdMap[local.id] == remote.id);
+    final localForMerge = sameSession ? local : null;
+
+    final pending = _local.readQueue().where((action) {
+      if (localForMerge == null) {
+        return _pendingBelongsToSession(action, remote, localIdMap);
+      }
+      return _pendingBelongsToSession(action, remote, localIdMap) ||
+          action.sessionId == localForMerge.id;
+    }).toList(growable: false);
+
+    final mergedCheckpoints = _mergeCheckpoints(
+      remote: remote.checkpoints,
+      local: localForMerge?.checkpoints,
+      pending: pending,
+    );
+
+    final adopted = _copySession(
+      _asModel(remote),
+      checkpoints: mergedCheckpoints,
+      nextCheckpoint: mergedCheckpoints.nextStage,
+      clearNextCheckpoint: mergedCheckpoints.nextStage == null,
+    );
+
+    await _local.saveRunningSession(adopted);
+    _logForensicStage(
+      label: 'ADOPT_REMOTE',
+      local: local,
+      remote: remote,
+      resolved: adopted,
+    );
+    OvertimeOfflineTrace.step(
+      'SYNC_RECONCILE',
+      status: 'success',
+      serverId: remote.id,
+      detail:
+          'adopt merge remoteCompleted=${_completedStageNames(remote.checkpoints)} '
+          'localCompleted=${_completedStageNames(local?.checkpoints)} '
+          'pendingStages=${pending.map((e) => e.type.name).join(",")} '
+          'resolvedNext=${adopted.effectiveNextCheckpoint?.apiValue}',
+    );
+    return adopted;
+  }
+
+  OvertimeCheckpoints _mergeCheckpoints({
+    required OvertimeCheckpoints? remote,
+    required OvertimeCheckpoints? local,
+    required List<PendingOvertimeAction> pending,
+  }) {
+    OvertimeCheckpoint? pick(
+      OvertimeCheckpointStage stage,
+      OvertimeCheckpoint? remoteCp,
+      OvertimeCheckpoint? localCp,
+    ) {
+      if (remoteCp != null) {
+        return remoteCp;
+      }
+      if (localCp == null) {
+        return null;
+      }
+      final hasPending = pending.any((action) => action.checkpointStage == stage);
+      // Preserve optimistic local stage only while its pending action lives.
+      return hasPending ? localCp : null;
+    }
+
+    return OvertimeCheckpoints(
+      startJourney: pick(
+        OvertimeCheckpointStage.startJourney,
+        remote?.startJourney,
+        local?.startJourney,
+      ),
+      arrivedAtWorkSite: pick(
+        OvertimeCheckpointStage.arrivedAtWorkSite,
+        remote?.arrivedAtWorkSite,
+        local?.arrivedAtWorkSite,
+      ),
+      finishedWork: pick(
+        OvertimeCheckpointStage.finishedWork,
+        remote?.finishedWork,
+        local?.finishedWork,
+      ),
+      endJourney: pick(
+        OvertimeCheckpointStage.endJourney,
+        remote?.endJourney,
+        local?.endJourney,
+      ),
+    );
+  }
+
+  /// Migration/normalization: derive nextCheckpoint from checkpoint presence.
+  OvertimeSessionModel _normalizeRunningSession(OvertimeSessionModel session) {
+    if (!session.isRunning || !session.isV2Workflow) {
+      return session;
+    }
+    final derived = session.checkpoints?.nextStage;
+    if (session.nextCheckpoint == derived) {
+      return session;
+    }
+    return _copySession(
+      session,
+      nextCheckpoint: derived,
+      clearNextCheckpoint: derived == null,
+    );
+  }
+
+  Future<int> _dedupePendingActionsForSession(OvertimeSession session) async {
+    final localIdMap = <String, String>{..._local.readLocalIdMap()};
+    _seedLocalIdMapFromCaches(localIdMap);
+    final queue = _local.readQueue();
+    final related = queue
+        .where((action) => _pendingBelongsToSession(action, session, localIdMap))
+        .toList();
+    if (related.length <= 1) {
+      return 0;
+    }
+
+    final byStage = <OvertimeCheckpointStage?, List<PendingOvertimeAction>>{};
+    for (final action in related) {
+      byStage.putIfAbsent(action.checkpointStage, () => []).add(action);
+    }
+
+    var removed = 0;
+    for (final entry in byStage.entries) {
+      final stage = entry.key;
+      final actions = entry.value;
+      if (actions.length <= 1 || stage == null) {
+        continue;
+      }
+      actions.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      final serverCp = session.checkpoints?.forStage(stage);
+      final serverClientId = serverCp?.clientRequestId?.trim();
+      PendingOvertimeAction keep = actions.first;
+      if (serverClientId != null && serverClientId.isNotEmpty) {
+        keep = actions.firstWhere(
+          (action) => action.clientRequestId == serverClientId,
+          orElse: () => actions.first,
+        );
+      }
+      for (final action in actions) {
+        if (action.id == keep.id) {
+          continue;
+        }
+        await _local.removeFromQueue(action.id);
+        removed += 1;
+        OvertimeOfflineTrace.step(
+          'SYNC_RECONCILE',
+          status: 'success',
+          objectId: action.id,
+          serverId: session.id,
+          detail: 'deduped duplicate ${action.type.name}; kept ${keep.id}',
+        );
+      }
+    }
+    return removed;
+  }
+
+  void _logForensicStage({
+    required String label,
+    required OvertimeSession? local,
+    required OvertimeSession? remote,
+    OvertimeSession? resolved,
+  }) {
+    final pending = _local.readQueue();
+    final resolvedSession = resolved ?? local ?? remote;
+    OvertimeOfflineTrace.step(
+      'OT_FORENSIC',
+      status: 'success',
+      serverId: remote?.id ?? local?.id,
+      detail:
+          '$label '
+          'remoteCompleted=${_completedStageNames(remote?.checkpoints)} '
+          'localCompleted=${_completedStageNames(local?.checkpoints)} '
+          'pendingStages=${pending.map((e) => e.type.name).join(",")} '
+          'remoteNext=${remote?.nextCheckpoint?.apiValue} '
+          'localNextField=${local?.nextCheckpoint?.apiValue} '
+          'resolvedCurrentStage='
+          '${resolvedSession?.effectiveNextCheckpoint?.apiValue}',
+      queueLength: pending.length,
+    );
+  }
+
+  String _completedStageNames(OvertimeCheckpoints? checkpoints) {
+    if (checkpoints == null) {
+      return '';
+    }
+    return [
+      if (checkpoints.startJourney != null) 'startJourney',
+      if (checkpoints.arrivedAtWorkSite != null) 'arrivedAtWorkSite',
+      if (checkpoints.finishedWork != null) 'finishedWork',
+      if (checkpoints.endJourney != null) 'endJourney',
+    ].join(',');
   }
 
   /// Drops pending actions already reflected on [session]. Returns count removed.

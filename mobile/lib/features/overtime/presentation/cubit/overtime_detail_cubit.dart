@@ -8,7 +8,7 @@ import 'package:mobile/features/overtime/domain/usecases/reject_overtime_usecase
 
 enum OvertimeDetailStatus { initial, loading, success, failure }
 
-enum ReviewAction { approve, reject }
+enum ReviewAction { approve, approvePartial, reject }
 
 class OvertimeDetailState extends Equatable {
   const OvertimeDetailState({
@@ -27,6 +27,7 @@ class OvertimeDetailState extends Equatable {
 
   bool get isBusy => reviewAction != null;
   bool get isApproving => reviewAction == ReviewAction.approve;
+  bool get isApprovingPartial => reviewAction == ReviewAction.approvePartial;
   bool get isRejecting => reviewAction == ReviewAction.reject;
 
   OvertimeDetailState copyWith({
@@ -105,13 +106,36 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
   }
 
   Future<void> approve({String? reviewNotes, double? approvedHours}) async {
+    return _submitApprove(
+      reviewAction: ReviewAction.approve,
+      reviewNotes: reviewNotes,
+      approvedHours: approvedHours,
+    );
+  }
+
+  Future<void> approvePartial({
+    String? reviewNotes,
+    required double approvedHours,
+  }) async {
+    return _submitApprove(
+      reviewAction: ReviewAction.approvePartial,
+      reviewNotes: reviewNotes,
+      approvedHours: approvedHours,
+    );
+  }
+
+  Future<void> _submitApprove({
+    required ReviewAction reviewAction,
+    String? reviewNotes,
+    double? approvedHours,
+  }) async {
     if (state.isBusy || state.session == null) {
       return;
     }
 
     emit(
       state.copyWith(
-        reviewAction: ReviewAction.approve,
+        reviewAction: reviewAction,
         clearMessage: true,
         isError: false,
       ),

@@ -16,9 +16,7 @@ import 'package:mobile/features/overtime/domain/entities/pending_overtime_action
 import 'package:mobile/features/overtime/presentation/cubit/overtime_history_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
-import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
-import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 
 class OvertimeHistoryPage extends StatelessWidget {
   const OvertimeHistoryPage({super.key});
@@ -246,24 +244,6 @@ class _HistoryCard extends StatelessWidget {
             status: session.status,
             pendingSync: pendingSync,
           ),
-          if (session.workedHours != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              '${l10n.overtimeWorkedHours}: '
-              '${OvertimeFormatters.hoursValue(session.workedHours)}',
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-          if (session.status == OvertimeStatus.approved) ...[
-            const SizedBox(height: AppSpacing.xs),
-            Text(
-              '${l10n.overtimeApprovedHours}: '
-              '${OvertimeFormatters.hoursValue(session.effectiveApprovedHours)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
         ],
       ),
     );

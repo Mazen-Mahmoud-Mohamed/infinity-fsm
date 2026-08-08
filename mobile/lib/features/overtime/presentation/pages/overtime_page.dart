@@ -17,11 +17,9 @@ import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
-import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
-import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
@@ -815,18 +813,6 @@ class _CompletedSummaryCard extends StatelessWidget {
               label: l10n.overtimeStatusLabel,
               value: overtimeStatusLabel(l10n, session.status),
             ),
-            if (session.workedHours != null)
-              _MetaRow(
-                label: l10n.overtimeWorkedHours,
-                value: OvertimeFormatters.hoursValue(session.workedHours),
-              ),
-            if (session.status == OvertimeStatus.approved)
-              _MetaRow(
-                label: l10n.overtimeApprovedHours,
-                value: OvertimeFormatters.hoursValue(
-                  session.effectiveApprovedHours,
-                ),
-              ),
             _MetaRow(
               label: l10n.overtimeStartTime,
               value: timeFormat.format(session.startAt.toLocal()),

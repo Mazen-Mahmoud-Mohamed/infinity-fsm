@@ -105,10 +105,27 @@ class OvertimeSession extends Equatable {
   double? get effectiveApprovedHours => approvedHours ?? workedHours;
 
   /// Effective next action for the employee UI.
+  ///
+  /// Checkpoint presence is authoritative. The persisted [nextCheckpoint] field
+  /// is only a fallback when checkpoints are missing — it must never regress
+  /// the journey behind stages already recorded locally or on the server.
   OvertimeCheckpointStage? get effectiveNextCheckpoint {
     if (!isRunning) return null;
     if (isV2Workflow) {
-      return nextCheckpoint ?? checkpoints?.nextStage;
+      final fromCheckpoints = checkpoints?.nextStage;
+      if (fromCheckpoints != null) {
+        return fromCheckpoints;
+      }
+      // All checkpoint slots filled → journey complete for mid-stages; end may
+      // still be pending via status/endAt. Prefer explicit field if present.
+      if (checkpoints != null &&
+          checkpoints!.startJourney != null &&
+          checkpoints!.arrivedAtWorkSite != null &&
+          checkpoints!.finishedWork != null &&
+          checkpoints!.endJourney != null) {
+        return null;
+      }
+      return nextCheckpoint;
     }
     // Legacy running sessions still end via Stage 4 semantics (end).
     return OvertimeCheckpointStage.endJourney;
