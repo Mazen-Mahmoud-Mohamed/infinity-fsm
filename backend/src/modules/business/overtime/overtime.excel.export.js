@@ -15,6 +15,8 @@ import {
   typeLabel,
   overnightLabel,
   stageMetaForLang,
+  excelSafeDurationText,
+  stripBidiMarks,
 } from './overtime.excel.i18n.js';
 
 const require = createRequire(import.meta.url);
@@ -1453,4 +1455,6 @@ export {
   formatDurationProseFromMinutes,
   formatDurationProseFromHours,
   overnightLabel,
+  excelSafeDurationText,
+  stripBidiMarks,
 };

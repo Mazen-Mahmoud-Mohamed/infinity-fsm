@@ -5,6 +5,7 @@ import {
   buildOvertimeExcelWorkbook,
   computeEmployeeSummaries,
   EXPORT_MODE,
+  stripBidiMarks,
 } from '../modules/business/overtime/overtime.excel.export.js';
 import {
   excelStrings,
@@ -12,6 +13,24 @@ import {
   typeLabel,
 } from '../modules/business/overtime/overtime.excel.i18n.js';
 import ExcelJS from 'exceljs';
+
+const LRE = '\u202A';
+const PDF = '\u202C';
+
+function expectArabicDuration(actual, expectedLogical) {
+  expect(stripBidiMarks(actual)).toBe(expectedLogical);
+  expect(String(actual).startsWith(LRE)).toBe(true);
+  expect(String(actual).endsWith(PDF)).toBe(true);
+  // Hours digits must precede minutes digits in logical (storage) order.
+  const hoursMatch = expectedLogical.match(/^(\d+)\s/);
+  const minutesMatch = expectedLogical.match(/و\s+(\d+)\s/);
+  if (hoursMatch && minutesMatch) {
+    const stripped = stripBidiMarks(actual);
+    expect(stripped.indexOf(hoursMatch[1])).toBeLessThan(
+      stripped.indexOf(minutesMatch[1])
+    );
+  }
+}
 
 function makeRecord(overrides = {}) {
   return {
@@ -95,9 +114,33 @@ describe('overtime excel export helpers', () => {
     expect(formatDurationProseFromHours(null, 'en')).toBe('—');
   });
 
-  test('formats duration prose in Arabic', () => {
-    expect(formatDurationProseFromMinutes(897, 'ar')).toBe('14 ساعة و 57 دقيقة');
-    expect(formatDurationProseFromHours(10.33, 'ar')).toBe('10 ساعة و 20 دقيقة');
+  test('English durations are not wrapped with bidi marks', () => {
+    const value = formatDurationProseFromMinutes(897, 'en');
+    expect(value).toBe('14 hours 57 minutes');
+    expect(value.includes(LRE)).toBe(false);
+    expect(value.includes(PDF)).toBe(false);
+  });
+
+  test('Arabic durations keep hours-before-minutes logical order with Excel LRE/PDF', () => {
+    expectArabicDuration(
+      formatDurationProseFromMinutes(14 * 60 + 57, 'ar'),
+      '14 ساعة و 57 دقيقة'
+    );
+    expectArabicDuration(
+      formatDurationProseFromMinutes(19 * 60 + 48, 'ar'),
+      '19 ساعة و 48 دقيقة'
+    );
+    expectArabicDuration(
+      formatDurationProseFromMinutes(7 * 60 + 44, 'ar'),
+      '7 ساعة و 44 دقيقة'
+    );
+    expectArabicDuration(formatDurationProseFromMinutes(60, 'ar'), 'ساعة واحدة');
+    expectArabicDuration(formatDurationProseFromMinutes(40, 'ar'), '40 دقيقة');
+    expectArabicDuration(formatDurationProseFromMinutes(0, 'ar'), '0 دقيقة');
+    expectArabicDuration(
+      formatDurationProseFromHours(14.95, 'ar'),
+      '14 ساعة و 57 دقيقة'
+    );
   });
 
   test('overnight label is travel-only and localized', () => {
@@ -232,8 +275,8 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(t.sectionKpis);
     expect(joined).toMatch(t.sectionEmployeeBreakdown);
     expect(joined).toMatch(t.kpiTotalTechnicians);
-    expect(joined).toMatch(/14 ساعة و 57 دقيقة/);
-    expect(joined).toMatch(/10 ساعة و 20 دقيقة/);
+    expect(stripBidiMarks(joined)).toMatch(/14 ساعة و 57 دقيقة/);
+    expect(stripBidiMarks(joined)).toMatch(/10 ساعة و 20 دقيقة/);
     expect(joined).toMatch(/ada@example\.com/);
     expect(joined).not.toMatch(/Department/i);
     expect(joined).not.toMatch(/Branch/i);
@@ -276,6 +319,34 @@ describe('overtime excel workbook columns', () => {
     expect(dataRow.getCell(11).value).toBe('نعم');
     expect(String(dataRow.getCell(10).value)).toBe('سفر');
     expect(String(dataRow.getCell(9).value)).toBe('معتمد');
+  });
+
+  test('Arabic workbook duration cells keep protected hours-before-minutes order', async () => {
+    const t = excelStrings('ar');
+    const workbook = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'ar' });
+    const summary = workbook.getWorksheet(t.sheetSummary);
+    const found = [];
+    summary.eachRow((row) => {
+      row.eachCell((cell) => {
+        const raw = cell.value == null ? '' : String(cell.value);
+        if (raw.includes('ساعة') || raw.includes('دقيقة')) {
+          found.push(raw);
+        }
+      });
+    });
+    expect(found.length).toBeGreaterThan(0);
+    for (const value of found) {
+      expect(value.startsWith(LRE)).toBe(true);
+      expect(value.endsWith(PDF)).toBe(true);
+      const logical = stripBidiMarks(value);
+      const hoursMatch = logical.match(/^(\d+)\s+ساعة/);
+      const minutesMatch = logical.match(/و\s+(\d+)\s+دقيقة/);
+      if (hoursMatch && minutesMatch) {
+        expect(logical.indexOf(hoursMatch[1])).toBeLessThan(
+          logical.indexOf(minutesMatch[1])
+        );
+      }
+    }
   });
 
   test('detailed session sheet includes email, overnight, times, and no department/branch', async () => {

@@ -287,6 +287,33 @@ export function excelStrings(lang) {
   return normalizeExportLanguage(lang) === EXPORT_LANG.AR ? AR : EN;
 }
 
+/** Excel-supported directional embedding (isolates are unreliable in Excel). */
+const LRE = '\u202A';
+const PDF = '\u202C';
+
+/**
+ * Keep Arabic duration text in logical visual order inside Excel RTL cells.
+ * Wraps with LRE…PDF so mixed Latin digits + Arabic words do not reorder to
+ * "57 دقيقة 14 ساعة". English strings are returned unchanged.
+ */
+export function excelSafeDurationText(text, lang = EXPORT_LANG.EN) {
+  if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) return text;
+  if (text === null || text === undefined || text === '') return text;
+  const value = String(text);
+  if (value === '—' || value === AR.dash) return value;
+  // Avoid nesting if already protected.
+  if (value.startsWith(LRE) && value.endsWith(PDF)) return value;
+  return `${LRE}${value}${PDF}`;
+}
+
+/** Strip Unicode bidi marks for assertions / comparisons. */
+export function stripBidiMarks(text) {
+  return String(text ?? '').replace(
+    /[\u200E\u200F\u202A-\u202E\u2066-\u2069\u061C]/g,
+    ''
+  );
+}
+
 /** Human-readable duration for Excel text cells (never decimal hours). */
 export function formatDurationProseFromMinutes(minutes, lang = EXPORT_LANG.EN) {
   const t = excelStrings(lang);
@@ -298,15 +325,19 @@ export function formatDurationProseFromMinutes(minutes, lang = EXPORT_LANG.EN) {
   const safe = Math.max(0, Math.round(n));
   const h = Math.floor(safe / 60);
   const m = safe % 60;
+  let prose;
   if (h === 0) {
-    return m === 1 ? t.minuteOne : t.minutes(m);
+    prose = m === 1 ? t.minuteOne : t.minutes(m);
+  } else {
+    const hLabel = h === 1 ? t.hourOne : t.hours(h);
+    if (m === 0) {
+      prose = hLabel;
+    } else {
+      const mLabel = m === 1 ? t.minuteOne : t.minutes(m);
+      prose = t.hoursAndMinutes(h, hLabel, m, mLabel);
+    }
   }
-  const hLabel = h === 1 ? t.hourOne : t.hours(h);
-  if (m === 0) {
-    return hLabel;
-  }
-  const mLabel = m === 1 ? t.minuteOne : t.minutes(m);
-  return t.hoursAndMinutes(h, hLabel, m, mLabel);
+  return excelSafeDurationText(prose, lang);
 }
 
 export function formatDurationProseFromHours(hours, lang = EXPORT_LANG.EN) {
