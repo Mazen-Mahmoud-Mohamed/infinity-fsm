@@ -628,17 +628,6 @@ class OvertimeService {
     });
 
     const softMaxHours = config.overtime.maxSessionHours;
-    const absoluteMaxHours =
-      config.overtime.absoluteMaxSessionHours || softMaxHours;
-
-    // Hard ceiling — abnormal beyond absolute max.
-    if (!assertReasonableSessionLength(startedAt, endedAt, absoluteMaxHours)) {
-      throw new AppError(
-        'SESSION_TOO_LONG',
-        `Overtime session exceeds the absolute maximum of ${absoluteMaxHours} hours.`,
-        422
-      );
-    }
 
     // Soft policy — allow end but force manual review.
     const exceedsSoftPolicy = !assertReasonableSessionLength(

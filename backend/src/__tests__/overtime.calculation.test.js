@@ -1,5 +1,6 @@
 import {
   CALCULATION_VERSION,
+  assertReasonableSessionLength,
   calculateOvertimeDurations,
   zonedLocalToUtc,
 } from '../modules/business/overtime/overtime.calculation.js';
@@ -168,5 +169,30 @@ describe('calculateOvertimeDurations (official 09:00–17:00, Fri = full OT)', (
         result.totalDurationMinutes - result.workingDurationMinutes
       );
     }
+  });
+
+  it('calculates a session longer than 48 hours without rejecting', () => {
+    const result = calculateOvertimeDurations(
+      at(2026, 8, 1, 8, 0),
+      at(2026, 8, 4, 10, 0)
+    );
+    expect(result.totalDurationMinutes).toBe(74 * 60);
+    expect(result.eligibleOvertimeMinutes).toBe(
+      result.totalDurationMinutes - result.workingDurationMinutes
+    );
+  });
+});
+
+describe('assertReasonableSessionLength (soft 16h policy helper)', () => {
+  it('treats a 72-hour span as exceeding the 16-hour review threshold', () => {
+    const start = at(2026, 8, 1, 8, 0);
+    const end = at(2026, 8, 4, 8, 0);
+    expect(assertReasonableSessionLength(start, end, 16)).toBe(false);
+  });
+
+  it('does not treat a 4-hour span as exceeding the 16-hour review threshold', () => {
+    const start = at(2026, 8, 1, 8, 0);
+    const end = at(2026, 8, 1, 12, 0);
+    expect(assertReasonableSessionLength(start, end, 16)).toBe(true);
   });
 });
