@@ -13,8 +13,8 @@ import AuditLog from '../audit/models/auditLog.model.js';
 import { ROLES } from '../../../shared/constants/roles.constants.js';
 import { ValidationError } from '../../../shared/errors/AppError.js';
 import {
+  allocateOvertimeTrendMinutesByCalendarDay,
   getZonedParts,
-  splitSessionMinutesAcrossCalendarDays,
   zonedLocalToUtc,
 } from '../../business/overtime/overtime.calculation.js';
 import { OFFICIAL_WORKING_HOURS } from '../../business/overtime/working-hours.policy.js';
@@ -94,9 +94,8 @@ function overtimeRecordTrendMinutes(record) {
 }
 
 /**
- * Build daily overtime trend buckets by splitting each session across the
- * calendar days it actually spans (Africa/Cairo), instead of attributing all
- * minutes to startAt's date.
+ * Build daily overtime trend buckets using official overtime rules per
+ * calendar day (Africa/Cairo), not wall-clock proportional splitting.
  */
 function buildOvertimeTrendDayMap(records) {
   /** @type {Record<string, number>} */
@@ -118,11 +117,10 @@ function buildOvertimeTrendDayMap(records) {
       continue;
     }
 
-    const dayBuckets = splitSessionMinutesAcrossCalendarDays(
+    const dayBuckets = allocateOvertimeTrendMinutesByCalendarDay(
       startAt,
       endAt,
-      totalMinutes,
-      COMPANY_TZ
+      totalMinutes
     );
 
     for (const [key, minutes] of Object.entries(dayBuckets)) {

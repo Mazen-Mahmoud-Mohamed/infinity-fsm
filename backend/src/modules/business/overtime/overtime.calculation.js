@@ -190,45 +190,18 @@ function sessionOverlapMsForDay(sessionStart, sessionEnd, ymd, timeZone) {
 }
 
 /**
- * Split session minutes across calendar days using actual [startAt, endAt) overlap
- * per day in the company timezone. Each day's share is proportional to the time
- * spent on that calendar day; the last day absorbs rounding remainder so the sum
- * equals `totalMinutes` exactly.
- *
+ * Walk each calendar day the session actually overlaps in `timeZone`.
  * @param {Date} startAt
  * @param {Date} endAt
- * @param {number} totalMinutes approved / eligible minutes for the session
- * @param {string} [timeZone]
- * @returns {Record<string, number>} `YYYY-MM-DD` → whole minutes
+ * @param {string} timeZone
+ * @param {(day: {
+ *   ymd: { year: number, month: number, day: number },
+ *   key: string,
+ *   segmentStart: Date,
+ *   segmentEnd: Date,
+ * }) => void} onDay
  */
-export function splitSessionMinutesAcrossCalendarDays(
-  startAt,
-  endAt,
-  totalMinutes,
-  timeZone = OFFICIAL_WORKING_HOURS.timeZone
-) {
-  /** @type {Record<string, number>} */
-  const result = {};
-
-  if (
-    !(startAt instanceof Date) ||
-    !(endAt instanceof Date) ||
-    Number.isNaN(startAt.getTime()) ||
-    Number.isNaN(endAt.getTime()) ||
-    endAt.getTime() <= startAt.getTime()
-  ) {
-    return result;
-  }
-
-  const safeTotal = Math.max(0, Math.floor(Number(totalMinutes) || 0));
-  if (safeTotal === 0) {
-    return result;
-  }
-
-  /** @type {{ key: string, ms: number }[]} */
-  const overlaps = [];
-  let totalMs = 0;
-
+function forEachSessionCalendarDay(startAt, endAt, timeZone, onDay) {
   const startParts = getZonedParts(startAt, timeZone);
   const endParts = getZonedParts(endAt, timeZone);
 
@@ -245,36 +218,182 @@ export function splitSessionMinutesAcrossCalendarDays(
 
   let guard = 0;
   while (compareYmd(cursor, last) <= 0 && guard < 400) {
-    const ms = sessionOverlapMsForDay(startAt, endAt, cursor, timeZone);
-    if (ms > 0) {
-      overlaps.push({ key: formatDateKeyYmd(cursor), ms });
-      totalMs += ms;
+    const overlapMs = sessionOverlapMsForDay(startAt, endAt, cursor, timeZone);
+    if (overlapMs > 0) {
+      const dayStart = zonedLocalToUtc(
+        timeZone,
+        cursor.year,
+        cursor.month,
+        cursor.day,
+        0,
+        0,
+        0
+      );
+      const next = addCalendarDays(cursor.year, cursor.month, cursor.day, 1);
+      const dayEnd = zonedLocalToUtc(
+        timeZone,
+        next.year,
+        next.month,
+        next.day,
+        0,
+        0,
+        0
+      );
+      onDay({
+        ymd: { ...cursor },
+        key: formatDateKeyYmd(cursor),
+        segmentStart: new Date(
+          Math.max(startAt.getTime(), dayStart.getTime())
+        ),
+        segmentEnd: new Date(Math.min(endAt.getTime(), dayEnd.getTime())),
+      });
     }
     cursor = addCalendarDays(cursor.year, cursor.month, cursor.day, 1);
     guard += 1;
   }
+}
 
-  if (!overlaps.length || totalMs <= 0) {
+function isValidSessionRange(startAt, endAt) {
+  return (
+    startAt instanceof Date &&
+    endAt instanceof Date &&
+    !Number.isNaN(startAt.getTime()) &&
+    !Number.isNaN(endAt.getTime()) &&
+    endAt.getTime() > startAt.getTime()
+  );
+}
+
+/**
+ * Eligible overtime minutes for each calendar day the session spans, using the
+ * same rules as calculateOvertimeDurations:
+ *   eligible = session time outside official hours on working days
+ *   Friday (non-working) = all session time that day is eligible
+ *
+ * Does not proportionally split a session total across wall-clock overlap.
+ *
+ * @param {Date} startAt
+ * @param {Date} endAt
+ * @param {typeof OFFICIAL_WORKING_HOURS} [hours]
+ * @returns {Record<string, number>} `YYYY-MM-DD` → whole minutes
+ */
+export function eligibleOvertimeMinutesByCalendarDay(
+  startAt,
+  endAt,
+  hours = OFFICIAL_WORKING_HOURS
+) {
+  /** @type {Record<string, number>} */
+  const result = {};
+
+  if (!isValidSessionRange(startAt, endAt)) {
     return result;
   }
 
-  if (overlaps.length === 1) {
-    result[overlaps[0].key] = safeTotal;
+  /** @type {string[]} */
+  const keys = [];
+  forEachSessionCalendarDay(startAt, endAt, hours.timeZone, (day) => {
+    const dayCalc = calculateOvertimeDurations(
+      day.segmentStart,
+      day.segmentEnd,
+      hours
+    );
+    if (dayCalc.eligibleOvertimeMinutes > 0) {
+      result[day.key] = dayCalc.eligibleOvertimeMinutes;
+      keys.push(day.key);
+    }
+  });
+
+  const sessionEligible =
+    calculateOvertimeDurations(startAt, endAt, hours).eligibleOvertimeMinutes;
+  const assigned = keys.reduce((sum, key) => sum + result[key], 0);
+  if (keys.length > 0 && assigned !== sessionEligible) {
+    const lastKey = keys[keys.length - 1];
+    const adjusted = result[lastKey] + (sessionEligible - assigned);
+    if (adjusted > 0) {
+      result[lastKey] = adjusted;
+    } else {
+      delete result[lastKey];
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Allocate a session's approved/eligible trend minutes across calendar days
+ * according to overtime rules (not wall-clock duration).
+ *
+ * Same-day sessions keep the full target on that date.
+ * Multi-day sessions use eligible overtime per day from the official rules.
+ * If approved minutes differ from eligible, each day's eligible amount is
+ * scaled to the approved total so the overtime-day shape is preserved
+ * (Friday stays a full off-day share, not an equal slice).
+ *
+ * @param {Date} startAt
+ * @param {Date} endAt
+ * @param {number} targetMinutes approvedHours×60 or eligibleOvertimeMinutes
+ * @param {typeof OFFICIAL_WORKING_HOURS} [hours]
+ * @returns {Record<string, number>} `YYYY-MM-DD` → whole minutes
+ */
+export function allocateOvertimeTrendMinutesByCalendarDay(
+  startAt,
+  endAt,
+  targetMinutes,
+  hours = OFFICIAL_WORKING_HOURS
+) {
+  /** @type {Record<string, number>} */
+  const result = {};
+  const target = Math.max(0, Math.floor(Number(targetMinutes) || 0));
+
+  if (!isValidSessionRange(startAt, endAt) || target <= 0) {
     return result;
+  }
+
+  /** @type {string[]} */
+  const touchedKeys = [];
+  forEachSessionCalendarDay(startAt, endAt, hours.timeZone, (day) => {
+    touchedKeys.push(day.key);
+  });
+
+  if (touchedKeys.length === 0) {
+    return result;
+  }
+
+  if (touchedKeys.length === 1) {
+    result[touchedKeys[0]] = target;
+    return result;
+  }
+
+  const eligibleByDay = eligibleOvertimeMinutesByCalendarDay(
+    startAt,
+    endAt,
+    hours
+  );
+  const eligibleKeys = Object.keys(eligibleByDay);
+  const eligibleTotal = eligibleKeys.reduce(
+    (sum, key) => sum + eligibleByDay[key],
+    0
+  );
+
+  if (eligibleTotal <= 0 || eligibleKeys.length === 0) {
+    return result;
+  }
+
+  if (target === eligibleTotal) {
+    return eligibleByDay;
   }
 
   let assigned = 0;
-  for (let i = 0; i < overlaps.length; i += 1) {
-    const { key, ms } = overlaps[i];
+  for (let i = 0; i < eligibleKeys.length; i += 1) {
+    const key = eligibleKeys[i];
     let minutes;
-    if (i === overlaps.length - 1) {
-      minutes = safeTotal - assigned;
+    if (i === eligibleKeys.length - 1) {
+      minutes = target - assigned;
     } else {
-      minutes = Math.floor((safeTotal * ms) / totalMs);
+      minutes = Math.floor((target * eligibleByDay[key]) / eligibleTotal);
       assigned += minutes;
     }
     if (minutes > 0) {
-      result[key] = (result[key] || 0) + minutes;
+      result[key] = minutes;
     }
   }
 
