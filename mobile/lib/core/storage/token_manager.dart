@@ -12,20 +12,28 @@ class TokenManager {
   String? _cachedRefreshToken;
   String? _cachedExpiresAtRaw;
   bool _memoryHydrated = false;
+  bool _persistToSecureStorage = true;
+  Future<void> _writeQueue = Future<void>.value();
+
+  Future<T> _serialized<T>(Future<T> Function() action) {
+    final operation = _writeQueue.then((_) => action());
+    _writeQueue = operation.then((_) {}, onError: (_) {});
+    return operation;
+  }
 
   Future<void> _hydrateMemoryIfNeeded() async {
     if (_memoryHydrated) {
       return;
     }
-    final results = await Future.wait([
-      _secureStorage.read(StorageKeys.accessToken),
-      _secureStorage.read(StorageKeys.refreshToken),
-      _secureStorage.read(StorageKeys.tokenExpiresAt),
-    ]);
-    _cachedAccessToken = results[0];
-    _cachedRefreshToken = results[1];
-    _cachedExpiresAtRaw = results[2];
-    _memoryHydrated = true;
+    await _serialized(() async {
+      if (_memoryHydrated) {
+        return;
+      }
+      _cachedAccessToken = await _secureStorage.read(StorageKeys.accessToken);
+      _cachedRefreshToken = await _secureStorage.read(StorageKeys.refreshToken);
+      _cachedExpiresAtRaw = await _secureStorage.read(StorageKeys.tokenExpiresAt);
+      _memoryHydrated = true;
+    });
   }
 
   Future<String?> getAccessToken() async {
@@ -38,42 +46,62 @@ class TokenManager {
     return _cachedRefreshToken;
   }
 
+  /// Saves tokens in memory and, when [persist] is true, to secure storage.
+  ///
+  /// Writes are serialized. Windows DPAPI storage is a single JSON file; parallel
+  /// writes can overwrite each other and drop the refresh token.
+  ///
+  /// When [persist] is omitted, the last persistence choice is reused so token
+  /// refresh stays memory-only when Remember Me was disabled on Windows.
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
     int? expiresIn,
-  }) async {
-    _cachedAccessToken = accessToken;
-    _cachedRefreshToken = refreshToken;
-    _memoryHydrated = true;
+    bool? persist,
+  }) {
+    return _serialized(() async {
+      _cachedAccessToken = accessToken;
+      _cachedRefreshToken = refreshToken;
+      _memoryHydrated = true;
+      final shouldPersist = persist ?? _persistToSecureStorage;
+      _persistToSecureStorage = shouldPersist;
 
-    String? expiresAt;
-    if (expiresIn != null) {
-      expiresAt = DateTime.now()
-          .add(Duration(seconds: expiresIn))
-          .millisecondsSinceEpoch
-          .toString();
-      _cachedExpiresAtRaw = expiresAt;
-    }
+      String? expiresAt;
+      if (expiresIn != null) {
+        expiresAt = DateTime.now()
+            .add(Duration(seconds: expiresIn))
+            .millisecondsSinceEpoch
+            .toString();
+        _cachedExpiresAtRaw = expiresAt;
+      }
 
-    await Future.wait([
-      _secureStorage.write(StorageKeys.accessToken, accessToken),
-      _secureStorage.write(StorageKeys.refreshToken, refreshToken),
-      if (expiresAt != null)
-        _secureStorage.write(StorageKeys.tokenExpiresAt, expiresAt),
-    ]);
+      if (!shouldPersist) {
+        await _deletePersistedTokens();
+        return;
+      }
+
+      await _secureStorage.write(StorageKeys.accessToken, accessToken);
+      await _secureStorage.write(StorageKeys.refreshToken, refreshToken);
+      if (expiresAt != null) {
+        await _secureStorage.write(StorageKeys.tokenExpiresAt, expiresAt);
+      }
+    });
   }
 
-  Future<void> clearTokens() async {
-    _cachedAccessToken = null;
-    _cachedRefreshToken = null;
-    _cachedExpiresAtRaw = null;
-    _memoryHydrated = true;
-    await Future.wait([
-      _secureStorage.delete(StorageKeys.accessToken),
-      _secureStorage.delete(StorageKeys.refreshToken),
-      _secureStorage.delete(StorageKeys.tokenExpiresAt),
-    ]);
+  Future<void> clearTokens() {
+    return _serialized(() async {
+      _cachedAccessToken = null;
+      _cachedRefreshToken = null;
+      _cachedExpiresAtRaw = null;
+      _memoryHydrated = true;
+      await _deletePersistedTokens();
+    });
+  }
+
+  Future<void> _deletePersistedTokens() async {
+    await _secureStorage.delete(StorageKeys.accessToken);
+    await _secureStorage.delete(StorageKeys.refreshToken);
+    await _secureStorage.delete(StorageKeys.tokenExpiresAt);
   }
 
   Future<bool> hasValidSession() async {

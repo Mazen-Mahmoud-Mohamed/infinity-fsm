@@ -27,7 +27,7 @@ class LoggerService {
   ]) {
     final safe = sanitizeLogMessage(message);
     _capture(AppLogLevel.debug, safe, category);
-    _logger.d(safe, error: error, stackTrace: stackTrace);
+    _logger.d(safe, error: _safeError(error), stackTrace: stackTrace);
   }
 
   void info(
@@ -38,7 +38,7 @@ class LoggerService {
   ]) {
     final safe = sanitizeLogMessage(message);
     _capture(AppLogLevel.info, safe, category);
-    _logger.i(safe, error: error, stackTrace: stackTrace);
+    _logger.i(safe, error: _safeError(error), stackTrace: stackTrace);
   }
 
   void warning(
@@ -49,7 +49,7 @@ class LoggerService {
   ]) {
     final safe = sanitizeLogMessage(message);
     _capture(AppLogLevel.warning, safe, category);
-    _logger.w(safe, error: error, stackTrace: stackTrace);
+    _logger.w(safe, error: _safeError(error), stackTrace: stackTrace);
   }
 
   void error(
@@ -60,7 +60,14 @@ class LoggerService {
   ]) {
     final safe = sanitizeLogMessage(message);
     _capture(AppLogLevel.error, safe, category);
-    _logger.e(safe, error: error, stackTrace: stackTrace);
+    _logger.e(safe, error: _safeError(error), stackTrace: stackTrace);
+  }
+
+  Object? _safeError(Object? error) {
+    if (error == null) {
+      return null;
+    }
+    return sanitizeLogMessage('$error');
   }
 
   void _capture(AppLogLevel level, String message, AppLogCategory category) {

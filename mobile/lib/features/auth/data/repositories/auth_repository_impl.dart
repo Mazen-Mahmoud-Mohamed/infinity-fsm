@@ -1,4 +1,5 @@
 import 'package:mobile/core/network/network_error_mapper.dart';
+import 'package:mobile/core/platform/desktop_session_policy.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/auth/data/datasources/auth_local_datasource.dart';
@@ -12,13 +13,21 @@ class AuthRepositoryImpl implements AuthRepository {
     required AuthRemoteDataSource remoteDataSource,
     required AuthLocalDataSource localDataSource,
     required ConnectivityService connectivityService,
+    bool Function({required bool rememberMe})? shouldPersistTokens,
+    bool Function()? requiresRememberMeToRestore,
   })  : _remoteDataSource = remoteDataSource,
         _localDataSource = localDataSource,
-        _connectivityService = connectivityService;
+        _connectivityService = connectivityService,
+        _shouldPersistTokens = shouldPersistTokens ??
+            DesktopSessionPolicy.persistTokensOnDisk,
+        _requiresRememberMeToRestore = requiresRememberMeToRestore ??
+            DesktopSessionPolicy.requiresRememberMeToRestore;
 
   final AuthRemoteDataSource _remoteDataSource;
   final AuthLocalDataSource _localDataSource;
   final ConnectivityService _connectivityService;
+  final bool Function({required bool rememberMe}) _shouldPersistTokens;
+  final bool Function() _requiresRememberMeToRestore;
 
   bool _isConnectivityFailure(String? code) {
     return code == 'OFFLINE' ||
@@ -52,6 +61,7 @@ class AuthRepositoryImpl implements AuthRepository {
         accessToken: response.tokens.accessToken,
         refreshToken: response.tokens.refreshToken,
         expiresIn: response.tokens.expiresIn,
+        persist: _shouldPersistTokens(rememberMe: params.rememberMe),
       );
 
       await _localDataSource.saveRememberMe(
@@ -70,6 +80,12 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<Result<CurrentUser>> restoreSession() async {
     try {
+      if (_requiresRememberMeToRestore() &&
+          !_localDataSource.getRememberMe()) {
+        await _localDataSource.clearSession();
+        return const Failure('authNoActiveSession', code: 'NO_SESSION');
+      }
+
       final hasSession = await _localDataSource.hasSession();
       if (!hasSession) {
         return const Failure('authNoActiveSession', code: 'NO_SESSION');

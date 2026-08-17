@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mobile/core/network/api_exception.dart';
+import 'package:mobile/core/services/app_log_buffer.dart';
 import 'package:mobile/core/utils/result.dart';
 
 class NetworkErrorMapper {
@@ -8,7 +9,7 @@ class NetworkErrorMapper {
 
   static Failure<T> map<T>(Object error) {
     if (kDebugMode) {
-      debugPrint('Mapped network error: $error');
+      debugPrint('Mapped network error: ${sanitizeLogMessage('$error')}');
     }
 
     if (error is ApiException) {

@@ -28,11 +28,13 @@ class AuthLocalDataSource {
     required String accessToken,
     required String refreshToken,
     int? expiresIn,
+    bool? persist,
   }) {
     return _tokenManager.saveTokens(
       accessToken: accessToken,
       refreshToken: refreshToken,
       expiresIn: expiresIn,
+      persist: persist,
     );
   }
 
