@@ -14,6 +14,7 @@ import { ROLES } from '../../../shared/constants/roles.constants.js';
 import { ValidationError } from '../../../shared/errors/AppError.js';
 import {
   getZonedParts,
+  splitSessionMinutesAcrossCalendarDays,
   zonedLocalToUtc,
 } from '../../business/overtime/overtime.calculation.js';
 import { OFFICIAL_WORKING_HOURS } from '../../business/overtime/working-hours.policy.js';
@@ -81,6 +82,55 @@ function endOfDay(date) {
 function toHours(minutes) {
   if (minutes == null || Number.isNaN(Number(minutes))) return 0;
   return Math.round((Number(minutes) / 60) * 10) / 10;
+}
+
+/** Approved / eligible minutes for a single overtime record (matches otMinutesExpr). */
+function overtimeRecordTrendMinutes(record) {
+  const approved = record?.approvedHours;
+  if (approved != null && approved !== '') {
+    return Math.floor(Number(approved) * 60);
+  }
+  return Math.floor(Number(record?.eligibleOvertimeMinutes) || 0);
+}
+
+/**
+ * Build daily overtime trend buckets by splitting each session across the
+ * calendar days it actually spans (Africa/Cairo), instead of attributing all
+ * minutes to startAt's date.
+ */
+function buildOvertimeTrendDayMap(records) {
+  /** @type {Record<string, number>} */
+  const otMap = {};
+
+  for (const record of records) {
+    const startAt = record?.startAt ? new Date(record.startAt) : null;
+    const endAt = record?.endAt ? new Date(record.endAt) : null;
+    const totalMinutes = overtimeRecordTrendMinutes(record);
+
+    if (
+      !startAt ||
+      !endAt ||
+      Number.isNaN(startAt.getTime()) ||
+      Number.isNaN(endAt.getTime()) ||
+      endAt.getTime() <= startAt.getTime() ||
+      totalMinutes <= 0
+    ) {
+      continue;
+    }
+
+    const dayBuckets = splitSessionMinutesAcrossCalendarDays(
+      startAt,
+      endAt,
+      totalMinutes,
+      COMPANY_TZ
+    );
+
+    for (const [key, minutes] of Object.entries(dayBuckets)) {
+      otMap[key] = (otMap[key] || 0) + minutes;
+    }
+  }
+
+  return otMap;
 }
 
 function resolvePeriod(query = {}) {
@@ -976,7 +1026,7 @@ class DashboardService {
       ? { assignedTechnicianId: { $in: userIds } }
       : {};
 
-    const [attendanceRows, overtimeRows, woRows, pmRows] = await Promise.all([
+    const [attendanceRows, overtimeRecords, woRows, pmRows] = await Promise.all([
       Attendance.aggregate([
         {
           $match: {
@@ -994,23 +1044,14 @@ class DashboardService {
           },
         },
       ]),
-      OvertimeRecord.aggregate([
-        {
-          $match: {
-            companyId,
-            ...userFilter,
-            startAt: { $gte: from, $lte: to },
-          },
-        },
-        {
-          $group: {
-            _id: {
-              $dateToString: { format: '%Y-%m-%d', date: '$startAt' },
-            },
-            minutes: { $sum: otMinutesExpr() },
-          },
-        },
-      ]),
+      OvertimeRecord.find({
+        companyId,
+        ...userFilter,
+        startAt: { $gte: from, $lte: to },
+        endAt: { $ne: null },
+      })
+        .select('startAt endAt approvedHours eligibleOvertimeMinutes')
+        .lean(),
       WorkOrder.aggregate([
         {
           $match: {
@@ -1062,8 +1103,9 @@ class DashboardService {
     const attMap = Object.fromEntries(
       attendanceRows.map((r) => [r._id, toHours(r.minutes)])
     );
+    const otMinutesMap = buildOvertimeTrendDayMap(overtimeRecords);
     const otMap = Object.fromEntries(
-      overtimeRows.map((r) => [r._id, toHours(r.minutes)])
+      Object.entries(otMinutesMap).map(([key, minutes]) => [key, toHours(minutes)])
     );
     const woMap = Object.fromEntries(woRows.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmRows || []).map((r) => [r._id, r.count]));
@@ -1098,3 +1140,5 @@ class DashboardService {
 }
 
 export default new DashboardService();
+
+export { buildOvertimeTrendDayMap, overtimeRecordTrendMinutes };

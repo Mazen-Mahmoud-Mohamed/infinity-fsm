@@ -148,6 +148,139 @@ function compareYmd(a, b) {
   return a.day - b.day;
 }
 
+function formatDateKeyYmd(ymd) {
+  return `${ymd.year}-${String(ymd.month).padStart(2, '0')}-${String(ymd.day).padStart(2, '0')}`;
+}
+
+/**
+ * Overlap of [sessionStart, sessionEnd) with one calendar day in `timeZone`.
+ * @param {Date} sessionStart
+ * @param {Date} sessionEnd
+ * @param {{ year: number, month: number, day: number }} ymd
+ * @param {string} timeZone
+ * @returns {number} milliseconds
+ */
+function sessionOverlapMsForDay(sessionStart, sessionEnd, ymd, timeZone) {
+  const dayStart = zonedLocalToUtc(
+    timeZone,
+    ymd.year,
+    ymd.month,
+    ymd.day,
+    0,
+    0,
+    0
+  );
+  const next = addCalendarDays(ymd.year, ymd.month, ymd.day, 1);
+  const dayEnd = zonedLocalToUtc(
+    timeZone,
+    next.year,
+    next.month,
+    next.day,
+    0,
+    0,
+    0
+  );
+
+  const segmentStartMs = Math.max(sessionStart.getTime(), dayStart.getTime());
+  const segmentEndMs = Math.min(sessionEnd.getTime(), dayEnd.getTime());
+  if (segmentEndMs <= segmentStartMs) {
+    return 0;
+  }
+  return segmentEndMs - segmentStartMs;
+}
+
+/**
+ * Split session minutes across calendar days using actual [startAt, endAt) overlap
+ * per day in the company timezone. Each day's share is proportional to the time
+ * spent on that calendar day; the last day absorbs rounding remainder so the sum
+ * equals `totalMinutes` exactly.
+ *
+ * @param {Date} startAt
+ * @param {Date} endAt
+ * @param {number} totalMinutes approved / eligible minutes for the session
+ * @param {string} [timeZone]
+ * @returns {Record<string, number>} `YYYY-MM-DD` → whole minutes
+ */
+export function splitSessionMinutesAcrossCalendarDays(
+  startAt,
+  endAt,
+  totalMinutes,
+  timeZone = OFFICIAL_WORKING_HOURS.timeZone
+) {
+  /** @type {Record<string, number>} */
+  const result = {};
+
+  if (
+    !(startAt instanceof Date) ||
+    !(endAt instanceof Date) ||
+    Number.isNaN(startAt.getTime()) ||
+    Number.isNaN(endAt.getTime()) ||
+    endAt.getTime() <= startAt.getTime()
+  ) {
+    return result;
+  }
+
+  const safeTotal = Math.max(0, Math.floor(Number(totalMinutes) || 0));
+  if (safeTotal === 0) {
+    return result;
+  }
+
+  /** @type {{ key: string, ms: number }[]} */
+  const overlaps = [];
+  let totalMs = 0;
+
+  const startParts = getZonedParts(startAt, timeZone);
+  const endParts = getZonedParts(endAt, timeZone);
+
+  let cursor = {
+    year: startParts.year,
+    month: startParts.month,
+    day: startParts.day,
+  };
+  const last = {
+    year: endParts.year,
+    month: endParts.month,
+    day: endParts.day,
+  };
+
+  let guard = 0;
+  while (compareYmd(cursor, last) <= 0 && guard < 400) {
+    const ms = sessionOverlapMsForDay(startAt, endAt, cursor, timeZone);
+    if (ms > 0) {
+      overlaps.push({ key: formatDateKeyYmd(cursor), ms });
+      totalMs += ms;
+    }
+    cursor = addCalendarDays(cursor.year, cursor.month, cursor.day, 1);
+    guard += 1;
+  }
+
+  if (!overlaps.length || totalMs <= 0) {
+    return result;
+  }
+
+  if (overlaps.length === 1) {
+    result[overlaps[0].key] = safeTotal;
+    return result;
+  }
+
+  let assigned = 0;
+  for (let i = 0; i < overlaps.length; i += 1) {
+    const { key, ms } = overlaps[i];
+    let minutes;
+    if (i === overlaps.length - 1) {
+      minutes = safeTotal - assigned;
+    } else {
+      minutes = Math.floor((safeTotal * ms) / totalMs);
+      assigned += minutes;
+    }
+    if (minutes > 0) {
+      result[key] = (result[key] || 0) + minutes;
+    }
+  }
+
+  return result;
+}
+
 /**
  * Overlap of [sessionStart, sessionEnd) with official hours for one calendar day
  * in the company timezone. Returns exact milliseconds.
