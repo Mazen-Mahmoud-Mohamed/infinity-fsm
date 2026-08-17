@@ -493,8 +493,9 @@ void main() {
           reason: 'unrelated END pending must survive',
         );
         expect(
-          local.readRunningSession()!.effectiveNextCheckpoint,
-          OvertimeCheckpointStage.endJourney,
+          local.readRunningSession(),
+          isNull,
+          reason: 'pending END must block remote RUNNING adoption',
         );
       },
     );

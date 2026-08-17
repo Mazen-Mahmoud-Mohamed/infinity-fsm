@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/core/localization/duration_formatter.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_metric_group_card.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_mini_chart.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 
 /// Trend chart that only renders when there is a meaningful multi-day series.
@@ -13,12 +16,14 @@ class DashboardTrendChart extends StatelessWidget {
     required this.points,
     this.windowDays = 30,
     this.height = 140,
+    this.valueKind = DashboardChartValueKind.generic,
   });
 
   final String title;
   final List<DashboardChartPoint> points;
   final int windowDays;
   final double height;
+  final DashboardChartValueKind valueKind;
 
   List<DashboardChartPoint> get _windowed {
     if (points.isEmpty) return const [];
@@ -40,6 +45,10 @@ class DashboardTrendChart extends StatelessWidget {
     if (!_hasTrend) return const SizedBox.shrink();
 
     final colorScheme = Theme.of(context).colorScheme;
+    final l10n = AppLocalizations.of(context);
+    final compact =
+        AppBreakpoints.isDashboardCompact(MediaQuery.sizeOf(context).width);
+    final axisStyle = DashboardTypography.chartAxis(context, compact: compact);
     final series = _windowed;
     final values = List<double>.generate(
       series.length,
@@ -50,6 +59,35 @@ class DashboardTrendChart extends StatelessWidget {
     for (final v in values) {
       if (v > maxValue) maxValue = v;
     }
+    final plotMax = maxValue <= 0 ? 1.0 : maxValue;
+
+    String formatAxis(double value) {
+      switch (valueKind) {
+        case DashboardChartValueKind.hours:
+          return DurationFormatter.compactFromHours(value, l10n);
+        case DashboardChartValueKind.count:
+          return value.round().toString();
+        case DashboardChartValueKind.generic:
+          if (value == value.roundToDouble()) return value.round().toString();
+          return value.toStringAsFixed(1);
+      }
+    }
+
+    String formatValue(double value) {
+      switch (valueKind) {
+        case DashboardChartValueKind.hours:
+          return DurationFormatter.fromHours(value, l10n);
+        case DashboardChartValueKind.count:
+          return value.round().toString();
+        case DashboardChartValueKind.generic:
+          if (value == value.roundToDouble()) return value.round().toString();
+          return value.toStringAsFixed(1);
+      }
+    }
+
+    final chartHeight = compact ? height + 20 : height;
+    final yAxisWidth = compact ? 52.0 : 44.0;
+    final yTicks = <double>[plotMax, plotMax / 2, 0];
 
     return RepaintBoundary(
       child: DecoratedBox(
@@ -86,30 +124,77 @@ class DashboardTrendChart extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppSpacing.sm),
-              SizedBox(
-                height: height,
-                child: CustomPaint(
-                  painter: _TrendLinePainter(
-                    values: values,
-                    maxValue: maxValue <= 0 ? 1 : maxValue,
-                    lineColor: colorScheme.primary,
-                    fillColor: colorScheme.primary.withValues(alpha: 0.12),
-                    gridColor: colorScheme.outlineVariant,
+              if (valueKind == DashboardChartValueKind.hours &&
+                  values.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                  child: Text(
+                    formatValue(values.last),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: DashboardTypography.chartTooltipValue(context),
                   ),
-                  child: const SizedBox.expand(),
+                ),
+              SizedBox(
+                height: chartHeight,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    SizedBox(
+                      width: yAxisWidth,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          for (final tick in yTicks)
+                            Text(
+                              tick <= 0 ? '' : formatAxis(tick),
+                              maxLines: 2,
+                              overflow: TextOverflow.visible,
+                              softWrap: true,
+                              textAlign: TextAlign.end,
+                              style: axisStyle,
+                            ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: CustomPaint(
+                        painter: _TrendLinePainter(
+                          values: values,
+                          maxValue: plotMax,
+                          lineColor: colorScheme.primary,
+                          fillColor:
+                              colorScheme.primary.withValues(alpha: 0.12),
+                          gridColor: colorScheme.outlineVariant,
+                        ),
+                        child: const SizedBox.expand(),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    series.first.label,
-                    style: DashboardTypography.chartAxis(context),
+                  Flexible(
+                    child: Text(
+                      series.first.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: axisStyle,
+                    ),
                   ),
-                  Text(
-                    series.last.label,
-                    style: DashboardTypography.chartAxis(context),
+                  const SizedBox(width: AppSpacing.sm),
+                  Flexible(
+                    child: Text(
+                      series.last.label,
+                      textAlign: TextAlign.end,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: axisStyle,
+                    ),
                   ),
                 ],
               ),

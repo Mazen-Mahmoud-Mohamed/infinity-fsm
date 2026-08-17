@@ -25,15 +25,28 @@ import 'package:mobile/features/overtime/presentation/widgets/overtime_location_
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
 
 class OvertimeAdminDetailPage extends StatelessWidget {
-  const OvertimeAdminDetailPage({super.key, required this.sessionId});
+  const OvertimeAdminDetailPage({
+    super.key,
+    required this.sessionId,
+    @visibleForTesting this.detailCubit,
+  });
 
   final String sessionId;
+  final OvertimeDetailCubit? detailCubit;
 
   @override
   Widget build(BuildContext context) {
+    const view = _OvertimeDetailView();
+    final cubit = detailCubit;
+    if (cubit != null) {
+      return BlocProvider<OvertimeDetailCubit>.value(
+        value: cubit,
+        child: view,
+      );
+    }
     return BlocProvider(
       create: (_) => getIt<OvertimeDetailCubit>(param1: sessionId)..load(),
-      child: const _OvertimeDetailView(),
+      child: view,
     );
   }
 }
@@ -113,8 +126,23 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
           final canReject = permissions?.canRejectOvertime() == true &&
               session.isPendingReview;
 
-          final showStickyActions = canApprove || canReject;
+          final showReviewActions = canApprove || canReject;
+          final isPhone = AppBreakpoints.isPhoneOf(context);
+          final pinActionsToViewport = showReviewActions && !isPhone;
           final isDesktop = AppBreakpoints.isDesktopOf(context);
+          final reviewActions = showReviewActions
+              ? _OvertimeReviewActions(
+                  canApprove: canApprove,
+                  canReject: canReject,
+                  isBusy: state.isBusy,
+                  isApproving: state.isApproving,
+                  isApprovingPartial: state.isApprovingPartial,
+                  isRejecting: state.isRejecting,
+                  onApprove: () => _showApproveDialog(context),
+                  onApprovePartial: () => _showApprovePartialDialog(context),
+                  onReject: () => _showRejectDialog(context),
+                )
+              : null;
 
           final leftSections = <Widget>[
             if (session.requiresManualReview) ...[
@@ -303,7 +331,7 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                   basePadding: EdgeInsets.all(
                     isDesktop ? AppSpacing.xl : AppSpacing.lg,
                   ),
-                  chrome: showStickyActions
+                  chrome: pinActionsToViewport
                       ? AppBottomChrome.stickyActions
                       : AppBottomChrome.system,
                   children: [
@@ -329,10 +357,14 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                       const SizedBox(height: AppSpacing.lg),
                       ...rightSections,
                     ],
+                    if (reviewActions != null && !pinActionsToViewport) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      reviewActions,
+                    ],
                   ],
                 ),
               ),
-              if (showStickyActions)
+              if (pinActionsToViewport)
                 SafeArea(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(
@@ -341,98 +373,7 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                       AppSpacing.lg,
                       AppSpacing.lg,
                     ),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final stacked = constraints.maxWidth < 520;
-                        final rejectBtn = canReject
-                            ? OutlinedButton(
-                                onPressed: state.isBusy
-                                    ? null
-                                    : () => _showRejectDialog(context),
-                                child: state.isRejecting
-                                    ? SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        ),
-                                      )
-                                    : Text(l10n.workOrderReject),
-                              )
-                            : null;
-                        final partialBtn = canApprove
-                            ? OutlinedButton(
-                                onPressed: state.isBusy
-                                    ? null
-                                    : () => _showApprovePartialDialog(context),
-                                child: state.isApprovingPartial
-                                    ? SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .primary,
-                                        ),
-                                      )
-                                    : Text(l10n.overtimeApprovePartial),
-                              )
-                            : null;
-                        final approveBtn = canApprove
-                            ? ElevatedButton(
-                                onPressed: state.isBusy
-                                    ? null
-                                    : () => _showApproveDialog(context),
-                                child: state.isApproving
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : Text(l10n.approve),
-                              )
-                            : null;
-
-                        if (stacked) {
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (approveBtn != null) approveBtn,
-                              if (partialBtn != null) ...[
-                                const SizedBox(height: AppSpacing.sm),
-                                partialBtn,
-                              ],
-                              if (rejectBtn != null) ...[
-                                const SizedBox(height: AppSpacing.sm),
-                                rejectBtn,
-                              ],
-                            ],
-                          );
-                        }
-
-                        return Row(
-                          children: [
-                            if (rejectBtn != null)
-                              Expanded(child: rejectBtn),
-                            if (rejectBtn != null &&
-                                (partialBtn != null || approveBtn != null))
-                              const SizedBox(width: AppSpacing.sm),
-                            if (partialBtn != null)
-                              Expanded(child: partialBtn),
-                            if (partialBtn != null && approveBtn != null)
-                              const SizedBox(width: AppSpacing.sm),
-                            if (approveBtn != null)
-                              Expanded(child: approveBtn),
-                          ],
-                        );
-                      },
-                    ),
+                    child: reviewActions!,
                   ),
                 ),
             ],
@@ -571,6 +512,116 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
           rejectionReason: reason.isEmpty ? null : reason,
           reviewNotes: notes.isEmpty ? null : notes,
         );
+  }
+}
+
+const overtimeAdminReviewActionsKey = Key('overtimeAdminReviewActions');
+
+class _OvertimeReviewActions extends StatelessWidget {
+  const _OvertimeReviewActions({
+    required this.canApprove,
+    required this.canReject,
+    required this.isBusy,
+    required this.isApproving,
+    required this.isApprovingPartial,
+    required this.isRejecting,
+    required this.onApprove,
+    required this.onApprovePartial,
+    required this.onReject,
+  }) : super(key: overtimeAdminReviewActionsKey);
+
+  final bool canApprove;
+  final bool canReject;
+  final bool isBusy;
+  final bool isApproving;
+  final bool isApprovingPartial;
+  final bool isRejecting;
+  final VoidCallback onApprove;
+  final VoidCallback onApprovePartial;
+  final VoidCallback onReject;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stacked = constraints.maxWidth < 520;
+        final rejectBtn = canReject
+            ? OutlinedButton(
+                onPressed: isBusy ? null : onReject,
+                child: isRejecting
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      )
+                    : Text(l10n.workOrderReject),
+              )
+            : null;
+        final partialBtn = canApprove
+            ? OutlinedButton(
+                onPressed: isBusy ? null : onApprovePartial,
+                child: isApprovingPartial
+                    ? SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      )
+                    : Text(l10n.overtimeApprovePartial),
+              )
+            : null;
+        final approveBtn = canApprove
+            ? ElevatedButton(
+                onPressed: isBusy ? null : onApprove,
+                child: isApproving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : Text(l10n.approve),
+              )
+            : null;
+
+        if (stacked) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (approveBtn != null) approveBtn,
+              if (partialBtn != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                partialBtn,
+              ],
+              if (rejectBtn != null) ...[
+                const SizedBox(height: AppSpacing.sm),
+                rejectBtn,
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            if (rejectBtn != null) Expanded(child: rejectBtn),
+            if (rejectBtn != null &&
+                (partialBtn != null || approveBtn != null))
+              const SizedBox(width: AppSpacing.sm),
+            if (partialBtn != null) Expanded(child: partialBtn),
+            if (partialBtn != null && approveBtn != null)
+              const SizedBox(width: AppSpacing.sm),
+            if (approveBtn != null) Expanded(child: approveBtn),
+          ],
+        );
+      },
+    );
   }
 }
 

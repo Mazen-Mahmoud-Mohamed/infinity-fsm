@@ -27,7 +27,7 @@ class DashboardSectionGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final columns =
-            AppBreakpoints.isPhone(constraints.maxWidth) ? 1 : 2;
+            AppBreakpoints.isDashboardCompact(constraints.maxWidth) ? 1 : 2;
 
         if (columns == 1) {
           return Column(

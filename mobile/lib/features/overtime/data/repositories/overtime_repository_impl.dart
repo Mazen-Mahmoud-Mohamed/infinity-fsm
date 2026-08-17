@@ -278,6 +278,18 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         final reconciled =
             await _reconcilePendingQueueWithServerSession(session);
         await _dedupePendingActionsForSession(session);
+        if (adopted == null) {
+          OvertimeOfflineTrace.step(
+            'GET_RUNNING',
+            status: 'success',
+            serverId: session.id,
+            queueLength: _local.readQueue().length,
+            detail:
+                'skipped adopt; pending END for session; '
+                'reconciledPending=$reconciled',
+          );
+          return const Success(null);
+        }
         OvertimeOfflineTrace.step(
           'GET_RUNNING',
           status: 'success',
@@ -1450,6 +1462,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
             [localEnded, ...withoutDupes].take(50).toList(),
           );
           await _local.removeFromQueue(enriched.id);
+          await _local.saveRunningSession(null);
 
           final localKey = enriched.sessionId;
           if (localKey != null && localKey.startsWith('local-')) {
@@ -1523,12 +1536,35 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   /// Adopts remote running session without wiping optimistic local stages that
   /// still have matching pending queue items (Finish Work enqueued but not yet
   /// confirmed by the server).
-  Future<OvertimeSessionModel> _adoptRemoteRunningSession(
+  ///
+  /// Returns `null` (and does not persist running) when a pending END already
+  /// exists for this session — End cleared local running intentionally.
+  Future<OvertimeSessionModel?> _adoptRemoteRunningSession(
     OvertimeSession remote,
   ) async {
     final local = _local.readRunningSession();
     final localIdMap = <String, String>{..._local.readLocalIdMap()};
     _seedLocalIdMapFromCaches(localIdMap);
+
+    final hasPendingEnd = _local.readQueue().any((action) {
+      if (action.type != PendingOvertimeActionType.end) {
+        return false;
+      }
+      return _pendingBelongsToSession(action, remote, localIdMap);
+    });
+    if (hasPendingEnd) {
+      // Keep running cleared while END is still waiting to sync.
+      if (local != null) {
+        await _local.saveRunningSession(null);
+      }
+      OvertimeOfflineTrace.step(
+        'SYNC_RECONCILE',
+        status: 'success',
+        serverId: remote.id,
+        detail: 'skipped adopt; pending END for session',
+      );
+      return null;
+    }
 
     final sameSession = local != null &&
         (local.id == remote.id || localIdMap[local.id] == remote.id);

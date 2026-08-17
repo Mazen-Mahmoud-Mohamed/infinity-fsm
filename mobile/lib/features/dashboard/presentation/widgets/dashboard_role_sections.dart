@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/duration_formatter.dart';
@@ -9,6 +10,7 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_executive_layout.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_metric_group_card.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_mini_chart.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_overtime_section.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_actions.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_dense_widgets.dart';
@@ -627,7 +629,11 @@ List<Widget> _trendChartsSection({
   final children = <Widget>[];
 
   final visibleTrends = <Widget>[];
-  void addIfTrend(String title, List<DashboardChartPoint> points) {
+  void addIfTrend(
+    String title,
+    List<DashboardChartPoint> points, {
+    DashboardChartValueKind valueKind = DashboardChartValueKind.generic,
+  }) {
     final window = points.length <= chartWindowDays
         ? points
         : points.sublist(points.length - chartWindowDays);
@@ -640,13 +646,18 @@ List<Widget> _trendChartsSection({
         points: points,
         windowDays: chartWindowDays,
         height: asStandaloneSection ? 120 : 140,
+        valueKind: valueKind,
       ),
     );
   }
 
   addIfTrend(l10n.dashboardChartAttendance, charts.attendance);
   addIfTrend(l10n.dashboardChartWorkOrders, charts.workOrders);
-  addIfTrend(l10n.dashboardChartOvertime, charts.overtime);
+  addIfTrend(
+    l10n.dashboardChartOvertime,
+    charts.overtime,
+    valueKind: DashboardChartValueKind.hours,
+  );
   addIfTrend(l10n.dashboardChartPm, charts.preventiveMaintenance);
 
   if (visibleTrends.isEmpty) return const [];
@@ -680,10 +691,32 @@ List<Widget> _trendChartsSection({
 
   if (asStandaloneSection) {
     children.add(
-      DashboardPanel(
-        title: l10n.dashboardTrends,
-        trailing: segmentedButton,
-        child: trendGrid,
+      LayoutBuilder(
+        builder: (context, constraints) {
+          final compact =
+              AppBreakpoints.isDashboardCompact(constraints.maxWidth);
+          if (compact) {
+            return DashboardPanel(
+              title: l10n.dashboardTrends,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: segmentedButton,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  trendGrid,
+                ],
+              ),
+            );
+          }
+          return DashboardPanel(
+            title: l10n.dashboardTrends,
+            trailing: segmentedButton,
+            child: trendGrid,
+          );
+        },
       ),
     );
   } else {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
@@ -52,26 +53,31 @@ List<Widget> buildDashboardOvertimeItems({
           const SizedBox(height: AppSpacing.md),
           LayoutBuilder(
             builder: (context, constraints) {
-              final stacked = constraints.maxWidth < 720;
+              final stacked =
+                  AppBreakpoints.isDashboardCompact(constraints.maxWidth);
+              final chartHeight = stacked ? 168.0 : 150.0;
               final charts = <Widget>[
                 DashboardMiniChart(
                   title: l10n.dashboardChartHoursPerTechnician,
-                  height: 150,
+                  height: chartHeight,
                   embedded: true,
                   points: hoursPoints,
+                  valueKind: DashboardChartValueKind.hours,
                 ),
                 DashboardMiniChart(
                   title: l10n.dashboardChartTripsPerTechnician,
-                  height: 150,
+                  height: chartHeight,
                   embedded: true,
                   points: tripsPoints,
+                  valueKind: DashboardChartValueKind.count,
                 ),
                 if (hoursOverTime.isNotEmpty)
                   DashboardMiniChart(
                     title: l10n.dashboardChartHoursOverTime,
-                    height: 150,
+                    height: chartHeight,
                     embedded: true,
                     points: hoursOverTime,
+                    valueKind: DashboardChartValueKind.hours,
                   ),
               ];
 
@@ -178,18 +184,21 @@ class _OvertimeKpiRow extends StatelessWidget {
         ),
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final cols = constraints.maxWidth >= 640 ? 4 : 2;
+            final compact =
+                AppBreakpoints.isDashboardCompact(constraints.maxWidth);
+            final cols = compact ? 2 : 4;
             return Wrap(
               children: [
                 for (final item in items)
                   SizedBox(
                     width: constraints.maxWidth / cols,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 6,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: compact ? 4 : 6,
+                        vertical: compact ? 4 : 6,
                       ),
                       child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Icon(item.$3, size: 16, color: scheme.primary),
                           const SizedBox(width: 6),
@@ -199,14 +208,15 @@ class _OvertimeKpiRow extends StatelessWidget {
                               children: [
                                 Text(
                                   item.$2,
-                                  maxLines: 1,
+                                  maxLines: compact ? 2 : 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: DashboardTypography.metricValue(context),
+                                  style:
+                                      DashboardTypography.metricValue(context),
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
                                   item.$1,
-                                  maxLines: 1,
+                                  maxLines: compact ? 2 : 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: DashboardTypography.kpiLabel(context),
                                 ),

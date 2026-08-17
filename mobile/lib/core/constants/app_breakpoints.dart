@@ -9,6 +9,9 @@ class AppBreakpoints {
   static const double phoneMax = 600;
   static const double tabletMax = 900;
 
+  /// Dashboard stacked layout (single-column charts, mobile table cards).
+  static const double dashboardCompactMax = 768;
+
   /// Readable content width for list / form pages.
   static const double contentMax = 840;
 
@@ -27,6 +30,11 @@ class AppBreakpoints {
       width >= phoneMax && width < tabletMax;
 
   static bool isDesktop(double width) => width >= tabletMax;
+
+  static bool isDashboardCompact(double width) => width <= dashboardCompactMax;
+
+  static bool isDashboardCompactOf(BuildContext context) =>
+      isDashboardCompact(MediaQuery.sizeOf(context).width);
 
   static bool isPhoneOf(BuildContext context) =>
       isPhone(MediaQuery.sizeOf(context).width);

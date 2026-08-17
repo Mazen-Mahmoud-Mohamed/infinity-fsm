@@ -39,4 +39,26 @@ class DurationFormatter {
     }
     return l10n.durationHoursAndMinutes(hours, mins);
   }
+
+  /// Compact label for chart axes (keeps numeric scaling unchanged).
+  ///
+  /// Examples: `122.7` → `122:42 h`, `8` → `8 hours`, `0.75` → `45 minutes`.
+  static String compactFromHours(num? hours, AppLocalizations l10n) {
+    if (hours == null) {
+      return l10n.valueNotSet;
+    }
+
+    final totalMinutes = (hours.toDouble() * 60).round();
+    final safe = totalMinutes < 0 ? 0 : totalMinutes;
+    final h = safe ~/ 60;
+    final m = safe % 60;
+
+    if (h == 0) {
+      return l10n.durationMinutesOnly(m);
+    }
+    if (m == 0) {
+      return l10n.durationHoursOnly(h);
+    }
+    return l10n.durationHoursMinutes('$h', m.toString().padLeft(2, '0'));
+  }
 }

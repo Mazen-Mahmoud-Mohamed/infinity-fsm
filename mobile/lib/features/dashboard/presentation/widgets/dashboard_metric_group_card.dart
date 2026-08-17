@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
@@ -81,11 +82,15 @@ class DashboardMetricGroupCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             LayoutBuilder(
               builder: (context, constraints) {
-                final columns = constraints.maxWidth >= 720
-                    ? 4
-                    : constraints.maxWidth >= 480
-                        ? 3
-                        : 2;
+                final compact =
+                    AppBreakpoints.isDashboardCompact(constraints.maxWidth);
+                final columns = compact
+                    ? 1
+                    : constraints.maxWidth >= 720
+                        ? 4
+                        : constraints.maxWidth >= 480
+                            ? 3
+                            : 2;
                 final rows = <Widget>[];
                 for (var i = 0; i < metrics.length; i += columns) {
                   final slice = metrics.skip(i).take(columns).toList();
@@ -102,7 +107,10 @@ class DashboardMetricGroupCard extends StatelessWidget {
                             if (j > 0) const SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: j < slice.length
-                                  ? _MetricCell(metric: slice[j])
+                                  ? _MetricCell(
+                                      metric: slice[j],
+                                      compact: compact,
+                                    )
                                   : const SizedBox.shrink(),
                             ),
                           ],
@@ -128,25 +136,27 @@ class DashboardMetricGroupCard extends StatelessWidget {
 }
 
 class _MetricCell extends StatelessWidget {
-  const _MetricCell({required this.metric});
+  const _MetricCell({required this.metric, this.compact = false});
 
   final DashboardMetric metric;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     final content = ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 72),
+      constraints: BoxConstraints(minHeight: compact ? 64 : 72),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.sm,
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? AppSpacing.xs : AppSpacing.sm,
+          vertical: compact ? AppSpacing.xs : AppSpacing.sm,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (metric.icon != null) ...[
                   Icon(
@@ -169,9 +179,8 @@ class _MetricCell extends StatelessWidget {
             const SizedBox(height: AppSpacing.xs),
             Text(
               metric.value,
-              maxLines: 1,
+              maxLines: compact ? 2 : 1,
               overflow: TextOverflow.ellipsis,
-              softWrap: false,
               style: DashboardTypography.metricValue(context),
             ),
           ],

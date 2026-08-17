@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geocoding/geocoding.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
 
@@ -47,7 +49,7 @@ class AddressResolverService {
       final places = await placemarkFromCoordinates(
         gps.latitude,
         gps.longitude,
-      );
+      ).timeout(const Duration(seconds: 8));
       if (places.isEmpty) {
         return const ResolvedAddress(isPlaceholder: true);
       }

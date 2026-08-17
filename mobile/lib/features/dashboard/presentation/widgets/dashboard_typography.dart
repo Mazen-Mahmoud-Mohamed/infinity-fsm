@@ -149,13 +149,23 @@ class DashboardTypography {
     );
   }
 
-  static TextStyle chartAxis(BuildContext context) {
+  static TextStyle chartAxis(BuildContext context, {bool compact = false}) {
     final theme = Theme.of(context);
     return (theme.textTheme.labelSmall ?? const TextStyle()).copyWith(
-      fontSize: _chartAxisSize,
+      fontSize: compact ? 11.5 : _chartAxisSize,
       fontWeight: FontWeight.w400,
-      height: 1.1,
+      height: compact ? 1.15 : 1.1,
       color: theme.colorScheme.onSurfaceVariant,
+    );
+  }
+
+  static TextStyle chartTooltipValue(BuildContext context) {
+    final theme = Theme.of(context);
+    return (theme.textTheme.labelSmall ?? const TextStyle()).copyWith(
+      fontSize: 12,
+      fontWeight: FontWeight.w600,
+      height: 1.25,
+      color: theme.colorScheme.onSurface,
     );
   }
 

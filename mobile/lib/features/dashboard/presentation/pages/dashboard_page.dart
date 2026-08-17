@@ -50,8 +50,10 @@ class _DashboardViewState extends State<_DashboardView> {
     final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final isPhone = AppBreakpoints.isPhone(width);
-    final pagePadding = AppBreakpoints.pagePadding(width);
-    final sectionGap = isPhone ? AppSpacing.md : AppSpacing.lg;
+    final isCompact = AppBreakpoints.isDashboardCompact(width);
+    final pagePadding =
+        isCompact ? AppSpacing.sm + 4 : AppBreakpoints.pagePadding(width);
+    final sectionGap = isCompact ? AppSpacing.sm : (isPhone ? AppSpacing.md : AppSpacing.lg);
 
     return Scaffold(
       appBar: AppBar(

@@ -7,6 +7,12 @@ import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_sections.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 
+EdgeInsets _dashboardPanelPadding(BuildContext context) {
+  return AppBreakpoints.isDashboardCompactOf(context)
+      ? const EdgeInsets.all(AppSpacing.sm)
+      : const EdgeInsets.all(AppSpacing.md);
+}
+
 /// Compact top-of-dashboard welcome + period host.
 class DashboardPageHeader extends StatelessWidget {
   const DashboardPageHeader({
@@ -90,17 +96,19 @@ class DashboardKpiStrip extends StatelessWidget {
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final wide = constraints.maxWidth >= 900;
-          final tablet = constraints.maxWidth >= 600;
+          final width = constraints.maxWidth;
+          final wide = width >= AppBreakpoints.tabletMax;
+          final compact = AppBreakpoints.isDashboardCompact(width);
           final columns = wide
               ? items.length.clamp(1, 5)
-              : tablet
-                  ? 3
-                  : 2;
+              : compact
+                  ? (width < 360 ? 1 : 2)
+                  : 3;
+          final horizontalPad = compact ? AppSpacing.xs : AppSpacing.sm;
           return Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm,
-              vertical: AppSpacing.sm,
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPad,
+              vertical: compact ? AppSpacing.xs : AppSpacing.sm,
             ),
             child: Wrap(
               spacing: 0,
@@ -108,8 +116,12 @@ class DashboardKpiStrip extends StatelessWidget {
               children: [
                 for (var i = 0; i < items.length; i++)
                   SizedBox(
-                    width: (constraints.maxWidth - AppSpacing.sm * 2) / columns,
-                    child: _KpiTile(item: items[i], showDivider: i > 0 && wide),
+                    width: (width - horizontalPad * 2) / columns,
+                    child: _KpiTile(
+                      item: items[i],
+                      showDivider: i > 0 && wide,
+                      compact: compact,
+                    ),
                   ),
               ],
             ),
@@ -121,10 +133,15 @@ class DashboardKpiStrip extends StatelessWidget {
 }
 
 class _KpiTile extends StatelessWidget {
-  const _KpiTile({required this.item, required this.showDivider});
+  const _KpiTile({
+    required this.item,
+    required this.showDivider,
+    this.compact = false,
+  });
 
   final DashboardKpiItemData item;
   final bool showDivider;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -135,11 +152,12 @@ class _KpiTile extends StatelessWidget {
       onTap: item.onTap,
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.sm,
-          vertical: AppSpacing.sm,
+        padding: EdgeInsets.symmetric(
+          horizontal: compact ? AppSpacing.xs : AppSpacing.sm,
+          vertical: compact ? AppSpacing.xs : AppSpacing.sm,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (showDivider)
               Container(
@@ -149,29 +167,29 @@ class _KpiTile extends StatelessWidget {
                 color: scheme.outlineVariant.withValues(alpha: 0.5),
               ),
             Container(
-              width: 34,
-              height: 34,
+              width: compact ? 30 : 34,
+              height: compact ? 30 : 34,
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: 0.14),
                 borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
-              child: Icon(item.icon, size: 18, color: accent),
+              child: Icon(item.icon, size: compact ? 16 : 18, color: accent),
             ),
-            const SizedBox(width: AppSpacing.sm),
+            SizedBox(width: compact ? AppSpacing.xs : AppSpacing.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     item.value,
-                    maxLines: 1,
+                    maxLines: compact ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
                     style: DashboardTypography.kpiValue(context),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     item.label,
-                    maxLines: 1,
+                    maxLines: compact ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
                     style: DashboardTypography.kpiLabel(context),
                   ),
@@ -205,6 +223,9 @@ class DashboardPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final panelPadding = padding == const EdgeInsets.all(AppSpacing.md)
+        ? _dashboardPanelPadding(context)
+        : padding;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -215,7 +236,7 @@ class DashboardPanel extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: padding,
+        padding: panelPadding,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -345,40 +366,60 @@ class DashboardWorkforceOverview extends StatelessWidget {
             ),
       child: Column(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _MiniStat(
-                  label: l10n.dashboardKpiTotalEmployees,
-                  value: '$totalEmployees',
+          if (AppBreakpoints.isDashboardCompactOf(context))
+            _WorkforceMetricsGrid(
+              totalEmployees: totalEmployees,
+              activeEmployees: activeEmployees,
+              currentlyWorking: currentlyWorking,
+              averageWorkingHoursLabel: averageWorkingHoursLabel,
+              totalLabel: l10n.dashboardKpiTotalEmployees,
+              activeLabel: l10n.dashboardKpiActiveEmployees,
+              workingLabel: l10n.dashboardKpiCurrentlyWorking,
+              averageLabel: l10n.dashboardKpiAverageWorkingHours,
+            )
+          else
+            Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MiniStat(
+                        label: l10n.dashboardKpiTotalEmployees,
+                        value: '$totalEmployees',
+                      ),
+                    ),
+                    Expanded(
+                      child: _MiniStat(
+                        label: l10n.dashboardKpiActiveEmployees,
+                        value: '$activeEmployees',
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              Expanded(
-                child: _MiniStat(
-                  label: l10n.dashboardKpiActiveEmployees,
-                  value: '$activeEmployees',
+                const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MiniStat(
+                        label: l10n.dashboardKpiCurrentlyWorking,
+                        value: '$currentlyWorking',
+                      ),
+                    ),
+                    Expanded(
+                      child: _MiniStat(
+                        label: l10n.dashboardKpiAverageWorkingHours,
+                        value: averageWorkingHoursLabel,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+              ],
+            ),
+          SizedBox(
+            height: AppBreakpoints.isDashboardCompactOf(context)
+                ? AppSpacing.sm
+                : AppSpacing.md,
           ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              Expanded(
-                child: _MiniStat(
-                  label: l10n.dashboardKpiCurrentlyWorking,
-                  value: '$currentlyWorking',
-                ),
-              ),
-              Expanded(
-                child: _MiniStat(
-                  label: l10n.dashboardKpiAverageWorkingHours,
-                  value: averageWorkingHoursLabel,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppRadius.full),
             child: LinearProgressIndicator(
@@ -405,7 +446,10 @@ class DashboardWorkforceOverview extends StatelessWidget {
 }
 
 class _MiniStat extends StatelessWidget {
-  const _MiniStat({required this.label, required this.value});
+  const _MiniStat({
+    required this.label,
+    required this.value,
+  });
 
   final String label;
   final String value;
@@ -436,6 +480,137 @@ class _MiniStat extends StatelessWidget {
   }
 }
 
+/// Compact 2×2 workforce metrics for mobile dashboard cards.
+class _WorkforceMetricsGrid extends StatelessWidget {
+  const _WorkforceMetricsGrid({
+    required this.totalEmployees,
+    required this.activeEmployees,
+    required this.currentlyWorking,
+    required this.averageWorkingHoursLabel,
+    required this.totalLabel,
+    required this.activeLabel,
+    required this.workingLabel,
+    required this.averageLabel,
+  });
+
+  final int totalEmployees;
+  final int activeEmployees;
+  final int currentlyWorking;
+  final String averageWorkingHoursLabel;
+  final String totalLabel;
+  final String activeLabel;
+  final String workingLabel;
+  final String averageLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _WorkforceMetricCell(
+                icon: Icons.groups_outlined,
+                value: '$totalEmployees',
+                label: totalLabel,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: _WorkforceMetricCell(
+                icon: Icons.people_alt_outlined,
+                value: '$activeEmployees',
+                label: activeLabel,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _WorkforceMetricCell(
+                icon: Icons.work_outline,
+                value: '$currentlyWorking',
+                label: workingLabel,
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: _WorkforceMetricCell(
+                icon: Icons.schedule_outlined,
+                value: averageWorkingHoursLabel,
+                label: averageLabel,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _WorkforceMetricCell extends StatelessWidget {
+  const _WorkforceMetricCell({
+    required this.icon,
+    required this.value,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String value;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: scheme.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Icon(icon, size: 15, color: scheme.primary),
+          ),
+          const SizedBox(width: AppSpacing.xs),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: DashboardTypography.metricValue(context).copyWith(
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 2,
+                  softWrap: true,
+                  overflow: TextOverflow.visible,
+                  style: DashboardTypography.kpiLabel(context),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Technician summary as compact rows (not giant cards).
 class DashboardTechnicianTable extends StatelessWidget {
   const DashboardTechnicianTable({
@@ -451,153 +626,304 @@ class DashboardTechnicianTable extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final compact = AppBreakpoints.isDashboardCompactOf(context);
 
     if (employees.isEmpty) return const SizedBox.shrink();
 
     return DashboardPanel(
       title: l10n.dashboardTechnicianSummary,
-      padding: const EdgeInsets.fromLTRB(
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.md,
-        AppSpacing.sm,
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: Text(
-                    l10n.labelName,
-                    style: DashboardTypography.tableHeader(context),
-                  ),
-                ),
-                Expanded(
-                  flex: 2,
-                  child: Text(
-                    _wrapHeaderAtWords(l10n.dashboardKpiTotalApprovedHours),
-                    textAlign: TextAlign.end,
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: DashboardTypography.tableHeader(context),
-                  ),
-                ),
-                SizedBox(
-                  width: 56,
-                  child: Text(
-                    _wrapHeaderAtWords(l10n.dashboardKpiTotalTrips),
-                    textAlign: TextAlign.end,
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: DashboardTypography.tableHeader(context),
-                  ),
-                ),
-                SizedBox(
-                  width: 76,
-                  child: Text(
-                    _wrapHeaderAtWords(l10n.dashboardKpiOvernightTrips),
-                    textAlign: TextAlign.end,
-                    maxLines: 2,
-                    softWrap: true,
-                    overflow: TextOverflow.ellipsis,
-                    style: DashboardTypography.tableHeader(context),
-                  ),
-                ),
-              ],
+      padding: compact
+          ? const EdgeInsets.fromLTRB(
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.sm,
+              AppSpacing.xs,
+            )
+          : const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.sm,
             ),
-          ),
-          ConstrainedBox(
-            constraints: BoxConstraints(maxHeight: maxHeight),
-            child: ListView.separated(
+      child: compact
+          ? ListView.separated(
               shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
               itemCount: employees.length,
-              separatorBuilder: (_, _) => Divider(
-                height: 1,
-                color: scheme.outlineVariant.withValues(alpha: 0.35),
-              ),
+              separatorBuilder: (_, _) => const SizedBox(height: AppSpacing.xs),
               itemBuilder: (context, index) {
                 final e = employees[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                return _TechnicianSummaryCard(
+                  employee: e,
+                  l10n: l10n,
+                  scheme: scheme,
+                );
+              },
+            )
+          : Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: AppSpacing.xs),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: scheme.primary.withValues(alpha: 0.15),
-                        child: Text(
-                          e.fullName.trim().isNotEmpty
-                              ? e.fullName.trim()[0].toUpperCase()
-                              : '?',
-                          style: DashboardTypography.tableHeader(context)
-                              .copyWith(
-                            color: scheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
                       Expanded(
                         flex: 3,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              e.fullName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: DashboardTypography.tableName(context),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${l10n.dashboardKpiAvgHoursPerTrip}: ${formatDashboardHours(e.averageHoursPerTrip, l10n, context)}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: DashboardTypography.secondary(context),
-                            ),
-                          ],
+                        child: Text(
+                          l10n.labelName,
+                          style: DashboardTypography.tableHeader(context),
                         ),
                       ),
                       Expanded(
                         flex: 2,
                         child: Text(
-                          formatDashboardHours(e.hours, l10n, context),
+                          _wrapHeaderAtWords(l10n.dashboardKpiTotalApprovedHours),
                           textAlign: TextAlign.end,
-                          maxLines: 1,
+                          maxLines: 2,
+                          softWrap: true,
                           overflow: TextOverflow.ellipsis,
-                          style: DashboardTypography.tableValue(context),
+                          style: DashboardTypography.tableHeader(context),
                         ),
                       ),
                       SizedBox(
                         width: 56,
                         child: Text(
-                          '${e.trips}',
+                          _wrapHeaderAtWords(l10n.dashboardKpiTotalTrips),
                           textAlign: TextAlign.end,
-                          style: DashboardTypography.tableValue(context),
+                          maxLines: 2,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                          style: DashboardTypography.tableHeader(context),
                         ),
                       ),
                       SizedBox(
                         width: 76,
                         child: Text(
-                          '${e.overnightTrips}',
+                          _wrapHeaderAtWords(l10n.dashboardKpiOvernightTrips),
                           textAlign: TextAlign.end,
-                          style: DashboardTypography.tableValue(
-                            context,
-                            color: e.overnightTrips > 0
-                                ? scheme.tertiary
-                                : null,
-                          ),
+                          maxLines: 2,
+                          softWrap: true,
+                          overflow: TextOverflow.ellipsis,
+                          style: DashboardTypography.tableHeader(context),
                         ),
                       ),
                     ],
                   ),
-                );
-              },
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: employees.length,
+                    separatorBuilder: (_, _) => Divider(
+                      height: 1,
+                      color: scheme.outlineVariant.withValues(alpha: 0.35),
+                    ),
+                    itemBuilder: (context, index) {
+                      final e = employees[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor:
+                                  scheme.primary.withValues(alpha: 0.15),
+                              child: Text(
+                                e.fullName.trim().isNotEmpty
+                                    ? e.fullName.trim()[0].toUpperCase()
+                                    : '?',
+                                style: DashboardTypography.tableHeader(context)
+                                    .copyWith(
+                                  color: scheme.primary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: AppSpacing.sm),
+                            Expanded(
+                              flex: 3,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    e.fullName,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        DashboardTypography.tableName(context),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    '${l10n.dashboardKpiAvgHoursPerTrip}: ${formatDashboardHours(e.averageHoursPerTrip, l10n, context)}',
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style:
+                                        DashboardTypography.secondary(context),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                formatDashboardHours(e.hours, l10n, context),
+                                textAlign: TextAlign.end,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style:
+                                    DashboardTypography.tableValue(context),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 56,
+                              child: Text(
+                                '${e.trips}',
+                                textAlign: TextAlign.end,
+                                style:
+                                    DashboardTypography.tableValue(context),
+                              ),
+                            ),
+                            SizedBox(
+                              width: 76,
+                              child: Text(
+                                '${e.overnightTrips}',
+                                textAlign: TextAlign.end,
+                                style: DashboardTypography.tableValue(
+                                  context,
+                                  color: e.overnightTrips > 0
+                                      ? scheme.tertiary
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _TechnicianSummaryCard extends StatelessWidget {
+  const _TechnicianSummaryCard({
+    required this.employee,
+    required this.l10n,
+    required this.scheme,
+  });
+
+  final DashboardTopOvertimeEmployee employee;
+  final AppLocalizations l10n;
+  final ColorScheme scheme;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: scheme.surface.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(
+          color: scheme.outlineVariant.withValues(alpha: 0.35),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: scheme.primary.withValues(alpha: 0.15),
+                  child: Text(
+                    employee.fullName.trim().isNotEmpty
+                        ? employee.fullName.trim()[0].toUpperCase()
+                        : '?',
+                    style: DashboardTypography.tableHeader(context).copyWith(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    employee.fullName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: DashboardTypography.tableName(context),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            _TechnicianStatRow(
+              label: l10n.dashboardKpiTotalApprovedHours,
+              value: formatDashboardHours(employee.hours, l10n, context),
+            ),
+            _TechnicianStatRow(
+              label: l10n.dashboardKpiTotalTrips,
+              value: '${employee.trips}',
+            ),
+            _TechnicianStatRow(
+              label: l10n.dashboardKpiOvernightTrips,
+              value: '${employee.overnightTrips}',
+              valueColor:
+                  employee.overnightTrips > 0 ? scheme.tertiary : null,
+            ),
+            _TechnicianStatRow(
+              label: l10n.dashboardKpiAvgHoursPerTrip,
+              value: formatDashboardHours(
+                employee.averageHoursPerTrip,
+                l10n,
+                context,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TechnicianStatRow extends StatelessWidget {
+  const _TechnicianStatRow({
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: DashboardTypography.secondary(context),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: DashboardTypography.tableValue(context, color: valueColor),
             ),
           ),
         ],
@@ -623,7 +949,8 @@ class DashboardTwoColumnBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final useColumns = constraints.maxWidth >= AppBreakpoints.phoneMax;
+        final useColumns =
+            constraints.maxWidth > AppBreakpoints.dashboardCompactMax;
         if (!useColumns) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
