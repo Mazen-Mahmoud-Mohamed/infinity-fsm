@@ -59,5 +59,21 @@ export default function errorHandler(err, req, res, _next) {
     );
   }
 
+  // TEMP DEBUG: expose 422 AppError identity without request body/PII.
+  // Remove after identifying the overtime END rejection.
+  if (normalized.statusCode === 422) {
+    logger.warn(
+      {
+        requestId: req.requestId,
+        method: req.method,
+        url: req.originalUrl,
+        code: normalized.code,
+        message: normalized.message,
+        statusCode: normalized.statusCode,
+      },
+      'TEMP_DEBUG_422'
+    );
+  }
+
   return sendError(res, normalized);
 }
