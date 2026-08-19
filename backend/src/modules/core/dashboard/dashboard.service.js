@@ -39,6 +39,17 @@ function otMinutesExpr() {
   };
 }
 
+function approvedOtMinutesExprByStatus() {
+  // Approved-only minutes for KPI widgets.
+  //
+  // Pending / rejected sessions must not contribute.
+  // For APPROVED sessions, use approvedHours when present and fall back to
+  // eligibleOvertimeMinutes (legacy / full approval equivalent).
+  return {
+    $cond: [{ $eq: ['$status', 'APPROVED'] }, otMinutesExpr(), 0],
+  };
+}
+
 function addCairoCalendarDays(year, month, day, daysToAdd) {
   const utc = new Date(Date.UTC(year, month - 1, day, 12, 0, 0));
   utc.setUTCDate(utc.getUTCDate() + daysToAdd);
@@ -91,6 +102,17 @@ function overtimeRecordTrendMinutes(record) {
     return Math.floor(Number(approved) * 60);
   }
   return Math.floor(Number(record?.eligibleOvertimeMinutes) || 0);
+}
+
+/**
+ * Approved-only overtime minutes for dashboard KPI widgets.
+ *
+ * Pending / rejected sessions must contribute 0.
+ */
+function overtimeRecordApprovedKpiMinutes(record) {
+  const status = String(record?.status || '').toUpperCase();
+  if (status !== 'APPROVED') return 0;
+  return overtimeRecordTrendMinutes(record);
 }
 
 /**
@@ -448,6 +470,7 @@ class DashboardService {
           $group: {
             _id: null,
             minutes: { $sum: otMinutesExpr() },
+            approvedMinutes: { $sum: approvedOtMinutesExprByStatus() },
             trips: { $sum: 1 },
             overnightTrips: {
               $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
@@ -461,7 +484,7 @@ class DashboardService {
         {
           $group: {
             _id: '$userId',
-            minutes: { $sum: otMinutesExpr() },
+            minutes: { $sum: approvedOtMinutesExprByStatus() },
             trips: { $sum: 1 },
             overnightTrips: {
               $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
@@ -565,11 +588,13 @@ class DashboardService {
 
     const otRow = overtimeTotals[0] || {
       minutes: 0,
+      approvedMinutes: 0,
       trips: 0,
       overnightTrips: 0,
       technicians: [],
     };
     const otTotalMinutes = otRow.minutes || 0;
+    const otApprovedMinutes = otRow.approvedMinutes || 0;
     const totalTrips = otRow.trips || 0;
     const overnightTrips = otRow.overnightTrips || 0;
     const totalTechnicians = Array.isArray(otRow.technicians)
@@ -613,8 +638,10 @@ class DashboardService {
         attendanceRate: Math.min(100, Math.max(0, attendanceRate || 0)),
       },
       overtime: {
-        // Phase 3: totalApprovedHours semantics (approvedHours ?? worked).
+        // totalOvertimeHours = total OT minutes across all statuses.
         totalOvertimeHours: toHours(otTotalMinutes),
+        // approvedOvertimeHours = OT minutes for APPROVED sessions only.
+        approvedOvertimeHours: toHours(otApprovedMinutes),
         // Backward-compatible field (TRAVEL only); UI no longer splits types.
         totalTravelOvertimeHours: toHours(otTravel),
         totalTrips,
@@ -747,6 +774,9 @@ class DashboardService {
           $group: {
             _id: '$type',
             minutes: { $sum: otMinutesExpr() },
+            approvedMinutes: {
+              $sum: approvedOtMinutesExprByStatus(),
+            },
           },
         },
       ]),
@@ -776,7 +806,12 @@ class DashboardService {
     const att = attendanceAgg[0] || { totalMinutes: 0, users: [] };
     const otNormal = overtimeAgg.find((r) => r._id === 'NORMAL')?.minutes || 0;
     const otTravel = overtimeAgg.find((r) => r._id === 'TRAVEL')?.minutes || 0;
+    const otApprovedNormal =
+      overtimeAgg.find((r) => r._id === 'NORMAL')?.approvedMinutes || 0;
+    const otApprovedTravel =
+      overtimeAgg.find((r) => r._id === 'TRAVEL')?.approvedMinutes || 0;
     const otTotal = otNormal + otTravel;
+    const otApprovedTotal = otApprovedNormal + otApprovedTravel;
     const woMap = Object.fromEntries(woByStatus.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmByStatus || []).map((r) => [r._id, r.count]));
     const woTotal = Object.values(woMap).reduce((a, b) => a + b, 0);
@@ -790,6 +825,7 @@ class DashboardService {
       },
       teamOvertime: {
         totalOvertimeHours: toHours(otTotal),
+        approvedOvertimeHours: toHours(otApprovedTotal),
         totalTravelOvertimeHours: toHours(otTravel),
       },
       teamWorkOrders: {
@@ -856,6 +892,9 @@ class DashboardService {
           $group: {
             _id: '$type',
             minutes: { $sum: otMinutesExpr() },
+            approvedMinutes: {
+              $sum: approvedOtMinutesExprByStatus(),
+            },
           },
         },
       ]),
@@ -921,7 +960,12 @@ class DashboardService {
     const att = attendanceAgg[0] || { totalMinutes: 0, days: 0 };
     const otNormal = overtimeAgg.find((r) => r._id === 'NORMAL')?.minutes || 0;
     const otTravel = overtimeAgg.find((r) => r._id === 'TRAVEL')?.minutes || 0;
+    const otApprovedNormal =
+      overtimeAgg.find((r) => r._id === 'NORMAL')?.approvedMinutes || 0;
+    const otApprovedTravel =
+      overtimeAgg.find((r) => r._id === 'TRAVEL')?.approvedMinutes || 0;
     const otTotal = otNormal + otTravel;
+    const otApprovedTotal = otApprovedNormal + otApprovedTravel;
     const woMap = Object.fromEntries(woByStatus.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmByStatus || []).map((r) => [r._id, r.count]));
     const daySpan = Math.max(
@@ -947,6 +991,7 @@ class DashboardService {
       },
       overtime: {
         totalOvertimeHours: toHours(otTotal),
+        approvedOvertimeHours: toHours(otApprovedTotal),
         totalTravelOvertimeHours: toHours(otTravel),
       },
       work: {
@@ -1139,4 +1184,8 @@ class DashboardService {
 
 export default new DashboardService();
 
-export { buildOvertimeTrendDayMap, overtimeRecordTrendMinutes };
+export {
+  buildOvertimeTrendDayMap,
+  overtimeRecordTrendMinutes,
+  overtimeRecordApprovedKpiMinutes,
+};

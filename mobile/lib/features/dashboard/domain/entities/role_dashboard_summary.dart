@@ -119,6 +119,7 @@ class DashboardTopOvertimeEmployee extends Equatable {
 class DashboardOvertimeSummary extends Equatable {
   const DashboardOvertimeSummary({
     this.totalOvertimeHours = 0,
+    this.approvedOvertimeHours = 0,
     this.totalTravelOvertimeHours = 0,
     this.totalTrips = 0,
     this.overnightTrips = 0,
@@ -130,8 +131,11 @@ class DashboardOvertimeSummary extends Equatable {
     this.tripsPerTechnician = const [],
   });
 
-  /// Total approved OT hours (`approvedHours ?? workedHours`), all types.
+  /// Total OT hours across all overtime session statuses (approved + pending + rejected).
   final double totalOvertimeHours;
+
+  /// Approved OT hours for sessions with status `APPROVED` only.
+  final double approvedOvertimeHours;
 
   /// Legacy TRAVEL-only hours (kept for API compatibility; UI does not split).
   final double totalTravelOvertimeHours;
@@ -147,6 +151,7 @@ class DashboardOvertimeSummary extends Equatable {
   @override
   List<Object?> get props => [
         totalOvertimeHours,
+        approvedOvertimeHours,
         totalTravelOvertimeHours,
         totalTrips,
         overnightTrips,
@@ -312,14 +317,20 @@ class DashboardTeamAttendance extends Equatable {
 class DashboardTeamOvertime extends Equatable {
   const DashboardTeamOvertime({
     this.totalOvertimeHours = 0,
+    this.approvedOvertimeHours = 0,
     this.totalTravelOvertimeHours = 0,
   });
 
   final double totalOvertimeHours;
+  final double approvedOvertimeHours;
   final double totalTravelOvertimeHours;
 
   @override
-  List<Object?> get props => [totalOvertimeHours, totalTravelOvertimeHours];
+  List<Object?> get props => [
+        totalOvertimeHours,
+        approvedOvertimeHours,
+        totalTravelOvertimeHours
+      ];
 }
 
 class DashboardTeamWorkOrders extends Equatable {

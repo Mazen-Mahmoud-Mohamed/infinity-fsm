@@ -152,8 +152,13 @@ class _OvertimeKpiRow extends StatelessWidget {
     final items = [
       (
         l10n.dashboardKpiTotalApprovedHours,
-        formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
+        formatDashboardHours(overtime.approvedOvertimeHours, l10n, context),
         Icons.verified_outlined,
+      ),
+      (
+        l10n.dashboardKpiTotalOvertimeHours,
+        formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
+        Icons.more_time_outlined,
       ),
       (
         l10n.dashboardKpiTotalTrips,

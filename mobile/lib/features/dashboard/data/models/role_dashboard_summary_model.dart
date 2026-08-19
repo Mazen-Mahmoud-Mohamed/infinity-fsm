@@ -156,8 +156,12 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
 
   static DashboardOvertimeSummary? _mapOvertime(Map<String, dynamic>? json) {
     if (json == null) return null;
+    final approved = json.containsKey('approvedOvertimeHours')
+        ? _asDouble(json['approvedOvertimeHours'])
+        : _asDouble(json['totalOvertimeHours']);
     return DashboardOvertimeSummary(
       totalOvertimeHours: _asDouble(json['totalOvertimeHours']),
+      approvedOvertimeHours: approved,
       totalTravelOvertimeHours: _asDouble(json['totalTravelOvertimeHours']),
       totalTrips: _asInt(json['totalTrips']),
       overnightTrips: _asInt(json['overnightTrips']),
@@ -279,6 +283,9 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
     if (json == null) return null;
     return DashboardTeamOvertime(
       totalOvertimeHours: _asDouble(json['totalOvertimeHours']),
+      approvedOvertimeHours: json.containsKey('approvedOvertimeHours')
+          ? _asDouble(json['approvedOvertimeHours'])
+          : _asDouble(json['totalOvertimeHours']),
       totalTravelOvertimeHours: _asDouble(json['totalTravelOvertimeHours']),
     );
   }

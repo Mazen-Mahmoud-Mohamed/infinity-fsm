@@ -133,6 +133,17 @@ List<Widget> _admin({
         DashboardKpiItemData(
           label: l10n.dashboardKpiTotalApprovedHours,
           value: formatDashboardHours(
+            overtime.approvedOvertimeHours,
+            l10n,
+            context,
+          ),
+          icon: Icons.more_time_outlined,
+          onTap: () => context.go(RoutePaths.overtime),
+        ),
+      if (overtime != null)
+        DashboardKpiItemData(
+          label: l10n.dashboardKpiTotalOvertimeHours,
+          value: formatDashboardHours(
             overtime.totalOvertimeHours,
             l10n,
             context,
@@ -346,6 +357,12 @@ List<Widget> _supervisor({
         if (overtime != null)
           DashboardMetric(
             label: l10n.dashboardKpiTotalApprovedHours,
+            value: formatDashboardHours(overtime.approvedOvertimeHours, l10n, context),
+            icon: Icons.more_time_outlined,
+          ),
+        if (overtime != null)
+          DashboardMetric(
+            label: l10n.dashboardKpiTotalOvertimeHours,
             value: formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
             icon: Icons.more_time_outlined,
           ),
@@ -379,6 +396,12 @@ List<Widget> _supervisor({
         if (overtime != null)
           DashboardMetric(
             label: l10n.dashboardKpiTotalApprovedHours,
+            value: formatDashboardHours(overtime.approvedOvertimeHours, l10n, context),
+            icon: Icons.more_time_outlined,
+          ),
+        if (overtime != null)
+          DashboardMetric(
+            label: l10n.dashboardKpiTotalOvertimeHours,
             value: formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
             icon: Icons.more_time_outlined,
           ),
@@ -530,6 +553,12 @@ List<Widget> _technician({
         if (overtime != null)
           DashboardMetric(
             label: l10n.dashboardKpiTotalApprovedHours,
+            value: formatDashboardHours(overtime.approvedOvertimeHours, l10n, context),
+            icon: Icons.more_time_outlined,
+          ),
+        if (overtime != null)
+          DashboardMetric(
+            label: l10n.dashboardKpiTotalOvertimeHours,
             value: formatDashboardHours(overtime.totalOvertimeHours, l10n, context),
             icon: Icons.more_time_outlined,
           ),

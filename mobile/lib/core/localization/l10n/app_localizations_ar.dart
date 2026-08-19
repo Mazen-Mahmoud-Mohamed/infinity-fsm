@@ -1618,6 +1618,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardKpiTotalApprovedHours => 'إجمالي الساعات المعتمدة';
 
   @override
+  String get dashboardKpiTotalOvertimeHours => 'إجمالي الساعات';
+
+  @override
   String get dashboardKpiTotalTrips => 'إجمالي الرحلات';
 
   @override

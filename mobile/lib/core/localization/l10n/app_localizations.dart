@@ -3230,6 +3230,12 @@ abstract class AppLocalizations {
   /// **'Total Approved Hours'**
   String get dashboardKpiTotalApprovedHours;
 
+  /// No description provided for @dashboardKpiTotalOvertimeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Overtime Hours'**
+  String get dashboardKpiTotalOvertimeHours;
+
   /// No description provided for @dashboardKpiTotalTrips.
   ///
   /// In en, this message translates to:
