@@ -1815,6 +1815,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsLanguage => 'اللغة';
 
   @override
+  String get settingsLanguageSystem => 'افتراضي النظام';
+
+  @override
   String get settingsLanguageEnglish => 'الإنجليزية';
 
   @override
@@ -1843,6 +1846,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsCompanyInformation => 'معلومات الشركة';
+
+  @override
+  String get settingsTechnicianInterfaceTitle => 'إدارة واجهة الفني';
+
+  @override
+  String get settingsTechnicianInterfaceDescription =>
+      'تحكم في الأقسام التي يمكن للفني رؤيتها واستخدامها في التطبيق.';
+
+  @override
+  String get settingsTechnicianNoSectionsTitle => 'لا توجد أقسام متاحة حاليًا';
+
+  @override
+  String get settingsTechnicianNoSectionsBody =>
+      'لا توجد أقسام مفعّلة حاليًا لحسابك. يرجى التواصل مع المسؤول.';
 
   @override
   String get settingsOvertimeTitle => 'إعدادات العمل الإضافي';
@@ -2900,6 +2917,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeOvernight => 'البيات';
 
   @override
+  String get overtimeOvernightShort => 'بيات';
+
+  @override
   String get overtimeEnd => 'إنهاء الرحلة';
 
   @override
@@ -3151,7 +3171,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeLastSessionSummary => 'ملخص آخر جلسة';
 
   @override
-  String get overtimeEligible => 'العمل الإضافي المؤهل';
+  String get overtimeEligible => 'ساعات الإضافي';
 
   @override
   String get overtimeWorkedHours => 'ساعات العمل';
@@ -3502,10 +3522,10 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeEndTime => 'وقت الانتهاء';
 
   @override
-  String get overtimeTotalDuration => 'المدة الإجمالية';
+  String get overtimeTotalDuration => 'إجمالي ساعات العمل';
 
   @override
-  String get overtimeWorkingDuration => 'مدة العمل';
+  String get overtimeWorkingDuration => 'ساعات العمل الرسمية';
 
   @override
   String get overtimeRejectionReason => 'سبب الرفض';

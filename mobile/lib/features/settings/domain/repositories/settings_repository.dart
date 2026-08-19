@@ -22,4 +22,12 @@ abstract class SettingsRepository {
   );
 
   Future<Result<OvertimeMediaConfigEntity>> getOvertimeMediaConfig();
+
+  Future<Result<TechnicianInterfaceConfig>> getTechnicianInterfaceSettings();
+
+  Future<Result<TechnicianInterfaceConfig>> updateTechnicianInterfaceSettings(
+    TechnicianInterfaceConfigUpdate input,
+  );
+
+  Future<Result<TechnicianInterfaceConfig>> getTechnicianInterfaceConfig();
 }

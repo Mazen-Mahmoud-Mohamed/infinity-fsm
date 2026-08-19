@@ -80,4 +80,35 @@ class SettingsRepositoryImpl implements SettingsRepository {
       return NetworkErrorMapper.map(e);
     }
   }
+
+  @override
+  Future<Result<TechnicianInterfaceConfig>> getTechnicianInterfaceSettings() async {
+    try {
+      return Success(await _remote.getTechnicianInterfaceSettings());
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
+
+  @override
+  Future<Result<TechnicianInterfaceConfig>> updateTechnicianInterfaceSettings(
+    TechnicianInterfaceConfigUpdate input,
+  ) async {
+    try {
+      return Success(
+        await _remote.updateTechnicianInterfaceSettings(input),
+      );
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
+
+  @override
+  Future<Result<TechnicianInterfaceConfig>> getTechnicianInterfaceConfig() async {
+    try {
+      return Success(await _remote.getTechnicianInterfaceConfig());
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
 }

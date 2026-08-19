@@ -1815,6 +1815,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguage => 'Language';
 
   @override
+  String get settingsLanguageSystem => 'System default';
+
+  @override
   String get settingsLanguageEnglish => 'English';
 
   @override
@@ -1843,6 +1846,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsCompanyInformation => 'Company information';
+
+  @override
+  String get settingsTechnicianInterfaceTitle => 'Technician Interface';
+
+  @override
+  String get settingsTechnicianInterfaceDescription =>
+      'Control which sections technicians can see and use in the application.';
+
+  @override
+  String get settingsTechnicianNoSectionsTitle => 'No sections available';
+
+  @override
+  String get settingsTechnicianNoSectionsBody =>
+      'No application sections are currently enabled for your account. Please contact your administrator.';
 
   @override
   String get settingsOvertimeTitle => 'Overtime Settings';
@@ -2906,6 +2923,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeOvernight => 'Overnight';
 
   @override
+  String get overtimeOvernightShort => 'Overnight';
+
+  @override
   String get overtimeEnd => 'End Journey';
 
   @override
@@ -3158,7 +3178,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeLastSessionSummary => 'Last session summary';
 
   @override
-  String get overtimeEligible => 'Eligible overtime';
+  String get overtimeEligible => 'Overtime Hours';
 
   @override
   String get overtimeWorkedHours => 'Worked Hours';
@@ -3510,10 +3530,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeEndTime => 'End time';
 
   @override
-  String get overtimeTotalDuration => 'Total duration';
+  String get overtimeTotalDuration => 'Total Working Hours';
 
   @override
-  String get overtimeWorkingDuration => 'Working duration';
+  String get overtimeWorkingDuration => 'Official Working Hours';
 
   @override
   String get overtimeRejectionReason => 'Rejection reason';

@@ -13,6 +13,10 @@ import config from '../../../config/index.js';
 import { isCloudinaryReady } from '../../../config/cloudinary.config.js';
 import { uploadCompanyLogoBuffer } from './settings.upload.js';
 import auditService from '../audit/audit.service.js';
+import {
+  TECHNICIAN_INTERFACE_KEY,
+  normalizeTechnicianInterface,
+} from './technician-interface.config.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -653,6 +657,55 @@ class SettingsService {
       voiceMaxDurationSeconds: config.voiceMaxDurationSeconds,
       voiceMaxDurationMinutes: config.voiceMaxDurationSeconds / 60,
     };
+  }
+
+  async resolveTechnicianInterface(companyId) {
+    const raw = await this._getSettingValue(companyId, TECHNICIAN_INTERFACE_KEY);
+    return normalizeTechnicianInterface(raw);
+  }
+
+  /** Admin-only read of technician interface configuration. */
+  async getTechnicianInterfaceSettings(user, auth) {
+    this._assertPermission(auth, PERMISSIONS.SETTINGS_MANAGE);
+    return this.resolveTechnicianInterface(user.companyId);
+  }
+
+  /** Admin-only update of technician interface configuration. */
+  async updateTechnicianInterfaceSettings(user, auth, payload = {}) {
+    this._assertPermission(auth, PERMISSIONS.SETTINGS_MANAGE);
+    const companyId = user.companyId;
+
+    const before = await this.resolveTechnicianInterface(companyId);
+    const after = normalizeTechnicianInterface({
+      ...before,
+      ...payload,
+    });
+
+    await this._upsertSetting({
+      companyId,
+      key: TECHNICIAN_INTERFACE_KEY,
+      value: after,
+      group: 'technician_interface',
+      dataType: 'object',
+      updatedBy: user._id,
+    });
+
+    await this._logOvertimeAuditChange({
+      companyId,
+      user,
+      auth,
+      action: 'SETTINGS_TECHNICIAN_INTERFACE_UPDATED',
+      field: TECHNICIAN_INTERFACE_KEY,
+      before,
+      after,
+    });
+
+    return after;
+  }
+
+  /** Effective technician interface flags for authenticated users. */
+  async getTechnicianInterfaceConfig(user) {
+    return this.resolveTechnicianInterface(user.companyId);
   }
 
   async getSystemInfo(user, auth) {

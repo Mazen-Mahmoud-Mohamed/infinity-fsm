@@ -19,7 +19,8 @@ class LanguageSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final localeCode = context.select((AppCubit c) => c.state.localeCode);
+    final localePreference =
+        context.select((AppCubit c) => c.state.localePreference);
 
     final body = SettingsPageBody(
       embedded: embedded,
@@ -28,22 +29,34 @@ class LanguageSettingsPage extends StatelessWidget {
           title: l10n.settingsLanguage,
           leading: const Icon(Icons.language),
           child: RadioGroup<String>(
-            groupValue: localeCode,
+            groupValue: localePreference,
             onChanged: (value) {
-              if (value != null) {
-                context.read<AppCubit>().setLocaleCode(value);
+              if (value == null) return;
+              final cubit = context.read<AppCubit>();
+              switch (value) {
+                case 'system':
+                  cubit.setLocaleToSystem();
+                case 'ar':
+                  cubit.setLocaleCode('ar');
+                case 'en':
+                  cubit.setLocaleCode('en');
               }
             },
             child: Column(
               children: [
                 RadioListTile<String>(
-                  value: 'en',
-                  title: Text(l10n.settingsLanguageEnglish),
+                  value: 'system',
+                  title: Text(l10n.settingsLanguageSystem),
                   contentPadding: EdgeInsets.zero,
                 ),
                 RadioListTile<String>(
                   value: 'ar',
                   title: Text(l10n.settingsLanguageArabic),
+                  contentPadding: EdgeInsets.zero,
+                ),
+                RadioListTile<String>(
+                  value: 'en',
+                  title: Text(l10n.settingsLanguageEnglish),
                   contentPadding: EdgeInsets.zero,
                 ),
               ],

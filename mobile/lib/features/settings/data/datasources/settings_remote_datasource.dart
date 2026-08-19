@@ -122,4 +122,39 @@ class SettingsRemoteDataSource {
   Future<OvertimeMediaConfigEntity> getOvertimeVoiceDurationConfig() async {
     return getOvertimeMediaConfig();
   }
+
+  Future<TechnicianInterfaceConfig> getTechnicianInterfaceSettings() async {
+    final response = await _client.get<Map<String, dynamic>>(
+      ApiConstants.settingsTechnicianInterface,
+    );
+    return TechnicianInterfaceConfigModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  Future<TechnicianInterfaceConfig> updateTechnicianInterfaceSettings(
+    TechnicianInterfaceConfigUpdate input,
+  ) async {
+    final response = await _client.put<Map<String, dynamic>>(
+      ApiConstants.settingsTechnicianInterface,
+      data: {
+        if (input.overtime != null) 'overtime': input.overtime,
+        if (input.workOrders != null) 'workOrders': input.workOrders,
+        if (input.attendance != null) 'attendance': input.attendance,
+        if (input.profile != null) 'profile': input.profile,
+      },
+    );
+    return TechnicianInterfaceConfigModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  Future<TechnicianInterfaceConfig> getTechnicianInterfaceConfig() async {
+    final response = await _client.get<Map<String, dynamic>>(
+      ApiConstants.settingsTechnicianInterfaceConfig,
+    );
+    return TechnicianInterfaceConfigModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
 }

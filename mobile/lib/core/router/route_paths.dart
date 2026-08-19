@@ -78,5 +78,7 @@ class RoutePaths {
   static const String settingsDanger = '/settings/danger';
   static const String settingsUpdates = '/settings/updates';
   static const String settingsLogs = '/settings/logs';
+  static const String settingsTechnicianInterface = '/settings/technician-interface';
+  static const String technicianNoSections = '/no-sections';
   static const String settingsDeveloper = '/settings/developer';
 }

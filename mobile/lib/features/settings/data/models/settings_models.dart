@@ -185,3 +185,26 @@ class OvertimeMediaConfigModel extends OvertimeMediaConfigEntity {
 
 @Deprecated('Use OvertimeMediaConfigModel')
 typedef OvertimeVoiceDurationConfigModel = OvertimeMediaConfigModel;
+
+class TechnicianInterfaceConfigModel extends TechnicianInterfaceConfig {
+  const TechnicianInterfaceConfigModel({
+    super.overtime,
+    super.workOrders,
+    super.attendance,
+    super.profile,
+  });
+
+  factory TechnicianInterfaceConfigModel.fromJson(Map<String, dynamic> json) {
+    bool readFlag(String key, bool fallback) {
+      final value = json[key];
+      return value is bool ? value : fallback;
+    }
+
+    return TechnicianInterfaceConfigModel(
+      overtime: readFlag('overtime', true),
+      workOrders: readFlag('workOrders', true),
+      attendance: readFlag('attendance', true),
+      profile: readFlag('profile', true),
+    );
+  }
+}

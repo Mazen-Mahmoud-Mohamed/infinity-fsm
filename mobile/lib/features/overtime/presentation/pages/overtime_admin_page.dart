@@ -352,18 +352,16 @@ class _AdminSessionCard extends StatelessWidget {
                 icon: Icons.category_outlined,
                 label: overtimeTypeLabel(l10n, session.type),
               ),
-              if (session.type == OvertimeType.travel)
+              if (session.type == OvertimeType.travel && session.isOvernight)
                 _MetaChip(
                   icon: Icons.nightlight_round,
-                  label:
-                      '${l10n.overtimeOvernight}: '
-                      '${session.isOvernight ? l10n.yes : l10n.no}',
+                  label: l10n.overtimeOvernightShort,
                 ),
               _MetaChip(
                 icon: Icons.timer_outlined,
                 label:
-                    '${l10n.overtimeWorkedHours}: '
-                    '${OvertimeFormatters.hoursValue(session.workedHours, l10n)}',
+                    '${l10n.overtimeEligible}: '
+                    '${OvertimeFormatters.durationFromMinutes(session.eligibleOvertimeMinutes, l10n)}',
               ),
               if (session.status == OvertimeStatus.approved)
                 _MetaChip(

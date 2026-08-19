@@ -53,3 +53,27 @@ export const getOvertimeMediaConfig = asyncHandler(async (req, res) => {
   const data = await settingsService.getOvertimeMediaConfig(req.user);
   sendSuccess(res, data);
 });
+
+export const getTechnicianInterfaceSettings = asyncHandler(async (req, res) => {
+  const data = await settingsService.getTechnicianInterfaceSettings(
+    req.user,
+    req.auth
+  );
+  sendSuccess(res, data);
+});
+
+export const updateTechnicianInterfaceSettings = asyncHandler(
+  async (req, res) => {
+    const data = await settingsService.updateTechnicianInterfaceSettings(
+      req.user,
+      req.auth,
+      req.body
+    );
+    sendSuccess(res, data);
+  }
+);
+
+export const getTechnicianInterfaceConfig = asyncHandler(async (req, res) => {
+  const data = await settingsService.getTechnicianInterfaceConfig(req.user);
+  sendSuccess(res, data);
+});

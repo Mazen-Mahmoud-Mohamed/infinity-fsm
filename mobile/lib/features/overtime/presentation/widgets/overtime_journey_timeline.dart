@@ -158,21 +158,7 @@ class OvertimeJourneyTimeline extends StatelessWidget {
                     },
             ),
             if (i < stages.length - 1)
-              Padding(
-                // Align connector to the center of the 28px indicator.
-                padding: const EdgeInsetsDirectional.only(start: 13),
-                child: SizedBox(
-                  height: AppSpacing.md,
-                  child: VerticalDivider(
-                    width: 2,
-                    thickness: 2,
-                    color: Theme.of(context)
-                        .colorScheme
-                        .outlineVariant
-                        .withValues(alpha: 0.7),
-                  ),
-                ),
-              ),
+              const SizedBox(height: AppSpacing.sm),
           ],
           if (includeJourneyOverview)
             OvertimeJourneyOverview(
@@ -459,7 +445,7 @@ class _TimelineStageTile extends StatelessWidget {
     this.onSelect,
   });
 
-  static const double _indicatorSize = 28;
+  static const double _indicatorSize = 36;
   static const double _desktopPhotoHeight = 200;
 
   final OvertimeCheckpointStage stage;
@@ -534,58 +520,58 @@ class _TimelineStageTile extends StatelessWidget {
           )
         : null;
 
-    // Do NOT use IntrinsicHeight + Expanded here — that breaks inside ListView
-    // (unbounded height) and blanks the entire detail scroll body.
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: _indicatorSize,
-          height: _indicatorSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: statusColor.withValues(alpha: 0.15),
-            border: Border.all(color: statusColor, width: 1.5),
-          ),
-          child: Icon(
-            completed
-                ? Icons.check
-                : (isNext
-                    ? Icons.radio_button_checked
-                    : Icons.circle_outlined),
-            color: statusColor,
-            size: 14,
-          ),
+    // The indicator is now inside the card header — no external column needed.
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: highlighted ? 1 : null,
+      color: highlighted
+          ? colorScheme.primaryContainer.withValues(alpha: 0.35)
+          : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: highlighted
+              ? colorScheme.primary.withValues(alpha: 0.55)
+              : colorScheme.outlineVariant.withValues(alpha: 0.35),
+          width: highlighted ? 1.5 : 1,
         ),
-        const SizedBox(width: AppSpacing.md),
-        Expanded(
-          child: Card(
-            margin: EdgeInsets.zero,
-            elevation: highlighted ? 1 : null,
-            color: highlighted
-                ? colorScheme.primaryContainer.withValues(alpha: 0.35)
-                : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: highlighted
-                    ? colorScheme.primary.withValues(alpha: 0.55)
-                    : colorScheme.outlineVariant.withValues(alpha: 0.35),
-                width: highlighted ? 1.5 : 1,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                InkWell(
-                  onTap: onSelect,
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Wrap(
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: onSelect,
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row: indicator + title/status — respects RTL.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: _indicatorSize,
+                        height: _indicatorSize,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: statusColor.withValues(alpha: 0.15),
+                          border: Border.all(color: statusColor, width: 1.5),
+                        ),
+                        child: Icon(
+                          completed
+                              ? Icons.check
+                              : (isNext
+                                  ? Icons.radio_button_checked
+                                  : Icons.circle_outlined),
+                          color: statusColor,
+                          size: 18,
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Wrap(
                           spacing: AppSpacing.sm,
                           runSpacing: AppSpacing.xs,
                           crossAxisAlignment: WrapCrossAlignment.center,
@@ -601,6 +587,9 @@ class _TimelineStageTile extends StatelessWidget {
                             ),
                           ],
                         ),
+                      ),
+                    ],
+                  ),
                         if (checkpoint != null) ...[
                           const SizedBox(height: AppSpacing.md),
                           Text(
@@ -692,29 +681,26 @@ class _TimelineStageTile extends StatelessWidget {
                             photo,
                           ],
                         ],
-                      ],
-                    ),
-                  ),
-                ),
-                if (checkpoint != null && showOpenLiveLocation)
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.md,
-                      0,
-                      AppSpacing.md,
-                      AppSpacing.md,
-                    ),
-                    child: _OpenLiveLocationButton(
-                      gps: checkpoint!.gps,
-                      label: title,
-                      address: checkpoint!.address,
-                    ),
-                  ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-      ],
+          if (checkpoint != null && showOpenLiveLocation)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                0,
+                AppSpacing.md,
+                AppSpacing.md,
+              ),
+              child: _OpenLiveLocationButton(
+                gps: checkpoint!.gps,
+                label: title,
+                address: checkpoint!.address,
+              ),
+            ),
+        ],
+      ),
     );
   }
 

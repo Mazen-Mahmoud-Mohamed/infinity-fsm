@@ -21,6 +21,8 @@ import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typogra
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
+import 'package:mobile/features/settings/domain/services/technician_interface_navigation.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -281,28 +283,8 @@ class MainNavigationShell extends StatelessWidget {
     _branchProfile,
   ];
 
-  /// Technician phone bottom bar (operational home first): WO → Attendance → OT → Profile.
-  static const List<int> _technicianPhoneBranches = [
-    _branchWorkOrders,
-    _branchAttendance,
-    _branchOvertime,
-    _branchProfile,
-  ];
-
-  /// Technician tablet/desktop rail — no executive Dashboard / analytics hub.
-  static const List<int> _technicianRailBranches = [
-    _branchAttendance,
-    _branchWorkOrders,
-    _branchOvertime,
-    _branchProfile,
-    _branchInventory,
-    _branchAssets,
-    _branchPm,
-    _branchUsers,
-    _branchRoles,
-    _branchSettings,
-  ];
-
+  /// Technician phone bottom bar order reference: WO → Attendance → OT → Profile.
+  /// Filtered at runtime via [TechnicianInterfaceNavigation.filteredPhoneBranches].
   /// Desktop extended rail width (+28 vs previous 220). Tablet [minWidth] unchanged.
   static const double _desktopExtendedRailWidth = 248;
 
@@ -479,10 +461,32 @@ class MainNavigationShell extends StatelessWidget {
     final extendedRail = width >= 1100;
     final user = context.watch<AuthCubit>().state.user;
     final operational = user?.usesOperationalHome ?? false;
-    final phoneBranches =
-        operational ? _technicianPhoneBranches : _managementPhoneBranches;
+    final interfaceState = context.watch<TechnicianInterfaceCubit>().state;
+    final interfaceConfig = interfaceState.config;
+
+    if (operational &&
+        interfaceState.status == TechnicianInterfaceLoadStatus.loading &&
+        !interfaceState.isReady) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final phoneBranches = operational
+        ? TechnicianInterfaceNavigation.filteredPhoneBranches(interfaceConfig)
+        : _managementPhoneBranches;
     final railBranches = operational
-        ? _technicianRailBranches
+        ? [
+            ...TechnicianInterfaceNavigation.filteredPhoneBranches(
+              interfaceConfig,
+            ),
+            _branchInventory,
+            _branchAssets,
+            _branchPm,
+            _branchUsers,
+            _branchRoles,
+            _branchSettings,
+          ]
         : const [
             _branchDashboard,
             _branchAttendance,
@@ -497,8 +501,10 @@ class MainNavigationShell extends StatelessWidget {
             _branchRoles,
             _branchSettings,
           ];
-    final homeBranch =
-        operational ? _branchWorkOrders : _branchDashboard;
+    final homeBranch = operational
+        ? (TechnicianInterfaceNavigation.firstEnabledBranch(interfaceConfig) ??
+            _branchWorkOrders)
+        : _branchDashboard;
     final currentBranch = navigationShell.currentIndex;
 
     final shellBody = Column(

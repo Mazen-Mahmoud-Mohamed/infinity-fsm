@@ -3608,6 +3608,12 @@ abstract class AppLocalizations {
   /// **'Language'**
   String get settingsLanguage;
 
+  /// No description provided for @settingsLanguageSystem.
+  ///
+  /// In en, this message translates to:
+  /// **'System default'**
+  String get settingsLanguageSystem;
+
   /// No description provided for @settingsLanguageEnglish.
   ///
   /// In en, this message translates to:
@@ -3667,6 +3673,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Company information'**
   String get settingsCompanyInformation;
+
+  /// No description provided for @settingsTechnicianInterfaceTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Technician Interface'**
+  String get settingsTechnicianInterfaceTitle;
+
+  /// No description provided for @settingsTechnicianInterfaceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Control which sections technicians can see and use in the application.'**
+  String get settingsTechnicianInterfaceDescription;
+
+  /// No description provided for @settingsTechnicianNoSectionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No sections available'**
+  String get settingsTechnicianNoSectionsTitle;
+
+  /// No description provided for @settingsTechnicianNoSectionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'No application sections are currently enabled for your account. Please contact your administrator.'**
+  String get settingsTechnicianNoSectionsBody;
 
   /// No description provided for @settingsOvertimeTitle.
   ///
@@ -5582,6 +5612,12 @@ abstract class AppLocalizations {
   /// **'Overnight'**
   String get overtimeOvernight;
 
+  /// No description provided for @overtimeOvernightShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Overnight'**
+  String get overtimeOvernightShort;
+
   /// No description provided for @overtimeEnd.
   ///
   /// In en, this message translates to:
@@ -6053,7 +6089,7 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeEligible.
   ///
   /// In en, this message translates to:
-  /// **'Eligible overtime'**
+  /// **'Overtime Hours'**
   String get overtimeEligible;
 
   /// No description provided for @overtimeWorkedHours.
@@ -6707,13 +6743,13 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeTotalDuration.
   ///
   /// In en, this message translates to:
-  /// **'Total duration'**
+  /// **'Total Working Hours'**
   String get overtimeTotalDuration;
 
   /// No description provided for @overtimeWorkingDuration.
   ///
   /// In en, this message translates to:
-  /// **'Working duration'**
+  /// **'Official Working Hours'**
   String get overtimeWorkingDuration;
 
   /// No description provided for @overtimeRejectionReason.

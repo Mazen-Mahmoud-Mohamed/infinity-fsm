@@ -52,5 +52,28 @@ class GetOvertimeMediaConfigUseCase {
       _repository.getOvertimeMediaConfig();
 }
 
+class GetTechnicianInterfaceSettingsUseCase {
+  GetTechnicianInterfaceSettingsUseCase(this._repository);
+  final SettingsRepository _repository;
+  Future<Result<TechnicianInterfaceConfig>> call() =>
+      _repository.getTechnicianInterfaceSettings();
+}
+
+class UpdateTechnicianInterfaceSettingsUseCase {
+  UpdateTechnicianInterfaceSettingsUseCase(this._repository);
+  final SettingsRepository _repository;
+  Future<Result<TechnicianInterfaceConfig>> call(
+    TechnicianInterfaceConfigUpdate input,
+  ) =>
+      _repository.updateTechnicianInterfaceSettings(input);
+}
+
+class GetTechnicianInterfaceConfigUseCase {
+  GetTechnicianInterfaceConfigUseCase(this._repository);
+  final SettingsRepository _repository;
+  Future<Result<TechnicianInterfaceConfig>> call() =>
+      _repository.getTechnicianInterfaceConfig();
+}
+
 @Deprecated('Use GetOvertimeMediaConfigUseCase')
 typedef GetOvertimeVoiceMaxDurationUseCase = GetOvertimeMediaConfigUseCase;

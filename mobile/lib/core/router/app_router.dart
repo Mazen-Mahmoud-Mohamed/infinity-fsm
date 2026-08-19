@@ -1,6 +1,10 @@
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/router/auth_router_refresh.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/features/settings/domain/services/technician_home_navigation.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
+import 'package:mobile/features/settings/presentation/pages/technician_interface_settings_page.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/presentation/pages/asset_categories_page.dart';
 import 'package:mobile/features/assets/presentation/pages/asset_detail_page.dart';
@@ -88,8 +92,11 @@ GoRouter createAppRouter({
 
       if (authStatus == AuthStatus.authenticated) {
         final user = authCubit.state.user;
-        final home = user != null && user.usesOperationalHome
-            ? RoutePaths.workOrders
+        final operational = user != null && user.usesOperationalHome;
+        final home = operational
+            ? resolveTechnicianHomeRoute(
+                getIt<TechnicianInterfaceCubit>().state.config,
+              )
             : RoutePaths.dashboard;
 
         if (isLogin || isSplash) {
@@ -97,10 +104,18 @@ GoRouter createAppRouter({
         }
 
         // Technicians must not land on / use the executive Dashboard.
-        if (user != null &&
-            user.usesOperationalHome &&
-            location == RoutePaths.dashboard) {
-          return RoutePaths.workOrders;
+        if (operational && location == RoutePaths.dashboard) {
+          return home;
+        }
+
+        if (operational) {
+          final redirect = redirectOperationalRoute(
+            location: location,
+            config: getIt<TechnicianInterfaceCubit>().state.config,
+          );
+          if (redirect != null) {
+            return redirect;
+          }
         }
       }
 
@@ -114,6 +129,10 @@ GoRouter createAppRouter({
       GoRoute(
         path: RoutePaths.login,
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: RoutePaths.technicianNoSections,
+        builder: (context, state) => const TechnicianNoSectionsPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
@@ -479,6 +498,11 @@ GoRouter createAppRouter({
                     path: 'overtime',
                     builder: (context, state) =>
                         const OvertimeSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'technician-interface',
+                    builder: (context, state) =>
+                        const TechnicianInterfaceSettingsPage(),
                   ),
                   GoRoute(
                     path: 'system',

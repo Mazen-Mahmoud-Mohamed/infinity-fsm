@@ -15,6 +15,7 @@ import 'package:mobile/features/settings/presentation/pages/organization_setting
 import 'package:mobile/features/settings/presentation/pages/overtime_settings_page.dart';
 import 'package:mobile/features/settings/presentation/pages/settings_extra_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/system_settings_page.dart';
+import 'package:mobile/features/settings/presentation/pages/technician_interface_settings_page.dart';
 import 'package:mobile/features/settings/presentation/utils/admin_settings_unlock_session.dart';
 import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_tiles.dart';
@@ -38,6 +39,7 @@ enum _SettingsEmbedTarget {
   danger,
   updates,
   overtime,
+  technicianInterface,
 }
 
 class SettingsHubPage extends StatefulWidget {
@@ -242,6 +244,20 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
               onTap: () => context.push(RoutePaths.settingsOvertime),
               embedTarget: _SettingsEmbedTarget.overtime,
             ),
+            if (canManageSettings)
+              _SettingsItem(
+                icon: Icons.engineering_outlined,
+                title: l10n.settingsTechnicianInterfaceTitle,
+                keywords: [
+                  'technician',
+                  'interface',
+                  'navigation',
+                  'sections',
+                ],
+                onTap: () =>
+                    context.push(RoutePaths.settingsTechnicianInterface),
+                embedTarget: _SettingsEmbedTarget.technicianInterface,
+              ),
           ],
         ),
       _SettingsSection(
@@ -615,6 +631,8 @@ class _SettingsEmbeddedContent extends StatelessWidget {
         const OrganizationSettingsPage(embedded: true),
       _SettingsEmbedTarget.overtime =>
         const OvertimeSettingsPage(embedded: true),
+      _SettingsEmbedTarget.technicianInterface =>
+        const TechnicianInterfaceSettingsPage(embedded: true),
       _SettingsEmbedTarget.system => const SystemSettingsPage(embedded: true),
       _SettingsEmbedTarget.language =>
         const LanguageSettingsPage(embedded: true),

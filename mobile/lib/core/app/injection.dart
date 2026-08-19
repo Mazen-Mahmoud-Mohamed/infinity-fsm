@@ -164,6 +164,7 @@ import 'package:mobile/features/settings/data/repositories/settings_repository_i
 import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 import 'package:mobile/features/settings/presentation/cubit/server_management_cubit.dart';
 import 'package:mobile/features/settings/data/datasources/server_health_datasource.dart';
 import 'package:mobile/features/dashboard/data/datasources/dashboard_remote_datasource.dart';
@@ -1289,6 +1290,21 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(
     () => GetOvertimeMediaConfigUseCase(getIt<SettingsRepository>()),
   );
+  getIt.registerLazySingleton(
+    () => GetTechnicianInterfaceSettingsUseCase(getIt<SettingsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => UpdateTechnicianInterfaceSettingsUseCase(getIt<SettingsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => GetTechnicianInterfaceConfigUseCase(getIt<SettingsRepository>()),
+  );
+  getIt.registerLazySingleton<TechnicianInterfaceCubit>(
+    () => TechnicianInterfaceCubit(
+      getConfig: getIt<GetTechnicianInterfaceConfigUseCase>(),
+      sessionQueryCache: getIt<SessionQueryCache>(),
+    ),
+  );
   getIt.registerFactory<OrganizationSettingsCubit>(
     () => OrganizationSettingsCubit(
       getSettings: getIt<GetOrganizationSettingsUseCase>(),
@@ -1307,6 +1323,13 @@ Future<void> configureDependencies() async {
     () => OvertimeSettingsCubit(
       getSettings: getIt<GetOvertimeSettingsUseCase>(),
       updateSettings: getIt<UpdateOvertimeSettingsUseCase>(),
+      sessionQueryCache: getIt<SessionQueryCache>(),
+    ),
+  );
+  getIt.registerFactory<TechnicianInterfaceSettingsCubit>(
+    () => TechnicianInterfaceSettingsCubit(
+      getSettings: getIt<GetTechnicianInterfaceSettingsUseCase>(),
+      updateSettings: getIt<UpdateTechnicianInterfaceSettingsUseCase>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
     ),
   );
@@ -1418,7 +1441,10 @@ Future<void> configureDependencies() async {
   );
 
   getIt.registerLazySingleton<AuthRouterRefresh>(
-    () => AuthRouterRefresh(getIt<AuthCubit>()),
+    () => AuthRouterRefresh(
+      authCubit: getIt<AuthCubit>(),
+      technicianInterfaceCubit: getIt<TechnicianInterfaceCubit>(),
+    ),
   );
 
   getIt.registerLazySingleton<GoRouter>(

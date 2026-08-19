@@ -166,3 +166,41 @@ export const updateOvertimeSettingsValidator = [
 
 ];
 
+
+
+export const updateTechnicianInterfaceSettingsValidator = [
+
+  body('overtime')
+
+    .optional()
+
+    .isBoolean()
+
+    .withMessage('overtime must be a boolean'),
+
+  body('workOrders')
+
+    .optional()
+
+    .isBoolean()
+
+    .withMessage('workOrders must be a boolean'),
+
+  body('attendance')
+
+    .optional()
+
+    .isBoolean()
+
+    .withMessage('attendance must be a boolean'),
+
+  body('profile')
+
+    .optional()
+
+    .isBoolean()
+
+    .withMessage('profile must be a boolean'),
+
+];
+

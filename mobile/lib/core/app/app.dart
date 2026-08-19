@@ -15,6 +15,7 @@ import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class InfinityApp extends StatelessWidget {
@@ -38,12 +39,23 @@ class InfinityApp extends StatelessWidget {
         BlocProvider<NotificationsUnreadCubit>.value(
           value: getIt<NotificationsUnreadCubit>(),
         ),
+        BlocProvider<TechnicianInterfaceCubit>.value(
+          value: getIt<TechnicianInterfaceCubit>(),
+        ),
       ],
       child: MultiBlocListener(
         listeners: [
-          BlocListener<AuthCubit, AuthState>(
-            listenWhen: (previous, current) =>
-                previous.message != current.message &&
+        BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) =>
+              previous.status != current.status &&
+              current.status == AuthStatus.unauthenticated,
+          listener: (context, state) {
+            getIt<TechnicianInterfaceCubit>().clear();
+          },
+        ),
+        BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) =>
+              previous.message != current.message &&
                 current.message != null &&
                 !isUserFacingNetworkNoise(current.message),
             listener: (context, state) {

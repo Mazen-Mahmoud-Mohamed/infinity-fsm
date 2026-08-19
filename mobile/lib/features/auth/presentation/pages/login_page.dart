@@ -15,6 +15,8 @@ import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/login_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/login_state.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_form.dart';
+import 'package:mobile/features/settings/domain/services/technician_home_navigation.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
@@ -46,14 +48,20 @@ class _LoginView extends StatelessWidget {
     return BlocListener<LoginCubit, LoginState>(
       listenWhen: (previous, current) =>
           current is LoginSuccess || current is LoginFailure,
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is LoginSuccess) {
           context.read<AuthCubit>().setAuthenticated(state.user);
-          context.go(
-            state.user.usesOperationalHome
-                ? RoutePaths.workOrders
-                : RoutePaths.dashboard,
-          );
+          if (state.user.usesOperationalHome) {
+            await getIt<TechnicianInterfaceCubit>().load(force: true);
+            if (!context.mounted) return;
+            context.go(
+              resolveTechnicianHomeRoute(
+                getIt<TechnicianInterfaceCubit>().state.config,
+              ),
+            );
+          } else {
+            context.go(RoutePaths.dashboard);
+          }
         } else if (state is LoginFailure) {
           ScaffoldMessenger.of(context)
             ..hideCurrentSnackBar()

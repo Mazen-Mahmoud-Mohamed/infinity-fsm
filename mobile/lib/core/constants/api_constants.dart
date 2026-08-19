@@ -84,6 +84,10 @@ class ApiConstants {
   static const String settingsOvertimeConfig = '/settings/overtime/config';
   static const String settingsOvertimeVoiceDuration =
       '/settings/overtime/voice-duration';
+  static const String settingsTechnicianInterface =
+      '/settings/technician-interface';
+  static const String settingsTechnicianInterfaceConfig =
+      '/settings/technician-interface/config';
 
   static const String dashboardSummary = '/dashboard/summary';
 

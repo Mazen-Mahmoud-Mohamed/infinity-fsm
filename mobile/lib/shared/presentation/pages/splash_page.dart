@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/branding/infinity_brand.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
+import 'package:mobile/features/settings/domain/services/technician_home_navigation.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class SplashPage extends StatefulWidget {
@@ -48,11 +51,23 @@ class _SplashPageState extends State<SplashPage> {
     final authStatus = authCubit.state.status;
     if (authStatus == AuthStatus.authenticated) {
       final user = authCubit.state.user;
-      context.go(
-        user != null && user.usesOperationalHome
-            ? RoutePaths.workOrders
-            : RoutePaths.dashboard,
-      );
+      if (user != null && user.usesOperationalHome) {
+        await getIt<TechnicianInterfaceCubit>().load();
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      if (user != null && user.usesOperationalHome) {
+        context.go(
+          resolveTechnicianHomeRoute(
+            getIt<TechnicianInterfaceCubit>().state.config,
+          ),
+        );
+      } else {
+        context.go(RoutePaths.dashboard);
+      }
     } else {
       context.go(RoutePaths.login);
     }

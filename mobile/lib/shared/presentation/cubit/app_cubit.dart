@@ -19,6 +19,7 @@ class AppState extends Equatable {
     this.isOnline = true,
     this.themeMode = ThemeMode.system,
     this.localeCode = 'en',
+    this.localePreference = 'system',
     this.notificationPushEnabled = true,
     this.notificationEmailEnabled = true,
     this.notifAttendance = true,
@@ -40,6 +41,7 @@ class AppState extends Equatable {
   final bool isOnline;
   final ThemeMode themeMode;
   final String localeCode;
+  final String localePreference;
   final bool notificationPushEnabled;
   final bool notificationEmailEnabled;
   final bool notifAttendance;
@@ -63,6 +65,7 @@ class AppState extends Equatable {
     bool? isOnline,
     ThemeMode? themeMode,
     String? localeCode,
+    String? localePreference,
     bool? notificationPushEnabled,
     bool? notificationEmailEnabled,
     bool? notifAttendance,
@@ -85,6 +88,7 @@ class AppState extends Equatable {
       isOnline: isOnline ?? this.isOnline,
       themeMode: themeMode ?? this.themeMode,
       localeCode: localeCode ?? this.localeCode,
+      localePreference: localePreference ?? this.localePreference,
       notificationPushEnabled:
           notificationPushEnabled ?? this.notificationPushEnabled,
       notificationEmailEnabled:
@@ -111,6 +115,7 @@ class AppState extends Equatable {
         isOnline,
         themeMode,
         localeCode,
+        localePreference,
         notificationPushEnabled,
         notificationEmailEnabled,
         notifAttendance,
@@ -145,6 +150,31 @@ class AppCubit extends Cubit<AppState> {
 
   static const _themeKey = 'app_theme_mode';
   static const _localeKey = 'app_locale_code';
+
+  /// Maps stored preference to the raw preference value exposed in [AppState].
+  static String normalizeLocalePreference(String? stored) {
+    return switch (stored) {
+      'ar' => 'ar',
+      'en' => 'en',
+      'system' => 'system',
+      _ => 'system',
+    };
+  }
+
+  /// Resolves the effective display locale from stored preference + device locales.
+  static String resolveLocaleCode(String? stored) {
+    if (stored == 'ar') return 'ar';
+    if (stored == 'en') return 'en';
+
+    final deviceLocales =
+        WidgetsBinding.instance.platformDispatcher.locales;
+    for (final locale in deviceLocales) {
+      if (locale.languageCode == 'ar') return 'ar';
+      if (locale.languageCode == 'en') return 'en';
+    }
+    return 'en';
+  }
+
   static const _pushKey = 'notif_push_enabled';
   static const _emailKey = 'notif_email_enabled';
   static const _notifAttendanceKey = 'notif_attendance';
@@ -175,14 +205,17 @@ class AppCubit extends Cubit<AppState> {
         'dark' => ThemeMode.dark,
         _ => ThemeMode.system,
       };
-      final localeCode = _preferences.getString(_localeKey) ?? 'en';
+      final storedLocale = _preferences.getString(_localeKey);
+      final localePreference = normalizeLocalePreference(storedLocale);
+      final localeCode = resolveLocaleCode(storedLocale);
 
       emit(
         state.copyWith(
           startupStatus: AppStartupStatus.ready,
           isOnline: isOnline,
           themeMode: themeMode,
-          localeCode: localeCode == 'ar' ? 'ar' : 'en',
+          localeCode: localeCode,
+          localePreference: localePreference,
           notificationPushEnabled: _preferences.getBool(_pushKey) ?? true,
           notificationEmailEnabled: _preferences.getBool(_emailKey) ?? true,
           notifAttendance: _preferences.getBool(_notifAttendanceKey) ?? true,
@@ -222,7 +255,23 @@ class AppCubit extends Cubit<AppState> {
   Future<void> setLocaleCode(String code) async {
     final normalized = code == 'ar' ? 'ar' : 'en';
     await _preferences.setString(_localeKey, normalized);
-    emit(state.copyWith(localeCode: normalized));
+    emit(
+      state.copyWith(
+        localeCode: normalized,
+        localePreference: normalized,
+      ),
+    );
+  }
+
+  Future<void> setLocaleToSystem() async {
+    await _preferences.setString(_localeKey, 'system');
+    final resolved = resolveLocaleCode('system');
+    emit(
+      state.copyWith(
+        localeCode: resolved,
+        localePreference: 'system',
+      ),
+    );
   }
 
   Future<void> setNotificationPreferences({
@@ -324,7 +373,7 @@ class AppCubit extends Cubit<AppState> {
   /// Restores preference defaults (theme/locale/notifications/sync/a11y).
   Future<void> restoreDefaultPreferences() async {
     await setThemeMode(ThemeMode.system);
-    await setLocaleCode('en');
+    await setLocaleToSystem();
     await setNotificationPreferences(
       pushEnabled: true,
       emailEnabled: true,

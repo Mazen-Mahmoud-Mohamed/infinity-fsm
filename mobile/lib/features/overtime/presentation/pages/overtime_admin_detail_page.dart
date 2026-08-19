@@ -182,10 +182,11 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                   label: l10n.labelType,
                   value: overtimeTypeLabel(l10n, session.type),
                 ),
-                if (session.type == OvertimeType.travel)
+                if (session.type == OvertimeType.travel && session.isOvernight)
                   _DetailRow(
-                    label: l10n.overtimeOvernight,
-                    value: session.isOvernight ? l10n.yes : l10n.no,
+                    // Show only the overnight word with no "yes/no" label.
+                    label: '',
+                    value: l10n.overtimeOvernightShort,
                   ),
                 _DetailRow(
                   label: l10n.overtimeStartTime,
@@ -217,10 +218,6 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                     session.eligibleOvertimeMinutes,
                     l10n,
                   ),
-                ),
-                _DetailRow(
-                  label: l10n.overtimeWorkedHours,
-                  value: OvertimeFormatters.hoursValue(session.workedHours, l10n),
                 ),
                 if (session.status == OvertimeStatus.approved)
                   _DetailRow(
@@ -595,7 +592,7 @@ class _OvertimeReviewActions extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (approveBtn != null) approveBtn,
+              approveBtn ?? const SizedBox.shrink(),
               if (partialBtn != null) ...[
                 const SizedBox(height: AppSpacing.sm),
                 partialBtn,
@@ -862,7 +859,7 @@ class _SectionCard extends StatelessWidget {
                   ),
                 ),
               ),
-              if (trailing != null) trailing!,
+              trailing ?? const SizedBox.shrink(),
             ],
           ),
           const SizedBox(height: AppSpacing.md),

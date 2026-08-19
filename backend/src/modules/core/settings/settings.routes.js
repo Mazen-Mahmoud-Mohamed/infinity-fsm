@@ -8,6 +8,7 @@ import * as settingsController from './settings.controller.js';
 import {
   updateOrganizationSettingsValidator,
   updateOvertimeSettingsValidator,
+  updateTechnicianInterfaceSettingsValidator,
 } from './settings.validator.js';
 
 const router = Router();
@@ -61,6 +62,24 @@ router.put(
   requirePermission(PERMISSIONS.SETTINGS_MANAGE),
   validate(updateOvertimeSettingsValidator),
   settingsController.updateOvertimeSettings
+);
+
+router.get(
+  '/technician-interface',
+  requirePermission(PERMISSIONS.SETTINGS_MANAGE),
+  settingsController.getTechnicianInterfaceSettings
+);
+
+router.put(
+  '/technician-interface',
+  requirePermission(PERMISSIONS.SETTINGS_MANAGE),
+  validate(updateTechnicianInterfaceSettingsValidator),
+  settingsController.updateTechnicianInterfaceSettings
+);
+
+router.get(
+  '/technician-interface/config',
+  settingsController.getTechnicianInterfaceConfig
 );
 
 export default router;
