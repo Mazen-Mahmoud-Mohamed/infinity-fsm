@@ -1230,11 +1230,13 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   Future<Result<int>> syncPendingActions() async {
     OvertimeOfflineTrace.step('SYNC_START', status: 'entered');
     _local.dumpStorage();
-    if (!await _connectivity.isConnected) {
+    final connectivitySnapshot =
+        await _connectivity.refreshStatus(reason: 'overtime_repo_sync');
+    if (!connectivitySnapshot.canSync) {
       OvertimeOfflineTrace.step(
         'SYNC_START',
         status: 'failure',
-        detail: 'offline — abort',
+        detail: 'deferred | level=${connectivitySnapshot.level.name}',
         queueLength: _local.readQueue().length,
       );
       return const Success(0);

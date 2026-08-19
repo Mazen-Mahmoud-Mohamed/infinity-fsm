@@ -3265,6 +3265,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get offlineMode => 'Offline Mode';
 
   @override
+  String get connectivityOnline => 'Connected';
+
+  @override
+  String get connectivityApiUnavailable => 'Server connection unavailable';
+
+  @override
+  String get connectivityNoInternet => 'No internet connection';
+
+  @override
+  String get connectivityNoNetwork => 'No network connection';
+
+  @override
+  String connectivityPendingSync(int count) {
+    return 'Pending sync: $count';
+  }
+
+  @override
+  String get connectivitySyncing => 'Syncing...';
+
+  @override
   String get loadingGeneric => 'Loading...';
 
   @override

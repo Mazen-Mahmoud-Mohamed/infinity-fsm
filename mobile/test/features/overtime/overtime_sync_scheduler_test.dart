@@ -4,8 +4,12 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
+import 'package:mobile/core/services/connectivity_status.dart';
 import 'package:mobile/core/services/gps_address_sync_service.dart';
+import 'package:mobile/core/services/sync_configuration_service.dart';
+import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
 import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
@@ -51,6 +55,26 @@ class _FakeConnectivity implements ConnectivityService {
   bool online;
   final _controller = StreamController<bool>.broadcast();
 
+  ConnectivitySnapshot get _snapshot => online
+      ? const ConnectivitySnapshot(
+          level: ConnectivityLevel.online,
+          networkAvailable: true,
+          networkType: 'wifi',
+          internetReachable: true,
+          apiReachable: true,
+        )
+      : const ConnectivitySnapshot(
+          level: ConnectivityLevel.apiUnavailable,
+          networkAvailable: true,
+          networkType: 'wifi',
+          internetReachable: true,
+          apiReachable: false,
+          reason: 'timeout',
+        );
+
+  @override
+  ConnectivitySnapshot get currentSnapshot => _snapshot;
+
   @override
   Future<bool> get isConnected async => online;
 
@@ -62,12 +86,25 @@ class _FakeConnectivity implements ConnectivityService {
   @override
   Stream<bool> get onConnectivityChanged => _controller.stream;
 
+  @override
+  Stream<ConnectivitySnapshot> get onStatusChanged => const Stream.empty();
+
+  @override
+  Future<ConnectivitySnapshot> refreshStatus({
+    String reason = 'manual',
+    bool forceApiProbe = false,
+  }) async =>
+      _snapshot;
+
   void emitOnline(bool value) {
     online = value;
     _controller.add(value);
   }
 
-  Future<void> dispose() => _controller.close();
+  @override
+  Future<void> dispose() async {
+    await _controller.close();
+  }
 }
 
 class _FakeGpsAddressSync extends Fake implements GpsAddressSyncService {
@@ -189,23 +226,31 @@ void main() {
 
   late _FakeConnectivity connectivity;
   late _SchedulerFakeRepo repository;
+  late SyncConfigurationService syncConfiguration;
   late OvertimeSyncCubit cubit;
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     connectivity = _FakeConnectivity(online: true);
     repository = _SchedulerFakeRepo();
+    syncConfiguration = SyncConfigurationService(
+      PreferencesService(await SharedPreferences.getInstance()),
+    );
+    await syncConfiguration.load();
     cubit = OvertimeSyncCubit(
       syncUseCase: SyncPendingOvertimeUseCase(repository),
       repository: repository,
       connectivity: connectivity,
       gpsAddressSync: _FakeGpsAddressSync(),
       uploadPolicy: _AlwaysUpload(),
+      syncConfiguration: syncConfiguration,
     );
   });
 
   tearDown(() async {
     await cubit.close();
     await connectivity.dispose();
+    syncConfiguration.dispose();
   });
 
   group('OvertimeSyncCubit coalescing / follow-up', () {

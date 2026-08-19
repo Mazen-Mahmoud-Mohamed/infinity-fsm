@@ -4,6 +4,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
+import 'package:mobile/core/services/connectivity_status.dart';
+import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 
 enum AppStartupStatus {
@@ -29,7 +31,8 @@ class AppState extends Equatable {
     this.notifUpdates = true,
     this.autoSync = true,
     this.wifiOnlySync = false,
-    this.syncIntervalMinutes = 15,
+    this.syncIntervalMinutes = SyncConfigurationService.defaultIntervalMinutes,
+    this.connectivity = ConnectivitySnapshot.unknown,
     this.largeText = false,
     this.reduceAnimations = false,
     this.highContrast = false,
@@ -52,6 +55,7 @@ class AppState extends Equatable {
   final bool autoSync;
   final bool wifiOnlySync;
   final int syncIntervalMinutes;
+  final ConnectivitySnapshot connectivity;
   final bool largeText;
   final bool reduceAnimations;
   final bool highContrast;
@@ -76,6 +80,7 @@ class AppState extends Equatable {
     bool? autoSync,
     bool? wifiOnlySync,
     int? syncIntervalMinutes,
+    ConnectivitySnapshot? connectivity,
     bool? largeText,
     bool? reduceAnimations,
     bool? highContrast,
@@ -101,6 +106,7 @@ class AppState extends Equatable {
       autoSync: autoSync ?? this.autoSync,
       wifiOnlySync: wifiOnlySync ?? this.wifiOnlySync,
       syncIntervalMinutes: syncIntervalMinutes ?? this.syncIntervalMinutes,
+      connectivity: connectivity ?? this.connectivity,
       largeText: largeText ?? this.largeText,
       reduceAnimations: reduceAnimations ?? this.reduceAnimations,
       highContrast: highContrast ?? this.highContrast,
@@ -126,6 +132,7 @@ class AppState extends Equatable {
         autoSync,
         wifiOnlySync,
         syncIntervalMinutes,
+        connectivity,
         largeText,
         reduceAnimations,
         highContrast,
@@ -138,13 +145,32 @@ class AppCubit extends Cubit<AppState> {
   AppCubit(
     this._connectivityService,
     this._preferences,
+    this._syncConfiguration,
   ) : super(const AppState()) {
     _connectivitySubscription =
-        _connectivityService.onConnectivityChanged.listen((isOnline) {
+        _connectivityService.onStatusChanged.listen((snapshot) {
       if (isClosed) {
         return;
       }
-      emit(state.copyWith(isOnline: isOnline));
+      emit(
+        state.copyWith(
+          connectivity: snapshot,
+          isOnline: snapshot.canSync,
+        ),
+      );
+    });
+
+    _syncConfigSubscription = _syncConfiguration.onChanged.listen((config) {
+      if (isClosed) {
+        return;
+      }
+      emit(
+        state.copyWith(
+          autoSync: config.autoSync,
+          wifiOnlySync: config.wifiOnlySync,
+          syncIntervalMinutes: config.intervalMinutes,
+        ),
+      );
     });
   }
 
@@ -182,9 +208,6 @@ class AppCubit extends Cubit<AppState> {
   static const _notifOvertimeKey = 'notif_overtime';
   static const _notifSyncKey = 'notif_sync';
   static const _notifUpdatesKey = 'notif_updates';
-  static const _autoSyncKey = 'pref_auto_sync';
-  static const _wifiOnlyKey = 'pref_wifi_only_sync';
-  static const _syncIntervalKey = 'pref_sync_interval_min';
   static const _largeTextKey = 'pref_large_text';
   static const _reduceAnimKey = 'pref_reduce_animations';
   static const _highContrastKey = 'pref_high_contrast';
@@ -192,13 +215,17 @@ class AppCubit extends Cubit<AppState> {
 
   final ConnectivityService _connectivityService;
   final PreferencesService _preferences;
-  StreamSubscription<bool>? _connectivitySubscription;
+  final SyncConfigurationService _syncConfiguration;
+  StreamSubscription<ConnectivitySnapshot>? _connectivitySubscription;
+  StreamSubscription<SyncConfiguration>? _syncConfigSubscription;
 
   Future<void> initialize() async {
     emit(state.copyWith(startupStatus: AppStartupStatus.loading));
 
     try {
-      final isOnline = await _connectivityService.isConnected;
+      final connectivity =
+          await _connectivityService.refreshStatus(reason: 'app_init');
+      final syncConfig = _syncConfiguration.current;
       final themeRaw = _preferences.getString(_themeKey);
       final themeMode = switch (themeRaw) {
         'light' => ThemeMode.light,
@@ -212,7 +239,8 @@ class AppCubit extends Cubit<AppState> {
       emit(
         state.copyWith(
           startupStatus: AppStartupStatus.ready,
-          isOnline: isOnline,
+          isOnline: connectivity.canSync,
+          connectivity: connectivity,
           themeMode: themeMode,
           localeCode: localeCode,
           localePreference: localePreference,
@@ -223,9 +251,9 @@ class AppCubit extends Cubit<AppState> {
           notifOvertime: _preferences.getBool(_notifOvertimeKey) ?? true,
           notifSync: _preferences.getBool(_notifSyncKey) ?? true,
           notifUpdates: _preferences.getBool(_notifUpdatesKey) ?? true,
-          autoSync: _preferences.getBool(_autoSyncKey) ?? true,
-          wifiOnlySync: _preferences.getBool(_wifiOnlyKey) ?? false,
-          syncIntervalMinutes: _preferences.getInt(_syncIntervalKey) ?? 15,
+          autoSync: syncConfig.autoSync,
+          wifiOnlySync: syncConfig.wifiOnlySync,
+          syncIntervalMinutes: syncConfig.intervalMinutes,
           largeText: _preferences.getBool(_largeTextKey) ?? false,
           reduceAnimations: _preferences.getBool(_reduceAnimKey) ?? false,
           highContrast: _preferences.getBool(_highContrastKey) ?? false,
@@ -322,21 +350,10 @@ class AppCubit extends Cubit<AppState> {
     bool? wifiOnly,
     int? intervalMinutes,
   }) async {
-    if (autoSync != null) {
-      await _preferences.setBool(_autoSyncKey, autoSync);
-    }
-    if (wifiOnly != null) {
-      await _preferences.setBool(_wifiOnlyKey, wifiOnly);
-    }
-    if (intervalMinutes != null) {
-      await _preferences.setInt(_syncIntervalKey, intervalMinutes);
-    }
-    emit(
-      state.copyWith(
-        autoSync: autoSync,
-        wifiOnlySync: wifiOnly,
-        syncIntervalMinutes: intervalMinutes,
-      ),
+    await _syncConfiguration.update(
+      autoSync: autoSync,
+      wifiOnlySync: wifiOnly,
+      intervalMinutes: intervalMinutes,
     );
   }
 
@@ -386,7 +403,7 @@ class AppCubit extends Cubit<AppState> {
     await setSyncPreferences(
       autoSync: true,
       wifiOnly: false,
-      intervalMinutes: 15,
+      intervalMinutes: SyncConfigurationService.defaultIntervalMinutes,
     );
     await setAccessibilityPreferences(
       largeText: false,
@@ -398,6 +415,7 @@ class AppCubit extends Cubit<AppState> {
   @override
   Future<void> close() {
     unawaited(_connectivitySubscription?.cancel());
+    unawaited(_syncConfigSubscription?.cancel());
     return super.close();
   }
 }

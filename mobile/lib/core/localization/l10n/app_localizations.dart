@@ -6248,6 +6248,42 @@ abstract class AppLocalizations {
   /// **'Offline Mode'**
   String get offlineMode;
 
+  /// No description provided for @connectivityOnline.
+  ///
+  /// In en, this message translates to:
+  /// **'Connected'**
+  String get connectivityOnline;
+
+  /// No description provided for @connectivityApiUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Server connection unavailable'**
+  String get connectivityApiUnavailable;
+
+  /// No description provided for @connectivityNoInternet.
+  ///
+  /// In en, this message translates to:
+  /// **'No internet connection'**
+  String get connectivityNoInternet;
+
+  /// No description provided for @connectivityNoNetwork.
+  ///
+  /// In en, this message translates to:
+  /// **'No network connection'**
+  String get connectivityNoNetwork;
+
+  /// No description provided for @connectivityPendingSync.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending sync: {count}'**
+  String connectivityPendingSync(int count);
+
+  /// No description provided for @connectivitySyncing.
+  ///
+  /// In en, this message translates to:
+  /// **'Syncing...'**
+  String get connectivitySyncing;
+
   /// No description provided for @loadingGeneric.
   ///
   /// In en, this message translates to:

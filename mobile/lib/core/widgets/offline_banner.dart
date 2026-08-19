@@ -1,25 +1,31 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/services/connectivity_status.dart';
 import 'package:mobile/core/theme/app_colors.dart';
 
-/// Compact sticky Offline Mode indicator. Use once at the app shell level.
+/// Compact sticky connectivity indicator for the app shell.
 class OfflineBanner extends StatelessWidget {
   const OfflineBanner({
     super.key,
-    this.visible = true,
+    this.snapshot = ConnectivitySnapshot.unknown,
   });
 
-  final bool visible;
+  final ConnectivitySnapshot snapshot;
 
   @override
   Widget build(BuildContext context) {
-    if (!visible) {
+    final message = connectivityStatusMessage(
+      AppLocalizations.of(context),
+      snapshot,
+    );
+    if (message == null) {
       return const SizedBox.shrink();
     }
 
     final warning = AppThemeColors.of(context).warning;
     final theme = Theme.of(context);
+    final icon = _iconForLevel(snapshot.level);
 
     return Material(
       color: warning.withValues(alpha: 0.14),
@@ -32,11 +38,11 @@ class OfflineBanner extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Row(
               children: [
-                Icon(Icons.cloud_off_outlined, size: 16, color: warning),
+                Icon(icon, size: 16, color: warning),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    AppLocalizations.of(context).offlineMode,
+                    message,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.labelLarge?.copyWith(
@@ -53,6 +59,30 @@ class OfflineBanner extends StatelessWidget {
       ),
     );
   }
+
+  IconData _iconForLevel(ConnectivityLevel level) {
+    return switch (level) {
+      ConnectivityLevel.online => Icons.cloud_done_outlined,
+      ConnectivityLevel.apiUnavailable => Icons.dns_outlined,
+      ConnectivityLevel.internetUnavailable => Icons.wifi_off_outlined,
+      ConnectivityLevel.networkUnavailable => Icons.signal_wifi_off_outlined,
+      ConnectivityLevel.unknown => Icons.cloud_off_outlined,
+    };
+  }
+}
+
+/// Localized user-facing connectivity label. Returns null when fully online.
+String? connectivityStatusMessage(
+  AppLocalizations l10n,
+  ConnectivitySnapshot snapshot,
+) {
+  return switch (snapshot.level) {
+    ConnectivityLevel.online => null,
+    ConnectivityLevel.apiUnavailable => l10n.connectivityApiUnavailable,
+    ConnectivityLevel.internetUnavailable => l10n.connectivityNoInternet,
+    ConnectivityLevel.networkUnavailable => l10n.connectivityNoNetwork,
+    ConnectivityLevel.unknown => l10n.offlineMode,
+  };
 }
 
 /// Returns true when a failure code represents connectivity (not a product error).

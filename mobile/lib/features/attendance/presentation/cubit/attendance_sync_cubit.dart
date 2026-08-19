@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:mobile/core/constants/attendance_constants.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/services/gps_address_sync_service.dart';
+import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/attendance/domain/repositories/attendance_repository.dart';
 import 'package:mobile/features/attendance/domain/usecases/sync_pending_attendance_usecase.dart';
@@ -53,30 +53,34 @@ class AttendanceSyncState extends Equatable {
       ];
 }
 
-/// Watches connectivity and periodically retries any attendance events that
-/// were captured while offline, keeping the pending queue synchronized with
-/// the server without blocking the UI thread.
+/// Watches connectivity and periodically retries attendance events captured
+/// while offline, keeping the pending queue synchronized with the server.
 class AttendanceSyncCubit extends Cubit<AttendanceSyncState> {
   AttendanceSyncCubit({
-    required this._syncUseCase,
-    required this._repository,
-    required this._connectivity,
-    required this._gpsAddressSync,
-  }) : super(const AttendanceSyncState()) {
-    _connectivitySubscription = _connectivity.onConnectivityChanged.listen((
-      isOnline,
-    ) {
+    required SyncPendingAttendanceUseCase syncUseCase,
+    required AttendanceRepository repository,
+    required ConnectivityService connectivity,
+    required GpsAddressSyncService gpsAddressSync,
+    required SyncConfigurationService syncConfiguration,
+  })  : _syncUseCase = syncUseCase,
+        _repository = repository,
+        _connectivity = connectivity,
+        _gpsAddressSync = gpsAddressSync,
+        _syncConfiguration = syncConfiguration,
+        super(const AttendanceSyncState()) {
+    _configSubscription = _syncConfiguration.onChanged.listen((_) {
+      _reconfigurePeriodicTimer();
+    });
+
+    _connectivitySubscription =
+        _connectivity.onConnectivityChanged.listen((isOnline) {
       emit(state.copyWith(isOnline: isOnline));
-      if (isOnline) {
-        unawaited(syncNow());
+      if (isOnline && !_paused) {
+        unawaited(syncNow(force: true));
       }
     });
 
-    _retryTimer = Timer.periodic(
-      AttendanceConstants.syncRetryInterval,
-      (_) => syncNow(),
-    );
-
+    _reconfigurePeriodicTimer();
     unawaited(refreshPendingCount());
   }
 
@@ -84,9 +88,41 @@ class AttendanceSyncCubit extends Cubit<AttendanceSyncState> {
   final AttendanceRepository _repository;
   final ConnectivityService _connectivity;
   final GpsAddressSyncService _gpsAddressSync;
+  final SyncConfigurationService _syncConfiguration;
   StreamSubscription<bool>? _connectivitySubscription;
+  StreamSubscription<SyncConfiguration>? _configSubscription;
   Timer? _retryTimer;
   bool _isSyncing = false;
+  bool _paused = false;
+  bool _syncRequestedAgain = false;
+
+  void pauseAuthenticatedSync() {
+    _paused = true;
+    _retryTimer?.cancel();
+  }
+
+  void resumeAuthenticatedSync() {
+    if (!_paused) {
+      return;
+    }
+    _paused = false;
+    _reconfigurePeriodicTimer();
+    unawaited(syncNow(force: true));
+  }
+
+  void _reconfigurePeriodicTimer() {
+    _retryTimer?.cancel();
+    if (_paused) {
+      return;
+    }
+    final interval = _syncConfiguration.current.interval;
+    _retryTimer = Timer.periodic(interval, (_) {
+      if (_paused || !_syncConfiguration.current.autoSync) {
+        return;
+      }
+      unawaited(syncNow());
+    });
+  }
 
   Future<void> refreshPendingCount() async {
     final pending = await _repository.getPendingActions();
@@ -96,8 +132,13 @@ class AttendanceSyncCubit extends Cubit<AttendanceSyncState> {
     emit(state.copyWith(pendingCount: pending.length));
   }
 
-  Future<void> syncNow() async {
-    if (_isSyncing || isClosed) {
+  Future<void> syncNow({bool force = false}) async {
+    if (_paused || isClosed) {
+      return;
+    }
+
+    if (_isSyncing) {
+      _syncRequestedAgain = true;
       return;
     }
 
@@ -114,55 +155,76 @@ class AttendanceSyncCubit extends Cubit<AttendanceSyncState> {
       return;
     }
 
+    final snapshot = await _connectivity.refreshStatus(reason: 'attendance_sync');
+    if (!snapshot.canSync) {
+      if (!isClosed) {
+        emit(state.copyWith(isOnline: false));
+      }
+      return;
+    }
+
+    if (!force && !_syncConfiguration.current.autoSync) {
+      return;
+    }
+
     _isSyncing = true;
     emit(
       state.copyWith(
         status: AttendanceSyncStatus.syncing,
         pendingCount: pending.length,
         clearMessage: true,
+        isOnline: true,
       ),
     );
 
-    final result = await _syncUseCase();
-    unawaited(_gpsAddressSync.processQueue());
-    final remaining = await _repository.getPendingActions();
+    try {
+      final result = await _syncUseCase();
+      unawaited(_gpsAddressSync.processQueue());
+      final remaining = await _repository.getPendingActions();
 
-    if (isClosed) {
+      if (isClosed) {
+        return;
+      }
+
+      switch (result) {
+        case Success():
+          emit(
+            state.copyWith(
+              status: AttendanceSyncStatus.success,
+              pendingCount: remaining.length,
+              lastSyncedAt: DateTime.now(),
+              clearMessage: true,
+              isOnline: true,
+            ),
+          );
+        case Failure(message: final message, code: final code):
+          final offline = code == 'OFFLINE' ||
+              code == 'TIMEOUT' ||
+              code == 'NETWORK_ERROR';
+          emit(
+            state.copyWith(
+              status: AttendanceSyncStatus.failure,
+              pendingCount: remaining.length,
+              isOnline: !offline,
+              clearMessage: offline,
+              message: offline ? null : message,
+            ),
+          );
+      }
+
+      if (_syncRequestedAgain && remaining.isNotEmpty) {
+        _syncRequestedAgain = false;
+        unawaited(Future<void>.microtask(() => syncNow(force: force)));
+      }
+    } finally {
       _isSyncing = false;
-      return;
     }
-
-    switch (result) {
-      case Success():
-        emit(
-          state.copyWith(
-            status: AttendanceSyncStatus.success,
-            pendingCount: remaining.length,
-            lastSyncedAt: DateTime.now(),
-            clearMessage: true,
-          ),
-        );
-      case Failure(message: final message, code: final code):
-        final offline = code == 'OFFLINE' ||
-            code == 'TIMEOUT' ||
-            code == 'NETWORK_ERROR';
-        emit(
-          state.copyWith(
-            status: AttendanceSyncStatus.failure,
-            pendingCount: remaining.length,
-            isOnline: !offline,
-            clearMessage: offline,
-            message: offline ? null : message,
-          ),
-        );
-    }
-
-    _isSyncing = false;
   }
 
   @override
   Future<void> close() {
     unawaited(_connectivitySubscription?.cancel());
+    unawaited(_configSubscription?.cancel());
     _retryTimer?.cancel();
     return super.close();
   }

@@ -13,7 +13,9 @@ import 'package:mobile/core/services/auth_session_service.dart';
 import 'package:mobile/core/services/biometric_auth_service.dart';
 import 'package:mobile/features/settings/presentation/utils/admin_settings_unlock_session.dart';
 import 'package:mobile/core/services/checkpoint_telemetry_service.dart';
+import 'package:mobile/core/services/api_reachability_probe.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
+import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/services/device_time_guard_service.dart';
 import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/services/gps_service.dart';
@@ -208,6 +210,10 @@ Future<void> configureDependencies() async {
   final preferencesService = PreferencesService(sharedPreferences);
   getIt.registerSingleton<PreferencesService>(preferencesService);
 
+  final syncConfigurationService = SyncConfigurationService(preferencesService);
+  await syncConfigurationService.load();
+  getIt.registerSingleton<SyncConfigurationService>(syncConfigurationService);
+
   getIt.registerSingleton<AppRuntimeInfo>(AppRuntimeInfo());
   getIt.registerLazySingleton<BiometricAuthService>(BiometricAuthService.new);
   getIt.registerSingleton<AdminSettingsUnlockSession>(
@@ -220,7 +226,10 @@ Future<void> configureDependencies() async {
   final tokenManager = TokenManager(secureStorageService);
   getIt.registerSingleton<TokenManager>(tokenManager);
 
-  final connectivityService = ConnectivityService(logger: loggerService);
+  final connectivityService = ConnectivityService(
+    envConfig: envConfig,
+    logger: loggerService,
+  );
   getIt.registerSingleton<ConnectivityService>(connectivityService);
 
   if (!getIt.isRegistered<SessionQueryCache>()) {
@@ -318,6 +327,7 @@ Future<void> configureDependencies() async {
     () => AppCubit(
       getIt<ConnectivityService>(),
       getIt<PreferencesService>(),
+      getIt<SyncConfigurationService>(),
     ),
   );
 
@@ -444,6 +454,7 @@ Future<void> configureDependencies() async {
       repository: getIt<AttendanceRepository>(),
       connectivity: getIt<ConnectivityService>(),
       gpsAddressSync: getIt<GpsAddressSyncService>(),
+      syncConfiguration: getIt<SyncConfigurationService>(),
     ),
   );
 
@@ -521,6 +532,7 @@ Future<void> configureDependencies() async {
       connectivity: getIt<ConnectivityService>(),
       gpsAddressSync: getIt<GpsAddressSyncService>(),
       uploadPolicy: getIt<OvertimeUploadPolicyService>(),
+      syncConfiguration: getIt<SyncConfigurationService>(),
     ),
   );
 

@@ -16,6 +16,8 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/services/app_log_buffer.dart';
 import 'package:mobile/core/services/app_runtime_info.dart';
 import 'package:mobile/core/services/biometric_auth_service.dart';
+import 'package:mobile/core/services/sync_configuration_service.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -183,9 +185,11 @@ class SyncSettingsPage extends StatelessWidget {
               ),
               SettingsInfoRow(
                 label: l10n.settingsSyncStatus,
-                value: context.watch<AppCubit>().state.isOnline
-                    ? l10n.serverMgmtOnline
-                    : l10n.serverMgmtOffline,
+                value: connectivityStatusMessage(
+                      l10n,
+                      context.watch<AppCubit>().state.connectivity,
+                    ) ??
+                    l10n.connectivityOnline,
               ),
               SettingsInfoRow(
                 label: l10n.settingsNetworkRequirement,
@@ -213,7 +217,7 @@ class SyncSettingsPage extends StatelessWidget {
                 subtitle: Text('${app.state.syncIntervalMinutes} min'),
                 trailing: DropdownButton<int>(
                   value: app.state.syncIntervalMinutes,
-                  items: const [5, 15, 30, 60]
+                  items: SyncConfigurationService.supportedIntervalMinutes
                       .map(
                         (m) => DropdownMenuItem(
                           value: m,

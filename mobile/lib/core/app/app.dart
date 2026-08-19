@@ -82,10 +82,16 @@ class InfinityApp extends StatelessWidget {
                 previous.status != current.status,
             listener: (context, state) {
               final unread = context.read<NotificationsUnreadCubit>();
+              final attendanceSync = context.read<AttendanceSyncCubit>();
+              final overtimeSync = context.read<OvertimeSyncCubit>();
               if (state.status == AuthStatus.authenticated) {
                 unread.refresh();
+                attendanceSync.resumeAuthenticatedSync();
+                overtimeSync.resumeAuthenticatedSync();
               } else if (state.status == AuthStatus.unauthenticated) {
                 unread.clear();
+                attendanceSync.pauseAuthenticatedSync();
+                overtimeSync.pauseAuthenticatedSync();
               }
             },
           ),

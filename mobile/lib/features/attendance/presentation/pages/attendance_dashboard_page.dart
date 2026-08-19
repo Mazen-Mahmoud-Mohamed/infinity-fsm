@@ -7,6 +7,7 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
@@ -82,7 +83,7 @@ class _AttendanceDashboardView extends StatelessWidget {
           );
       },
       child: Scaffold(
-        appBar: AppBar(
+        appBar: TechnicianMainAppBar(
           title: Text(l10n.attendance),
           actions: [
             const NotificationsBellAction(),

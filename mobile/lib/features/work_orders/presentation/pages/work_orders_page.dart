@@ -10,6 +10,7 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
+import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -111,7 +112,7 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
     final pagePad = AppBreakpoints.pagePadding(width);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: TechnicianMainAppBar(
         title: Text(l10n.workOrders),
         actions: const [
           NotificationsBellAction(),

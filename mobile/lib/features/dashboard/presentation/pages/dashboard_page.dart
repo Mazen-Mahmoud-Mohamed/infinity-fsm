@@ -512,9 +512,9 @@ class MainNavigationShell extends StatelessWidget {
       children: [
         BlocBuilder<AppCubit, AppState>(
           buildWhen: (previous, current) =>
-              previous.isOnline != current.isOnline,
+              previous.connectivity != current.connectivity,
           builder: (context, state) {
-            return OfflineBanner(visible: !state.isOnline);
+            return OfflineBanner(snapshot: state.connectivity);
           },
         ),
         Expanded(child: navigationShell),

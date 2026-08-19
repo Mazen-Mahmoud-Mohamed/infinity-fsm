@@ -5,12 +5,23 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
+import 'package:mobile/core/services/connectivity_status.dart';
+import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeConnectivity implements ConnectivityService {
+  @override
+  ConnectivitySnapshot get currentSnapshot => const ConnectivitySnapshot(
+        level: ConnectivityLevel.online,
+        networkAvailable: true,
+        networkType: 'wifi',
+        internetReachable: true,
+        apiReachable: true,
+      );
+
   @override
   Future<bool> get isConnected async => true;
 
@@ -20,6 +31,19 @@ class _FakeConnectivity implements ConnectivityService {
 
   @override
   Stream<bool> get onConnectivityChanged => const Stream.empty();
+
+  @override
+  Stream<ConnectivitySnapshot> get onStatusChanged => const Stream.empty();
+
+  @override
+  Future<ConnectivitySnapshot> refreshStatus({
+    String reason = 'manual',
+    bool forceApiProbe = false,
+  }) async =>
+      currentSnapshot;
+
+  @override
+  Future<void> dispose() async {}
 }
 
 void _setTestLocales(List<Locale> locales) {
@@ -30,7 +54,9 @@ void _setTestLocales(List<Locale> locales) {
 Future<AppCubit> _createCubit(Map<String, Object> prefs) async {
   SharedPreferences.setMockInitialValues(prefs);
   final preferences = PreferencesService(await SharedPreferences.getInstance());
-  return AppCubit(_FakeConnectivity(), preferences);
+  final syncConfiguration = SyncConfigurationService(preferences);
+  await syncConfiguration.load();
+  return AppCubit(_FakeConnectivity(), preferences, syncConfiguration);
 }
 
 void main() {

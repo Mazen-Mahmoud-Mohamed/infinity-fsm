@@ -1228,6 +1228,19 @@
   "overtimeLiveCameraRequired": "Live camera capture is required — gallery selection is disabled.",
 
   "offlineMode": "Offline Mode",
+  "connectivityOnline": "Connected",
+  "connectivityApiUnavailable": "Server connection unavailable",
+  "connectivityNoInternet": "No internet connection",
+  "connectivityNoNetwork": "No network connection",
+  "connectivityPendingSync": "Pending sync: {count}",
+  "@connectivityPendingSync": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "connectivitySyncing": "Syncing...",
   "loadingGeneric": "Loading...",
   "confirm": "Confirm",
   "close": "Close",

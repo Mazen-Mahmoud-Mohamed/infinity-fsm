@@ -1200,6 +1200,19 @@
   "overtimeLiveCameraRequired": "التقاط الصورة عبر الكاميرا المباشرة مطلوب — اختيار الصور من المعرض معطّل.",
 
   "offlineMode": "وضع دون اتصال",
+  "connectivityOnline": "متصل",
+  "connectivityApiUnavailable": "الاتصال بالخادم غير متاح",
+  "connectivityNoInternet": "لا يوجد اتصال بالإنترنت",
+  "connectivityNoNetwork": "لا يوجد اتصال بالشبكة",
+  "connectivityPendingSync": "بيانات معلقة للمزامنة: {count}",
+  "@connectivityPendingSync": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "connectivitySyncing": "جاري المزامنة...",
   "loadingGeneric": "جاري التحميل...",
   "confirm": "تأكيد",
   "close": "إغلاق",

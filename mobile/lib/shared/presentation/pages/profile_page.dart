@@ -9,6 +9,7 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
+import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -46,15 +47,10 @@ class _ProfileView extends StatelessWidget {
     final pagePad = AppBreakpoints.pagePadding(width);
 
     return Scaffold(
-      appBar: AppBar(
+      appBar: TechnicianMainAppBar(
         title: Text(l10n.profile),
-        actions: [
-          const NotificationsBellAction(),
-          IconButton(
-            tooltip: l10n.settings,
-            onPressed: () => context.go(RoutePaths.settings),
-            icon: const Icon(Icons.settings_outlined),
-          ),
+        actions: const [
+          NotificationsBellAction(),
         ],
       ),
       body: BlocBuilder<ProfileCubit, ProfileState>(

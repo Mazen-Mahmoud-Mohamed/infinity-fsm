@@ -3258,6 +3258,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get offlineMode => 'وضع دون اتصال';
 
   @override
+  String get connectivityOnline => 'متصل';
+
+  @override
+  String get connectivityApiUnavailable => 'الاتصال بالخادم غير متاح';
+
+  @override
+  String get connectivityNoInternet => 'لا يوجد اتصال بالإنترنت';
+
+  @override
+  String get connectivityNoNetwork => 'لا يوجد اتصال بالشبكة';
+
+  @override
+  String connectivityPendingSync(int count) {
+    return 'بيانات معلقة للمزامنة: $count';
+  }
+
+  @override
+  String get connectivitySyncing => 'جاري المزامنة...';
+
+  @override
   String get loadingGeneric => 'جاري التحميل...';
 
   @override

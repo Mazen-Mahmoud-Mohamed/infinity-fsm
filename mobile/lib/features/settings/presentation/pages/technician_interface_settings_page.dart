@@ -8,6 +8,7 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
@@ -181,6 +182,9 @@ class TechnicianNoSectionsPage extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
+      appBar: TechnicianMainAppBar(
+        title: Text(l10n.settingsTechnicianNoSectionsTitle),
+      ),
       body: SafeArea(
         child: Center(
           child: Padding(
