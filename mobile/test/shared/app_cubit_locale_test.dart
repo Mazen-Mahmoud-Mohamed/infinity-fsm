@@ -44,6 +44,9 @@ class _FakeConnectivity implements ConnectivityService {
 
   @override
   Future<void> dispose() async {}
+
+  @override
+  void invalidateCachedProbe({String reason = 'invalidate'}) {}
 }
 
 void _setTestLocales(List<Locale> locales) {

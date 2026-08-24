@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:mobile/core/network/network_error_mapper.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
@@ -588,6 +590,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     } on Object catch (error) {
       final failure = NetworkErrorMapper.map<OvertimeSession>(error);
       if (_isConnectivityFailure(failure.code)) {
+        _connectivity.invalidateCachedProbe(reason: 'checkpoint_upload_failed');
         return _queueCheckpoint(
           sessionId: sessionId,
           stage: stage,
@@ -1336,6 +1339,15 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
           var sessionId = enriched.sessionId ?? '';
           sessionId = _resolveSyncedSessionId(sessionId, localIdMap);
           if (sessionId.startsWith('local-')) {
+            OvertimeOfflineTrace.step(
+              'REPO_UPLOAD',
+              status: 'failure',
+              objectId: enriched.id,
+              localId: sessionId,
+              detail:
+                  'mid-checkpoint deferred — session still local-* '
+                  '(waiting for START map or running adopt)',
+            );
             continue;
           }
 
@@ -1984,7 +1996,27 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
       return mapped;
     }
     _seedLocalIdMapFromCaches(localIdMap);
-    return localIdMap[sessionId] ?? sessionId;
+    final fromCache = localIdMap[sessionId];
+    if (fromCache != null && fromCache.isNotEmpty) {
+      return fromCache;
+    }
+
+    // Orphaned mid/end after START left the queue but the durable map was
+    // lost: if the running session is already server-backed, adopt it.
+    final running = _local.readRunningSession();
+    if (running != null && !running.id.startsWith('local-')) {
+      localIdMap[sessionId] = running.id;
+      unawaited(_local.rememberLocalIdMapping(sessionId, running.id));
+      OvertimeOfflineTrace.step(
+        'SYNC_RECONCILE',
+        status: 'success',
+        localId: sessionId,
+        serverId: running.id,
+        detail: 'adopted running server id for orphaned local-* queue item',
+      );
+      return running.id;
+    }
+    return sessionId;
   }
 
   bool _isOrderBlockingFailure(String? code, String message) {

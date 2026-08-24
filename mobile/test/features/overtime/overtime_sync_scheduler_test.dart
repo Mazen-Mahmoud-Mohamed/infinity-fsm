@@ -105,6 +105,9 @@ class _FakeConnectivity implements ConnectivityService {
   Future<void> dispose() async {
     await _controller.close();
   }
+
+  @override
+  void invalidateCachedProbe({String reason = 'invalidate'}) {}
 }
 
 class _FakeGpsAddressSync extends Fake implements GpsAddressSyncService {
@@ -245,6 +248,12 @@ void main() {
       uploadPolicy: _AlwaysUpload(),
       syncConfiguration: syncConfiguration,
     );
+    // Production starts paused until authenticated resume.
+    cubit.resumeAuthenticatedSync();
+    await Future<void>.delayed(const Duration(milliseconds: 40));
+    repository.syncCallCount = 0;
+    repository.syncLog.clear();
+    repository.postLog.clear();
   });
 
   tearDown(() async {

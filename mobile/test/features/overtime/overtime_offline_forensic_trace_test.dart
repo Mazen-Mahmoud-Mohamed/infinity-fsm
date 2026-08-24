@@ -73,6 +73,9 @@ class _FakeConnectivity implements ConnectivityService {
 
   @override
   Future<void> dispose() async {}
+
+  @override
+  void invalidateCachedProbe({String reason = 'invalidate'}) {}
 }
 
 class _FakeAddressResolver extends Fake implements AddressResolverService {

@@ -93,25 +93,29 @@ class AttendanceSyncCubit extends Cubit<AttendanceSyncState> {
   StreamSubscription<SyncConfiguration>? _configSubscription;
   Timer? _retryTimer;
   bool _isSyncing = false;
-  bool _paused = false;
+
+  /// Starts paused until [resumeAuthenticatedSync] (same contract as overtime).
+  bool _paused = true;
   bool _syncRequestedAgain = false;
 
   void pauseAuthenticatedSync() {
     _paused = true;
     _retryTimer?.cancel();
+    _retryTimer = null;
   }
 
   void resumeAuthenticatedSync() {
-    if (!_paused) {
-      return;
-    }
+    final wasPaused = _paused;
     _paused = false;
-    _reconfigurePeriodicTimer();
+    if (wasPaused || _retryTimer == null || !(_retryTimer?.isActive ?? false)) {
+      _reconfigurePeriodicTimer();
+    }
     unawaited(syncNow(force: true));
   }
 
   void _reconfigurePeriodicTimer() {
     _retryTimer?.cancel();
+    _retryTimer = null;
     if (_paused) {
       return;
     }

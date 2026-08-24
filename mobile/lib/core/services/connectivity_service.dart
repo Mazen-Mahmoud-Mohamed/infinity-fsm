@@ -77,6 +77,22 @@ class ConnectivityService {
     });
   }
 
+  /// Drop a cached "API online" probe so the next [refreshStatus] re-checks
+  /// the real backend. Used after authenticated uploads fail with network
+  /// errors while a short TTL still claimed the API was reachable.
+  void invalidateCachedProbe({String reason = 'invalidate'}) {
+    _snapshot = ConnectivitySnapshot.unknown.copyWith(
+      reason: reason,
+      checkedAt: DateTime.now(),
+    );
+    _logger?.debug(
+      'CONNECTIVITY probe invalidated reason=$reason',
+      null,
+      null,
+      AppLogCategory.network,
+    );
+  }
+
   Future<ConnectivitySnapshot> refreshStatus({
     String reason = 'manual',
     bool forceApiProbe = false,

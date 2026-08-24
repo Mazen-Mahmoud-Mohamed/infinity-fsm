@@ -493,9 +493,9 @@ class OvertimeCubit extends Cubit<OvertimeState> {
           unawaited(_refreshMediaConfig());
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
-          if (offlineQueued) {
-            _kickPendingSync();
-          }
+          // Always attempt sync after a checkpoint — items may be queued even
+          // when the session already has a server id (policy / flaky upload).
+          _kickPendingSync();
         case Failure(message: final message, code: final code):
           emit(
             state.copyWith(
@@ -507,26 +507,29 @@ class OvertimeCubit extends Cubit<OvertimeState> {
               isOffline: _isConnectivityCode(code),
             ),
           );
+          if (_isConnectivityCode(code)) {
+            _kickPendingSync();
+          }
+        }
+      } on LocationException catch (error) {
+        emit(
+          state.copyWith(
+            status: OvertimeLoadStatus.ready,
+            clearBusyAction: true,
+            message: error.message,
+            isError: true,
+          ),
+        );
+      } on Object {
+        emit(
+          state.copyWith(
+            status: OvertimeLoadStatus.ready,
+            clearBusyAction: true,
+            message: 'errorGeneric',
+            isError: true,
+          ),
+        );
       }
-    } on LocationException catch (error) {
-      emit(
-        state.copyWith(
-          status: OvertimeLoadStatus.ready,
-          clearBusyAction: true,
-          message: error.message,
-          isError: true,
-        ),
-      );
-    } on Object {
-      emit(
-        state.copyWith(
-          status: OvertimeLoadStatus.ready,
-          clearBusyAction: true,
-          message: 'errorGeneric',
-          isError: true,
-        ),
-      );
-    }
   }
 
   Future<void> endSession() async {
@@ -616,9 +619,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
           unawaited(_refreshMediaConfig());
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
-          if (offlineQueued) {
-            _kickPendingSync();
-          }
+          _kickPendingSync();
         case Failure(message: final message, code: final code):
           emit(
             state.copyWith(
@@ -846,9 +847,7 @@ class OvertimeCubit extends Cubit<OvertimeState> {
           unawaited(_refreshMediaConfig());
           unawaited(_deviceTimeGuard.syncSecurityEvents());
           unawaited(_gpsAddressSync.processQueue());
-          if (offlineQueued) {
-            _kickPendingSync();
-          }
+          _kickPendingSync();
         case Failure(message: final message, code: final code):
           final isConflict =
               code == 'CONFLICT' ||
@@ -988,9 +987,10 @@ class OvertimeCubit extends Cubit<OvertimeState> {
 
   Future<void> _kickPendingSync() async {
     unawaited(_overtimeSyncCubit.refreshPendingCount());
-    if (await _uploadPolicyService.shouldAutoSync()) {
-      unawaited(_overtimeSyncCubit.syncNow());
-    }
+    // Always request a queue drain after enqueue. Capture-time upload policy
+    // is enforced inside syncNow for non-scheduled reasons; `post_queue` is a
+    // scheduled drain (same as the periodic timer).
+    unawaited(_overtimeSyncCubit.syncNow(reason: 'post_queue'));
   }
 
   @override

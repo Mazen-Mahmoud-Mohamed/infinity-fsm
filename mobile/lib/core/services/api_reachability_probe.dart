@@ -24,7 +24,7 @@ class ApiReachabilityProbe {
     Duration? timeout,
   })  : _envConfig = envConfig,
         _logger = logger,
-        _timeout = timeout ?? const Duration(seconds: 5);
+        _timeout = timeout ?? const Duration(seconds: 15);
 
   final EnvConfig _envConfig;
   final LoggerService? _logger;

@@ -44,8 +44,52 @@ class InfinityApp extends StatelessWidget {
           value: getIt<TechnicianInterfaceCubit>(),
         ),
       ],
-      child: MultiBlocListener(
-        listeners: [
+      child: const _InfinityAppAuthSyncBootstrap(
+        child: _InfinityAppShell(),
+      ),
+    );
+  }
+}
+
+/// Ensures overtime/attendance sync is armed when Auth is already authenticated
+/// (BlocListener does not fire for the initial state).
+class _InfinityAppAuthSyncBootstrap extends StatefulWidget {
+  const _InfinityAppAuthSyncBootstrap({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_InfinityAppAuthSyncBootstrap> createState() =>
+      _InfinityAppAuthSyncBootstrapState();
+}
+
+class _InfinityAppAuthSyncBootstrapState
+    extends State<_InfinityAppAuthSyncBootstrap> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      if (context.read<AuthCubit>().state.status == AuthStatus.authenticated) {
+        context.read<OvertimeSyncCubit>().resumeAuthenticatedSync();
+        context.read<AttendanceSyncCubit>().resumeAuthenticatedSync();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
+}
+
+class _InfinityAppShell extends StatelessWidget {
+  const _InfinityAppShell();
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
         BlocListener<AuthCubit, AuthState>(
           listenWhen: (previous, current) =>
               previous.status != current.status &&
@@ -57,111 +101,110 @@ class InfinityApp extends StatelessWidget {
         BlocListener<AuthCubit, AuthState>(
           listenWhen: (previous, current) =>
               previous.message != current.message &&
-                current.message != null &&
-                !isUserFacingNetworkNoise(current.message),
-            listener: (context, state) {
-              if (state.message == null ||
-                  isUserFacingNetworkNoise(state.message)) {
-                return;
-              }
-              scaffoldMessengerKey.currentState
-                ?..hideCurrentSnackBar()
-                ..showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      localizeAppMessage(
-                        AppLocalizations.of(context),
-                        state.message,
-                      ),
+              current.message != null &&
+              !isUserFacingNetworkNoise(current.message),
+          listener: (context, state) {
+            if (state.message == null ||
+                isUserFacingNetworkNoise(state.message)) {
+              return;
+            }
+            InfinityApp.scaffoldMessengerKey.currentState
+              ?..hideCurrentSnackBar()
+              ..showSnackBar(
+                SnackBar(
+                  content: Text(
+                    localizeAppMessage(
+                      AppLocalizations.of(context),
+                      state.message,
                     ),
                   ),
-                );
-            },
-          ),
-          BlocListener<AuthCubit, AuthState>(
-            listenWhen: (previous, current) =>
-                previous.status != current.status,
-            listener: (context, state) {
-              final unread = context.read<NotificationsUnreadCubit>();
-              final attendanceSync = context.read<AttendanceSyncCubit>();
-              final overtimeSync = context.read<OvertimeSyncCubit>();
-              if (state.status == AuthStatus.authenticated) {
-                unread.refresh();
-                attendanceSync.resumeAuthenticatedSync();
-                overtimeSync.resumeAuthenticatedSync();
-              } else if (state.status == AuthStatus.unauthenticated) {
-                unread.clear();
-                getIt<AttendanceCubit>().resetForLogout();
-                attendanceSync.pauseAuthenticatedSync();
-                overtimeSync.pauseAuthenticatedSync();
-              }
-            },
-          ),
-        ],
-        child: BlocBuilder<AppCubit, AppState>(
-          buildWhen: (previous, current) =>
-              previous.themeMode != current.themeMode ||
-              previous.localeCode != current.localeCode ||
-              previous.largeText != current.largeText ||
-              previous.reduceAnimations != current.reduceAnimations ||
-              previous.highContrast != current.highContrast,
-          builder: (context, appState) {
-            return MaterialApp.router(
-              scaffoldMessengerKey: scaffoldMessengerKey,
-              title: AppConfig.appName,
-              theme: AppTheme.light(),
-              darkTheme: AppTheme.dark(),
-              themeMode: appState.themeMode,
-              locale: appState.locale,
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: AppLocalizations.supportedLocales,
-              routerConfig: getIt<GoRouter>(),
-              builder: (context, child) {
-                final theme = Theme.of(context);
-                AppSystemUi.apply(theme);
-                final media = MediaQuery.of(context);
-                final scaled = media.copyWith(
-                  textScaler: TextScaler.linear(
-                    appState.largeText ? 1.2 : media.textScaler.scale(1),
-                  ),
-                  disableAnimations: appState.reduceAnimations,
-                  boldText: appState.highContrast ? true : media.boldText,
-                );
-                return MediaQuery(
-                  data: scaled,
-                  child: AnnotatedRegion(
-                    value: AppSystemUi.overlayFor(theme),
-                    child: Shortcuts(
-                      shortcuts: const <ShortcutActivator, Intent>{
-                        SingleActivator(LogicalKeyboardKey.keyK, control: true):
-                            OpenGlobalSearchIntent(),
-                        SingleActivator(LogicalKeyboardKey.keyK, meta: true):
-                            OpenGlobalSearchIntent(),
-                      },
-                      child: Actions(
-                        actions: <Type, Action<Intent>>{
-                          OpenGlobalSearchIntent:
-                              CallbackAction<OpenGlobalSearchIntent>(
-                            onInvoke: (_) {
-                              openGlobalSearch(context);
-                              return null;
-                            },
-                          ),
-                        },
-                        child: child ?? const SizedBox.shrink(),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            );
+                ),
+              );
           },
         ),
+        BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) =>
+              previous.status != current.status,
+          listener: (context, state) {
+            final unread = context.read<NotificationsUnreadCubit>();
+            final attendanceSync = context.read<AttendanceSyncCubit>();
+            final overtimeSync = context.read<OvertimeSyncCubit>();
+            if (state.status == AuthStatus.authenticated) {
+              unread.refresh();
+              attendanceSync.resumeAuthenticatedSync();
+              overtimeSync.resumeAuthenticatedSync();
+            } else if (state.status == AuthStatus.unauthenticated) {
+              unread.clear();
+              getIt<AttendanceCubit>().resetForLogout();
+              attendanceSync.pauseAuthenticatedSync();
+              overtimeSync.pauseAuthenticatedSync();
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<AppCubit, AppState>(
+        buildWhen: (previous, current) =>
+            previous.themeMode != current.themeMode ||
+            previous.localeCode != current.localeCode ||
+            previous.largeText != current.largeText ||
+            previous.reduceAnimations != current.reduceAnimations ||
+            previous.highContrast != current.highContrast,
+        builder: (context, appState) {
+          return MaterialApp.router(
+            scaffoldMessengerKey: InfinityApp.scaffoldMessengerKey,
+            title: AppConfig.appName,
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
+            themeMode: appState.themeMode,
+            locale: appState.locale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            routerConfig: getIt<GoRouter>(),
+            builder: (context, child) {
+              final theme = Theme.of(context);
+              AppSystemUi.apply(theme);
+              final media = MediaQuery.of(context);
+              final scaled = media.copyWith(
+                textScaler: TextScaler.linear(
+                  appState.largeText ? 1.2 : media.textScaler.scale(1),
+                ),
+                disableAnimations: appState.reduceAnimations,
+                boldText: appState.highContrast ? true : media.boldText,
+              );
+              return MediaQuery(
+                data: scaled,
+                child: AnnotatedRegion(
+                  value: AppSystemUi.overlayFor(theme),
+                  child: Shortcuts(
+                    shortcuts: const <ShortcutActivator, Intent>{
+                      SingleActivator(LogicalKeyboardKey.keyK, control: true):
+                          OpenGlobalSearchIntent(),
+                      SingleActivator(LogicalKeyboardKey.keyK, meta: true):
+                          OpenGlobalSearchIntent(),
+                    },
+                    child: Actions(
+                      actions: <Type, Action<Intent>>{
+                        OpenGlobalSearchIntent:
+                            CallbackAction<OpenGlobalSearchIntent>(
+                          onInvoke: (_) {
+                            openGlobalSearch(context);
+                            return null;
+                          },
+                        ),
+                      },
+                      child: child ?? const SizedBox.shrink(),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
