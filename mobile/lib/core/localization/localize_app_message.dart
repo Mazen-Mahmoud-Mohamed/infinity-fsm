@@ -124,6 +124,14 @@ String localizeAppMessage(
       return l10n.workOrderJobTitleRequired;
     case 'workOrderJobTitleMaxLength':
       return l10n.workOrderJobTitleMaxLength;
+    case 'workOrderLocationUrlInvalid':
+      return l10n.workOrderLocationUrlInvalid;
+    case 'workOrderCustomerPhoneInvalid':
+      return l10n.workOrderCustomerPhoneInvalid;
+    case 'workOrderMaxCustomerPhonesReached':
+      return l10n.workOrderMaxCustomerPhonesReached;
+    case 'workOrderMaxAttachmentsReached':
+      return l10n.workOrderMaxAttachmentsReached;
     case 'workOrderUpdated':
       return l10n.workOrderUpdated;
     case 'workOrderCreated':

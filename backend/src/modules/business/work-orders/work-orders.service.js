@@ -3,7 +3,10 @@ import WorkOrder, {
   WORK_ORDER_STATUSES,
 } from './models/workOrder.model.js';
 import User from '../../core/organization/models/user.model.js';
-import { uploadWorkOrderAttachmentBuffer } from './work-orders.upload.js';
+import {
+  uploadWorkOrderAttachmentBuffer,
+  uploadWorkOrderVoiceNoteBuffer,
+} from './work-orders.upload.js';
 import {
   displayUserName,
   mapFieldLocation,
@@ -33,6 +36,8 @@ const WORK_ORDER_LIST_SELECT = [
   'customerName',
   'assignedTechnicianId',
   'assignedTechnicianName',
+  'assignedTechnicianIds',
+  'assignedTechnicianNames',
   'priority',
   'status',
   'scheduledAt',
@@ -53,6 +58,194 @@ function escapeRegex(value) {
 
 function toId(value) {
   return value?.toString?.() ?? value ?? null;
+}
+
+/** Resolve assignee id list from multi- or single-assignee fields (backward compatible). */
+function resolveAssigneeIds(record) {
+  const multi = Array.isArray(record.assignedTechnicianIds)
+    ? record.assignedTechnicianIds.map(toId).filter(Boolean)
+    : [];
+  if (multi.length) {
+    return [...new Set(multi)];
+  }
+  const single = toId(record.assignedTechnicianId);
+  return single ? [single] : [];
+}
+
+function isUserAssignee(user, record) {
+  const userId = toId(user._id);
+  return resolveAssigneeIds(record).includes(userId);
+}
+
+function parseTechnicianIdsFromBody(body) {
+  if (!body || typeof body !== 'object') {
+    return null;
+  }
+
+  if (body.assignedTechnicianIds !== undefined) {
+    let raw = body.assignedTechnicianIds;
+    if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      if (!trimmed || trimmed === 'null') {
+        return [];
+      }
+      try {
+        raw = JSON.parse(trimmed);
+      } catch {
+        raw = trimmed.split(',').map((part) => part.trim()).filter(Boolean);
+      }
+    }
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+    return [...new Set(raw.map((id) => String(id || '').trim()).filter(Boolean))];
+  }
+
+  if (body.assignedTechnicianId !== undefined) {
+    const single = body.assignedTechnicianId;
+    if (single === '' || single === null || single === 'null') {
+      return [];
+    }
+    return [String(single)];
+  }
+
+  return null;
+}
+
+function normalizeLocationUrl(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null || value === '') {
+    return null;
+  }
+  const trimmed = String(value).trim();
+  if (!trimmed) {
+    return null;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new AppError('INVALID_LOCATION_URL', 'locationUrl must be http(s)', 422);
+    }
+    return trimmed;
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error;
+    }
+    throw new AppError('INVALID_LOCATION_URL', 'locationUrl must be a valid URL', 422);
+  }
+}
+
+/** Soft cap for customer phone numbers on a single work order. */
+export const MAX_CUSTOMER_PHONE_NUMBERS = 20;
+const CUSTOMER_PHONE_MAX_LENGTH = 40;
+
+/**
+ * Parse optional customerPhoneNumbers from JSON body / multipart string.
+ * Returns undefined when the field was not sent (leave existing value).
+ * Returns [] for clear/empty. Preserves trimmed user input (no country rewrite).
+ */
+export function normalizeCustomerPhoneNumbers(raw) {
+  if (raw === undefined) {
+    return undefined;
+  }
+  if (raw === null || raw === '') {
+    return [];
+  }
+
+  let list = raw;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed === 'null') {
+      return [];
+    }
+    try {
+      list = JSON.parse(trimmed);
+    } catch {
+      list = trimmed.split(/[\n,;]+/).map((part) => part.trim());
+    }
+  }
+
+  if (!Array.isArray(list)) {
+    throw new AppError(
+      'INVALID_CUSTOMER_PHONES',
+      'customerPhoneNumbers must be an array of strings',
+      422
+    );
+  }
+
+  if (list.length > MAX_CUSTOMER_PHONE_NUMBERS) {
+    throw new AppError(
+      'TOO_MANY_CUSTOMER_PHONES',
+      `customerPhoneNumbers allows at most ${MAX_CUSTOMER_PHONE_NUMBERS} numbers`,
+      422
+    );
+  }
+
+  const result = [];
+  const seenDigits = new Set();
+
+  for (const item of list) {
+    if (item === null || item === undefined) {
+      continue;
+    }
+    if (typeof item !== 'string' && typeof item !== 'number') {
+      throw new AppError(
+        'INVALID_CUSTOMER_PHONES',
+        'Each customer phone number must be a string',
+        422
+      );
+    }
+    const trimmed = String(item).trim();
+    if (!trimmed) {
+      continue;
+    }
+    if (trimmed.length > CUSTOMER_PHONE_MAX_LENGTH) {
+      throw new AppError(
+        'INVALID_CUSTOMER_PHONES',
+        `Each phone number must be at most ${CUSTOMER_PHONE_MAX_LENGTH} characters`,
+        422
+      );
+    }
+    // International-friendly: optional +, digits, spaces, dashes, parentheses, dots.
+    if (!/^[+]?[\d\s().\-]+$/.test(trimmed)) {
+      throw new AppError(
+        'INVALID_CUSTOMER_PHONES',
+        'Phone numbers may only contain digits and common phone punctuation',
+        422
+      );
+    }
+    const digits = trimmed.replace(/\D/g, '');
+    if (digits.length < 7 || digits.length > 15) {
+      throw new AppError(
+        'INVALID_CUSTOMER_PHONES',
+        'Each phone number must contain between 7 and 15 digits',
+        422
+      );
+    }
+    if (seenDigits.has(digits)) {
+      continue;
+    }
+    seenDigits.add(digits);
+    result.push(trimmed);
+  }
+
+  return result;
+}
+
+function mapVoiceNote(voiceNote) {
+  if (!voiceNote?.url) {
+    return null;
+  }
+  return {
+    url: voiceNote.url,
+    publicId: voiceNote.publicId || null,
+    duration: voiceNote.duration ?? null,
+    size: voiceNote.size ?? null,
+    format: voiceNote.format || null,
+    uploadedAt: voiceNote.uploadedAt?.toISOString?.() || voiceNote.uploadedAt || null,
+  };
 }
 
 function parseOptionalDate(value) {
@@ -157,6 +350,7 @@ class WorkOrdersService {
         { jobTitle: { $regex: term, $options: 'i' } },
         { customerName: { $regex: term, $options: 'i' } },
         { locationLabel: { $regex: term, $options: 'i' } },
+        { locationUrl: { $regex: term, $options: 'i' } },
         { description: { $regex: term, $options: 'i' } },
         { assignedTechnicianName: { $regex: term, $options: 'i' } },
       ];
@@ -168,8 +362,11 @@ class WorkOrdersService {
   async listMyAssignments(user, { page = 1, limit = 20, status, search } = {}) {
     const filter = {
       companyId: user.companyId,
-      assignedTechnicianId: user._id,
       deletedAt: null,
+      $or: [
+        { assignedTechnicianId: user._id },
+        { assignedTechnicianIds: user._id },
+      ],
     };
 
     const statusFilter = normalizeStatusFilter(status);
@@ -179,12 +376,17 @@ class WorkOrdersService {
 
     if (search && String(search).trim()) {
       const term = escapeRegex(String(search).trim());
-      filter.$or = [
-        { jobNumber: { $regex: term, $options: 'i' } },
-        { jobTitle: { $regex: term, $options: 'i' } },
-        { customerName: { $regex: term, $options: 'i' } },
-        { locationLabel: { $regex: term, $options: 'i' } },
-        { description: { $regex: term, $options: 'i' } },
+      filter.$and = [
+        {
+          $or: [
+            { jobNumber: { $regex: term, $options: 'i' } },
+            { jobTitle: { $regex: term, $options: 'i' } },
+            { customerName: { $regex: term, $options: 'i' } },
+            { locationLabel: { $regex: term, $options: 'i' } },
+            { locationUrl: { $regex: term, $options: 'i' } },
+            { description: { $regex: term, $options: 'i' } },
+          ],
+        },
       ];
     }
 
@@ -197,7 +399,7 @@ class WorkOrdersService {
     return this._map(record);
   }
 
-  async create(user, auth, body, files = []) {
+  async create(user, auth, body, files = [], voiceNoteFile = null) {
     if (!auth.permissions.includes(PERMISSIONS.WORK_ORDERS_CREATE)) {
       throw new ForbiddenError('You do not have permission to create work orders');
     }
@@ -210,14 +412,23 @@ class WorkOrdersService {
     const priority = normalizePriority(body.priority);
     const scheduledAt = parseOptionalDate(body.scheduledAt);
     const customerAddress = parseCustomerAddress(body.customerAddress);
-    const assignee = await this._resolveTechnician(
-      auth.companyId,
-      body.assignedTechnicianId
-    );
+    const technicianIds = parseTechnicianIdsFromBody(body) || [];
+    const assignees = await this._resolveTechnicians(auth.companyId, technicianIds);
+    const locationUrl = normalizeLocationUrl(body.locationUrl ?? undefined);
+    const locationLabelRaw = body.locationLabel?.toString?.()?.trim?.() || null;
+    const locationLabel =
+      locationLabelRaw ||
+      (locationUrl !== undefined && locationUrl ? locationUrl : null);
+    const customerPhoneNumbers =
+      normalizeCustomerPhoneNumbers(body.customerPhoneNumbers) ?? [];
 
     const attachments = await this._uploadFiles(auth.companyId, files);
+    const voiceNote = voiceNoteFile
+      ? await this._uploadVoiceNote(auth.companyId, voiceNoteFile)
+      : undefined;
     const jobNumber = await this._nextJobNumber(auth.companyId);
-    const status = assignee ? 'ASSIGNED' : 'PENDING';
+    const status = assignees.length ? 'ASSIGNED' : 'PENDING';
+    const primary = assignees[0] || null;
 
     const record = await WorkOrder.create({
       companyId: auth.companyId,
@@ -225,15 +436,20 @@ class WorkOrdersService {
       jobTitle,
       customerName: body.customerName?.toString?.()?.trim?.() || null,
       customerAddress,
-      locationLabel: body.locationLabel?.toString?.()?.trim?.() || null,
-      assignedTechnicianId: assignee?._id || null,
-      assignedTechnicianName: technicianDisplayName(assignee),
+      customerPhoneNumbers,
+      locationLabel,
+      locationUrl: locationUrl === undefined ? null : locationUrl,
+      assignedTechnicianId: primary?._id || null,
+      assignedTechnicianName: technicianDisplayName(primary),
+      assignedTechnicianIds: assignees.map((tech) => tech._id),
+      assignedTechnicianNames: assignees.map((tech) => technicianDisplayName(tech)),
       createdBy: user._id,
       organizationSnapshot: buildOrgSnapshot(user),
       priority,
       status,
       description: body.description?.toString?.()?.trim?.() || null,
       notes: body.notes?.toString?.()?.trim?.() || null,
+      ...(voiceNote ? { voiceNote } : {}),
       scheduledAt,
       attachments,
       timeline: [
@@ -244,14 +460,14 @@ class WorkOrdersService {
           userName: displayUserName(user),
           note: null,
         },
-        ...(assignee
+        ...(assignees.length
           ? [
               {
                 type: 'ASSIGNED',
                 at: new Date(),
                 userId: user._id,
                 userName: displayUserName(user),
-                note: technicianDisplayName(assignee),
+                note: assignees.map((tech) => technicianDisplayName(tech)).join(', '),
               },
             ]
           : []),
@@ -277,7 +493,7 @@ class WorkOrdersService {
     return this._map(record);
   }
 
-  async update(user, auth, id, body, files = []) {
+  async update(user, auth, id, body, files = [], voiceNoteFile = null) {
     if (!auth.permissions.includes(PERMISSIONS.WORK_ORDERS_UPDATE)) {
       throw new ForbiddenError('You do not have permission to update work orders');
     }
@@ -300,12 +516,28 @@ class WorkOrdersService {
       record.customerName = body.customerName?.toString?.()?.trim?.() || null;
     }
 
+    if (body.customerPhoneNumbers !== undefined) {
+      record.customerPhoneNumbers =
+        normalizeCustomerPhoneNumbers(body.customerPhoneNumbers) ?? [];
+    }
+
     if (body.customerAddress !== undefined) {
       record.customerAddress = parseCustomerAddress(body.customerAddress);
     }
 
     if (body.locationLabel !== undefined) {
       record.locationLabel = body.locationLabel?.toString?.()?.trim?.() || null;
+    }
+
+    if (body.locationUrl !== undefined) {
+      const locationUrl = normalizeLocationUrl(body.locationUrl);
+      record.locationUrl = locationUrl;
+      if (locationUrl && (body.locationLabel === undefined || !body.locationLabel)) {
+        record.locationLabel = locationUrl;
+      }
+      if (locationUrl === null && body.locationLabel === undefined) {
+        // clearing URL only — keep legacy locationLabel unless also cleared
+      }
     }
 
     if (body.description !== undefined) {
@@ -331,14 +563,9 @@ class WorkOrdersService {
           : Number(body.estimatedDurationMinutes);
     }
 
-    if (body.assignedTechnicianId !== undefined) {
-      const technicianId =
-        body.assignedTechnicianId === '' ||
-        body.assignedTechnicianId === null ||
-        body.assignedTechnicianId === 'null'
-          ? null
-          : body.assignedTechnicianId;
-      await this._applyAssignment(record, auth.companyId, technicianId);
+    const technicianIds = parseTechnicianIdsFromBody(body);
+    if (technicianIds !== null) {
+      await this._applyAssignments(record, auth.companyId, technicianIds);
     }
 
     const uploaded = files?.length
@@ -362,6 +589,12 @@ class WorkOrdersService {
       record.attachments = [...kept, ...uploaded];
     } else if (uploaded.length) {
       record.attachments = [...(record.attachments || []), ...uploaded];
+    }
+
+    if (body.clearVoiceNote === 'true' || body.clearVoiceNote === true) {
+      record.voiceNote = undefined;
+    } else if (voiceNoteFile) {
+      record.voiceNote = await this._uploadVoiceNote(auth.companyId, voiceNoteFile);
     }
 
     await record.save();
@@ -418,7 +651,15 @@ class WorkOrdersService {
       );
     }
 
-    await this._applyAssignment(record, auth.companyId, body.assignedTechnicianId);
+    const technicianIds = parseTechnicianIdsFromBody(body);
+    if (technicianIds === null || !technicianIds.length) {
+      throw new AppError(
+        'TECHNICIAN_REQUIRED',
+        'assignedTechnicianId or assignedTechnicianIds is required',
+        422
+      );
+    }
+    await this._applyAssignments(record, auth.companyId, technicianIds);
 
     if (body.priority !== undefined) {
       record.priority = normalizePriority(body.priority);
@@ -430,7 +671,7 @@ class WorkOrdersService {
     pushTimeline(record, {
       type: 'ASSIGNED',
       user,
-      note: record.assignedTechnicianName,
+      note: (record.assignedTechnicianNames || []).join(', ') || record.assignedTechnicianName,
     });
 
     await record.save();
@@ -549,8 +790,7 @@ class WorkOrdersService {
 
     const record = await this._findActive(id, auth.companyId);
 
-    const isAssignee =
-      toId(record.assignedTechnicianId) === toId(user._id);
+    const isAssignee = isUserAssignee(user, record);
     const canManage =
       auth.permissions.includes(PERMISSIONS.WORK_ORDERS_VIEW_ALL) ||
       auth.permissions.includes(PERMISSIONS.WORK_ORDERS_VIEW_TEAM);
@@ -882,19 +1122,46 @@ class WorkOrdersService {
     return technician;
   }
 
+  async _resolveTechnicians(companyId, technicianIds = []) {
+    const unique = [...new Set((technicianIds || []).map(String).filter(Boolean))];
+    const technicians = [];
+    for (const id of unique) {
+      const technician = await this._resolveTechnician(companyId, id);
+      if (technician) {
+        technicians.push(technician);
+      }
+    }
+    return technicians;
+  }
+
   async _applyAssignment(record, companyId, technicianId) {
-    if (!technicianId) {
+    await this._applyAssignments(
+      record,
+      companyId,
+      technicianId ? [technicianId] : []
+    );
+  }
+
+  async _applyAssignments(record, companyId, technicianIds = []) {
+    const technicians = await this._resolveTechnicians(companyId, technicianIds);
+
+    if (!technicians.length) {
       record.assignedTechnicianId = null;
       record.assignedTechnicianName = null;
+      record.assignedTechnicianIds = [];
+      record.assignedTechnicianNames = [];
       if (record.status === 'ASSIGNED' || record.status === 'REJECTED') {
         record.status = 'PENDING';
       }
       return;
     }
 
-    const technician = await this._resolveTechnician(companyId, technicianId);
-    record.assignedTechnicianId = technician._id;
-    record.assignedTechnicianName = technicianDisplayName(technician);
+    record.assignedTechnicianIds = technicians.map((tech) => tech._id);
+    record.assignedTechnicianNames = technicians.map((tech) =>
+      technicianDisplayName(tech)
+    );
+    record.assignedTechnicianId = technicians[0]._id;
+    record.assignedTechnicianName = technicianDisplayName(technicians[0]);
     record.status = 'ASSIGNED';
     record.acceptedAt = null;
     record.rejectedAt = null;
@@ -919,6 +1186,19 @@ class WorkOrdersService {
     return uploads;
   }
 
+  async _uploadVoiceNote(companyId, file) {
+    if (!file?.buffer) {
+      return null;
+    }
+    const format =
+      file.originalname?.split?.('.')?.pop?.() ||
+      (file.mimetype?.includes('mpeg') ? 'mp3' : 'm4a');
+    return uploadWorkOrderVoiceNoteBuffer(file.buffer, {
+      companyId: companyId.toString(),
+      format,
+    });
+  }
+
   _assertCanListCompany(auth) {
     if (
       auth.permissions.includes(PERMISSIONS.WORK_ORDERS_VIEW_ALL) ||
@@ -939,7 +1219,7 @@ class WorkOrdersService {
 
     if (
       auth.permissions.includes(PERMISSIONS.WORK_ORDERS_VIEW_OWN) &&
-      toId(record.assignedTechnicianId) === toId(user._id)
+      isUserAssignee(user, record)
     ) {
       return;
     }
@@ -952,12 +1232,20 @@ class WorkOrdersService {
       throw new ForbiddenError('You do not have permission for this action');
     }
 
-    if (toId(record.assignedTechnicianId) !== toId(user._id)) {
+    if (!isUserAssignee(user, record)) {
       throw new ForbiddenError('Only the assigned technician can perform this action');
     }
   }
 
   _map(doc) {
+    const assigneeIds = resolveAssigneeIds(doc);
+    const assigneeNames = Array.isArray(doc.assignedTechnicianNames) &&
+      doc.assignedTechnicianNames.length
+      ? doc.assignedTechnicianNames
+      : doc.assignedTechnicianName
+        ? [doc.assignedTechnicianName]
+        : [];
+
     return {
       id: doc._id.toString(),
       companyId: toId(doc.companyId),
@@ -965,6 +1253,9 @@ class WorkOrdersService {
       jobTitle: doc.jobTitle,
       customerId: toId(doc.customerId),
       customerName: doc.customerName,
+      customerPhoneNumbers: Array.isArray(doc.customerPhoneNumbers)
+        ? doc.customerPhoneNumbers.filter((n) => typeof n === 'string' && n.trim())
+        : [],
       customerAddress: doc.customerAddress
         ? {
             street: doc.customerAddress.street || null,
@@ -975,8 +1266,11 @@ class WorkOrdersService {
           }
         : null,
       locationLabel: doc.locationLabel,
+      locationUrl: doc.locationUrl || null,
       assignedTechnicianId: toId(doc.assignedTechnicianId),
       assignedTechnicianName: doc.assignedTechnicianName,
+      assignedTechnicianIds: assigneeIds,
+      assignedTechnicianNames: assigneeNames,
       supervisorId: toId(doc.supervisorId),
       createdBy: toId(doc.createdBy),
       organizationSnapshot: doc.organizationSnapshot
@@ -993,6 +1287,7 @@ class WorkOrdersService {
       status: doc.status,
       description: doc.description,
       notes: doc.notes,
+      voiceNote: mapVoiceNote(doc.voiceNote),
       scheduledAt: doc.scheduledAt?.toISOString?.() || null,
       attachments: (doc.attachments || []).map((item) => ({
         url: item.url,
@@ -1031,6 +1326,14 @@ class WorkOrdersService {
    * Detail remains on GET /:id via [_map].
    */
   _mapList(doc) {
+    const assigneeIds = resolveAssigneeIds(doc);
+    const assigneeNames = Array.isArray(doc.assignedTechnicianNames) &&
+      doc.assignedTechnicianNames.length
+      ? doc.assignedTechnicianNames
+      : doc.assignedTechnicianName
+        ? [doc.assignedTechnicianName]
+        : [];
+
     return {
       id: doc._id.toString(),
       companyId: toId(doc.companyId),
@@ -1039,6 +1342,8 @@ class WorkOrdersService {
       customerName: doc.customerName || null,
       assignedTechnicianId: toId(doc.assignedTechnicianId),
       assignedTechnicianName: doc.assignedTechnicianName || null,
+      assignedTechnicianIds: assigneeIds,
+      assignedTechnicianNames: assigneeNames,
       priority: doc.priority,
       status: doc.status,
       scheduledAt: doc.scheduledAt?.toISOString?.() || doc.scheduledAt || null,

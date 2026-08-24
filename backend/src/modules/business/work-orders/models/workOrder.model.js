@@ -111,6 +111,19 @@ const organizationSnapshotSchema = new Schema(
   { _id: false }
 );
 
+/** Optional admin voice note (Cloudinary; no binary in MongoDB). */
+const voiceNoteSchema = new Schema(
+  {
+    url: { type: String, required: true },
+    publicId: { type: String, default: null },
+    duration: { type: Number, default: null, min: 0 },
+    size: { type: Number, default: null, min: 0 },
+    format: { type: String, default: null, trim: true, maxlength: 20 },
+    uploadedAt: { type: Date, default: null },
+  },
+  { _id: false }
+);
+
 const workOrderSchema = new Schema(
   {
     companyId: {
@@ -140,6 +153,17 @@ const workOrderSchema = new Schema(
       default: null,
       maxlength: 200,
     },
+    /** Optional customer contact numbers (international-friendly; additive). */
+    customerPhoneNumbers: {
+      type: [
+        {
+          type: String,
+          trim: true,
+          maxlength: 40,
+        },
+      ],
+      default: [],
+    },
     customerAddress: {
       type: customerAddressSchema,
       default: null,
@@ -149,6 +173,13 @@ const workOrderSchema = new Schema(
       trim: true,
       default: null,
       maxlength: 300,
+    },
+    /** External map / location link (Google Maps, etc.). Additive; keeps locationLabel. */
+    locationUrl: {
+      type: String,
+      trim: true,
+      default: null,
+      maxlength: 2000,
     },
     assignedTechnicianId: {
       type: Schema.Types.ObjectId,
@@ -160,6 +191,15 @@ const workOrderSchema = new Schema(
       type: String,
       trim: true,
       default: null,
+    },
+    /** Multi-assignee support. Primary remains assignedTechnicianId (first entry). */
+    assignedTechnicianIds: {
+      type: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+      default: [],
+    },
+    assignedTechnicianNames: {
+      type: [String],
+      default: [],
     },
     supervisorId: {
       type: Schema.Types.ObjectId,
@@ -199,6 +239,11 @@ const workOrderSchema = new Schema(
       trim: true,
       default: null,
       maxlength: 5000,
+    },
+    /** Optional admin voice note attached to work-order notes (Cloudinary). */
+    voiceNote: {
+      type: voiceNoteSchema,
+      default: undefined,
     },
     scheduledAt: {
       type: Date,
@@ -310,6 +355,7 @@ const workOrderSchema = new Schema(
 workOrderSchema.index({ companyId: 1, jobNumber: 1 }, { unique: true });
 workOrderSchema.index({ companyId: 1, status: 1, createdAt: -1 });
 workOrderSchema.index({ companyId: 1, assignedTechnicianId: 1, status: 1 });
+workOrderSchema.index({ companyId: 1, assignedTechnicianIds: 1, status: 1 });
 workOrderSchema.index({ companyId: 1, scheduledAt: 1 });
 // Soft-delete list / dashboard WO match: companyId + deletedAt + createdAt.
 workOrderSchema.index({ companyId: 1, deletedAt: 1, createdAt: -1 });

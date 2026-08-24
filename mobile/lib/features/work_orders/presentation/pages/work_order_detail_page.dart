@@ -95,7 +95,7 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                 workOrder == null;
         final isAssignee = workOrder != null &&
             currentUserId != null &&
-            workOrder.assignedTechnicianId == currentUserId;
+            workOrder.isAssignedTo(currentUserId);
         final canExecute = isAssignee;
 
         final bottomBar = workOrder == null
@@ -430,7 +430,9 @@ class _HeaderSection extends StatelessWidget {
                 Chip(
                   avatar: const Icon(Icons.engineering_outlined, size: 16),
                   label: Text(
-                    workOrder.assignedTechnicianName ?? unassignedLabel,
+                    workOrder.assigneesDisplay.isNotEmpty
+                        ? workOrder.assigneesDisplay
+                        : unassignedLabel,
                   ),
                   visualDensity: VisualDensity.compact,
                 ),
@@ -489,10 +491,10 @@ class _PrimaryActionBar extends StatelessWidget {
   final VoidCallback onAssign;
 
   bool _isAssignee(WorkOrder workOrder) {
-    if (currentUserId == null || workOrder.assignedTechnicianId == null) {
+    if (currentUserId == null) {
       return false;
     }
-    return workOrder.assignedTechnicianId == currentUserId;
+    return workOrder.isAssignedTo(currentUserId);
   }
 
   @override

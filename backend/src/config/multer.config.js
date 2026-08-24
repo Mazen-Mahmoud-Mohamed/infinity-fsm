@@ -75,21 +75,47 @@ export const overtimeMultipart = overtimeUpload.fields([
 export const workOrderUpload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024,
-    files: 5,
+    fileSize: 10 * 1024 * 1024,
+    files: 21,
   },
   fileFilter: (_req, file, cb) => {
-    if (!WORK_ORDER_MIME_TYPES.includes(file.mimetype)) {
-      return cb(
-        new AppError(
-          'INVALID_FILE_TYPE',
-          'Only JPEG, PNG, WebP images and PDF documents are allowed',
-          400
-        )
-      );
+    if (file.fieldname === 'voiceNote') {
+      if (!AUDIO_MIME_TYPES.includes(file.mimetype)) {
+        return cb(
+          new AppError(
+            'INVALID_FILE_TYPE',
+            'Only AAC/M4A/MP3/WAV/OGG audio voice notes are allowed',
+            400
+          )
+        );
+      }
+      return cb(null, true);
     }
-    return cb(null, true);
+    // create/update attachments + field execution photos
+    if (
+      file.fieldname === 'attachments' ||
+      file.fieldname === 'photos' ||
+      !file.fieldname
+    ) {
+      if (!WORK_ORDER_MIME_TYPES.includes(file.mimetype)) {
+        return cb(
+          new AppError(
+            'INVALID_FILE_TYPE',
+            'Only JPEG, PNG, WebP images and PDF documents are allowed',
+            400
+          )
+        );
+      }
+      return cb(null, true);
+    }
+    return cb(new AppError('INVALID_FILE_TYPE', 'Unexpected upload field', 400));
   },
 });
+
+/** Work-order multipart: multiple attachments + optional voice note. */
+export const workOrderMultipart = workOrderUpload.fields([
+  { name: 'attachments', maxCount: 20 },
+  { name: 'voiceNote', maxCount: 1 },
+]);
 
 export default upload;

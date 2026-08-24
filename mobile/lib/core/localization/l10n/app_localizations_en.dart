@@ -337,13 +337,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workOrderLoading => 'Loading work orders...';
 
   @override
-  String get workOrderJobTitle => 'Work order title';
+  String get workOrderJobTitle => 'Work Order';
 
   @override
   String get workOrderCustomer => 'Customer';
 
   @override
+  String get workOrderCustomerPhoneNumbers => 'Customer Phone Numbers';
+
+  @override
+  String get workOrderAddPhoneNumber => 'Add Number';
+
+  @override
+  String get workOrderChooseCustomerNumber => 'Choose a customer number';
+
+  @override
+  String get workOrderCall => 'Call';
+
+  @override
+  String get workOrderCouldNotOpenDialer => 'Could not open the phone dialer';
+
+  @override
+  String get workOrderCustomerPhoneInvalid => 'Enter a valid phone number';
+
+  @override
+  String get workOrderMaxCustomerPhonesReached =>
+      'Maximum number of customer phones reached';
+
+  @override
   String get workOrderLocation => 'Location';
+
+  @override
+  String get workOrderLocationUrlHint =>
+      'Paste a map or location link (https://…)';
+
+  @override
+  String get workOrderOpenLocation => 'Open location';
+
+  @override
+  String get workOrderLocationUrlInvalid =>
+      'Enter a valid http(s) location URL';
 
   @override
   String get workOrderDescription => 'Problem description';
@@ -352,13 +385,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workOrderNotes => 'Notes';
 
   @override
+  String get workOrderVoiceNote => 'Voice note';
+
+  @override
   String get workOrderPriority => 'Priority';
 
   @override
-  String get workOrderScheduledDate => 'Scheduled date';
+  String get workOrderScheduledDate => 'Scheduled date & time';
+
+  @override
+  String get workOrderScheduledTime => 'Scheduled time';
 
   @override
   String get workOrderTechnician => 'Technician';
+
+  @override
+  String get workOrderTechnicians => 'Technicians';
 
   @override
   String get workOrderAttachments => 'Attachments';
@@ -391,10 +433,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workOrderUnassigned => 'Unassigned';
 
   @override
-  String get workOrderSelectTechnician => 'Select technician';
+  String get workOrderSelectTechnician => 'Select technicians';
 
   @override
   String get workOrderAddPhoto => 'Add photo';
+
+  @override
+  String get workOrderMaxAttachmentsReached =>
+      'Maximum number of attachments reached';
 
   @override
   String get inventory => 'Inventory';
@@ -3908,7 +3954,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workOrderPriorityHigh => 'High';
 
   @override
-  String get workOrderPriorityCritical => 'Critical';
+  String get workOrderPriorityCritical => 'Urgent';
 
   @override
   String get workOrderTimelineCreated => 'Created';

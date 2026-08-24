@@ -15,10 +15,15 @@ class WorkOrderModel extends WorkOrder {
     super.customerName,
     super.customerAddress,
     super.locationLabel,
+    super.locationUrl,
     super.assignedTechnicianId,
     super.assignedTechnicianName,
+    super.assignedTechnicianIds = const [],
+    super.assignedTechnicianNames = const [],
+    super.customerPhoneNumbers = const [],
     super.description,
     super.notes,
+    super.voiceNote,
     super.scheduledAt,
     super.attachments = const [],
     super.beforePhotos = const [],
@@ -53,6 +58,33 @@ class WorkOrderModel extends WorkOrder {
     final timelineJson = json['timeline'];
     final startedLocJson = json['startedLocation'];
     final completedLocJson = json['completedLocation'];
+    final voiceNoteJson = json['voiceNote'];
+    final assigneeIdsRaw = json['assignedTechnicianIds'];
+    final assigneeNamesRaw = json['assignedTechnicianNames'];
+    final phonesRaw = json['customerPhoneNumbers'];
+
+    final assigneeIds = assigneeIdsRaw is List
+        ? assigneeIdsRaw
+            .map((e) => e?.toString())
+            .whereType<String>()
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : <String>[];
+    final assigneeNames = assigneeNamesRaw is List
+        ? assigneeNamesRaw
+            .map((e) => e?.toString())
+            .whereType<String>()
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : <String>[];
+    final customerPhoneNumbers = phonesRaw is List
+        ? phonesRaw
+            .map((e) => e?.toString())
+            .whereType<String>()
+            .map((e) => e.trim())
+            .where((e) => e.isNotEmpty)
+            .toList()
+        : <String>[];
 
     return WorkOrderModel(
       id: requireString(json, 'id'),
@@ -60,6 +92,7 @@ class WorkOrderModel extends WorkOrder {
       jobNumber: requireString(json, 'jobNumber'),
       jobTitle: requireString(json, 'jobTitle'),
       customerName: optionalString(json, 'customerName'),
+      customerPhoneNumbers: customerPhoneNumbers,
       customerAddress: addressJson is Map<String, dynamic>
           ? WorkOrderAddress(
               street: optionalString(addressJson, 'street'),
@@ -70,14 +103,27 @@ class WorkOrderModel extends WorkOrder {
             )
           : null,
       locationLabel: optionalString(json, 'locationLabel'),
+      locationUrl: optionalString(json, 'locationUrl'),
       assignedTechnicianId: optionalString(json, 'assignedTechnicianId'),
       assignedTechnicianName: optionalString(json, 'assignedTechnicianName'),
+      assignedTechnicianIds: assigneeIds,
+      assignedTechnicianNames: assigneeNames,
       priority: WorkOrderPriority.fromApi(
         optionalString(json, 'priority') ?? 'MEDIUM',
       ),
       status: WorkOrderStatus.fromApi(optionalString(json, 'status') ?? 'PENDING'),
       description: optionalString(json, 'description'),
       notes: optionalString(json, 'notes'),
+      voiceNote: voiceNoteJson is Map<String, dynamic>
+          ? WorkOrderVoiceNote(
+              url: requireString(voiceNoteJson, 'url'),
+              publicId: optionalString(voiceNoteJson, 'publicId'),
+              duration: _readNullableDouble(voiceNoteJson, 'duration'),
+              size: _readNullableInt(voiceNoteJson, 'size'),
+              format: optionalString(voiceNoteJson, 'format'),
+              uploadedAt: parseDateTime(voiceNoteJson['uploadedAt']),
+            )
+          : null,
       scheduledAt: parseDateTime(json['scheduledAt']),
       attachments: _mapPhotoList(attachmentsJson),
       beforePhotos: _mapPhotoList(beforePhotosJson),

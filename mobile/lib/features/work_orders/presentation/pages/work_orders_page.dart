@@ -103,7 +103,7 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final dateFormat = AppFormatters.mediumDate(context);
+    final dateFormat = AppFormatters.mediumDateTime(context);
     final width = MediaQuery.sizeOf(context).width;
     final canCreate = context.select(
       (AuthCubit cubit) =>
@@ -410,11 +410,11 @@ class _WorkOrderTile extends StatelessWidget {
                   style: theme.textTheme.bodySmall,
                 ),
               if (showTechnician &&
-                  workOrder.assignedTechnicianName != null)
+                  workOrder.assigneesDisplay.isNotEmpty)
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 160),
                   child: Text(
-                    workOrder.assignedTechnicianName!,
+                    workOrder.assigneesDisplay,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall,

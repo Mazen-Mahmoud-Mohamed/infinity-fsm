@@ -719,7 +719,7 @@ abstract class AppLocalizations {
   /// No description provided for @workOrderJobTitle.
   ///
   /// In en, this message translates to:
-  /// **'Work order title'**
+  /// **'Work Order'**
   String get workOrderJobTitle;
 
   /// No description provided for @workOrderCustomer.
@@ -728,11 +728,71 @@ abstract class AppLocalizations {
   /// **'Customer'**
   String get workOrderCustomer;
 
+  /// No description provided for @workOrderCustomerPhoneNumbers.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Phone Numbers'**
+  String get workOrderCustomerPhoneNumbers;
+
+  /// No description provided for @workOrderAddPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Number'**
+  String get workOrderAddPhoneNumber;
+
+  /// No description provided for @workOrderChooseCustomerNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a customer number'**
+  String get workOrderChooseCustomerNumber;
+
+  /// No description provided for @workOrderCall.
+  ///
+  /// In en, this message translates to:
+  /// **'Call'**
+  String get workOrderCall;
+
+  /// No description provided for @workOrderCouldNotOpenDialer.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not open the phone dialer'**
+  String get workOrderCouldNotOpenDialer;
+
+  /// No description provided for @workOrderCustomerPhoneInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid phone number'**
+  String get workOrderCustomerPhoneInvalid;
+
+  /// No description provided for @workOrderMaxCustomerPhonesReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum number of customer phones reached'**
+  String get workOrderMaxCustomerPhonesReached;
+
   /// No description provided for @workOrderLocation.
   ///
   /// In en, this message translates to:
   /// **'Location'**
   String get workOrderLocation;
+
+  /// No description provided for @workOrderLocationUrlHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste a map or location link (https://…)'**
+  String get workOrderLocationUrlHint;
+
+  /// No description provided for @workOrderOpenLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Open location'**
+  String get workOrderOpenLocation;
+
+  /// No description provided for @workOrderLocationUrlInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid http(s) location URL'**
+  String get workOrderLocationUrlInvalid;
 
   /// No description provided for @workOrderDescription.
   ///
@@ -746,6 +806,12 @@ abstract class AppLocalizations {
   /// **'Notes'**
   String get workOrderNotes;
 
+  /// No description provided for @workOrderVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get workOrderVoiceNote;
+
   /// No description provided for @workOrderPriority.
   ///
   /// In en, this message translates to:
@@ -755,14 +821,26 @@ abstract class AppLocalizations {
   /// No description provided for @workOrderScheduledDate.
   ///
   /// In en, this message translates to:
-  /// **'Scheduled date'**
+  /// **'Scheduled date & time'**
   String get workOrderScheduledDate;
+
+  /// No description provided for @workOrderScheduledTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled time'**
+  String get workOrderScheduledTime;
 
   /// No description provided for @workOrderTechnician.
   ///
   /// In en, this message translates to:
   /// **'Technician'**
   String get workOrderTechnician;
+
+  /// No description provided for @workOrderTechnicians.
+  ///
+  /// In en, this message translates to:
+  /// **'Technicians'**
+  String get workOrderTechnicians;
 
   /// No description provided for @workOrderAttachments.
   ///
@@ -827,7 +905,7 @@ abstract class AppLocalizations {
   /// No description provided for @workOrderSelectTechnician.
   ///
   /// In en, this message translates to:
-  /// **'Select technician'**
+  /// **'Select technicians'**
   String get workOrderSelectTechnician;
 
   /// No description provided for @workOrderAddPhoto.
@@ -835,6 +913,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add photo'**
   String get workOrderAddPhoto;
+
+  /// No description provided for @workOrderMaxAttachmentsReached.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum number of attachments reached'**
+  String get workOrderMaxAttachmentsReached;
 
   /// No description provided for @inventory.
   ///
@@ -7463,7 +7547,7 @@ abstract class AppLocalizations {
   /// No description provided for @workOrderPriorityCritical.
   ///
   /// In en, this message translates to:
-  /// **'Critical'**
+  /// **'Urgent'**
   String get workOrderPriorityCritical;
 
   /// No description provided for @workOrderTimelineCreated.

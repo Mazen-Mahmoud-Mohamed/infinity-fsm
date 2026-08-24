@@ -30,25 +30,42 @@ export const getWorkOrder = asyncHandler(async (req, res) => {
 });
 
 export const createWorkOrder = asyncHandler(async (req, res) => {
+  const { attachments, voiceNoteFile } = normalizeWorkOrderUploads(req.files);
   const data = await workOrdersService.create(
     req.user,
     req.auth,
     req.body,
-    req.files || []
+    attachments,
+    voiceNoteFile
   );
   sendSuccess(res, data, 201);
 });
 
 export const updateWorkOrder = asyncHandler(async (req, res) => {
+  const { attachments, voiceNoteFile } = normalizeWorkOrderUploads(req.files);
   const data = await workOrdersService.update(
     req.user,
     req.auth,
     req.params.id,
     req.body,
-    req.files || []
+    attachments,
+    voiceNoteFile
   );
   sendSuccess(res, data);
 });
+
+function normalizeWorkOrderUploads(files) {
+  if (!files) {
+    return { attachments: [], voiceNoteFile: null };
+  }
+  if (Array.isArray(files)) {
+    return { attachments: files, voiceNoteFile: null };
+  }
+  return {
+    attachments: files.attachments || [],
+    voiceNoteFile: files.voiceNote?.[0] || null,
+  };
+}
 
 export const deleteWorkOrder = asyncHandler(async (req, res) => {
   const data = await workOrdersService.softDelete(req.user, req.auth, req.params.id);

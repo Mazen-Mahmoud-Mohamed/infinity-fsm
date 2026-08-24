@@ -276,16 +276,26 @@ class WorkOrderRemoteDataSource {
   }
 
   Future<FormData> _buildForm(WorkOrderUpsertInput input) async {
+    final technicianIds = input.assignedTechnicianIds.isNotEmpty
+        ? input.assignedTechnicianIds
+        : (input.assignedTechnicianId == null ||
+                input.assignedTechnicianId!.isEmpty
+            ? <String>[]
+            : [input.assignedTechnicianId!]);
+
     final map = <String, dynamic>{
       'jobTitle': input.jobTitle,
       'priority': input.priority.apiValue,
       // Always send so clears persist on update (empty string → null server-side).
       'customerName': input.customerName ?? '',
+      'customerPhoneNumbers': jsonEncode(input.customerPhoneNumbers),
       'locationLabel': input.locationLabel ?? '',
-      'description': input.description ?? '',
+      'locationUrl': input.locationUrl ?? '',
       'notes': input.notes ?? '',
       'scheduledAt': input.scheduledAt?.toIso8601String() ?? '',
-      'assignedTechnicianId': input.assignedTechnicianId ?? '',
+      'assignedTechnicianIds': jsonEncode(technicianIds),
+      'assignedTechnicianId':
+          technicianIds.isEmpty ? '' : technicianIds.first,
       if (input.estimatedDurationMinutes != null)
         'estimatedDurationMinutes': input.estimatedDurationMinutes.toString(),
       if (input.customerAddress != null)
@@ -293,6 +303,7 @@ class WorkOrderRemoteDataSource {
       if (input.replaceAttachments) 'replaceAttachments': 'true',
       if (input.keepAttachmentUrls.isNotEmpty)
         'keepAttachmentUrls': jsonEncode(input.keepAttachmentUrls),
+      if (input.clearVoiceNote) 'clearVoiceNote': 'true',
     };
 
     final formData = FormData.fromMap(map);
@@ -303,6 +314,20 @@ class WorkOrderRemoteDataSource {
           MultipartFile.fromBytes(
             attachment.bytes,
             filename: attachment.fileName,
+          ),
+        ),
+      );
+    }
+    final voiceBytes = input.voiceNoteBytes;
+    if (voiceBytes != null &&
+        voiceBytes.isNotEmpty &&
+        !input.clearVoiceNote) {
+      formData.files.add(
+        MapEntry(
+          'voiceNote',
+          MultipartFile.fromBytes(
+            voiceBytes,
+            filename: input.voiceNoteFileName ?? 'voice-note.m4a',
           ),
         ),
       );

@@ -6,9 +6,12 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_maps_launcher.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_status.dart';
 import 'package:mobile/features/work_orders/presentation/cubit/work_order_detail_cubit.dart';
+import 'package:mobile/features/work_orders/presentation/utils/work_order_location_launcher.dart';
+import 'package:mobile/features/work_orders/presentation/utils/work_order_phone_launcher.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_photo_gallery.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_section_card.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_text_prompt.dart';
@@ -154,6 +157,30 @@ class _OverviewSection extends StatelessWidget {
               ),
             ],
           ),
+          if (workOrder.customerPhoneNumbers.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            _CustomerPhonesSection(phones: workOrder.customerPhoneNumbers),
+          ],
+          if (workOrder.hasOpenableLocationUrl) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Align(
+              alignment: AlignmentDirectional.centerStart,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final opened = await WorkOrderLocationLauncher.openUrl(
+                    workOrder.effectiveLocationUrl,
+                  );
+                  if (!opened && context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(l10n.workOrderCouldNotOpenMaps)),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.open_in_new, size: 18),
+                label: Text(l10n.workOrderOpenLocation),
+              ),
+            ),
+          ],
           if (hasCoords) ...[
             const SizedBox(height: AppSpacing.sm),
             Align(
@@ -192,6 +219,21 @@ class _OverviewSection extends StatelessWidget {
               value: workOrder.notes!,
             ),
           ],
+          if (workOrder.voiceNote?.url != null &&
+              workOrder.voiceNote!.url.trim().isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              l10n.workOrderVoiceNote,
+              style: Theme.of(context).textTheme.labelLarge,
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            OvertimeVoiceNoteSection(
+              remoteUrl: workOrder.voiceNote!.url,
+              durationSeconds: workOrder.voiceNote!.duration,
+              readOnly: true,
+              enabled: true,
+            ),
+          ],
           if (includeAttachments && imageAttachments.isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             WorkOrderPhotoGallery(
@@ -217,6 +259,95 @@ class _OverviewSection extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+}
+
+class _CustomerPhonesSection extends StatelessWidget {
+  const _CustomerPhonesSection({required this.phones});
+
+  final List<String> phones;
+
+  Future<void> _call(BuildContext context, String phone) async {
+    final l10n = AppLocalizations.of(context);
+    final opened = await WorkOrderPhoneLauncher.openDialer(phone);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.workOrderCouldNotOpenDialer)),
+      );
+    }
+  }
+
+  Future<void> _onCallPressed(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    if (phones.length == 1) {
+      await _call(context, phones.first);
+      return;
+    }
+
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (sheetContext) {
+        return SafeArea(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Text(
+                  l10n.workOrderChooseCustomerNumber,
+                  style: Theme.of(sheetContext).textTheme.titleMedium,
+                ),
+              ),
+              ...phones.map(
+                (phone) => ListTile(
+                  leading: const Icon(Icons.phone_outlined),
+                  title: Text(phone),
+                  onTap: () => Navigator.of(sheetContext).pop(phone),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (selected != null && context.mounted) {
+      await _call(context, selected);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          l10n.workOrderCustomerPhoneNumbers,
+          style: Theme.of(context).textTheme.labelLarge,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        ...phones.map(
+          (phone) => Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Text(
+              phone,
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: FilledButton.tonalIcon(
+            onPressed: () => _onCallPressed(context),
+            icon: const Icon(Icons.call_outlined, size: 18),
+            label: Text(l10n.workOrderCall),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -5,7 +5,7 @@ import {
   requirePermission,
 } from '../../../shared/middleware/authorize.middleware.js';
 import { validate } from '../../../shared/middleware/validate.middleware.js';
-import { workOrderUpload } from '../../../config/multer.config.js';
+import { workOrderMultipart, workOrderUpload } from '../../../config/multer.config.js';
 import PERMISSIONS from '../../../shared/constants/permissions.constants.js';
 import * as workOrdersController from './work-orders.controller.js';
 import {
@@ -47,7 +47,7 @@ router.get(
 router.post(
   '/',
   requirePermission(PERMISSIONS.WORK_ORDERS_CREATE),
-  workOrderUpload.array('attachments', 5),
+  workOrderMultipart,
   validate(createWorkOrderValidator),
   workOrdersController.createWorkOrder
 );
@@ -66,7 +66,7 @@ router.get(
 router.put(
   '/:id',
   requirePermission(PERMISSIONS.WORK_ORDERS_UPDATE),
-  workOrderUpload.array('attachments', 5),
+  workOrderMultipart,
   validate(updateWorkOrderValidator),
   workOrdersController.updateWorkOrder
 );

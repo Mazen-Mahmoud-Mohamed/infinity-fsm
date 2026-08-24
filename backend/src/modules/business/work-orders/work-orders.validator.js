@@ -25,7 +25,22 @@ export const workOrderIdValidator = [
 export const createWorkOrderValidator = [
   body('jobTitle').isString().trim().notEmpty().isLength({ max: 200 }),
   body('customerName').optional({ values: 'falsy' }).isString().trim().isLength({ max: 200 }),
+  body('customerPhoneNumbers').optional(),
   body('locationLabel').optional({ values: 'falsy' }).isString().trim().isLength({ max: 300 }),
+  body('locationUrl')
+    .optional({ values: 'falsy' })
+    .isString()
+    .trim()
+    .isLength({ max: 2000 })
+    .custom((value) => {
+      try {
+        const parsed = new URL(String(value));
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    })
+    .withMessage('locationUrl must be a valid http(s) URL'),
   body('description').optional({ values: 'falsy' }).isString().trim().isLength({ max: 5000 }),
   body('notes').optional({ values: 'falsy' }).isString().trim().isLength({ max: 5000 }),
   body('priority')
@@ -36,6 +51,8 @@ export const createWorkOrderValidator = [
     .withMessage(`priority must be one of: ${WORK_ORDER_PRIORITIES.join(', ')}`),
   body('scheduledAt').optional({ values: 'falsy' }).isISO8601(),
   body('assignedTechnicianId').optional({ values: 'falsy' }).isMongoId(),
+  body('assignedTechnicianIds').optional(),
+  body('clearVoiceNote').optional().isIn(['true', 'false', true, false]),
   body('estimatedDurationMinutes')
     .optional({ values: 'falsy' })
     .isInt({ min: 0 })
@@ -47,7 +64,23 @@ export const updateWorkOrderValidator = [
   ...workOrderIdValidator,
   body('jobTitle').optional().isString().trim().notEmpty().isLength({ max: 200 }),
   body('customerName').optional({ values: 'falsy' }).isString().trim().isLength({ max: 200 }),
+  body('customerPhoneNumbers').optional(),
   body('locationLabel').optional({ values: 'falsy' }).isString().trim().isLength({ max: 300 }),
+  body('locationUrl')
+    .optional({ values: 'falsy' })
+    .custom((value) => {
+      if (value === '' || value === null || value === undefined) {
+        return true;
+      }
+      try {
+        const parsed = new URL(String(value));
+        return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+      } catch {
+        return false;
+      }
+    })
+    .withMessage('locationUrl must be a valid http(s) URL')
+    .isLength({ max: 2000 }),
   body('description').optional({ values: 'falsy' }).isString().trim().isLength({ max: 5000 }),
   body('notes').optional({ values: 'falsy' }).isString().trim().isLength({ max: 5000 }),
   body('priority')
@@ -66,6 +99,8 @@ export const updateWorkOrderValidator = [
       return /^[a-fA-F0-9]{24}$/.test(String(value));
     })
     .withMessage('assignedTechnicianId must be a valid MongoDB ObjectId'),
+  body('assignedTechnicianIds').optional(),
+  body('clearVoiceNote').optional().isIn(['true', 'false', true, false]),
   body('estimatedDurationMinutes')
     .optional({ values: 'falsy' })
     .isInt({ min: 0 })
@@ -77,7 +112,11 @@ export const updateWorkOrderValidator = [
 
 export const assignWorkOrderValidator = [
   ...workOrderIdValidator,
-  body('assignedTechnicianId').isMongoId().withMessage('assignedTechnicianId is required'),
+  body('assignedTechnicianId')
+    .optional({ values: 'falsy' })
+    .isMongoId()
+    .withMessage('assignedTechnicianId must be a valid MongoDB ObjectId'),
+  body('assignedTechnicianIds').optional(),
   body('priority')
     .optional({ values: 'falsy' })
     .isString()

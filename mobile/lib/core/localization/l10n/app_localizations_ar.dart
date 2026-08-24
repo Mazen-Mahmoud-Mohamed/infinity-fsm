@@ -340,28 +340,70 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workOrderLoading => 'جاري تحميل أوامر العمل...';
 
   @override
-  String get workOrderJobTitle => 'عنوان أمر العمل';
+  String get workOrderJobTitle => 'أمر الشغل';
 
   @override
   String get workOrderCustomer => 'العميل';
 
   @override
+  String get workOrderCustomerPhoneNumbers => 'رقم العميل';
+
+  @override
+  String get workOrderAddPhoneNumber => 'إضافة رقم';
+
+  @override
+  String get workOrderChooseCustomerNumber => 'اختر رقم العميل';
+
+  @override
+  String get workOrderCall => 'اتصال';
+
+  @override
+  String get workOrderCouldNotOpenDialer => 'تعذر فتح تطبيق الاتصال';
+
+  @override
+  String get workOrderCustomerPhoneInvalid => 'أدخل رقم هاتف صالحًا';
+
+  @override
+  String get workOrderMaxCustomerPhonesReached =>
+      'تم الوصول إلى الحد الأقصى لأرقام العميل';
+
+  @override
   String get workOrderLocation => 'الموقع';
+
+  @override
+  String get workOrderLocationUrlHint =>
+      'الصق رابط الموقع أو الخريطة (https://…)';
+
+  @override
+  String get workOrderOpenLocation => 'فتح الموقع';
+
+  @override
+  String get workOrderLocationUrlInvalid =>
+      'أدخل رابط موقع صالح يبدأ بـ http أو https';
 
   @override
   String get workOrderDescription => 'وصف المشكلة';
 
   @override
-  String get workOrderNotes => 'ملاحظات';
+  String get workOrderNotes => 'الملاحظات';
+
+  @override
+  String get workOrderVoiceNote => 'ملاحظة صوتية';
 
   @override
   String get workOrderPriority => 'الأولوية';
 
   @override
-  String get workOrderScheduledDate => 'التاريخ المجدول';
+  String get workOrderScheduledDate => 'التاريخ والوقت المجدول';
+
+  @override
+  String get workOrderScheduledTime => 'وقت الجدولة';
 
   @override
   String get workOrderTechnician => 'الفني';
+
+  @override
+  String get workOrderTechnicians => 'الفنيون';
 
   @override
   String get workOrderAttachments => 'المرفقات';
@@ -394,10 +436,14 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workOrderUnassigned => 'غير معيّن';
 
   @override
-  String get workOrderSelectTechnician => 'اختر الفني';
+  String get workOrderSelectTechnician => 'اختر الفنيين';
 
   @override
   String get workOrderAddPhoto => 'إضافة صورة';
+
+  @override
+  String get workOrderMaxAttachmentsReached =>
+      'تم الوصول إلى الحد الأقصى للمرفقات';
 
   @override
   String get inventory => 'المخزون';
@@ -3896,7 +3942,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workOrderPriorityHigh => 'مرتفع';
 
   @override
-  String get workOrderPriorityCritical => 'حرج';
+  String get workOrderPriorityCritical => 'طارئ';
 
   @override
   String get workOrderTimelineCreated => 'تم الإنشاء';

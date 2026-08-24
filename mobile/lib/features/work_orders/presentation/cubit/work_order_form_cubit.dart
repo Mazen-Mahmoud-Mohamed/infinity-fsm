@@ -3,13 +3,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/organization/domain/entities/user_summary.dart';
 import 'package:mobile/features/organization/domain/repositories/organization_repository.dart';
+import 'package:mobile/features/overtime/presentation/cubit/overtime_voice_draft.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:mobile/features/work_orders/domain/usecases/create_work_order_usecase.dart';
 import 'package:mobile/features/work_orders/domain/usecases/get_work_order_by_id_usecase.dart';
 import 'package:mobile/features/work_orders/domain/usecases/update_work_order_usecase.dart';
+import 'package:mobile/features/work_orders/presentation/utils/work_order_location_launcher.dart';
+import 'package:mobile/features/work_orders/presentation/utils/work_order_phone_numbers.dart';
 
 enum WorkOrderFormStatus { initial, loading, ready, saving, success, failure }
+
+/// Soft cap aligned with backend multipart maxCount for attachments.
+const int kWorkOrderMaxAttachments = 20;
 
 class WorkOrderFormState extends Equatable {
   const WorkOrderFormState({
@@ -18,14 +24,18 @@ class WorkOrderFormState extends Equatable {
     this.technicians = const [],
     this.jobTitle = '',
     this.customerName = '',
-    this.locationLabel = '',
-    this.description = '',
+    this.customerPhoneNumbers = const [],
+    this.locationUrl = '',
+    this.legacyLocationLabel = '',
     this.notes = '',
     this.priority = WorkOrderPriority.medium,
     this.scheduledAt,
-    this.assignedTechnicianId,
+    this.assignedTechnicianIds = const [],
     this.pendingAttachments = const [],
     this.existingAttachments = const [],
+    this.existingVoiceNote,
+    this.voiceDraft,
+    this.clearVoiceNote = false,
     this.message,
     this.isError = false,
   });
@@ -35,18 +45,29 @@ class WorkOrderFormState extends Equatable {
   final List<UserSummary> technicians;
   final String jobTitle;
   final String customerName;
-  final String locationLabel;
-  final String description;
+  final List<String> customerPhoneNumbers;
+  final String locationUrl;
+  /// Non-URL legacy location text (shown as helper; not edited in URL field).
+  final String legacyLocationLabel;
   final String notes;
   final WorkOrderPriority priority;
   final DateTime? scheduledAt;
-  final String? assignedTechnicianId;
+  final List<String> assignedTechnicianIds;
   final List<WorkOrderAttachmentInput> pendingAttachments;
   final List<WorkOrderAttachment> existingAttachments;
+  final WorkOrderVoiceNote? existingVoiceNote;
+  final OvertimeVoiceDraft? voiceDraft;
+  final bool clearVoiceNote;
   final String? message;
   final bool isError;
 
   bool get isEditing => existing != null;
+
+  int get totalAttachmentCount =>
+      existingAttachments.length + pendingAttachments.length;
+
+  bool get canAddMoreAttachments =>
+      totalAttachmentCount < kWorkOrderMaxAttachments;
 
   WorkOrderFormState copyWith({
     WorkOrderFormStatus? status,
@@ -54,16 +75,21 @@ class WorkOrderFormState extends Equatable {
     List<UserSummary>? technicians,
     String? jobTitle,
     String? customerName,
-    String? locationLabel,
-    String? description,
+    List<String>? customerPhoneNumbers,
+    String? locationUrl,
+    String? legacyLocationLabel,
     String? notes,
     WorkOrderPriority? priority,
     DateTime? scheduledAt,
     bool clearScheduledAt = false,
-    String? assignedTechnicianId,
-    bool clearAssignedTechnicianId = false,
+    List<String>? assignedTechnicianIds,
     List<WorkOrderAttachmentInput>? pendingAttachments,
     List<WorkOrderAttachment>? existingAttachments,
+    WorkOrderVoiceNote? existingVoiceNote,
+    bool clearExistingVoiceNote = false,
+    OvertimeVoiceDraft? voiceDraft,
+    bool clearVoiceDraft = false,
+    bool? clearVoiceNote,
     String? message,
     bool clearMessage = false,
     bool? isError,
@@ -74,16 +100,22 @@ class WorkOrderFormState extends Equatable {
       technicians: technicians ?? this.technicians,
       jobTitle: jobTitle ?? this.jobTitle,
       customerName: customerName ?? this.customerName,
-      locationLabel: locationLabel ?? this.locationLabel,
-      description: description ?? this.description,
+      customerPhoneNumbers:
+          customerPhoneNumbers ?? this.customerPhoneNumbers,
+      locationUrl: locationUrl ?? this.locationUrl,
+      legacyLocationLabel: legacyLocationLabel ?? this.legacyLocationLabel,
       notes: notes ?? this.notes,
       priority: priority ?? this.priority,
       scheduledAt: clearScheduledAt ? null : (scheduledAt ?? this.scheduledAt),
-      assignedTechnicianId: clearAssignedTechnicianId
-          ? null
-          : (assignedTechnicianId ?? this.assignedTechnicianId),
+      assignedTechnicianIds:
+          assignedTechnicianIds ?? this.assignedTechnicianIds,
       pendingAttachments: pendingAttachments ?? this.pendingAttachments,
       existingAttachments: existingAttachments ?? this.existingAttachments,
+      existingVoiceNote: clearExistingVoiceNote
+          ? null
+          : (existingVoiceNote ?? this.existingVoiceNote),
+      voiceDraft: clearVoiceDraft ? null : (voiceDraft ?? this.voiceDraft),
+      clearVoiceNote: clearVoiceNote ?? this.clearVoiceNote,
       message: clearMessage ? null : (message ?? this.message),
       isError: isError ?? this.isError,
     );
@@ -96,14 +128,18 @@ class WorkOrderFormState extends Equatable {
         technicians,
         jobTitle,
         customerName,
-        locationLabel,
-        description,
+        customerPhoneNumbers,
+        locationUrl,
+        legacyLocationLabel,
         notes,
         priority,
         scheduledAt,
-        assignedTechnicianId,
+        assignedTechnicianIds,
         pendingAttachments,
         existingAttachments,
+        existingVoiceNote,
+        voiceDraft,
+        clearVoiceNote,
         message,
         isError,
       ];
@@ -161,6 +197,10 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
     final result = await _getById(workOrderId!);
     switch (result) {
       case Success(data: final workOrder):
+        final url = workOrder.effectiveLocationUrl ?? '';
+        final legacyLabel = (workOrder.locationLabel ?? '').trim();
+        final showLegacy = legacyLabel.isNotEmpty &&
+            !WorkOrderLocationLauncher.isValidHttpUrl(legacyLabel);
         emit(
           state.copyWith(
             status: WorkOrderFormStatus.ready,
@@ -173,13 +213,15 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
                 : technicians,
             jobTitle: workOrder.jobTitle,
             customerName: workOrder.customerName ?? '',
-            locationLabel: workOrder.locationLabel ?? '',
-            description: workOrder.description ?? '',
+            customerPhoneNumbers: workOrder.customerPhoneNumbers,
+            locationUrl: url,
+            legacyLocationLabel: showLegacy ? legacyLabel : '',
             notes: workOrder.notes ?? '',
             priority: workOrder.priority,
             scheduledAt: workOrder.scheduledAt,
-            assignedTechnicianId: workOrder.assignedTechnicianId,
+            assignedTechnicianIds: workOrder.effectiveAssigneeIds,
             existingAttachments: workOrder.attachments,
+            existingVoiceNote: workOrder.voiceNote,
           ),
         );
       case Failure(message: final message):
@@ -196,35 +238,96 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
   void updateField({
     String? jobTitle,
     String? customerName,
-    String? locationLabel,
-    String? description,
+    String? locationUrl,
     String? notes,
     WorkOrderPriority? priority,
     DateTime? scheduledAt,
     bool clearScheduledAt = false,
-    String? assignedTechnicianId,
-    bool clearAssignedTechnicianId = false,
   }) {
     emit(
       state.copyWith(
         jobTitle: jobTitle,
         customerName: customerName,
-        locationLabel: locationLabel,
-        description: description,
+        locationUrl: locationUrl,
         notes: notes,
         priority: priority,
         scheduledAt: scheduledAt,
         clearScheduledAt: clearScheduledAt,
-        assignedTechnicianId: assignedTechnicianId,
-        clearAssignedTechnicianId: clearAssignedTechnicianId,
+      ),
+    );
+  }
+
+  void addPhoneNumberRow() {
+    if (state.customerPhoneNumbers.length >= WorkOrderPhoneNumbers.maxCount) {
+      emit(
+        state.copyWith(
+          message: 'workOrderMaxCustomerPhonesReached',
+          isError: true,
+        ),
+      );
+      return;
+    }
+    emit(
+      state.copyWith(
+        customerPhoneNumbers: [...state.customerPhoneNumbers, ''],
+        clearMessage: true,
+        isError: false,
+      ),
+    );
+  }
+
+  void updatePhoneNumberAt(int index, String value) {
+    if (index < 0 || index >= state.customerPhoneNumbers.length) {
+      return;
+    }
+    final next = [...state.customerPhoneNumbers];
+    next[index] = value;
+    emit(state.copyWith(customerPhoneNumbers: next));
+  }
+
+  void removePhoneNumberAt(int index) {
+    if (index < 0 || index >= state.customerPhoneNumbers.length) {
+      return;
+    }
+    final next = [...state.customerPhoneNumbers]..removeAt(index);
+    emit(state.copyWith(customerPhoneNumbers: next));
+  }
+
+  void toggleTechnician(String technicianId) {
+    final current = [...state.assignedTechnicianIds];
+    if (current.contains(technicianId)) {
+      current.remove(technicianId);
+    } else {
+      current.add(technicianId);
+    }
+    emit(state.copyWith(assignedTechnicianIds: current));
+  }
+
+  void removeTechnician(String technicianId) {
+    emit(
+      state.copyWith(
+        assignedTechnicianIds: state.assignedTechnicianIds
+            .where((id) => id != technicianId)
+            .toList(),
       ),
     );
   }
 
   void addAttachment(WorkOrderAttachmentInput input) {
+    if (!state.canAddMoreAttachments) {
+      emit(
+        state.copyWith(
+          message: 'workOrderMaxAttachmentsReached',
+          isError: true,
+        ),
+      );
+      return;
+    }
     emit(
       state.copyWith(
         pendingAttachments: [...state.pendingAttachments, input],
+        clearMessage: true,
+        isError: false,
       ),
     );
   }
@@ -239,6 +342,26 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
       state.copyWith(
         existingAttachments:
             state.existingAttachments.where((item) => item.url != url).toList(),
+      ),
+    );
+  }
+
+  void setVoiceDraft(OvertimeVoiceDraft? draft) {
+    emit(
+      state.copyWith(
+        voiceDraft: draft,
+        clearVoiceDraft: draft == null,
+        clearVoiceNote: draft != null ? false : state.clearVoiceNote,
+      ),
+    );
+  }
+
+  void clearExistingVoiceNote() {
+    emit(
+      state.copyWith(
+        clearExistingVoiceNote: true,
+        clearVoiceDraft: true,
+        clearVoiceNote: true,
       ),
     );
   }
@@ -265,23 +388,75 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
       return;
     }
 
+    final locationUrl = state.locationUrl.trim();
+    if (locationUrl.isNotEmpty &&
+        !WorkOrderLocationLauncher.isValidHttpUrl(locationUrl)) {
+      emit(
+        state.copyWith(
+          message: 'workOrderLocationUrlInvalid',
+          isError: true,
+        ),
+      );
+      return;
+    }
+
+    final invalidPhone =
+        WorkOrderPhoneNumbers.firstInvalid(state.customerPhoneNumbers);
+    if (invalidPhone != null) {
+      emit(
+        state.copyWith(
+          message: 'workOrderCustomerPhoneInvalid',
+          isError: true,
+        ),
+      );
+      return;
+    }
+
+    final phones =
+        WorkOrderPhoneNumbers.normalize(state.customerPhoneNumbers);
+
     emit(state.copyWith(status: WorkOrderFormStatus.saving, clearMessage: true));
 
+    final voiceDraft = state.voiceDraft;
+    final voiceExt = () {
+      final path = voiceDraft?.filePath ?? '';
+      final dot = path.lastIndexOf('.');
+      if (dot >= 0 && dot < path.length - 1) {
+        return path.substring(dot + 1).toLowerCase();
+      }
+      return 'm4a';
+    }();
     final input = WorkOrderUpsertInput(
       jobTitle: title,
       customerName: state.customerName.trim().isEmpty
           ? null
           : state.customerName.trim(),
-      locationLabel: state.locationLabel.trim().isEmpty
-          ? null
-          : state.locationLabel.trim(),
-      description:
-          state.description.trim().isEmpty ? null : state.description.trim(),
+      customerPhoneNumbers: phones,
+      locationUrl: locationUrl.isEmpty ? null : locationUrl,
+      locationLabel: locationUrl.isNotEmpty
+          ? locationUrl
+          : (state.legacyLocationLabel.trim().isEmpty
+              ? null
+              : state.legacyLocationLabel.trim()),
       notes: state.notes.trim().isEmpty ? null : state.notes.trim(),
       priority: state.priority,
       scheduledAt: state.scheduledAt,
-      assignedTechnicianId: state.assignedTechnicianId,
+      assignedTechnicianIds: state.assignedTechnicianIds,
+      assignedTechnicianId: state.assignedTechnicianIds.isEmpty
+          ? null
+          : state.assignedTechnicianIds.first,
       attachments: state.pendingAttachments,
+      voiceNoteBytes: voiceDraft?.bytes,
+      voiceNoteFileName:
+          voiceDraft == null ? null : 'voice-note.$voiceExt',
+      voiceNoteMimeType: voiceDraft == null
+          ? null
+          : (voiceExt == 'mp3'
+              ? 'audio/mpeg'
+              : voiceExt == 'wav'
+                  ? 'audio/wav'
+                  : 'audio/mp4'),
+      clearVoiceNote: state.clearVoiceNote && voiceDraft == null,
       replaceAttachments: state.isEditing,
       keepAttachmentUrls:
           state.existingAttachments.map((item) => item.url).toList(),
@@ -297,9 +472,7 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
           state.copyWith(
             status: WorkOrderFormStatus.success,
             existing: workOrder,
-            message: state.isEditing
-                ? 'workOrderUpdated'
-                : 'workOrderCreated',
+            message: state.isEditing ? 'workOrderUpdated' : 'workOrderCreated',
             isError: false,
           ),
         );

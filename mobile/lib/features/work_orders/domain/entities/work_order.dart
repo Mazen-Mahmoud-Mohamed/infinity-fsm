@@ -113,6 +113,28 @@ class WorkOrderProgressNote extends Equatable {
   List<Object?> get props => [id, text, createdAt, createdBy, createdByName];
 }
 
+class WorkOrderVoiceNote extends Equatable {
+  const WorkOrderVoiceNote({
+    required this.url,
+    this.publicId,
+    this.duration,
+    this.size,
+    this.format,
+    this.uploadedAt,
+  });
+
+  final String url;
+  final String? publicId;
+  final double? duration;
+  final int? size;
+  final String? format;
+  final DateTime? uploadedAt;
+
+  @override
+  List<Object?> get props =>
+      [url, publicId, duration, size, format, uploadedAt];
+}
+
 enum WorkOrderTimelineType {
   created,
   assigned,
@@ -193,10 +215,15 @@ class WorkOrder extends Equatable {
     this.customerName,
     this.customerAddress,
     this.locationLabel,
+    this.locationUrl,
     this.assignedTechnicianId,
     this.assignedTechnicianName,
+    this.assignedTechnicianIds = const [],
+    this.assignedTechnicianNames = const [],
+    this.customerPhoneNumbers = const [],
     this.description,
     this.notes,
+    this.voiceNote,
     this.scheduledAt,
     this.attachments = const [],
     this.beforePhotos = const [],
@@ -228,12 +255,17 @@ class WorkOrder extends Equatable {
   final String? customerName;
   final WorkOrderAddress? customerAddress;
   final String? locationLabel;
+  final String? locationUrl;
   final String? assignedTechnicianId;
   final String? assignedTechnicianName;
+  final List<String> assignedTechnicianIds;
+  final List<String> assignedTechnicianNames;
+  final List<String> customerPhoneNumbers;
   final WorkOrderPriority priority;
   final WorkOrderStatus status;
   final String? description;
   final String? notes;
+  final WorkOrderVoiceNote? voiceNote;
   final DateTime? scheduledAt;
   final List<WorkOrderAttachment> attachments;
   final List<WorkOrderAttachment> beforePhotos;
@@ -257,15 +289,66 @@ class WorkOrder extends Equatable {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  /// Prefer explicit URL; fall back to label when it is already a URL.
+  String? get effectiveLocationUrl {
+    final url = locationUrl?.trim();
+    if (url != null && url.isNotEmpty) {
+      return url;
+    }
+    final label = locationLabel?.trim();
+    if (label != null &&
+        (label.startsWith('http://') || label.startsWith('https://'))) {
+      return label;
+    }
+    return null;
+  }
+
+  bool get hasOpenableLocationUrl {
+    final url = effectiveLocationUrl;
+    if (url == null) {
+      return false;
+    }
+    final uri = Uri.tryParse(url);
+    return uri != null &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+  }
+
   String get locationDisplay {
     if (locationLabel != null && locationLabel!.trim().isNotEmpty) {
       return locationLabel!.trim();
+    }
+    final url = effectiveLocationUrl;
+    if (url != null) {
+      return url;
     }
     final address = customerAddress?.displayText;
     if (address != null && address.isNotEmpty) {
       return address;
     }
     return '—';
+  }
+
+  List<String> get effectiveAssigneeIds {
+    if (assignedTechnicianIds.isNotEmpty) {
+      return assignedTechnicianIds;
+    }
+    final single = assignedTechnicianId;
+    return single == null || single.isEmpty ? const [] : [single];
+  }
+
+  String get assigneesDisplay {
+    if (assignedTechnicianNames.isNotEmpty) {
+      return assignedTechnicianNames.join(', ');
+    }
+    return assignedTechnicianName ?? '';
+  }
+
+  bool isAssignedTo(String? userId) {
+    if (userId == null || userId.isEmpty) {
+      return false;
+    }
+    return effectiveAssigneeIds.contains(userId);
   }
 
   @override
@@ -277,12 +360,17 @@ class WorkOrder extends Equatable {
         customerName,
         customerAddress,
         locationLabel,
+        locationUrl,
         assignedTechnicianId,
         assignedTechnicianName,
+        assignedTechnicianIds,
+        assignedTechnicianNames,
+        customerPhoneNumbers,
         priority,
         status,
         description,
         notes,
+        voiceNote,
         scheduledAt,
         attachments,
         beforePhotos,
@@ -345,30 +433,44 @@ class WorkOrderUpsertInput {
   const WorkOrderUpsertInput({
     required this.jobTitle,
     this.customerName,
+    this.customerPhoneNumbers = const [],
     this.locationLabel,
+    this.locationUrl,
     this.customerAddress,
     this.description,
     this.notes,
     this.priority = WorkOrderPriority.medium,
     this.scheduledAt,
     this.assignedTechnicianId,
+    this.assignedTechnicianIds = const [],
     this.estimatedDurationMinutes,
     this.attachments = const [],
+    this.voiceNoteBytes,
+    this.voiceNoteFileName,
+    this.voiceNoteMimeType,
+    this.clearVoiceNote = false,
     this.replaceAttachments = false,
     this.keepAttachmentUrls = const [],
   });
 
   final String jobTitle;
   final String? customerName;
+  final List<String> customerPhoneNumbers;
   final String? locationLabel;
+  final String? locationUrl;
   final WorkOrderAddress? customerAddress;
   final String? description;
   final String? notes;
   final WorkOrderPriority priority;
   final DateTime? scheduledAt;
   final String? assignedTechnicianId;
+  final List<String> assignedTechnicianIds;
   final int? estimatedDurationMinutes;
   final List<WorkOrderAttachmentInput> attachments;
+  final List<int>? voiceNoteBytes;
+  final String? voiceNoteFileName;
+  final String? voiceNoteMimeType;
+  final bool clearVoiceNote;
   final bool replaceAttachments;
   final List<String> keepAttachmentUrls;
 }
