@@ -1,732 +1,630 @@
-# Infinity FSM
+# INFINITY
 
-**Enterprise Field Service Management for maintenance companies and field workforce teams**
+Enterprise Field Service Management for workforce operations — attendance, overtime journeys, work orders, and administration.
 
-Infinity FSM (Infinity Field Service Management) is a production-oriented **employee / workforce management** and Field Service Management platform. It helps organizations manage technicians in the field with attendance, overtime journeys, work orders, inventory, assets, preventive maintenance, service reports, dashboards, and role-based administration — from a single Flutter client and Node.js API.
+![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![MongoDB](https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb&logoColor=white)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 
-| Layer | Stack |
-|-------|--------|
-| **Client** | Flutter · Material 3 · Clean Architecture · Cubit (`flutter_bloc`) · Repository Pattern |
-| **API** | Node.js · Express · MongoDB (Mongoose) · JWT · Socket.IO |
-| **Media** | Cloudinary |
-| **Locales** | English (LTR) · Arabic (RTL) |
-| **Targets** | Android · Windows Desktop |
-
-The Windows desktop window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android/mobile packaging is unchanged.
+**INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform for maintenance companies and field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android** and **Windows**.
 
 ---
 
 ## Table of Contents
 
-- [Project Overview](#project-overview)
-- [Applications](#applications)
-- [Main Features](#main-features)
-- [Authentication & Security](#authentication--security)
-- [Overtime Management](#overtime-management)
-- [Dashboard](#dashboard)
-- [Mobile UI](#mobile-ui)
-- [Windows / Desktop](#windows--desktop)
-- [Overtime Excel Export](#overtime-excel-export)
-- [Export Ready / Save As Flow](#export-ready--save-as-flow)
-- [Technology Stack](#technology-stack)
-- [Architecture](#architecture)
-- [Project Structure](#project-structure)
-- [UI / Design](#ui--design)
-- [Important Implementation Notes](#important-implementation-notes)
-- [Testing](#testing)
-- [Setup / Installation](#setup--installation)
-- [Development Commands](#development-commands)
-- [Build / Release](#build--release)
-- [Environment Variables](#environment-variables)
-- [API Surface](#api-surface)
-- [Security & Roles](#security--roles)
-- [Documentation](#documentation)
-- [License](#license)
-- [Author](#author)
+1. [Overview](#1-overview)
+2. [Main Features](#2-main-features)
+3. [User Roles](#3-user-roles)
+4. [Technician Interface Control](#4-technician-interface-control)
+5. [Overtime Workflow](#5-overtime-workflow)
+6. [Offline & Sync](#6-offline--sync)
+7. [Performance Optimizations](#7-performance-optimizations)
+8. [Localization](#8-localization)
+9. [Security](#9-security)
+10. [Technology Stack](#10-technology-stack)
+11. [Project Structure](#11-project-structure)
+12. [Development Setup](#12-development-setup)
+13. [Testing](#13-testing)
+14. [Build & Release](#14-build--release)
+15. [Environment Variables](#15-environment-variables)
+16. [Deployment](#16-deployment)
+17. [API Overview](#17-api-overview)
+18. [Performance Notes](#18-performance-notes)
+19. [Important Implementation Notes](#19-important-implementation-notes)
+20. [Documentation](#20-documentation)
+21. [License](#21-license)
+22. [Author](#22-author)
 
 ---
 
-## Project Overview
+## 1. Overview
 
-Infinity FSM solves a practical operations problem: field teams need **one system** for clocking attendance, capturing overtime evidence (GPS, photos, voice), executing work orders, tracking stock and assets, scheduling preventive maintenance, and giving supervisors/admins clear analytics and control.
+**INFINITY** helps organizations run field operations from a single system:
 
-It is designed as an **enterprise workforce / FSM product**, not a single-purpose overtime tracker:
+- Clock attendance with GPS evidence
+- Capture multi-stage overtime journeys (photos, voice, notes, GPS)
+- Assign and complete work orders
+- Manage inventory, assets, preventive maintenance, and service reports
+- Give admins and supervisors role-based dashboards and review tools
 
-- Technicians capture evidence on **Android** or **Windows desktop**.
-- Supervisors review and approve overtime and oversee operations.
-- Administrators configure users, roles, settings, media policy, and organization structure.
+| Topic | Detail |
+|-------|--------|
+| **Problem** | Field teams need one system for attendance, overtime evidence, work orders, stock/assets, PM, and admin analytics — not disconnected tools. |
+| **Users** | **Admin**, **Supervisor**, **Technician** |
+| **Platforms** | **Android** (phones/tablets) · **Windows** desktop |
+| **Locales** | Arabic **RTL** · English **LTR** |
+| **Client** | Flutter · Material 3 · Clean Architecture · Cubit · Repository Pattern |
+| **API** | Node.js · Express · MongoDB · JWT · Socket.IO |
+| **API version** | `/api/v1` |
 
-The Flutter app shares one codebase for **phone, tablet, and Windows desktop** (NavigationRail on wide layouts; bottom navigation on phones). Backend REST APIs are versioned under `/api/v1`.
+The Windows window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android packaging is unchanged.
 
----
-
-## Applications
-
-| Application | How it is delivered |
-|-------------|---------------------|
-| **Windows / Desktop** | Flutter Windows runner (`mobile/windows/`). OS window title and product name: **INFINITY**. Native save dialogs, dense dashboard, and Windows-specific Remember Me session persistence. |
-| **Android / Mobile** | Flutter Android app. Field capture (GPS, camera, voice), compact dashboard, and existing mobile session behavior (unchanged by Windows-only auth rules). |
-| **Responsive dashboard** | Phone, tablet, and desktop layouts with compact breakpoints for workforce cards, overtime charts, and technician summary. |
-| **Localization** | English (LTR) and Arabic (RTL) throughout the Flutter UI, including dashboard charts and overtime Excel exports. |
-
-Flutter also contains `ios/`, `macos/`, `linux/`, and `web/` runner folders as standard platform scaffolding. The product targets documented here are **Android** and **Windows**.
-
----
-
-## Main Features
-
-Features below are present in the repository (`mobile/lib/features/*` and `backend/src/modules/*`).
-
-### Platform & access
-
-| Feature | What exists |
-|---------|-------------|
-| **Authentication** | JWT access + refresh, login/logout, session restore, secure token storage. See [Authentication & Security](#authentication--security). |
-| **User management** | Admin user CRUD, password change/reset flows |
-| **Roles & permissions** | RBAC with Admin / Supervisor / Technician scopes and granular permission checks |
-| **Organization** | Company/organization hierarchy and settings |
-| **Profile** | User profile and related settings |
-| **Settings** | Theme, language, notifications preferences, overtime media settings, diagnostics / server management |
-| **Localization** | Full English & Arabic via Flutter ARB / `gen-l10n`, including RTL |
-| **Global search** | Client-side palette that searches across existing module APIs (users, work orders, assets, inventory, overtime, PM, reports). A dedicated `/search` API is not mounted. |
-| **Notifications (UI)** | In-app notification center and bell; feed currently sourced from dashboard live activity / audit projections (dedicated `/notifications` API is not mounted) |
-| **Reports Center** | Hub for operational reports and export entry points |
-| **Audit logging** | Server-side audit trail for settings and operational events |
-
-### Operations modules
-
-| Module | Capabilities |
-|--------|--------------|
-| **Attendance** | GPS clock in/out, selfie verification, personal/team history, admin review, connectivity-aware UX |
-| **Work orders** | Create, assign, track, complete; attachments and timeline-oriented flows |
-| **Overtime** | Multi-stage journeys, Normal & Travel types, GPS/maps/photos/voice, approval workflow, company overtime policy, multi-day calendar-day calculations, offline queue + sync. See [Overtime Management](#overtime-management). |
-| **Inventory** | Warehouses, parts, stock visibility (including low-stock style alerts on dashboard) |
-| **Assets** | Asset registry and related workflows |
-| **Preventive maintenance** | PM plans / schedules / history-oriented UI |
-| **Service reports** | List, detail, generation/download, customer signature support |
-
-Vehicles is schema-ready documentation only and is **not** implemented in the API or UI.
-
-### Offline
-
-- **Overtime** has the most complete offline path: local pending actions, sync on reconnect, upload-policy awareness.
-- Attendance and other modules use offline banners / caching patterns where implemented.
-- Repository interfaces are prepared for broader offline expansion.
+Flutter also contains `ios/`, `macos/`, `linux/`, and `web/` runner folders as standard scaffolding. Documented product targets are **Android** and **Windows**.
 
 ---
 
-## Authentication & Security
+## 2. Main Features
 
-Authentication uses the existing backend JWT architecture. There is a single login/refresh/logout flow — not a second auth system.
+Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 
-### Login and logout
+### 🔐 Authentication & Security
 
-| Endpoint | Purpose |
-|----------|---------|
-| `POST /api/v1/auth/login` | Email + password. Returns access token, refresh token, and user. |
-| `POST /api/v1/auth/refresh` | Exchange a valid refresh token + device id for new tokens. |
-| `POST /api/v1/auth/logout` | Invalidate the refresh session (authenticated). |
-| `GET /api/v1/auth/me` | Current authenticated user. |
+- Login / Logout
+- Remember Me (email + session tokens — **never** the password)
+- Secure refresh-token persistence (`flutter_secure_storage`)
+- Windows-specific Remember Me session policy (DPAPI-backed storage)
+- Access-token refresh via `/auth/refresh`
+- Role- and permission-based access (RBAC)
 
-Passwords are hashed with **bcrypt**. Tokens are JWTs (`JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET`). The client never persists the password.
+### 📊 Dashboard
 
-### Remember Me
+- Workforce metrics and attendance information
+- Overtime analytics and trends (eligible hours per calendar day)
+- Role-based dashboard sections
+- Period filters: Today · This Week · This Month · This Year · Custom
+- Dashboard summary request deduplication (in-flight + short fresh reuse)
+- Notification bell seeded from dashboard activity (no dedicated `/notifications` API)
 
-Remember Me stores the **email** (and a remember-me flag) in SharedPreferences so the login form can be pre-filled. **The password is never written** to SharedPreferences, secure storage, files, JSON, or SQLite.
+### ⏱️ Overtime Management
 
-Session persistence is done with **access + refresh tokens**, not saved credentials.
+- Journey stages: **START → ARRIVED → FINISHED WORK → END**
+- Photos, voice notes, notes, GPS / OpenStreetMap
+- Offline pending queue with **independent stage** sync
+- Admin / Supervisor review: Approve · Partial Approve · Reject
+- Rejection reason visible in technician history when present
+- Overnight / multi-day handling with official working-hours rules
+- Company overtime policy (soft 16h manual-review flag; no hard 48h end cap)
+- Excel export (summary / detailed) with English & Arabic workbooks
 
-### Windows persistent session
+### 📝 Work Orders
 
-On **Windows only**:
+- Listing and technician assignments
+- Status flow through create → assign → track → complete
+- Attachments / photos where supported in the work-order UI
+- Timeline-oriented detail flows
 
-1. User signs in with email + password and Remember Me enabled.
-2. The app stores access/refresh tokens in **`flutter_secure_storage`** (Windows DPAPI-backed storage). Writes are serialized so the single Windows storage file cannot drop the refresh token.
-3. The password is discarded and never stored.
-4. After a full application close and reopen, the app restores the session from the persisted refresh/session tokens.
-5. If the access token is expired, the client refreshes it automatically with the refresh token (`RefreshTokenInterceptor` and `restoreSession`).
-6. If the refresh token is expired, revoked, or invalid, the stored session is cleared and the Sign in screen is shown. There is no infinite refresh loop (refresh failures on `/auth/refresh` are not retried as 401 refresh).
-7. Logout clears local tokens. Reopening the app does **not** automatically sign the user back in.
+### 🕐 Attendance
 
-When Remember Me is **disabled** on Windows, tokens stay in memory for the live process only. Closing the app requires authentication again.
+- Attendance dashboard (clock in/out, breaks where implemented)
+- Shared `AttendanceCubit` (single status / today fetch and poll)
+- Attendance sync with connectivity awareness
+- GPS accuracy gates on the backend
 
-Android/iOS keep the existing behavior: tokens are always written to secure storage regardless of the Remember Me checkbox. Windows-only session policy lives in `DesktopSessionPolicy` and does not change mobile authentication.
+### 📦 Inventory · Assets · PM · Reports
 
-### Token handling
+- Inventory (warehouses, parts, low-stock style alerts on dashboard)
+- Assets registry
+- Preventive maintenance plans / schedules
+- Service reports (list, detail, generation/download, customer signature support)
+- Reports Center hub and overtime Excel Save As flow on desktop
 
-- Access tokens are attached as `Authorization: Bearer …`.
-- Refresh uses the existing `/auth/refresh` contract.
-- Sensitive values are redacted by `sanitizeLogMessage` before debug/error logs (passwords, tokens, Authorization headers).
+### ⚙️ Settings
+
+- Language, theme, notification preferences
+- Sync settings (auto sync, interval, Wi‑Fi-only)
+- Overtime media settings + Configuration Testing Lab (local preview; no Cloudinary upload from the lab)
+- **Technician Interface** controls (Admin)
+- Settings reachable from technician main sections when profile/settings is enabled
+- Server Management API base override (admin-protected)
+
+### 🌐 Connectivity & Offline
+
+- API health–based connectivity (authoritative sync gate)
+- Offline mode for overtime pending actions
+- Retry synchronization on reconnect
+- Configurable sync interval (`5 / 15 / 30 / 60` minutes)
+- Wi‑Fi-only sync for overtime (when enabled)
+- Global search palette across existing module APIs (no dedicated `/search` API)
+
+> **Vehicles** is schema-ready documentation only and is **not** implemented in the API or UI.
 
 ---
 
-## Overtime Management
+## 3. User Roles
+
+| Role | Access |
+|------|--------|
+| **Admin** | Full permissions: users, roles, settings (including Technician Interface), inventory, assets, PM, reports, media policy, exports, organization |
+| **Supervisor** | Team oversight, overtime review/export, operational dashboards, work orders and related manage scopes; settings **view** (not full `settings:manage`) |
+| **Technician** | Own attendance, overtime capture, assigned work orders, and view scopes for inventory/assets/PM/reports; uses **operational home** (not the executive admin dashboard) |
+
+**Technician Interface** configuration affects **technician operational navigation only**. It does **not** remove Admin or Supervisor access, menus, or routes.
+
+---
+
+## 4. Technician Interface Control
+
+**Admin Settings → Technician Interface** (`settings:manage`).
+
+Company-scoped setting key: `technician_interface`.
+
+| Control | When enabled | When disabled |
+|---------|--------------|---------------|
+| **Overtime** | Visible in technician nav | Hidden; deep links redirected |
+| **Work Orders** | Visible | Hidden; deep links redirected |
+| **Attendance** | Visible | Hidden; deep links redirected |
+| **Profile** | Visible | Hidden; deep links redirected |
+
+Defaults are all **enabled**.
+
+**All-disabled state:** technicians are sent to a dedicated **no sections** screen asking them to contact an administrator (`/technician-no-sections`).
+
+Config is readable by authenticated users for navigation; only admins with settings manage may update it.
+
+---
+
+## 5. Overtime Workflow
 
 ```
-Start Journey → Arrived at Work Site → Finished Work → End Journey
+START
+  ↓
+ARRIVED (at work site)
+  ↓
+FINISHED WORK
+  ↓
+END
 ```
 
-Each stage can capture GPS (accuracy, battery, network), reverse-geocoded address, photos, and an **independent stage voice note**. Maps use OpenStreetMap (`flutter_map`). Administrators configure voice duration/quality, photo compression, and upload policy under **Settings → Overtime Settings**, including an admin **Configuration Testing Lab** for safe local previews (no Cloudinary upload from the lab).
+| Topic | Behavior |
+|-------|----------|
+| **Independent stages** | Each stage can be its own queue item (`start` · `arrivedAtWorkSite` · `finishedWork` · `end`). A stage does **not** wait for the entire journey to finish before sync can run. |
+| **Online** | Stages sync to the API when connectivity allows (API reachable). |
+| **Offline** | Stages are persisted locally in the pending queue. |
+| **Reconnect** | Sync retries pending actions (scheduler + connectivity restore). |
+| **Media** | Photos / voice stay pending until the server confirms upload where the upload policy requires it. |
+| **Idempotency** | Stable `clientRequestId` per stage; backend reconciles duplicates / already-confirmed stages. |
+| **Evidence** | GPS, reverse-geocoded address, photos, independent stage voice notes; maps via OpenStreetMap (`flutter_map`). |
+| **Types** | Normal and Travel (including overnight travel). |
 
-Types: **Normal** and **Travel** (including overnight travel). Duration uses the same official working-hours algorithm for both.
-
-### Approval workflow
-
-Admins/supervisors with overtime approve/reject permissions can:
+### Approval
 
 | Action | Behavior |
 |--------|----------|
-| **Approve (full)** | Approves the session; backend sets approved hours from worked/eligible calculation when `approvedHours` is omitted. |
-| **Partial approve** | Reviewer enters approved hours (HH:MM UI, sent as the existing `approvedHours` API field). |
-| **Reject** | Rejects the session with a reason. |
-| **Manual review** | Sessions flagged `requiresManualReview` (for example duration beyond company policy) stay available for human review instead of being auto-rejected. |
+| **Approve** | Full approval; approved hours from calculation when omitted |
+| **Partial approve** | Reviewer sets approved hours (HH:MM UI → `approvedHours`) |
+| **Reject** | Reject with reason (shown in technician history) |
+| **Manual review** | Sessions over the soft duration threshold are flagged `requiresManualReview` |
 
-### Company overtime policy
+### Company overtime policy (current)
 
-| Rule | Current behavior |
-|------|------------------|
-| Soft duration threshold | Default **16 hours** (`OVERTIME_MAX_SESSION_HOURS`). Ending a longer session is **allowed**. |
-| Manual review flag | Sessions longer than the soft threshold are flagged (`requiresManualReview`) with a review reason such as exceeding company policy of 16 hours. |
-| Hard maximum | **There is no hard 48-hour (or similar) cap.** Ending a session does not fail with `SESSION_TOO_LONG`. Multi-day and very long sessions calculate normally. |
-| Minimum request | `OVERTIME_MIN_REQUEST_HOURS` (default 0.5). |
-
-### Official working hours and calendar-day split
-
-Authoritative calculator: `backend/src/modules/business/overtime/overtime.calculation.js` with policy in `working-hours.policy.js`. Calendar days and weekdays are resolved in **Africa/Cairo**, not the host process timezone.
-
-| Policy | Detail |
-|--------|--------|
-| Working days | **Saturday–Thursday** |
-| Official window | **09:00–17:00** (half-open: 17:00 is outside working hours) |
-| Friday | Full day off. Eligible overtime can count the **full 24 hours** of Friday. |
-| Eligible overtime | Session time **outside** official hours. Working duration = overlap with 09:00–17:00 on working days. Eligible = total − working (never negative). |
-| Weekday full calendar day | 24h − 8h official window = **16 eligible hours**. |
-| Multi-day sessions | Split by calendar day using the same overtime rules (not raw wall-clock and not an equal split of the total). |
-
-Example used in dashboard trend tests: a session from Aug 12 10:00 to Aug 17 14:00 distributes as **7 / 16 / 24 / 16 / 16 / 9** eligible hours (Friday = 24).
-
----
-
-## Dashboard
-
-The **executive dashboard** (admin-focused layout; supervisor/technician variants also exist) is a dense, two-column analytics surface on desktop and a stacked, compact layout on phones.
-
-### Header & filters
-
-- Compact welcome line (regular “Welcome back,” + semibold user name)
-- Period filters: **Today · This Week · This Month · This Year · Custom**
-- Report range label for the active period
-
-### KPI strip
-
-Compact strip of primary KPIs (when data is available), for example:
-
-- Total employees
-- Currently working
-- Total working hours
-- Overtime / approved hours
-- Attendance rate
-
-Durations are shown as **hours + minutes** (for example `14 hours 57 minutes`), not decimal hours like `14.95`. Chart axes use compact duration labels (for example `122:42 h`).
-
-### Main layout (desktop / tablet)
-
-**Main column**
-
-- **Workforce overview** (totals, active, currently working, average hours)
-- **Overtime Analytics** (KPI row + embedded charts + technician summary)
-- **Trends** (attendance / work orders / overtime / PM where series exist) with 7 / 30 day window
-
-**Side column**
-
-- **Operations** (work order + PM status list with status colors)
-- **Resources** (inventory / asset alerts and counts)
-- **Recent notifications / activity** feed
-
-On compact/phone widths the same sections stack; workforce overview uses a 2×2 icon grid.
-
-### Overtime analytics on dashboard
-
-- Approved hours, trips, overnight trips, technicians
-- Charts: **hours per technician**, **trips per technician**, **hours over time**
-- **Technician Summary**
-  - Desktop/tablet: compact table (name, approved hours, trips, overnight, avg hours/trip)
-  - Compact/mobile: per-technician **cards** instead of a dense table
-
-**Hours over time** distributes multi-day overtime by **actual eligible overtime per calendar day** (official OT rules), not by putting the whole total on the start date and not by dividing the total equally across days. Friday buckets can be 24 hours; weekday buckets follow 09:00–17:00 exclusion.
-
-### Charts and RTL
-
-- Bar labels stay aligned with bars in **LTR and RTL** (Arabic).
-- Charts remain usable on phone widths (360 / 390 / 430) without clipping duration labels into values such as `8…`.
-- Tooltips for hour series use human-readable durations, not decimals.
-
-### Typography & data behavior
-
-- Dashboard text uses **`DashboardTypography`** (`mobile/lib/features/dashboard/presentation/widgets/dashboard_typography.dart`) on the app `Theme` / `AppTypography`.
-- Uses existing executive dashboard Cubit + summary APIs (lightweight statistics, not full collections for counts).
-- Prefers cached data / refresh indicators (`isRefreshing`) over full-page loading when data already exists.
-- Role-aware sections (admin dense layout; other roles keep their section builders).
-
----
-
-## Mobile UI
-
-Android/phone layouts are tuned for RTL Arabic and narrow widths without changing desktop information density.
-
-| Area | Mobile behavior |
-|------|-----------------|
-| **Arabic RTL dashboard** | Localized strings, RTL direction, chart label/bar alignment for Arabic. |
-| **Workforce overview** | Compact 2×2 card grid with icons (phone widths such as 360–430). |
-| **Technician summary** | Card list on compact widths; table on wider layouts. |
-| **Overtime analytics charts** | Responsive embedded charts; duration formatting; no decimal-hour axis labels. |
-| **Admin overtime review** | On **phones**, Approve / Partial Approve / Reject appear at the **end of the scrollable page**, not pinned over the content. On **tablet/desktop**, review actions stay pinned outside the scroll view. |
-
----
-
-## Windows / Desktop
-
-| Topic | Current behavior |
-|-------|------------------|
-| **Window title** | OS title bar is **INFINITY** (`mobile/windows/runner/main.cpp`). |
-| **Desktop metadata** | `FileDescription` and `ProductName` in `Runner.rc` are **INFINITY**. Internal/original filenames remain `mobile` / `mobile.exe` so the Flutter package/binary name is not renamed. |
-| **Material app title** | `AppConfig.appName` is `INFINITY`. |
-| **Remember Me** | Persists refresh/access tokens in secure storage when enabled; never stores the password. Restores the authenticated session after a full restart. |
-| **Remember Me off** | Live session only; closing the app requires sign-in again. |
-| **Logout** | Clears persisted tokens; next launch is signed out. |
-| **Android** | Window title, package name, and mobile Remember Me / token persistence are not changed by the Windows session policy. |
-
-Rebuild the Windows app after native runner changes (`flutter run -d windows` or `flutter build windows --release`).
-
----
-
-## Overtime Excel Export
-
-Authorized **Admin / Supervisor** users can export overtime workbooks generated on the backend with **ExcelJS**.
-
-### Modes
-
-| Mode | Contents |
+| Rule | Behavior |
 |------|----------|
-| **Summary** | Summary sheet only |
-| **Detailed** | Summary + **Sessions Index** + **one worksheet per session** (with overflow sheet when volume exceeds the detailed sheet cap) |
+| Soft duration threshold | Default **16 hours** (`OVERTIME_MAX_SESSION_HOURS`). Ending longer sessions is **allowed**. |
+| Hard maximum | **No** hard 48-hour (or similar) end cap / `SESSION_TOO_LONG` |
+| Minimum request | `OVERTIME_MIN_REQUEST_HOURS` (default `0.5`) |
+| Working days | Saturday–Thursday · **09:00–17:00** (Africa/Cairo) |
+| Friday | Full day off — eligible overtime can count the full **24 hours** |
+| Multi-day | Split by calendar day using official OT rules (not equal division of the total) |
 
-### Report language
+Authoritative calculator: `backend/src/modules/business/overtime/overtime.calculation.js`.
 
-Export dialog supports **English** and **العربية**. Selected language localizes human-readable labels. Not translated: IDs, emails, GPS coordinates, device/network values, and other raw technical identifiers.
+### Excel export
 
-### Summary sheet
+Authorized Admin / Supervisor users can export workbooks (ExcelJS):
 
-- Report metadata (company, generated by/at, version, export type, date range, filters, language)
-- KPI grid including:
-  - Total technicians
-  - Total calculated / worked hours
-  - Total approved hours
-  - Total sessions / trips
-  - Travel · Normal · Overnight session counts
-  - Approved · Pending/review · Rejected session counts
-- **Employee summary table** (one row per technician): name, email, worked hours, approved hours, session counts by type/status
+- **Summary** or **Detailed** (index + per-session sheets)
+- English / Arabic report language
+- Desktop **Export ready** dialog with native **Save As** (`file_selector`)
 
-**Branch and Department are intentionally excluded** from export filters, columns, and labels.
-
-### Detailed sheets
-
-- Sessions index with identity and duration columns
-- Per-session printable sheets: overtime info, journey timeline, embedded photo thumbnails (when available), voice/maps hyperlinks, device context
-- Arabic workbooks use **RTL worksheet views** where language is Arabic
-
-### Arabic duration rendering
-
-Durations are written as prose (e.g. `18 ساعة و 44 دقيقة`), never decimal hour strings like `14.95`. Arabic cells use Excel-compatible BiDi protection (LRM around digit runs + LRE…PDF embedding) and LTR reading order on duration cells so hours appear before minutes in Microsoft Excel.
+Branch and Department are intentionally excluded from export filters/columns.
 
 ---
 
-## Export Ready / Save As Flow
+## 6. Offline & Sync
 
-After generation, the Flutter client writes the `.xlsx` to a temporary file and shows an **Export ready** dialog:
+| Concern | Implementation |
+|---------|----------------|
+| **Connectivity** | `ConnectivityService` — network interface + internet probe + **API health** |
+| **Authoritative gate** | API reachability (`canSync`) — not generic internet alone |
+| **Health endpoint** | `GET /api/v1/health` (probe hits API `/health`) |
+| **Probe reuse** | Fresh successful online probe reused for **5 seconds** |
+| **Windows false-offline** | Generic OS/internet checkers can report false negatives on Windows; **API health remains authoritative** for sync |
+| **Pending queue** | Overtime actions persisted locally and retried |
+| **Auto sync** | Configurable on/off |
+| **Intervals** | `5 / 15 / 30 / 60` minutes (default `5`) |
+| **Wi‑Fi-only** | Implemented for **overtime** sync when enabled |
+| **Single-flight** | Sync cubits avoid overlapping sync cycles (follow-up when needed) |
+| **Restore sync** | Connectivity restore triggers sync when API becomes reachable |
 
-| Element | Behavior |
-|---------|----------|
-| **Title** | Export ready |
-| **Content** | File icon, filename, sessions exported count |
-| **Save As** (primary) | Opens the **native OS save dialog** via `file_selector` (`getSaveLocation`) on Windows / macOS / Linux — user picks folder + filename; `.xlsx` type group; file is **copied** to the chosen path |
-| **Cancel Save As** | Returns to the dialog with **no error** |
-| **Open File** | Opens with the system default app (`url_launcher`) |
-| **Open Containing Folder** | Reveals the generated temp file in Explorer / Finder / file manager |
-| **Close** | Dismisses the dialog |
-| **Success / errors** | Inline success path after Save As; snackbars for open/save failures |
-
-Mobile builds without native Save As fall back to share-oriented actions. The original generated temp file is kept when Save As is cancelled.
-
----
-
-## Technology Stack
-
-### Frontend / mobile (`mobile/pubspec.yaml`)
-
-| Technology | Role |
-|------------|------|
-| Flutter / Dart (^3.12) | Cross-platform UI |
-| Material 3 | Design system (light / dark / system) |
-| `flutter_bloc` (Cubit) | State management |
-| GetIt | Dependency injection |
-| Dio | HTTP |
-| GoRouter | Navigation (`StatefulShellRoute`) |
-| `flutter_map` + latlong2 | OpenStreetMap |
-| geolocator / geocoding | GPS + reverse geocoding |
-| image_picker / image | Capture & compression |
-| record / just_audio / just_audio_media_kit | Voice record & playback (Windows audio via media_kit) |
-| flutter_secure_storage | Access/refresh tokens (Android EncryptedSharedPreferences, iOS Keychain, Windows DPAPI) |
-| shared_preferences | Preferences, remembered email, local caches |
-| path_provider / path / share_plus / file_selector | File IO, share, native Save As |
-| url_launcher | Open files / URLs |
-| connectivity_plus / internet_connection_checker_plus | Connectivity |
-| local_auth / device_info_plus / permission_handler / battery_plus | Device capabilities |
-| timezone / intl | Time & formatting |
-| cached_network_image / flutter_svg | Images |
-| logger | Client logging (messages sanitized) |
-
-### Backend (`backend/package.json`)
-
-| Technology | Role |
-|------------|------|
-| Node.js ≥ 20 | Runtime |
-| Express | HTTP API |
-| Mongoose / MongoDB | Persistence |
-| jsonwebtoken / bcrypt | Auth |
-| Cloudinary | Media storage |
-| exceljs | Overtime Excel workbooks |
-| Socket.IO | Authenticated realtime foundation (user/company rooms; ping/pong) |
-| Helmet / cors / express-rate-limit / express-validator | Hardening & validation |
-| multer | Uploads |
-| Pino / pino-http | Logging |
-| Jest / Supertest / mongodb-memory-server | Backend tests (dev) |
+Attendance and other modules use offline banners / caching patterns where implemented. Overtime has the most complete offline path.
 
 ---
 
-## Architecture
+## 7. Performance Optimizations
 
-### Flutter (Clean Architecture)
+Optimizations below are **present in the current codebase**.
 
-```
-Presentation  →  Pages / Widgets + Cubits
-Domain        →  Entities, Use Cases, Repository interfaces
-Data          →  Models, datasources, Repository implementations
-Core          →  Config, network, theme, router, localization, DI, shared widgets
-Shared        →  Cross-feature presentation (e.g. profile)
-```
+### 🚀 Dashboard
 
-Each feature under `mobile/lib/features/<name>/` follows this layering.
+- In-flight request coalescing + **5-second** fresh reuse
+- Notification badge seeding from loaded dashboard summary
+- MongoDB query consolidation via `$facet`
+- `liveActivity` via aggregate + `$lookup` (replaces find + populate)
 
-### Backend
+### 🚀 API Payloads
 
-```
-Routes → Validators → Controllers → Services → Mongoose Models
-```
+- Lightweight overtime **list** projections
+- Lightweight work-order **list** projections
+- Full details remain on **detail** endpoints
 
-Mounted under `/api/v1`. Platform concerns (auth, RBAC, settings, dashboard, user management, organization, time, security) live under `backend/src/modules/core/`. Business domains live under `backend/src/modules/business/`.
+### 🚀 Authentication
+
+- Concurrent `User.findOne` + `Role.find` after JWT verify
+- **DB user remains authoritative**
+- JWT roles are used only to prefetch role documents — **not** as sole authorization
+
+### 🚀 Flutter
+
+- Shared `AttendanceCubit` (lazy singleton — no duplicate pollers)
+- Overtime / attendance timer rebuild isolation (`BlocSelector`)
+- Image decode hints (`memCacheWidth`) on key photo paths
+- Connectivity health-probe reuse (5s when API was online)
+
+### Measured backend benchmarks (local API → Atlas, small dataset)
+
+Labeled **measured** — not estimates. Values from the latest verified profiling pass after auth parallelization:
+
+| Metric | Before → After (measured) |
+|--------|---------------------------|
+| Auth median | **705.2 ms → 343.8 ms** |
+| Dashboard HTTP median | **1140.9 ms → 781.4 ms** |
+| Dashboard HTTP average | **1174.8 ms → 825.9 ms** |
+| `liveActivity` (populate → `$lookup`) | **~702 ms → ~350 ms** (same measurement series) |
+
+Android on-device frame timings are environment-dependent; use Flutter profile mode on a real device for client UI measurements.
 
 ---
 
-## Project Structure
+## 8. Localization
+
+| Topic | Detail |
+|-------|--------|
+| Languages | **Arabic** · **English** |
+| Direction | Arabic **RTL** · English **LTR** |
+| First launch | Follows **system** language when preference is `system` |
+| Explicit choice | User language selection overrides system |
+| Restore defaults | Returns locale preference to **system** |
+| Sources | ARB: `mobile/lib/core/localization/l10n/app_en.arb`, `app_ar.arb` |
+| Generation | Flutter `gen-l10n` (`flutter gen-l10n`) |
+
+Dashboard charts and overtime Excel exports respect locale / RTL where implemented.
+
+---
+
+## 9. Security
+
+Verified behavior only:
+
+- JWT access + refresh; passwords hashed with **bcrypt**
+- Role-based permissions on protected backend routes and client gates
+- Admin settings authorization (`settings:manage` for Technician Interface, etc.)
+- Secure token storage (`flutter_secure_storage`)
+- Remember Me stores **session/refresh tokens** (and remembered email) — **never the password**
+- Logout clears persisted session where applicable (Windows Remember Me policy clears tokens)
+- DB-authoritative user validation (`isActive`, `deletedAt`, company, roles)
+- JWT is **not** the sole authorization source after verify
+- Helmet, CORS allow-list, rate limiting
+- Device clock skew checks; GPS accuracy thresholds
+- Client log sanitization for tokens / passwords
+- Secrets via environment only — never commit `.env`
+
+### Windows Remember Me (summary)
+
+1. Sign in with Remember Me → tokens in secure storage (serialized writes).
+2. Password never stored.
+3. Full restart restores session from refresh/session tokens; expired access refreshes automatically.
+4. Invalid refresh → session cleared → Sign in.
+5. Remember Me **off** → tokens in memory only for the live process.
+6. Android keeps existing always-persist-to-secure-storage behavior; Windows policy does not change mobile auth.
+
+---
+
+## 10. Technology Stack
+
+| Layer | Technology |
+|-------|------------|
+| Mobile / Desktop | Flutter / Dart (^3.12) |
+| UI | Material 3 |
+| State | `flutter_bloc` (Cubit) |
+| DI | GetIt |
+| HTTP | Dio |
+| Routing | GoRouter (`StatefulShellRoute`) |
+| Localization | Flutter `gen-l10n` (ARB) |
+| Maps | OpenStreetMap (`flutter_map`) — not Google Maps SDK |
+| Media uploads | Cloudinary |
+| Backend | Node.js (≥ 20) / Express |
+| Database | MongoDB / Mongoose |
+| Authentication | JWT + bcrypt |
+| Realtime | Socket.IO (authenticated rooms; ping/pong foundation) |
+| Excel | ExcelJS |
+| Desktop | Windows |
+| Mobile | Android |
+
+---
+
+## 11. Project Structure
 
 ```
 infinity-fsm/
-├── backend/                          # Node.js / Express API
+├── backend/                 # Node.js / Express API
 │   ├── src/
-│   │   ├── config/                   # Env, Cloudinary, multer
+│   │   ├── config/
 │   │   ├── modules/
-│   │   │   ├── core/                 # auth, rbac, dashboard, users, settings, …
-│   │   │   └── business/             # attendance, overtime, work-orders, inventory, …
-│   │   ├── routes/                   # /api/v1
-│   │   ├── shared/                   # middleware, utils
-│   │   └── __tests__/                # Jest suites
-│   ├── scripts/                      # seed & migrations
+│   │   │   ├── core/        # auth, rbac, dashboard, users, settings, …
+│   │   │   └── business/    # attendance, overtime, work-orders, …
+│   │   ├── routes/          # /api/v1
+│   │   ├── shared/          # middleware, utils
+│   │   └── __tests__/
+│   ├── scripts/             # seed & migrations
 │   └── .env.example
-├── mobile/                           # Flutter client (Android + Windows)
+├── mobile/                  # Flutter client (Android + Windows)
 │   ├── lib/
-│   │   ├── core/                     # theme, router, l10n, DI, network, storage, widgets
-│   │   ├── features/                 # auth, dashboard, attendance, overtime, …
+│   │   ├── core/            # theme, router, l10n, DI, network, storage
+│   │   ├── features/        # auth, dashboard, attendance, overtime, …
 │   │   └── shared/
-│   ├── android/                      # Android embedding
-│   ├── windows/                      # Windows runner (title INFINITY)
-│   ├── ios/ · macos/ · linux/ · web/ # Flutter platform folders
-│   ├── test/                         # Flutter tests
+│   ├── android/
+│   ├── windows/             # runner title: INFINITY
+│   ├── test/
 │   └── assets/
-├── docs/                             # Architecture, API, RBAC, roadmap, …
-├── infra/                            # Deployment notes (planning)
-├── tests/                            # Planned cross-cutting E2E/load assets
-├── screenshots/                      # Optional captures for docs
+├── docs/                    # Architecture, API, RBAC, roadmap, …
+├── infra/                   # Deployment planning notes
+├── tests/                   # Cross-cutting test assets (planning)
+├── screenshots/
+├── installer.iss            # Windows Inno Setup installer
 ├── LICENSE
 └── README.md
 ```
 
----
+**Architecture (Flutter):** Presentation (pages/widgets + Cubits) → Domain (entities, use cases, repository interfaces) → Data (models, datasources, repositories).
 
-## UI / Design
-
-- Dark-friendly **desktop-style** shell with NavigationRail on wide screens
-- Compact, data-dense **executive dashboard** with consistent typography
-- Material 3 theming (no hard-coded one-off dashboard font family)
-- Responsive breakpoints (`AppBreakpoints`): phone `< 600`, tablet `600–900`, desktop `≥ 900`; dashboard compact `≤ 768`
-- Charts and operational lists designed for quick scanning
-- Full **Arabic RTL** and **English LTR** support across UI and Excel exports
+**Architecture (Backend):** Routes → Validators → Controllers → Services → Mongoose models.
 
 ---
 
-## Important Implementation Notes
+## 12. Development Setup
 
-| Topic | Detail |
-|-------|--------|
-| **RBAC** | Permissions checked on client and protected backend routes |
-| **Remember Me** | Email only in preferences; session via refresh tokens. Password is never stored. |
-| **Windows session** | Tokens persist only when Remember Me is on; Android token persistence is unchanged. |
-| **Overtime policy** | 16-hour soft review flag; no hard 48-hour session cap. |
-| **Calendar-day OT** | Africa/Cairo; Sat–Thu 09:00–17:00; Friday 24h eligible. |
-| **Dashboard trends** | Multi-day hours split by eligible overtime per day, not equal division. |
-| **Excel BiDi** | Arabic durations protected for Excel display; English unchanged |
-| **Save As** | Native dialog via `file_selector` on desktop; cancel is silent |
-| **Offline overtime** | Local queue + reconciliation/sync schedulers with forensic/trace helpers in tests |
-| **SessionQueryCache** | Shared query cache to avoid duplicate network fetches |
-| **Media** | Cloudinary for production uploads; Configuration Lab stays local-only |
-| **Maps** | OpenStreetMap — not Google Maps SDK |
+### Requirements
 
----
-
-## Testing
-
-### Backend (Jest)
-
-Located under `backend/src/__tests__/`:
-
-| Suite | Focus |
-|-------|--------|
-| `overtime.calculation.test.js` | Eligible vs working duration; sessions longer than 48 hours still calculate; 16-hour review threshold |
-| `overtime.calendar-day-split.test.js` | Multi-day split; Friday 24h; weekday 16h eligible for a full day |
-| `overtime.end-duration.test.js` | No `SESSION_TOO_LONG` / no hard 48-hour cap; soft 16-hour manual review |
-| `dashboard.overtime-trends.test.js` | Hours-over-time buckets follow eligible OT per calendar day (e.g. 7 / 16 / 24 / 16 / 16 / 9) |
-| `overtime.approved-hours.test.js` | Approval hours |
-| `overtime.timeline.test.js` | Journey timeline |
-| `overtime.excel.export.test.js` | Workbook structure, i18n, Arabic durations, no Branch/Department columns |
-| `rbac.test.js` | Role/permission checks |
-
-```bash
-cd backend
-npm test
-# focused examples:
-npm test -- --testPathPattern=overtime.calendar-day-split
-npm test -- --testPathPattern=dashboard.overtime-trends
-npm test -- --testPathPattern=overtime.excel.export
-```
-
-### Flutter
-
-Located under `mobile/test/`:
-
-| Area | Examples |
-|------|----------|
-| **Overtime calculation / duration** | `overtime_calculator_test.dart`, `approved_hours_hhmm_test.dart` |
-| **Duration formatter** | `test/core/localization/duration_formatter_test.dart` (hours + minutes, Arabic prose) |
-| **Dashboard widgets** | `dashboard_workforce_overview_test.dart` (Arabic RTL compact grid), `dashboard_mini_chart_test.dart` (duration labels, LTR/RTL bar alignment, phone widths) |
-| **Admin overtime review layout** | `overtime_admin_detail_actions_layout_test.dart` (phone: actions in scroll; tablet/desktop: pinned) |
-| **Remember Me / session** | `windows_remember_me_session_test.dart`, `token_manager_test.dart` (persist vs memory-only, no password storage, invalid refresh clears session) |
-| **Log sanitization** | `log_sanitizer_test.dart` |
-| **Overtime offline / sync** | lifecycle, scheduler, reconciliation, photo compressor, forensic traces |
-| **Partial approve UI** | `overtime_partial_approve_dialog_test.dart` |
-
-```bash
-cd mobile
-flutter test
-flutter analyze
-
-# focused examples:
-flutter test test/core/storage/token_manager_test.dart test/features/auth/windows_remember_me_session_test.dart
-flutter test test/features/dashboard
-flutter test test/features/overtime/overtime_admin_detail_actions_layout_test.dart
-flutter test test/core/localization/duration_formatter_test.dart
-```
-
-Run the commands locally to obtain current pass/fail results for your environment.
-
----
-
-## Setup / Installation
-
-### Prerequisites
-
-- **Node.js 20+**
-- **MongoDB 6+** (local or Atlas)
-- **Flutter SDK** with Dart **3.12+** (see `mobile/pubspec.yaml`)
-- **Cloudinary** account for production media uploads
-- Windows desktop: Visual Studio with the **Desktop development with C++** workload (Flutter Windows requirements)
+- Flutter SDK with Dart **^3.12**
+- Node.js **≥ 20**
+- npm
+- MongoDB (local or Atlas) / configured backend
+- Cloudinary account for production media uploads
+- Windows desktop: Visual Studio **Desktop development with C++** workload
 
 ### Backend
 
 ```bash
 cd backend
-cp .env.example .env    # set MONGODB_URI, JWT secrets, Cloudinary, etc.
+cp .env.example .env    # set placeholders — never commit real secrets
 npm install
-npm run seed            # optional demo data
+npm run seed            # optional
 npm run dev             # http://localhost:3000  (node --watch)
 ```
 
-Health:
+Health checks:
 
 ```bash
 curl http://localhost:3000/api/v1/health
 curl http://localhost:3000/api/v1/health/ready
 ```
 
-### Flutter (shared)
+### Flutter
 
 ```bash
 cd mobile
 flutter pub get
 flutter gen-l10n
-```
-
-### Android
-
-```bash
-cd mobile
-flutter run -d android
-```
-
-### Windows
-
-```bash
-cd mobile
-flutter run -d windows
+flutter run -d android    # or: flutter run -d windows
 ```
 
 Local API override (compile-time):
 
 ```bash
-flutter run --dart-define=ENV=development --dart-define=API_BASE_URL=http://192.168.1.10:3000/api/v1
+flutter run --dart-define=ENV=development --dart-define=API_BASE_URL=http://<host>:3000/api/v1
 ```
 
-Default API base lives in `mobile/lib/core/config/env_config.dart`. Runtime **Server Management** can override the active API base without rebuilding (admin-protected).
+Default / production API base is configured in `mobile/lib/core/config/env_config.dart`. Runtime **Server Management** can override the active API base without rebuilding (admin-protected).
 
----
-
-## Development Commands
+### Useful commands
 
 | Area | Command |
 |------|---------|
-| Backend install | `cd backend && npm install` |
-| Backend dev | `cd backend && npm run dev` |
 | Backend start | `cd backend && npm start` |
-| Backend seed | `cd backend && npm run seed` |
-| Backend test | `cd backend && npm test` |
 | Backend lint | `cd backend && npm run lint` |
-| Flutter deps | `cd mobile && flutter pub get` |
-| Flutter l10n | `cd mobile && flutter gen-l10n` |
-| Flutter run (connected device) | `cd mobile && flutter run` |
-| Flutter Android | `cd mobile && flutter run -d android` |
-| Flutter Windows | `cd mobile && flutter run -d windows` |
+| Backend test | `cd backend && npm test` |
 | Flutter analyze | `cd mobile && flutter analyze` |
 | Flutter test | `cd mobile && flutter test` |
 
 ---
 
-## Build / Release
+## 13. Testing
+
+### Backend (Jest)
+
+Under `backend/src/__tests__/`, including:
+
+- Overtime calculation, calendar-day split, end-duration policy
+- Dashboard overtime trends
+- Overtime Excel export / timeline / approved hours
+- Auth parallel role prefetch
+- Dashboard live-activity / list-projection payload tests
+- RBAC
 
 ```bash
-# Android APK
-cd mobile
-flutter build apk --release
-
-# Android App Bundle (Play Store)
-flutter build appbundle --release
-
-# Windows desktop
-flutter build windows --release
+cd backend
+npm test
 ```
 
-Windows output is under `mobile/build/windows/x64/runner/Release/` (executable name remains `mobile.exe`; window title is **INFINITY**).
+### Flutter
 
-Do not commit signing keystores, API secrets, or `.env` files.
+Under `mobile/test/`, including:
+
+- Authentication / Windows Remember Me / token manager
+- Dashboard widgets (RTL, charts, workforce overview)
+- Overtime offline lifecycle, sync scheduler, reconciliation, forensics
+- Connectivity service
+- Settings / localization / Technician Interface navigation
+- Work orders / attendance areas as covered by existing suites
+
+```bash
+cd mobile
+flutter test
+flutter analyze
+```
+
+Recent ConnectivityService interface updates are covered by updated overtime test fakes (lifecycle, forensics, reconciliation, scheduler). Run those suites after connectivity changes.
+
+> Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate.
 
 ---
 
-## Environment Variables
+## 14. Build & Release
 
-Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.** Use placeholders only.
+### Android
+
+```bash
+cd mobile
+flutter build apk --release
+# optional Play Store bundle:
+flutter build appbundle --release
+```
+
+Typical APK output:
+
+`mobile/build/app/outputs/flutter-apk/app-release.apk`
+
+### Windows
+
+```bash
+cd mobile
+flutter build windows --release
+```
+
+Output:
+
+`mobile/build/windows/x64/runner/Release/` (executable name `mobile.exe`; window title **INFINITY**)
+
+Optional installer: root `installer.iss` (Inno Setup) packages the Windows Release build.
+
+Release APK and Windows builds have been successfully produced and exercised on real devices/desktops in current project validation. Do not commit signing keystores, API secrets, or `.env` files.
+
+---
+
+## 15. Environment Variables
+
+Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 
 | Variable | Purpose |
 |----------|---------|
 | `NODE_ENV` | `development` / `production` / `test` |
 | `PORT` | API port (default `3000`) |
 | `API_VERSION` | Version segment (default `v1`) |
-| `MONGODB_URI` | MongoDB connection string (example: `mongodb://localhost:27017/infinity_fsm`) |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Token secrets (≥ 32 chars). Do not use example values in production. |
-| `JWT_ACCESS_EXPIRY` / `JWT_REFRESH_EXPIRY` | Token TTLs (defaults `15m` / `7d`) |
-| `CORS_ORIGINS` | Allowed origins |
-| `RATE_LIMIT_*` | Rate limiting |
+| `MONGODB_URI` | MongoDB URI — e.g. `mongodb://localhost:27017/<db>` or Atlas `mongodb+srv://<user>:<password>@<cluster>/...` |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Token secrets (≥ 32 chars) — use strong unique values in production |
+| `JWT_ACCESS_EXPIRY` / `JWT_REFRESH_EXPIRY` | Defaults `15m` / `7d` |
+| `CORS_ORIGINS` | Allowed origins (comma-separated) |
+| `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX` / `RATE_LIMIT_AUTH_MAX` | Rate limiting |
 | `LOG_LEVEL` | Pino level |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Media uploads |
 | `SOCKET_CORS_ORIGINS` | Socket.IO CORS |
 | `DEVICE_CLOCK_SKEW_SECONDS` | Clock drift allowance |
 | `ATTENDANCE_GPS_ACCURACY_THRESHOLD_METERS` | Attendance GPS gate |
-| `OVERTIME_MAX_SESSION_HOURS` | Soft review threshold (default `16`). Not a hard reject cap. |
+| `OVERTIME_MAX_SESSION_HOURS` | Soft review threshold (default `16`) |
 | `OVERTIME_MAX_REQUEST_HOURS` / `OVERTIME_MIN_REQUEST_HOURS` | Request bounds |
 | `OVERTIME_GPS_ACCURACY_THRESHOLD_METERS` | Overtime GPS gate |
 
-Client: `--dart-define=API_BASE_URL=...` and `--dart-define=ENV=development|production`.
+**Client:** `--dart-define=API_BASE_URL=...` and `--dart-define=ENV=development|production`.
 
 ---
 
-## API Surface
+## 16. Deployment
+
+| Component | Current state |
+|-----------|---------------|
+| **Backend API** | Production base URL points at a **Render** web service (`EnvConfig.productionApiBaseUrl`). Configure MongoDB, JWT, Cloudinary, and CORS via the host’s environment settings. |
+| **Mobile / Desktop** | Distributed as **built artifacts** (Android APK/AAB, Windows Release folder / optional Inno Setup installer) — not a separate hosted web frontend. |
+| **`infra/`** | Planning notes only (Docker/CI planned). No live Docker/CI pipeline configs are required to run the app today. |
+
+Bind the API to the platform port (e.g. `PORT`) and keep secrets in the host environment — never in the repository.
+
+---
+
+## 17. API Overview
 
 Primary mount: **`/api/v1`**
 
-```
-/health
-/health/ready
-/auth                 # login, refresh, logout, me
-/organization
-/attendance
-/overtime             # start, checkpoints, end, approve, reject, export
-/work-orders
-/inventory
-/assets
-/pm
-/reports
-/users
-/roles
-/settings
-/time
-/security
-/dashboard
-```
+| Group | Path prefix | Notes |
+|-------|-------------|--------|
+| Health | `/health`, `/health/ready` | Liveness / readiness |
+| Auth | `/auth` | `POST /login`, `POST /refresh`, `POST /logout`, `GET /me` |
+| Dashboard | `/dashboard` | Role summary & related stats |
+| Overtime | `/overtime` | Journey, review, export |
+| Attendance | `/attendance` | Clock / history / admin |
+| Work Orders | `/work-orders` | CRUD & workflow |
+| Settings | `/settings` | Including technician interface config |
+| Organization | `/organization` | Company / org |
+| Users / Roles | `/users`, `/roles` | Admin RBAC |
+| Inventory / Assets / PM | `/inventory`, `/assets`, `/pm` | Operations modules |
+| Reports | `/reports` | Operational reports |
+| Time / Security | `/time`, `/security` | Platform helpers |
 
-See [docs/API.md](./docs/API.md) for the fuller catalog. Some docs modules (e.g. dedicated notifications/search/vehicles services) describe future endpoints that are not yet mounted in `routes/v1`.
+Fuller catalog: [docs/API.md](./docs/API.md). Prefer **mounted routes in code** over older planned docs. Dedicated `/notifications` and `/search` APIs are **not** mounted; the app uses dashboard activity and client-side search across existing APIs.
 
 ---
 
-## Security & Roles
+## 18. Performance Notes
 
-- JWT access + refresh, bcrypt password hashing
-- Helmet, CORS allow-list, rate limiting
-- RBAC on protected routes
-- Device clock skew checks
-- GPS accuracy thresholds for attendance / overtime
-- Audit logging for sensitive settings changes
-- Secrets via environment only
-- Client log sanitization for tokens and passwords
-- Windows Remember Me uses OS-backed secure storage for tokens only
-
-| Role | Typical scope |
-|------|----------------|
-| **Admin** | Users, roles, settings, inventory, assets, PM, reports, media policy, exports |
-| **Supervisor** | Team oversight, overtime review/export, operational dashboards |
-| **Technician** | Self attendance, overtime capture, assigned work orders |
-
-See [docs/RBAC.md](./docs/RBAC.md).
+- Avoid global caching of **real-time** overtime running state
+- Dashboard uses **controlled, short-lived** deduplication (in-flight + ~5s fresh reuse) — not a long-lived stale cache
+- List endpoints use **lightweight projections**; detail endpoints retain full data
+- Auth parallelization reduces sequential Mongo round-trips; DB validation stays authoritative
+- Load balancing / Redis are **not** part of the current required architecture based on measured bottlenecks (Atlas RTT + sequential client calls remain the primary latency drivers)
 
 ---
 
-## Documentation
+## 19. Important Implementation Notes
+
+| Topic | Guarantee |
+|-------|-----------|
+| Overtime math | Calculation logic lives in backend policy/calculator — separate from UI formatting |
+| Admin review | Approve / Partial / Reject behavior preserved |
+| Technician UI | Hides technical metadata where designed; admin retains detailed review data |
+| Rejection reason | Visible to technician in history when present |
+| Offline | Overtime actions persisted and retried; reconciliation when server already confirmed a stage |
+| Technician Interface | Company-scoped; Admin/Supervisor navigation unrestricted |
+| Maps | OpenStreetMap only |
+| SessionQueryCache | Used to avoid duplicate network fetches where wired |
+| Dashboard loading | Prefer `isRefreshing` / cached summary over full-page loaders when data exists |
+| Product name | **INFINITY** in UI / Windows title; package `mobile` unchanged |
+
+---
+
+## 20. Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -741,17 +639,17 @@ See [docs/RBAC.md](./docs/RBAC.md).
 | [Roadmap](./docs/ROADMAP.md) | Delivery phases |
 | [Future Improvements](./docs/FUTURE_IMPROVEMENTS.md) | Post-MVP ideas |
 
-> Prefer this README for the **current shipped UI, overtime policy, dashboard, and Windows auth behavior**. Some docs may still describe planned phases; when in doubt, trust the code under `mobile/` and `backend/src/`.
+> Prefer this README for **current shipped behavior**. Some docs may still describe planned phases; when in doubt, trust `mobile/` and `backend/src/`.
 
 ---
 
-## License
+## 21. License
 
 Released under the [MIT License](./LICENSE).
 
 ---
 
-## Author
+## 22. Author
 
 **Mazen Mahmoud** — Total-Com Solutions
 

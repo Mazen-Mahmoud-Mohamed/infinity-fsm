@@ -3,6 +3,7 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
+import 'package:mobile/core/services/connectivity_status.dart';
 import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
@@ -29,6 +30,26 @@ class _FakeConnectivity implements ConnectivityService {
   _FakeConnectivity({this.online = false});
   bool online;
 
+  ConnectivitySnapshot get _snapshot => online
+      ? const ConnectivitySnapshot(
+          level: ConnectivityLevel.online,
+          networkAvailable: true,
+          networkType: 'wifi',
+          internetReachable: true,
+          apiReachable: true,
+        )
+      : const ConnectivitySnapshot(
+          level: ConnectivityLevel.networkUnavailable,
+          networkAvailable: false,
+          networkType: 'none',
+          internetReachable: false,
+          apiReachable: false,
+          reason: 'no_interface',
+        );
+
+  @override
+  ConnectivitySnapshot get currentSnapshot => _snapshot;
+
   @override
   Future<bool> get isConnected async => online;
 
@@ -39,6 +60,19 @@ class _FakeConnectivity implements ConnectivityService {
 
   @override
   Stream<bool> get onConnectivityChanged => Stream<bool>.value(online);
+
+  @override
+  Stream<ConnectivitySnapshot> get onStatusChanged => const Stream.empty();
+
+  @override
+  Future<ConnectivitySnapshot> refreshStatus({
+    String reason = 'manual',
+    bool forceApiProbe = false,
+  }) async =>
+      _snapshot;
+
+  @override
+  Future<void> dispose() async {}
 }
 
 class _FakeAddressResolver extends Fake implements AddressResolverService {
