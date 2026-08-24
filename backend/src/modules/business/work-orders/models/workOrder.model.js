@@ -311,6 +311,8 @@ workOrderSchema.index({ companyId: 1, jobNumber: 1 }, { unique: true });
 workOrderSchema.index({ companyId: 1, status: 1, createdAt: -1 });
 workOrderSchema.index({ companyId: 1, assignedTechnicianId: 1, status: 1 });
 workOrderSchema.index({ companyId: 1, scheduledAt: 1 });
+// Soft-delete list / dashboard WO match: companyId + deletedAt + createdAt.
+workOrderSchema.index({ companyId: 1, deletedAt: 1, createdAt: -1 });
 
 const WorkOrder = mongoose.model('WorkOrder', workOrderSchema);
 

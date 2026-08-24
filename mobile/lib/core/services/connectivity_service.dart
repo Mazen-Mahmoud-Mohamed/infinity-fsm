@@ -44,6 +44,12 @@ class ConnectivityService {
 
   static const Duration _debounceDelay = Duration(milliseconds: 750);
 
+  /// Reuse a fresh API health probe across rapid callers (e.g. splash
+  /// `app_init` then session restore). Interface changes still force refresh.
+  /// API health remains the authoritative sync gate — this only avoids
+  /// duplicate `/health` hits within a short window.
+  static const Duration _freshProbeTtl = Duration(seconds: 5);
+
   ConnectivitySnapshot get currentSnapshot => _snapshot;
 
   final _statusController = StreamController<ConnectivitySnapshot>.broadcast();
@@ -82,6 +88,11 @@ class ConnectivityService {
       }
       return _snapshot;
     }
+
+    if (!forceApiProbe && _isFreshProbeReusable(reason)) {
+      return _snapshot;
+    }
+
     _refreshInFlight = true;
 
     try {
@@ -154,6 +165,26 @@ class ConnectivityService {
     } finally {
       _refreshInFlight = false;
     }
+  }
+
+  bool _isFreshProbeReusable(String reason) {
+    // Always re-check when the OS reports an interface change.
+    if (reason == 'interface_changed') {
+      return false;
+    }
+    // Only coalesce successful online probes. When API was unreachable we
+    // must re-probe so recovery / sync resume is not delayed by TTL.
+    if (!_snapshot.apiReachable) {
+      return false;
+    }
+    final checkedAt = _snapshot.checkedAt;
+    if (checkedAt == null) {
+      return false;
+    }
+    if (_snapshot.level == ConnectivityLevel.unknown) {
+      return false;
+    }
+    return DateTime.now().difference(checkedAt) < _freshProbeTtl;
   }
 
   ConnectivitySnapshot _emit(

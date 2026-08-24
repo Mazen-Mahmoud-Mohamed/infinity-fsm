@@ -47,6 +47,21 @@ const CHECKPOINT_STAGES = Object.freeze({
   END_JOURNEY: 'endJourney',
 });
 
+/** Fields required by Admin OT list + technician History cards only. */
+const OVERTIME_LIST_SELECT = [
+  'companyId',
+  'userId',
+  'type',
+  'isOvernight',
+  'status',
+  'startAt',
+  'endAt',
+  'createdAt',
+  'eligibleOvertimeMinutes',
+  'approvedHours',
+  'rejectionReason',
+].join(' ');
+
 function buildGps(body) {
   const fullAddress =
     (body.fullAddress && String(body.fullAddress).trim()) ||
@@ -745,17 +760,17 @@ class OvertimeService {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       OvertimeRecord.find(filter)
-        .populate('userId', 'firstName lastName email roles')
-        .populate('approvedBy', 'firstName lastName email')
-        .populate('rejectedBy', 'firstName lastName email')
+        .select(OVERTIME_LIST_SELECT)
+        .populate('userId', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       OvertimeRecord.countDocuments(filter),
     ]);
 
     return {
-      items: items.map((item) => this._map(item)),
+      items: items.map((item) => this._mapList(item)),
       pagination: {
         page,
         limit,
@@ -962,17 +977,17 @@ class OvertimeService {
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
       OvertimeRecord.find(filter)
-        .populate('userId', 'firstName lastName email roles')
-        .populate('approvedBy', 'firstName lastName email')
-        .populate('rejectedBy', 'firstName lastName email')
+        .select(OVERTIME_LIST_SELECT)
+        .populate('userId', 'firstName lastName email')
         .sort({ createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       OvertimeRecord.countDocuments(filter),
     ]);
 
     return {
-      items: items.map((item) => this._map(item)),
+      items: items.map((item) => this._mapList(item)),
       pagination: {
         page,
         limit,
@@ -1426,6 +1441,42 @@ class OvertimeService {
         doc.status === 'RUNNING' && doc.startAt
           ? Math.max(0, Math.floor((Date.now() - new Date(doc.startAt).getTime()) / 1000))
           : null,
+    };
+  }
+
+  /**
+   * Lightweight projection for Admin list + technician History.
+   * Omits checkpoints, GPS, photos, voice, and review metadata.
+   * Detail remains on GET /:id via [_map].
+   */
+  _mapList(doc) {
+    const technician = this._mapUserSummary(doc.userId);
+    return {
+      id: doc._id.toString(),
+      companyId: doc.companyId.toString(),
+      userId:
+        technician?.id || doc.userId?.toString?.() || doc.userId?.toString(),
+      technician: technician
+        ? {
+            id: technician.id,
+            firstName: technician.firstName,
+            lastName: technician.lastName,
+            fullName: technician.fullName,
+            email: technician.email,
+          }
+        : null,
+      type: doc.type,
+      isOvernight: Boolean(doc.isOvernight),
+      status: doc.status,
+      startAt: doc.startAt?.toISOString?.() || doc.startAt || null,
+      endAt: doc.endAt?.toISOString?.() || doc.endAt || null,
+      createdAt: doc.createdAt?.toISOString?.() || doc.createdAt || null,
+      eligibleOvertimeMinutes: doc.eligibleOvertimeMinutes ?? null,
+      approvedHours:
+        doc.approvedHours === null || doc.approvedHours === undefined
+          ? null
+          : Number(doc.approvedHours),
+      rejectionReason: doc.rejectionReason || null,
     };
   }
 

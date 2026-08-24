@@ -49,8 +49,12 @@ class NotificationsBellAction extends StatelessWidget {
           previous.isRefreshing != current.isRefreshing,
       listener: (context, state) {
         if (state.status == ExecutiveDashboardStatus.success &&
-            !state.isRefreshing) {
-          context.read<NotificationsUnreadCubit>().refresh();
+            !state.isRefreshing &&
+            state.summary != null) {
+          // Reuse the dashboard payload — do not fetch summary again for the badge.
+          context
+              .read<NotificationsUnreadCubit>()
+              .applyFromDashboardSummary(state.summary!);
         }
       },
       child: bell,

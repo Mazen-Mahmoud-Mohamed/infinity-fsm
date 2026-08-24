@@ -24,6 +24,21 @@ import AppError, {
 import auditService from '../../core/audit/audit.service.js';
 
 const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
+
+/** Fields required by work-order list cards only. */
+const WORK_ORDER_LIST_SELECT = [
+  'companyId',
+  'jobNumber',
+  'jobTitle',
+  'customerName',
+  'assignedTechnicianId',
+  'assignedTechnicianName',
+  'priority',
+  'status',
+  'scheduledAt',
+  'createdAt',
+].join(' ');
+
 const CANCELABLE_STATUSES = new Set([
   'PENDING',
   'ASSIGNED',
@@ -790,12 +805,17 @@ class WorkOrdersService {
     const skip = (pageNum - 1) * limitNum;
 
     const [items, total] = await Promise.all([
-      WorkOrder.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limitNum),
+      WorkOrder.find(filter)
+        .select(WORK_ORDER_LIST_SELECT)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
       WorkOrder.countDocuments(filter),
     ]);
 
     return {
-      items: items.map((item) => this._map(item)),
+      items: items.map((item) => this._mapList(item)),
       pagination: {
         page: pageNum,
         limit: limitNum,
@@ -1002,6 +1022,27 @@ class WorkOrdersService {
       acceptedAt: doc.acceptedAt?.toISOString?.() || null,
       createdAt: doc.createdAt?.toISOString?.() || null,
       updatedAt: doc.updatedAt?.toISOString?.() || null,
+    };
+  }
+
+  /**
+   * Lightweight projection for work-order list cards.
+   * Omits photos, attachments, timeline, GPS, notes, and org snapshot.
+   * Detail remains on GET /:id via [_map].
+   */
+  _mapList(doc) {
+    return {
+      id: doc._id.toString(),
+      companyId: toId(doc.companyId),
+      jobNumber: doc.jobNumber,
+      jobTitle: doc.jobTitle,
+      customerName: doc.customerName || null,
+      assignedTechnicianId: toId(doc.assignedTechnicianId),
+      assignedTechnicianName: doc.assignedTechnicianName || null,
+      priority: doc.priority,
+      status: doc.status,
+      scheduledAt: doc.scheduledAt?.toISOString?.() || doc.scheduledAt || null,
+      createdAt: doc.createdAt?.toISOString?.() || doc.createdAt || null,
     };
   }
 }

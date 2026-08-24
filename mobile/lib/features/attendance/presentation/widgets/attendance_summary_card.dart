@@ -21,8 +21,8 @@ class AttendanceSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<AttendanceCubit>()..initialize(),
+    return BlocProvider.value(
+      value: getIt<AttendanceCubit>()..initialize(),
       child: const _AttendanceSummaryCardView(),
     );
   }

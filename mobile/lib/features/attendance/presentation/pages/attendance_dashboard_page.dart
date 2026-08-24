@@ -47,8 +47,8 @@ class AttendanceDashboardPage extends StatelessWidget {
       return const AttendanceAdminPage();
     }
 
-    return BlocProvider(
-      create: (_) => getIt<AttendanceCubit>()..initialize(),
+    return BlocProvider.value(
+      value: getIt<AttendanceCubit>()..initialize(),
       child: const _AttendanceDashboardView(),
     );
   }

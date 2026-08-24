@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
@@ -15,8 +14,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_history_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
-import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
-import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_history_session_card.dart';
 
 class OvertimeHistoryPage extends StatelessWidget {
   const OvertimeHistoryPage({super.key});
@@ -180,7 +178,7 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
                           );
                         }
                         final session = state.items[index];
-                        return _HistoryCard(
+                        return OvertimeHistorySessionCard(
                           session: session,
                           pendingSync: _isPendingSync(session),
                           dateFormat: dateFormat,
@@ -194,57 +192,6 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
             );
           },
         ),
-      ),
-    );
-  }
-}
-
-class _HistoryCard extends StatelessWidget {
-  const _HistoryCard({
-    required this.session,
-    required this.pendingSync,
-    required this.dateFormat,
-    required this.l10n,
-  });
-
-  final OvertimeSession session;
-  final bool pendingSync;
-  final DateFormat dateFormat;
-  final AppLocalizations l10n;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.7),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            dateFormat.format(session.startAt.toLocal()),
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            overtimeTypeLabel(l10n, session.type),
-            style: theme.textTheme.bodyLarge,
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          OvertimeStatusBadge(
-            status: session.status,
-            pendingSync: pendingSync,
-          ),
-        ],
       ),
     );
   }

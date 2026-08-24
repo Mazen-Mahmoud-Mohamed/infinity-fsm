@@ -9,6 +9,7 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/theme/app_system_ui.dart';
 import 'package:mobile/core/theme/app_theme.dart';
+import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
@@ -90,6 +91,7 @@ class InfinityApp extends StatelessWidget {
                 overtimeSync.resumeAuthenticatedSync();
               } else if (state.status == AuthStatus.unauthenticated) {
                 unread.clear();
+                getIt<AttendanceCubit>().resetForLogout();
                 attendanceSync.pauseAuthenticatedSync();
                 overtimeSync.pauseAuthenticatedSync();
               }

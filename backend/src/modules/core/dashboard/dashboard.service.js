@@ -295,6 +295,24 @@ function buildTrendBuckets(from, to) {
   return buckets;
 }
 
+/** Map an audit row (find+populate or $lookup) to the liveActivity DTO. */
+function mapLiveActivityRow(row) {
+  const actor = row?.actorId;
+  const createdAt = row?.createdAt;
+  return {
+    id: String(row._id),
+    action: row.action,
+    module: row.module,
+    actorName:
+      actor?.fullName ||
+      [actor?.firstName, actor?.lastName].filter(Boolean).join(' ') ||
+      null,
+    createdAt:
+      createdAt?.toISOString?.() ||
+      (createdAt ? new Date(createdAt).toISOString() : null),
+  };
+}
+
 class DashboardService {
   async getSummary(auth, query = {}) {
     const companyId = new mongoose.Types.ObjectId(auth.companyId);
@@ -391,8 +409,8 @@ class DashboardService {
   }
 
   async _buildAdminSummary({ companyId, from, to, period }) {
-    const userBase = { companyId, deletedAt: null };
-    const attendanceBase = {
+    const todayKey = dateKey(new Date());
+    const attendancePeriodMatch = {
       companyId,
       createdAt: { $gte: from, $lte: to },
     };
@@ -410,157 +428,240 @@ class DashboardService {
       scheduledDate: { $gte: from, $lte: to },
     };
 
+    // Fan-out reduction: compatible queries on the same collection/filters are
+    // merged via $facet. Chart series reuse those rows (no second pass).
+    // Semantics of every metric below are unchanged.
     const [
-      totalEmployees,
-      activeEmployees,
-      currentlyWorking,
-      onOvertime,
-      onTravelOvertime,
-      attendanceAgg,
-      presentDays,
-      expectedWorkDays,
-      overtimeTotals,
-      topOvertime,
-      travelOtMinutesAgg,
-      woByStatus,
-      pmByStatus,
-      lowStock,
-      outOfStock,
+      userFacetRows,
+      attendanceFacetRows,
+      otRunningRows,
+      overtimeFacetRows,
+      woFacetRows,
+      pmFacetRows,
+      inventoryFacetRows,
       recentMovements,
       assetsByStatus,
       liveActivity,
-      trends,
     ] = await Promise.all([
-      User.countDocuments(userBase),
-      User.countDocuments({ ...userBase, isActive: true }),
-      Attendance.countDocuments({
-        companyId,
-        status: { $in: ['CLOCKED_IN', 'ON_BREAK'] },
-        date: dateKey(new Date()),
-      }),
-      OvertimeRecord.countDocuments({
-        companyId,
-        status: 'RUNNING',
-      }),
-      OvertimeRecord.countDocuments({
-        companyId,
-        status: 'RUNNING',
-        type: 'TRAVEL',
-      }),
+      User.aggregate([
+        { $match: { companyId, deletedAt: null } },
+        {
+          $facet: {
+            total: [{ $count: 'n' }],
+            active: [{ $match: { isActive: true } }, { $count: 'n' }],
+          },
+        },
+      ]),
       Attendance.aggregate([
-        { $match: attendanceBase },
         {
-          $group: {
-            _id: null,
-            totalMinutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
-            records: { $sum: 1 },
-            users: { $addToSet: '$userId' },
+          $facet: {
+            currentlyWorking: [
+              {
+                $match: {
+                  companyId,
+                  status: { $in: ['CLOCKED_IN', 'ON_BREAK'] },
+                  date: todayKey,
+                },
+              },
+              { $count: 'n' },
+            ],
+            period: [
+              { $match: attendancePeriodMatch },
+              {
+                $group: {
+                  _id: null,
+                  totalMinutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
+                  records: { $sum: 1 },
+                  users: { $addToSet: '$userId' },
+                },
+              },
+            ],
+            present: [
+              {
+                $match: {
+                  ...attendancePeriodMatch,
+                  status: { $in: ['CLOCKED_IN', 'ON_BREAK', 'CLOCKED_OUT'] },
+                },
+              },
+              { $group: { _id: '$userId' } },
+            ],
+            byDay: [
+              { $match: attendancePeriodMatch },
+              {
+                $group: {
+                  _id: {
+                    $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+                  },
+                  minutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
+                },
+              },
+            ],
           },
         },
       ]),
-      Attendance.distinct('userId', {
-        companyId,
-        createdAt: { $gte: from, $lte: to },
-        status: { $in: ['CLOCKED_IN', 'ON_BREAK', 'CLOCKED_OUT'] },
-      }),
-      User.countDocuments({ ...userBase, isActive: true }),
       OvertimeRecord.aggregate([
-        { $match: overtimeBase },
+        { $match: { companyId, status: 'RUNNING' } },
         {
           $group: {
             _id: null,
-            minutes: { $sum: otMinutesExpr() },
-            approvedMinutes: { $sum: approvedOtMinutesExprByStatus() },
-            trips: { $sum: 1 },
-            overnightTrips: {
-              $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
+            onOvertime: { $sum: 1 },
+            onTravelOvertime: {
+              $sum: { $cond: [{ $eq: ['$type', 'TRAVEL'] }, 1, 0] },
             },
-            technicians: { $addToSet: '$userId' },
           },
         },
       ]),
       OvertimeRecord.aggregate([
         { $match: overtimeBase },
         {
-          $group: {
-            _id: '$userId',
-            minutes: { $sum: approvedOtMinutesExprByStatus() },
-            trips: { $sum: 1 },
-            overnightTrips: {
-              $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
-            },
-          },
-        },
-        { $sort: { minutes: -1 } },
-        { $limit: 20 },
-        {
-          $lookup: {
-            from: 'users',
-            localField: '_id',
-            foreignField: '_id',
-            as: 'user',
-          },
-        },
-        { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
-        {
-          $project: {
-            userId: '$_id',
-            minutes: 1,
-            trips: 1,
-            overnightTrips: 1,
-            fullName: {
-              $ifNull: [
-                '$user.fullName',
-                {
-                  $trim: {
-                    input: {
-                      $concat: [
-                        { $ifNull: ['$user.firstName', ''] },
-                        ' ',
-                        { $ifNull: ['$user.lastName', ''] },
-                      ],
-                    },
+          $facet: {
+            totals: [
+              {
+                $group: {
+                  _id: null,
+                  minutes: { $sum: otMinutesExpr() },
+                  approvedMinutes: { $sum: approvedOtMinutesExprByStatus() },
+                  trips: { $sum: 1 },
+                  overnightTrips: {
+                    $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
+                  },
+                  technicians: { $addToSet: '$userId' },
+                },
+              },
+            ],
+            top: [
+              {
+                $group: {
+                  _id: '$userId',
+                  minutes: { $sum: approvedOtMinutesExprByStatus() },
+                  trips: { $sum: 1 },
+                  overnightTrips: {
+                    $sum: { $cond: [{ $eq: ['$isOvernight', true] }, 1, 0] },
                   },
                 },
-              ],
-            },
-          },
-        },
-      ]),
-      OvertimeRecord.aggregate([
-        { $match: { ...overtimeBase, type: 'TRAVEL' } },
-        {
-          $group: {
-            _id: null,
-            minutes: { $sum: otMinutesExpr() },
+              },
+              { $sort: { minutes: -1 } },
+              { $limit: 20 },
+              {
+                $lookup: {
+                  from: 'users',
+                  localField: '_id',
+                  foreignField: '_id',
+                  as: 'user',
+                },
+              },
+              { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+              {
+                $project: {
+                  userId: '$_id',
+                  minutes: 1,
+                  trips: 1,
+                  overnightTrips: 1,
+                  fullName: {
+                    $ifNull: [
+                      '$user.fullName',
+                      {
+                        $trim: {
+                          input: {
+                            $concat: [
+                              { $ifNull: ['$user.firstName', ''] },
+                              ' ',
+                              { $ifNull: ['$user.lastName', ''] },
+                            ],
+                          },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            ],
+            travel: [
+              { $match: { type: 'TRAVEL' } },
+              {
+                $group: {
+                  _id: null,
+                  minutes: { $sum: otMinutesExpr() },
+                },
+              },
+            ],
+            forTrends: [
+              { $match: { endAt: { $ne: null } } },
+              {
+                $project: {
+                  startAt: 1,
+                  endAt: 1,
+                  approvedHours: 1,
+                  eligibleOvertimeMinutes: 1,
+                },
+              },
+            ],
           },
         },
       ]),
       WorkOrder.aggregate([
         { $match: woBase },
-        { $group: { _id: '$status', count: { $sum: 1 } } },
+        {
+          $facet: {
+            byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+            byDay: [
+              {
+                $group: {
+                  _id: {
+                    $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+          },
+        },
       ]),
       MaintenanceSchedule.aggregate([
         { $match: pmBase },
-        { $group: { _id: '$status', count: { $sum: 1 } } },
-      ]),
-      SparePart.countDocuments({
-        companyId,
-        deletedAt: null,
-        isActive: true,
-        $expr: {
-          $and: [
-            { $gt: ['$currentQuantity', 0] },
-            { $lte: ['$currentQuantity', '$minimumQuantity'] },
-          ],
+        {
+          $facet: {
+            byStatus: [{ $group: { _id: '$status', count: { $sum: 1 } } }],
+            byDay: [
+              {
+                $group: {
+                  _id: {
+                    $dateToString: {
+                      format: '%Y-%m-%d',
+                      date: '$scheduledDate',
+                    },
+                  },
+                  count: { $sum: 1 },
+                },
+              },
+            ],
+          },
         },
-      }),
-      SparePart.countDocuments({
-        companyId,
-        deletedAt: null,
-        isActive: true,
-        currentQuantity: { $lte: 0 },
-      }),
+      ]),
+      SparePart.aggregate([
+        { $match: { companyId, deletedAt: null, isActive: true } },
+        {
+          $facet: {
+            lowStock: [
+              {
+                $match: {
+                  $expr: {
+                    $and: [
+                      { $gt: ['$currentQuantity', 0] },
+                      { $lte: ['$currentQuantity', '$minimumQuantity'] },
+                    ],
+                  },
+                },
+              },
+              { $count: 'n' },
+            ],
+            outOfStock: [
+              { $match: { currentQuantity: { $lte: 0 } } },
+              { $count: 'n' },
+            ],
+          },
+        },
+      ]),
       StockMovement.find({ companyId })
         .sort({ movementDate: -1, createdAt: -1 })
         .limit(5)
@@ -572,11 +673,42 @@ class DashboardService {
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
       this._liveActivity(companyId, null),
-      this._buildTrends({ companyId, userIds: null, from, to }),
     ]);
 
-    const att = attendanceAgg[0] || { totalMinutes: 0, records: 0, users: [] };
-    const presentCount = presentDays.length;
+    const userFacet = userFacetRows[0] || { total: [], active: [] };
+    const attendanceFacet = attendanceFacetRows[0] || {
+      currentlyWorking: [],
+      period: [],
+      present: [],
+      byDay: [],
+    };
+    const overtimeFacet = overtimeFacetRows[0] || {
+      totals: [],
+      top: [],
+      travel: [],
+      forTrends: [],
+    };
+    const woFacet = woFacetRows[0] || { byStatus: [], byDay: [] };
+    const pmFacet = pmFacetRows[0] || { byStatus: [], byDay: [] };
+    const inventoryFacet = inventoryFacetRows[0] || {
+      lowStock: [],
+      outOfStock: [],
+    };
+
+    const totalEmployees = userFacet.total[0]?.n || 0;
+    const activeEmployees = userFacet.active[0]?.n || 0;
+    // Previously a duplicate User.countDocuments(active) — same value.
+    const expectedWorkDays = activeEmployees;
+    const currentlyWorking = attendanceFacet.currentlyWorking[0]?.n || 0;
+    const onOvertime = otRunningRows[0]?.onOvertime || 0;
+    const onTravelOvertime = otRunningRows[0]?.onTravelOvertime || 0;
+
+    const att = attendanceFacet.period[0] || {
+      totalMinutes: 0,
+      records: 0,
+      users: [],
+    };
+    const presentCount = (attendanceFacet.present || []).length;
     const expected = Math.max(expectedWorkDays, 1);
     const daySpan = Math.max(
       1,
@@ -586,7 +718,7 @@ class DashboardService {
       (presentCount / (expected * Math.min(daySpan, 31))) * 1000
     ) / 10;
 
-    const otRow = overtimeTotals[0] || {
+    const otRow = overtimeFacet.totals[0] || {
       minutes: 0,
       approvedMinutes: 0,
       trips: 0,
@@ -600,7 +732,8 @@ class DashboardService {
     const totalTechnicians = Array.isArray(otRow.technicians)
       ? otRow.technicians.length
       : 0;
-    const otTravel = travelOtMinutesAgg[0]?.minutes || 0;
+    const otTravel = overtimeFacet.travel[0]?.minutes || 0;
+    const topOvertime = overtimeFacet.top || [];
 
     const technicianRows = topOvertime.map((row) => {
       const hours = toHours(row.minutes);
@@ -615,11 +748,25 @@ class DashboardService {
       };
     });
 
+    const woByStatus = woFacet.byStatus || [];
+    const pmByStatus = pmFacet.byStatus || [];
     const woMap = Object.fromEntries(woByStatus.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries(pmByStatus.map((r) => [r._id, r.count]));
     const assetMap = Object.fromEntries(assetsByStatus.map((r) => [r._id, r.count]));
     const totalAssets = Object.values(assetMap).reduce((a, b) => a + b, 0);
     const woTotal = Object.values(woMap).reduce((a, b) => a + b, 0);
+
+    const lowStock = inventoryFacet.lowStock[0]?.n || 0;
+    const outOfStock = inventoryFacet.outOfStock[0]?.n || 0;
+
+    const trends = this._mapTrendCharts({
+      from,
+      to,
+      attendanceRows: attendanceFacet.byDay || [],
+      overtimeRecords: overtimeFacet.forTrends || [],
+      woRows: woFacet.byDay || [],
+      pmRows: pmFacet.byDay || [],
+    });
 
     return {
       kpis: {
@@ -1031,26 +1178,36 @@ class DashboardService {
   }
 
   async _liveActivity(companyId, userIds) {
-    const filter = { companyId };
+    const match = { companyId };
     if (userIds?.length) {
-      filter.actorId = { $in: userIds };
+      match.actorId = { $in: userIds };
     }
-    const rows = await AuditLog.find(filter)
-      .sort({ createdAt: -1 })
-      .limit(10)
-      .populate('actorId', 'firstName lastName fullName')
-      .lean();
 
-    return rows.map((row) => ({
-      id: String(row._id),
-      action: row.action,
-      module: row.module,
-      actorName:
-        row.actorId?.fullName ||
-        [row.actorId?.firstName, row.actorId?.lastName].filter(Boolean).join(' ') ||
-        null,
-      createdAt: row.createdAt?.toISOString?.() || null,
-    }));
+    // Single round-trip: sort/limit then $lookup users (replaces find + populate).
+    // Actor projection matches prior lean populate: firstName, lastName only
+    // (fullName is a User virtual and was never present on lean populate docs).
+    const rows = await AuditLog.aggregate([
+      { $match: match },
+      { $sort: { createdAt: -1 } },
+      { $limit: 10 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'actorId',
+          foreignField: '_id',
+          pipeline: [{ $project: { firstName: 1, lastName: 1 } }],
+          as: '_actorDocs',
+        },
+      },
+      {
+        $addFields: {
+          actorId: { $arrayElemAt: ['$_actorDocs', 0] },
+        },
+      },
+      { $project: { _actorDocs: 0 } },
+    ]);
+
+    return rows.map((row) => mapLiveActivityRow(row));
   }
 
   async _buildTrends({ companyId, userIds, from, to }) {
@@ -1114,21 +1271,44 @@ class DashboardService {
         },
       ]),
       (async () => {
-        const planFilter = { companyId, deletedAt: null };
-        if (userIds?.length) {
-          planFilter.assignedTechnicianId = { $in: userIds };
+        // Admin (no user scope): schedules are company-wide — skip plan lookup.
+        if (!userIds?.length) {
+          return MaintenanceSchedule.aggregate([
+            {
+              $match: {
+                companyId,
+                scheduledDate: { $gte: from, $lte: to },
+              },
+            },
+            {
+              $group: {
+                _id: {
+                  $dateToString: {
+                    format: '%Y-%m-%d',
+                    date: '$scheduledDate',
+                  },
+                },
+                count: { $sum: 1 },
+              },
+            },
+          ]);
         }
-        const plans = await MaintenancePlan.find(planFilter).select('_id').lean();
+
+        const plans = await MaintenancePlan.find({
+          companyId,
+          deletedAt: null,
+          assignedTechnicianId: { $in: userIds },
+        })
+          .select('_id')
+          .lean();
         const planIds = plans.map((p) => p._id);
-        if (userIds?.length && !planIds.length) return [];
+        if (!planIds.length) return [];
         return MaintenanceSchedule.aggregate([
           {
             $match: {
               companyId,
               scheduledDate: { $gte: from, $lte: to },
-              ...(planIds.length && userIds?.length
-                ? { planId: { $in: planIds } }
-                : {}),
+              planId: { $in: planIds },
             },
           },
           {
@@ -1143,26 +1323,48 @@ class DashboardService {
       })(),
     ]);
 
+    return this._mapTrendCharts({
+      from,
+      to,
+      attendanceRows,
+      overtimeRecords,
+      woRows,
+      pmRows,
+    });
+  }
+
+  /**
+   * Build chart series from already-fetched daily/OT rows.
+   * Shared by admin fan-out consolidation and role-scoped `_buildTrends`.
+   */
+  _mapTrendCharts({ from, to, attendanceRows, overtimeRecords, woRows, pmRows }) {
+    const buckets = buildTrendBuckets(from, to);
+    if (buckets.length === 0) {
+      return {
+        attendance: [],
+        overtime: [],
+        workOrders: [],
+        preventiveMaintenance: [],
+      };
+    }
+
     const attMap = Object.fromEntries(
-      attendanceRows.map((r) => [r._id, toHours(r.minutes)])
+      (attendanceRows || []).map((r) => [r._id, toHours(r.minutes)])
     );
-    const otMinutesMap = buildOvertimeTrendDayMap(overtimeRecords);
+    const otMinutesMap = buildOvertimeTrendDayMap(overtimeRecords || []);
     const otMap = Object.fromEntries(
       Object.entries(otMinutesMap).map(([key, minutes]) => [key, toHours(minutes)])
     );
-    const woMap = Object.fromEntries(woRows.map((r) => [r._id, r.count]));
+    const woMap = Object.fromEntries((woRows || []).map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmRows || []).map((r) => [r._id, r.count]));
 
-    const isDaily = buckets[0]?.key?.length === 10;
-
     const mapBucket = (bucket, source, isHours) => {
-      if (isDaily) {
+      if (buckets[0]?.key?.length === 10) {
         return {
           label: bucket.label,
           value: source[bucket.key] || 0,
         };
       }
-      // Monthly: sum matching day keys in range
       let value = 0;
       for (const [key, val] of Object.entries(source)) {
         const d = new Date(key);
@@ -1170,7 +1372,10 @@ class DashboardService {
           value += val;
         }
       }
-      return { label: bucket.label, value: isHours ? Math.round(value * 10) / 10 : value };
+      return {
+        label: bucket.label,
+        value: isHours ? Math.round(value * 10) / 10 : value,
+      };
     };
 
     return {
@@ -1188,4 +1393,5 @@ export {
   buildOvertimeTrendDayMap,
   overtimeRecordTrendMinutes,
   overtimeRecordApprovedKpiMinutes,
+  mapLiveActivityRow,
 };

@@ -1,0 +1,604 @@
+{
+  "viewRole": "admin",
+  "period": "month",
+  "from": "2026-07-31T21:00:00.000Z",
+  "to": "2026-08-24T20:59:59.999Z",
+  "kpis": {
+    "totalEmployees": 5,
+    "activeEmployees": 5,
+    "employeesCurrentlyWorking": 0,
+    "employeesOnOvertime": 0,
+    "employeesOnTravelOvertime": 0
+  },
+  "attendance": {
+    "totalWorkingHours": 0,
+    "averageWorkingHours": 0,
+    "attendanceRate": 0.8
+  },
+  "overtime": {
+    "totalOvertimeHours": 220.8,
+    "approvedOvertimeHours": 36.2,
+    "totalTravelOvertimeHours": 147.3,
+    "totalTrips": 17,
+    "overnightTrips": 4,
+    "totalTechnicians": 3,
+    "averageHoursPerTrip": 12.99,
+    "averageOtHoursPerEmployee": 44.2,
+    "topOvertimeEmployees": [
+      {
+        "userId": "6a7122dedc6072f842df692d",
+        "fullName": "Field Technician",
+        "hours": 18.7,
+        "trips": 9,
+        "overnightTrips": 2,
+        "averageHoursPerTrip": 2.08
+      },
+      {
+        "userId": "6a747960a88bdc8a4b0c1982",
+        "fullName": "test2 test",
+        "hours": 14.3,
+        "trips": 7,
+        "overnightTrips": 2,
+        "averageHoursPerTrip": 2.04
+      },
+      {
+        "userId": "6a7122dddc6072f842df692a",
+        "fullName": "Mazen Mahmoud",
+        "hours": 3.2,
+        "trips": 1,
+        "overnightTrips": 0,
+        "averageHoursPerTrip": 3.2
+      }
+    ],
+    "hoursPerTechnician": [
+      {
+        "label": "Field Technician",
+        "value": 18.7
+      },
+      {
+        "label": "test2 test",
+        "value": 14.3
+      },
+      {
+        "label": "Mazen Mahmoud",
+        "value": 3.2
+      }
+    ],
+    "tripsPerTechnician": [
+      {
+        "label": "Field Technician",
+        "value": 9
+      },
+      {
+        "label": "test2 test",
+        "value": 7
+      },
+      {
+        "label": "Mazen Mahmoud",
+        "value": 1
+      }
+    ]
+  },
+  "workOrders": {
+    "total": 1,
+    "pending": 0,
+    "assigned": 1,
+    "inProgress": 0,
+    "completed": 0,
+    "cancelled": 0
+  },
+  "preventiveMaintenance": {
+    "due": 0,
+    "overdue": 0,
+    "completed": 0
+  },
+  "inventory": {
+    "lowStock": 0,
+    "outOfStock": 0,
+    "recentStockMovements": []
+  },
+  "assets": {
+    "totalAssets": 0,
+    "active": 0,
+    "underMaintenance": 0,
+    "retired": 0
+  },
+  "liveActivity": [
+    {
+      "id": "6a8bf3952cf39ddd1a719ff7",
+      "action": "auth.token_refreshed",
+      "module": "auth",
+      "actorName": "Mazen Mahmoud",
+      "createdAt": "2026-08-24T07:32:37.818Z"
+    },
+    {
+      "id": "6a8be4964d8e323fba30a795",
+      "action": "auth.token_refreshed",
+      "module": "auth",
+      "actorName": "Mazen Mahmoud",
+      "createdAt": "2026-08-24T06:28:38.131Z"
+    },
+    {
+      "id": "6a8a6e34bd0be438a2e28cd0",
+      "action": "auth.login",
+      "module": "auth",
+      "actorName": "Mazen Mahmoud",
+      "createdAt": "2026-08-23T03:51:16.433Z"
+    },
+    {
+      "id": "6a8a6e1fbd0be438a2e28cca",
+      "action": "auth.logout",
+      "module": "auth",
+      "actorName": "Field Technician",
+      "createdAt": "2026-08-23T03:50:55.242Z"
+    },
+    {
+      "id": "6a8a6dfebd0be438a2e28ca5",
+      "action": "overtime.ended",
+      "module": "overtime",
+      "actorName": "Field Technician",
+      "createdAt": "2026-08-23T03:50:22.109Z"
+    },
+    {
+      "id": "6a8a6dfabd0be438a2e28c93",
+      "action": "auth.token_refreshed",
+      "module": "auth",
+      "actorName": "Field Technician",
+      "createdAt": "2026-08-23T03:50:18.176Z"
+    },
+    {
+      "id": "6a8a6df7bd0be438a2e28c7a",
+      "action": "auth.token_refreshed",
+      "module": "auth",
+      "actorName": "Field Technician",
+      "createdAt": "2026-08-23T03:50:15.195Z"
+    },
+    {
+      "id": "6a88c18535935e4e83668fab",
+      "action": "auth.token_refreshed",
+      "module": "auth",
+      "actorName": "Mazen Mahmoud",
+      "createdAt": "2026-08-21T21:22:13.086Z"
+    },
+    {
+      "id": "6a889b3c2811f1e0a997b93b",
+      "action": "auth.login",
+      "module": "auth",
+      "actorName": "Field Technician",
+      "createdAt": "2026-08-21T18:38:52.820Z"
+    },
+    {
+      "id": "6a889b2d2811f1e0a997b935",
+      "action": "auth.logout",
+      "module": "auth",
+      "actorName": "Mazen Mahmoud",
+      "createdAt": "2026-08-21T18:38:37.329Z"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "6a8bf3952cf39ddd1a719ff7",
+      "title": "auth.token_refreshed",
+      "body": "auth · Mazen Mahmoud",
+      "createdAt": "2026-08-24T07:32:37.818Z"
+    },
+    {
+      "id": "6a8be4964d8e323fba30a795",
+      "title": "auth.token_refreshed",
+      "body": "auth · Mazen Mahmoud",
+      "createdAt": "2026-08-24T06:28:38.131Z"
+    },
+    {
+      "id": "6a8a6e34bd0be438a2e28cd0",
+      "title": "auth.login",
+      "body": "auth · Mazen Mahmoud",
+      "createdAt": "2026-08-23T03:51:16.433Z"
+    },
+    {
+      "id": "6a8a6e1fbd0be438a2e28cca",
+      "title": "auth.logout",
+      "body": "auth · Field Technician",
+      "createdAt": "2026-08-23T03:50:55.242Z"
+    },
+    {
+      "id": "6a8a6dfebd0be438a2e28ca5",
+      "title": "overtime.ended",
+      "body": "overtime · Field Technician",
+      "createdAt": "2026-08-23T03:50:22.109Z"
+    }
+  ],
+  "charts": {
+    "attendance": [
+      {
+        "label": "8/1",
+        "value": 0
+      },
+      {
+        "label": "8/2",
+        "value": 0
+      },
+      {
+        "label": "8/3",
+        "value": 0
+      },
+      {
+        "label": "8/4",
+        "value": 0
+      },
+      {
+        "label": "8/5",
+        "value": 0
+      },
+      {
+        "label": "8/6",
+        "value": 0
+      },
+      {
+        "label": "8/7",
+        "value": 0
+      },
+      {
+        "label": "8/8",
+        "value": 0
+      },
+      {
+        "label": "8/9",
+        "value": 0
+      },
+      {
+        "label": "8/10",
+        "value": 0
+      },
+      {
+        "label": "8/11",
+        "value": 0
+      },
+      {
+        "label": "8/12",
+        "value": 0
+      },
+      {
+        "label": "8/13",
+        "value": 0
+      },
+      {
+        "label": "8/14",
+        "value": 0
+      },
+      {
+        "label": "8/15",
+        "value": 0
+      },
+      {
+        "label": "8/16",
+        "value": 0
+      },
+      {
+        "label": "8/17",
+        "value": 0
+      },
+      {
+        "label": "8/18",
+        "value": 0
+      },
+      {
+        "label": "8/19",
+        "value": 0
+      },
+      {
+        "label": "8/20",
+        "value": 0
+      },
+      {
+        "label": "8/21",
+        "value": 0
+      },
+      {
+        "label": "8/22",
+        "value": 0
+      },
+      {
+        "label": "8/23",
+        "value": 0
+      },
+      {
+        "label": "8/24",
+        "value": 0
+      }
+    ],
+    "overtime": [
+      {
+        "label": "8/1",
+        "value": 0
+      },
+      {
+        "label": "8/2",
+        "value": 0
+      },
+      {
+        "label": "8/3",
+        "value": 0
+      },
+      {
+        "label": "8/4",
+        "value": 7.7
+      },
+      {
+        "label": "8/5",
+        "value": 0
+      },
+      {
+        "label": "8/6",
+        "value": 4.5
+      },
+      {
+        "label": "8/7",
+        "value": 16.9
+      },
+      {
+        "label": "8/8",
+        "value": 3.9
+      },
+      {
+        "label": "8/9",
+        "value": 3.2
+      },
+      {
+        "label": "8/10",
+        "value": 0
+      },
+      {
+        "label": "8/11",
+        "value": 7
+      },
+      {
+        "label": "8/12",
+        "value": 16
+      },
+      {
+        "label": "8/13",
+        "value": 16
+      },
+      {
+        "label": "8/14",
+        "value": 24
+      },
+      {
+        "label": "8/15",
+        "value": 16
+      },
+      {
+        "label": "8/16",
+        "value": 16
+      },
+      {
+        "label": "8/17",
+        "value": 12.4
+      },
+      {
+        "label": "8/18",
+        "value": 16
+      },
+      {
+        "label": "8/19",
+        "value": 15.9
+      },
+      {
+        "label": "8/20",
+        "value": 23.6
+      },
+      {
+        "label": "8/21",
+        "value": 21.7
+      },
+      {
+        "label": "8/22",
+        "value": 0
+      },
+      {
+        "label": "8/23",
+        "value": 0
+      },
+      {
+        "label": "8/24",
+        "value": 0
+      }
+    ],
+    "workOrders": [
+      {
+        "label": "8/1",
+        "value": 0
+      },
+      {
+        "label": "8/2",
+        "value": 0
+      },
+      {
+        "label": "8/3",
+        "value": 0
+      },
+      {
+        "label": "8/4",
+        "value": 0
+      },
+      {
+        "label": "8/5",
+        "value": 0
+      },
+      {
+        "label": "8/6",
+        "value": 0
+      },
+      {
+        "label": "8/7",
+        "value": 0
+      },
+      {
+        "label": "8/8",
+        "value": 0
+      },
+      {
+        "label": "8/9",
+        "value": 0
+      },
+      {
+        "label": "8/10",
+        "value": 0
+      },
+      {
+        "label": "8/11",
+        "value": 0
+      },
+      {
+        "label": "8/12",
+        "value": 0
+      },
+      {
+        "label": "8/13",
+        "value": 0
+      },
+      {
+        "label": "8/14",
+        "value": 0
+      },
+      {
+        "label": "8/15",
+        "value": 0
+      },
+      {
+        "label": "8/16",
+        "value": 0
+      },
+      {
+        "label": "8/17",
+        "value": 0
+      },
+      {
+        "label": "8/18",
+        "value": 0
+      },
+      {
+        "label": "8/19",
+        "value": 1
+      },
+      {
+        "label": "8/20",
+        "value": 0
+      },
+      {
+        "label": "8/21",
+        "value": 0
+      },
+      {
+        "label": "8/22",
+        "value": 0
+      },
+      {
+        "label": "8/23",
+        "value": 0
+      },
+      {
+        "label": "8/24",
+        "value": 0
+      }
+    ],
+    "preventiveMaintenance": [
+      {
+        "label": "8/1",
+        "value": 0
+      },
+      {
+        "label": "8/2",
+        "value": 0
+      },
+      {
+        "label": "8/3",
+        "value": 0
+      },
+      {
+        "label": "8/4",
+        "value": 0
+      },
+      {
+        "label": "8/5",
+        "value": 0
+      },
+      {
+        "label": "8/6",
+        "value": 0
+      },
+      {
+        "label": "8/7",
+        "value": 0
+      },
+      {
+        "label": "8/8",
+        "value": 0
+      },
+      {
+        "label": "8/9",
+        "value": 0
+      },
+      {
+        "label": "8/10",
+        "value": 0
+      },
+      {
+        "label": "8/11",
+        "value": 0
+      },
+      {
+        "label": "8/12",
+        "value": 0
+      },
+      {
+        "label": "8/13",
+        "value": 0
+      },
+      {
+        "label": "8/14",
+        "value": 0
+      },
+      {
+        "label": "8/15",
+        "value": 0
+      },
+      {
+        "label": "8/16",
+        "value": 0
+      },
+      {
+        "label": "8/17",
+        "value": 0
+      },
+      {
+        "label": "8/18",
+        "value": 0
+      },
+      {
+        "label": "8/19",
+        "value": 0
+      },
+      {
+        "label": "8/20",
+        "value": 0
+      },
+      {
+        "label": "8/21",
+        "value": 0
+      },
+      {
+        "label": "8/22",
+        "value": 0
+      },
+      {
+        "label": "8/23",
+        "value": 0
+      },
+      {
+        "label": "8/24",
+        "value": 0
+      }
+    ]
+  }
+}

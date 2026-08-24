@@ -13,7 +13,6 @@ import 'package:mobile/core/services/auth_session_service.dart';
 import 'package:mobile/core/services/biometric_auth_service.dart';
 import 'package:mobile/features/settings/presentation/utils/admin_settings_unlock_session.dart';
 import 'package:mobile/core/services/checkpoint_telemetry_service.dart';
-import 'package:mobile/core/services/api_reachability_probe.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/services/device_time_guard_service.dart';
@@ -406,7 +405,7 @@ Future<void> configureDependencies() async {
     () => SyncPendingAttendanceUseCase(getIt<AttendanceRepository>()),
   );
 
-  getIt.registerFactory<AttendanceCubit>(
+  getIt.registerLazySingleton<AttendanceCubit>(
     () => AttendanceCubit(
       getStatusUseCase: getIt<GetAttendanceStatusUseCase>(),
       getTodayUseCase: getIt<GetAttendanceTodayUseCase>(),
@@ -1359,7 +1358,7 @@ Future<void> configureDependencies() async {
   );
 
   getIt.registerLazySingleton<DashboardRemoteDataSource>(
-    () => DashboardRemoteDataSource(getIt<DioClient>()),
+    () => DashboardRemoteDataSourceImpl(getIt<DioClient>()),
   );
   getIt.registerLazySingleton<DashboardRepository>(
     () => DashboardRepositoryImpl(remote: getIt<DashboardRemoteDataSource>()),
@@ -1401,6 +1400,7 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<NotificationsUnreadCubit>(
     () => NotificationsUnreadCubit(
       getUnreadCount: getIt<GetNotificationsUnreadCountUseCase>(),
+      repository: getIt<NotificationsRepository>(),
     ),
   );
   getIt.registerFactory<NotificationsCubit>(

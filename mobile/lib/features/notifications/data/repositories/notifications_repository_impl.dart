@@ -38,6 +38,11 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   }
 
   @override
+  int unreadCountFromActivity(List<DashboardLiveActivityItem> activity) {
+    return _mapWithReadState(activity).where((n) => !n.isRead).length;
+  }
+
+  @override
   Future<Result<void>> markAsRead(String id) async {
     await _local.markAsRead(id);
     return const Success(null);

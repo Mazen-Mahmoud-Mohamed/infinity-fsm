@@ -75,6 +75,10 @@ const attendanceSchema = new Schema(
 
 attendanceSchema.index({ companyId: 1, userId: 1, date: 1 }, { unique: true });
 attendanceSchema.index({ companyId: 1, userId: 1, createdAt: -1 });
+// Dashboard admin aggregates filter by companyId + createdAt range.
+attendanceSchema.index({ companyId: 1, createdAt: -1 });
+// Live "currently working" KPI: companyId + date (+ status).
+attendanceSchema.index({ companyId: 1, date: -1, status: 1 });
 
 const Attendance = mongoose.model('Attendance', attendanceSchema);
 

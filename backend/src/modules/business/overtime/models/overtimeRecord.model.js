@@ -207,6 +207,8 @@ overtimeRecordSchema.index(
 );
 overtimeRecordSchema.index({ companyId: 1, userId: 1, createdAt: -1 });
 overtimeRecordSchema.index({ companyId: 1, status: 1, createdAt: -1 });
+// Dashboard / export filter by startAt range (not createdAt).
+overtimeRecordSchema.index({ companyId: 1, startAt: -1 });
 
 const OvertimeRecord = mongoose.model('OvertimeRecord', overtimeRecordSchema);
 

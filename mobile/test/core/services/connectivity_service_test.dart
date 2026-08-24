@@ -145,4 +145,64 @@ void main() {
     expect(snapshot.level, ConnectivityLevel.online);
     expect(snapshot.canSync, isTrue);
   });
+
+  test('rapid consecutive refreshStatus reuses fresh API probe', () async {
+    var probeCalls = 0;
+    final countingProbe = _CountingApiProbe(
+      onCheck: () => probeCalls++,
+      reachable: true,
+    );
+    final local = ConnectivityService(
+      envConfig: EnvConfig(
+        apiBaseUrl: 'https://example.com/api/v1',
+        enableNetworkLogging: false,
+      ),
+      connectivity: connectivityPlugin,
+      internetConnection: internet,
+      apiProbe: countingProbe,
+    );
+    addTearDown(local.dispose);
+
+    await local.refreshStatus(reason: 'app_init');
+    await local.refreshStatus(reason: 'session_restore');
+    await local.isConnected;
+
+    expect(probeCalls, 1);
+  });
+
+  test('forceApiProbe bypasses fresh TTL', () async {
+    var probeCalls = 0;
+    final countingProbe = _CountingApiProbe(
+      onCheck: () => probeCalls++,
+      reachable: true,
+    );
+    final local = ConnectivityService(
+      envConfig: EnvConfig(
+        apiBaseUrl: 'https://example.com/api/v1',
+        enableNetworkLogging: false,
+      ),
+      connectivity: connectivityPlugin,
+      internetConnection: internet,
+      apiProbe: countingProbe,
+    );
+    addTearDown(local.dispose);
+
+    await local.refreshStatus(reason: 'app_init');
+    await local.refreshStatus(reason: 'forced', forceApiProbe: true);
+
+    expect(probeCalls, 2);
+  });
+}
+
+class _CountingApiProbe extends Fake implements ApiReachabilityProbe {
+  _CountingApiProbe({required this.onCheck, this.reachable = true});
+
+  final void Function() onCheck;
+  bool reachable;
+
+  @override
+  Future<ApiReachabilityResult> check({String? baseUrlOverride}) async {
+    onCheck();
+    return ApiReachabilityResult(reachable: reachable);
+  }
 }

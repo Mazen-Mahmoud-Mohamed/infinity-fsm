@@ -132,18 +132,39 @@ class RbacService {
    */
   async resolveUserPermissions(user) {
     await this.ensureSystemRoles();
+    const roleDocs = await this.findRoleDocuments(
+      user.roles || [],
+      user.companyId
+    );
+    return this.permissionsFromRoleDocs(user, roleDocs);
+  }
 
-    const roleSlugs = user.roles || [];
-    const companyId = user.companyId;
+  /**
+   * Same Role.find used by permission resolution (system + company roles).
+   * Safe to call in parallel with User.findOne when roleSlugs/companyId come
+   * from a verified JWT — caller MUST still validate against DB user.
+   */
+  async findRoleDocuments(roleSlugs, companyId) {
+    const slugs = Array.isArray(roleSlugs) ? roleSlugs : [];
+    if (slugs.length === 0) {
+      return [];
+    }
 
-    const roleDocs = await Role.find({
-      slug: { $in: roleSlugs },
+    return Role.find({
+      slug: { $in: slugs },
       deletedAt: null,
       isActive: true,
       $or: [{ companyId: null }, { companyId }],
     }).lean();
+  }
 
-    const bySlug = new Map(roleDocs.map((r) => [r.slug, r]));
+  /**
+   * Merge Role.permissions (with static fallback) + user permissionOverrides.
+   * Iterates user.roles (DB-authoritative order/membership).
+   */
+  permissionsFromRoleDocs(user, roleDocs) {
+    const roleSlugs = user.roles || [];
+    const bySlug = new Map((roleDocs || []).map((r) => [r.slug, r]));
     const permissionSet = new Set();
 
     for (const slug of roleSlugs) {

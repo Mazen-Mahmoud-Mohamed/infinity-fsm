@@ -8,27 +8,24 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
+import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
-import 'package:mobile/features/attendance/presentation/widgets/working_timer.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
-import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
-import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
-import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
-import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_cellular_upload_prompt_service.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_cellular_upload_dialog.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
+import 'package:mobile/features/overtime/presentation/widgets/technician_overtime_running_card.dart';
 
 /// Bottom-nav / `/overtime` entry.
 ///
@@ -123,12 +120,8 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
               previous.isOffline != current.isOffline ||
               previous.message != current.message ||
               previous.isError != current.isError ||
-              previous.currentAddress != current.currentAddress ||
               previous.isRefreshing != current.isRefreshing ||
               previous.offerContinueSession != current.offerContinueSession ||
-              previous.liveBatteryLevel != current.liveBatteryLevel ||
-              previous.liveNetworkStatus != current.liveNetworkStatus ||
-              previous.gpsAccuracyMeters != current.gpsAccuracyMeters ||
               previous.notesDraft != current.notesDraft ||
               previous.voiceDraft != current.voiceDraft;
         },
@@ -210,17 +203,11 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
                         const SizedBox(height: AppSpacing.lg),
                       ],
                       if (state.isRunning && state.session != null)
-                        _RunningSessionCard(
+                        TechnicianOvertimeRunningCard(
                           session: state.session!,
-                          address: state.currentAddress,
                           isBusy: state.isBusy,
                           busyAction: state.busyAction,
-                          liveBatteryLevel: state.liveBatteryLevel,
-                          liveNetworkStatus: state.liveNetworkStatus,
-                          gpsAccuracyMeters: state.gpsAccuracyMeters,
-                          pendingSyncCount: syncState.pendingCount,
                           pendingActions: syncState.pendingActions,
-                          isOffline: state.isOffline || !syncState.isOnline,
                           onAdvance: () => context
                               .read<OvertimeCubit>()
                               .completeNextCheckpoint(),
@@ -438,348 +425,6 @@ class _StartActionsState extends State<_StartActions> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _RunningSessionCard extends StatelessWidget {
-  const _RunningSessionCard({
-    required this.session,
-    required this.address,
-    required this.isBusy,
-    required this.busyAction,
-    required this.onAdvance,
-    this.liveBatteryLevel,
-    this.liveNetworkStatus,
-    this.gpsAccuracyMeters,
-    this.pendingSyncCount = 0,
-    this.pendingActions = const [],
-    this.isOffline = false,
-  });
-
-  final OvertimeSession session;
-  final String? address;
-  final bool isBusy;
-  final OvertimeBusyAction? busyAction;
-  final VoidCallback onAdvance;
-  final int? liveBatteryLevel;
-  final String? liveNetworkStatus;
-  final double? gpsAccuracyMeters;
-  final int pendingSyncCount;
-  final List<PendingOvertimeAction> pendingActions;
-  final bool isOffline;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l10n = AppLocalizations.of(context);
-    final next = session.effectiveNextCheckpoint;
-    final actionLabel = _nextActionLabel(l10n, next);
-    final isAdvancing =
-        busyAction == OvertimeBusyAction.arrivedAtWorkSite ||
-        busyAction == OvertimeBusyAction.finishedWork ||
-        busyAction == OvertimeBusyAction.end;
-    final completed = overtimeCompletedCheckpointCount(session);
-    final total = overtimeTotalCheckpointCount(session);
-    final currentStageTitle = _currentStageTitle(l10n, next, session);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        overtimeTypeLabel(l10n, session.type),
-                        style: theme.textTheme.titleLarge,
-                      ),
-                    ),
-                    _SyncStatusChip(
-                      pendingCount: pendingSyncCount,
-                      isOffline: isOffline,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                _MetaRow(
-                  label: l10n.overtimeCurrentStage,
-                  value: currentStageTitle,
-                ),
-                _MetaRow(
-                  label: l10n.overtimeProgress,
-                  value: l10n.overtimeProgressOf(completed, total),
-                ),
-                if (address != null && address!.isNotEmpty)
-                  _MetaRow(label: l10n.overtimeLocation, value: address!),
-                if (gpsAccuracyMeters != null)
-                  _MetaRow(
-                    label: l10n.overtimeGpsStatus,
-                    value: '${gpsAccuracyMeters!.toStringAsFixed(0)} m',
-                  ),
-                const SizedBox(height: AppSpacing.lg),
-                Center(
-                  child: BlocSelector<OvertimeCubit, OvertimeState, int>(
-                    selector: (state) => state.elapsedSeconds,
-                    builder: (context, seconds) =>
-                        WorkingTimer(seconds: seconds),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Center(
-                  child: Text(
-                    l10n.overtimeRunningTimer,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Wrap(
-                  spacing: AppSpacing.sm,
-                  runSpacing: AppSpacing.xs,
-                  children: [
-                    if (liveBatteryLevel != null)
-                      _TelemetryChip(
-                        icon: Icons.battery_std_outlined,
-                        label: '$liveBatteryLevel%',
-                      ),
-                    if (liveNetworkStatus != null &&
-                        liveNetworkStatus!.isNotEmpty)
-                      _TelemetryChip(
-                        icon: liveNetworkStatus == 'offline'
-                            ? Icons.wifi_off_outlined
-                            : Icons.wifi_outlined,
-                        label: liveNetworkStatus!,
-                      ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        Text(l10n.overtimeProgress, style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.sm),
-        OvertimeJourneyProgressStrip(session: session),
-        const SizedBox(height: AppSpacing.lg),
-        Text(l10n.overtimeJourneyTimeline, style: theme.textTheme.titleMedium),
-        const SizedBox(height: AppSpacing.md),
-        OvertimeJourneyTimeline(
-          session: session,
-          // Technicians track stages; live-location review is for admins/supervisors.
-          showOpenLiveLocation: false,
-          maxDurationSeconds: context.select(
-            (OvertimeCubit c) => c.state.voiceMaxDurationSeconds,
-          ),
-          voiceRecordingQuality: context.select(
-            (OvertimeCubit c) => c.state.voiceRecordingQuality,
-          ),
-          pendingActions: pendingActions,
-          isOffline: isOffline,
-          isSyncing:
-              context.watch<OvertimeSyncCubit>().state.status ==
-              OvertimeSyncStatus.syncing,
-          onPendingVoiceChanged: (stage, draft) {
-            context.read<OvertimeCubit>().updatePendingStageVoice(
-              stage: stage,
-              draft: draft,
-            );
-            context.read<OvertimeSyncCubit>().refreshPendingCount();
-          },
-        ),
-        const SizedBox(height: AppSpacing.lg),
-        TextField(
-          // Fresh EditableText state per stage (mirrors Voice Note keying).
-          key: ValueKey('overtime-active-notes-${next?.apiValue ?? 'none'}'),
-          enabled: !isBusy,
-          maxLines: 2,
-          maxLength: 1000,
-          decoration: InputDecoration(
-            labelText: l10n.overtimeNotes,
-            hintText: l10n.overtimeNotesOptionalHint,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (value) =>
-              context.read<OvertimeCubit>().updateNotesDraft(value),
-          onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        OvertimeVoiceNoteSection(
-          // Fresh State per journey stage so prior recordings never linger
-          // in the active recorder UI after advancing.
-          key: ValueKey('overtime-active-voice-${next?.apiValue ?? 'none'}'),
-          maxDurationSeconds: context.select(
-            (OvertimeCubit c) => c.state.voiceMaxDurationSeconds,
-          ),
-          voiceRecordingQuality: context.select(
-            (OvertimeCubit c) => c.state.voiceRecordingQuality,
-          ),
-          localBytes: context.read<OvertimeCubit>().state.voiceDraft?.bytes,
-          durationSeconds: context
-              .read<OvertimeCubit>()
-              .state
-              .voiceDraft
-              ?.durationSeconds,
-          enabled: !isBusy,
-          onDraftChanged: (OvertimeVoiceDraft? draft) =>
-              context.read<OvertimeCubit>().updateVoiceDraft(draft),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        ElevatedButton.icon(
-          onPressed: isBusy || next == null ? null : onAdvance,
-          icon: isAdvancing
-              ? SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: theme.colorScheme.onPrimary,
-                  ),
-                )
-              : Icon(_nextActionIcon(next)),
-          label: Text(actionLabel),
-          style: ElevatedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            textStyle: theme.textTheme.titleMedium,
-          ),
-        ),
-      ],
-    );
-  }
-
-  static String _currentStageTitle(
-    AppLocalizations l10n,
-    OvertimeCheckpointStage? next,
-    OvertimeSession session,
-  ) {
-    if (next == null) {
-      return l10n.overtimeStageEndJourney;
-    }
-    switch (next) {
-      case OvertimeCheckpointStage.startJourney:
-        return l10n.overtimeStageStartJourney;
-      case OvertimeCheckpointStage.arrivedAtWorkSite:
-        return l10n.overtimeStageArrivedAtWorkSite;
-      case OvertimeCheckpointStage.finishedWork:
-        return l10n.overtimeStageFinishedWork;
-      case OvertimeCheckpointStage.endJourney:
-        return l10n.overtimeStageEndJourney;
-    }
-  }
-
-  static String _nextActionLabel(
-    AppLocalizations l10n,
-    OvertimeCheckpointStage? next,
-  ) {
-    switch (next) {
-      case OvertimeCheckpointStage.arrivedAtWorkSite:
-        return l10n.overtimeArrivedAtWorkSite;
-      case OvertimeCheckpointStage.finishedWork:
-        return l10n.overtimeFinishedWork;
-      case OvertimeCheckpointStage.endJourney:
-        return l10n.overtimeEnd;
-      case OvertimeCheckpointStage.startJourney:
-      case null:
-        return l10n.overtimeEnd;
-    }
-  }
-
-  static IconData _nextActionIcon(OvertimeCheckpointStage? next) {
-    switch (next) {
-      case OvertimeCheckpointStage.arrivedAtWorkSite:
-        return Icons.location_on_outlined;
-      case OvertimeCheckpointStage.finishedWork:
-        return Icons.handyman_outlined;
-      case OvertimeCheckpointStage.endJourney:
-        return Icons.flag_outlined;
-      case OvertimeCheckpointStage.startJourney:
-      case null:
-        return Icons.stop_circle_outlined;
-    }
-  }
-}
-
-class _SyncStatusChip extends StatelessWidget {
-  const _SyncStatusChip({required this.pendingCount, required this.isOffline});
-
-  final int pendingCount;
-  final bool isOffline;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-    final (label, color, icon) = isOffline
-        ? (
-            l10n.overtimeSyncOffline,
-            colorScheme.outline,
-            Icons.cloud_off_outlined,
-          )
-        : pendingCount > 0
-        ? (
-            l10n.overtimeSyncPending,
-            colorScheme.tertiary,
-            Icons.cloud_upload_outlined,
-          )
-        : (
-            l10n.overtimeSyncSynced,
-            colorScheme.primary,
-            Icons.cloud_done_outlined,
-          );
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(color: color),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TelemetryChip extends StatelessWidget {
-  const _TelemetryChip({required this.icon, required this.label});
-
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.labelSmall),
-        ],
-      ),
     );
   }
 }

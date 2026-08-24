@@ -3,11 +3,20 @@ import 'package:mobile/core/network/dio_client.dart';
 import 'package:mobile/features/dashboard/data/models/role_dashboard_summary_model.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 
-class DashboardRemoteDataSource {
-  DashboardRemoteDataSource(this._client);
+abstract class DashboardRemoteDataSource {
+  Future<RoleDashboardSummary> getSummary({
+    required DashboardPeriod period,
+    DateTime? from,
+    DateTime? to,
+  });
+}
+
+class DashboardRemoteDataSourceImpl implements DashboardRemoteDataSource {
+  DashboardRemoteDataSourceImpl(this._client);
 
   final DioClient _client;
 
+  @override
   Future<RoleDashboardSummary> getSummary({
     required DashboardPeriod period,
     DateTime? from,

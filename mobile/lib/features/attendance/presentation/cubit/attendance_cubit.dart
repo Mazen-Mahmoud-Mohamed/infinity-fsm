@@ -78,8 +78,42 @@ class AttendanceCubit extends Cubit<AttendanceState> {
 
   Timer? _tickTimer;
   Timer? _pollTimer;
+  Future<void>? _initializeInFlight;
+  bool _sessionActive = false;
+
+  /// Clears timers/state when the user logs out. Singleton survives navigation.
+  void resetForLogout() {
+    _tickTimer?.cancel();
+    _pollTimer?.cancel();
+    _tickTimer = null;
+    _pollTimer = null;
+    _initializeInFlight = null;
+    _sessionActive = false;
+    if (!isClosed) {
+      emit(const AttendanceState());
+    }
+  }
 
   Future<void> initialize() async {
+    if (_initializeInFlight != null) {
+      await _initializeInFlight;
+      return;
+    }
+    if (_sessionActive && state.status != null) {
+      // Shared across Dashboard summary + Attendance tab — avoid duplicate
+      // status/today fetches and dual 30s polls.
+      return;
+    }
+
+    _initializeInFlight = _initializeBody();
+    try {
+      await _initializeInFlight;
+    } finally {
+      _initializeInFlight = null;
+    }
+  }
+
+  Future<void> _initializeBody() async {
     final cachedStatus =
         _sessionQueryCache.get<AttendanceStatusSnapshot>(_statusCacheKey) ??
             _localDataSource.readStatus();
@@ -114,6 +148,7 @@ class AttendanceCubit extends Cubit<AttendanceState> {
     if (!isClosed) {
       emit(state.copyWith(isRefreshing: false));
     }
+    _sessionActive = true;
     _startTimers();
   }
 
