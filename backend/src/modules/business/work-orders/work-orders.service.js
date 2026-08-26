@@ -775,10 +775,14 @@ class WorkOrdersService {
       workOrder: record,
       actor: user,
       event: 'accepted',
-      titleAr: 'قبول أمر شغل',
+      titleAr: 'تم قبول أمر الشغل',
       titleEn: 'Work Order Accepted',
-      bodyAr: `قبل الفني أمر الشغل ${record.jobNumber || ''}`.trim(),
-      bodyEn: `Technician accepted work order ${record.jobNumber || ''}`.trim(),
+      bodyAr: record.jobNumber
+        ? `قام الفني بقبول أمر الشغل ${record.jobNumber}.`
+        : 'قام الفني بقبول أمر الشغل.',
+      bodyEn: record.jobNumber
+        ? `The technician accepted work order ${record.jobNumber}.`
+        : 'The technician accepted the work order.',
     });
 
     return this._map(record);
@@ -924,10 +928,14 @@ class WorkOrdersService {
       workOrder: record,
       actor: user,
       event: 'completed',
-      titleAr: 'إكمال أمر شغل',
+      titleAr: 'تم إكمال أمر الشغل',
       titleEn: 'Work Order Completed',
-      bodyAr: `أكمل الفني أمر الشغل ${record.jobNumber || ''}`.trim(),
-      bodyEn: `Technician completed work order ${record.jobNumber || ''}`.trim(),
+      bodyAr: record.jobNumber
+        ? `تم إكمال أمر الشغل ${record.jobNumber}.`
+        : 'تم إكمال أمر الشغل.',
+      bodyEn: record.jobNumber
+        ? `Work order ${record.jobNumber} was completed.`
+        : 'The work order was completed.',
     });
 
     return this._map(record);

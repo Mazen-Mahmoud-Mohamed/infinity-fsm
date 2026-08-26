@@ -9,9 +9,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
 import 'package:mobile/core/push/firebase_options.dart';
-import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/push/notification_navigation.dart';
+import 'package:mobile/core/services/window_focus_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_api_datasource.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
@@ -33,25 +35,31 @@ class PushNotificationService {
     required NotificationsApiDataSource api,
     required PreferencesService preferences,
     required AppCubit appCubit,
+    required AuthCubit authCubit,
     required NotificationsUnreadCubit unreadCubit,
     required GoRouter router,
     required String Function() apiBaseUrlProvider,
     required Future<String?> Function() accessTokenProvider,
+    WindowFocusService? windowFocus,
   })  : _api = api,
         _preferences = preferences,
         _appCubit = appCubit,
+        _authCubit = authCubit,
         _unreadCubit = unreadCubit,
         _router = router,
         _apiBaseUrlProvider = apiBaseUrlProvider,
-        _accessTokenProvider = accessTokenProvider;
+        _accessTokenProvider = accessTokenProvider,
+        _windowFocus = windowFocus ?? WindowFocusService();
 
   final NotificationsApiDataSource _api;
   final PreferencesService _preferences;
   final AppCubit _appCubit;
+  final AuthCubit _authCubit;
   final NotificationsUnreadCubit _unreadCubit;
   final GoRouter _router;
   final String Function() _apiBaseUrlProvider;
   final Future<String?> Function() _accessTokenProvider;
+  final WindowFocusService _windowFocus;
 
   final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
@@ -60,6 +68,9 @@ class PushNotificationService {
   String? _currentToken;
   bool _initialized = false;
   bool _permissionAsked = false;
+  bool _fcmListenersAttached = false;
+  bool _consumingPending = false;
+  String? _lastHandledIdempotencyKey;
   StreamSubscription<RemoteMessage>? _onMessageSub;
   StreamSubscription<RemoteMessage>? _onOpenedSub;
   StreamSubscription<String>? _onTokenRefreshSub;
@@ -76,6 +87,7 @@ class PushNotificationService {
     _initialized = true;
 
     await _initLocalNotifications();
+    await _captureLaunchNotificationIntents();
 
     if (!kIsWeb && Platform.isAndroid && DefaultFirebaseOptions.isConfigured) {
       try {
@@ -91,6 +103,9 @@ class PushNotificationService {
           badge: true,
           sound: true,
         );
+        // Capture terminated-state tap before auth finishes.
+        await _captureInitialFcmMessage();
+        _attachFcmOpenListeners();
       } on Object catch (error) {
         debugPrint('[Push] Firebase init failed: $error');
       }
@@ -112,7 +127,7 @@ class PushNotificationService {
     await _local.initialize(
       settings: initSettings,
       onDidReceiveNotificationResponse: (response) {
-        _handlePayload(response.payload);
+        unawaited(_onLocalNotificationTapped(response));
       },
     );
 
@@ -124,13 +139,58 @@ class PushNotificationService {
     }
   }
 
+  /// Local-plugin launch details (foreground local / Windows toast cold cases).
+  Future<void> _captureLaunchNotificationIntents() async {
+    try {
+      final details = await _local.getNotificationAppLaunchDetails();
+      if (details?.didNotificationLaunchApp != true) return;
+      final payload = details!.notificationResponse?.payload;
+      if (payload == null || payload.isEmpty) return;
+      final data = _decodePayload(payload);
+      if (data != null) {
+        await _queueOrNavigate(data, source: 'local_launch');
+      }
+    } on Object catch (error) {
+      debugPrint('[Push] launch details failed: $error');
+    }
+  }
+
+  Future<void> _captureInitialFcmMessage() async {
+    if (kIsWeb || !Platform.isAndroid || !DefaultFirebaseOptions.isConfigured) {
+      return;
+    }
+    try {
+      final initial = await FirebaseMessaging.instance.getInitialMessage();
+      if (initial != null) {
+        await _queueOrNavigate(initial.data, source: 'fcm_initial');
+      }
+    } on Object catch (error) {
+      debugPrint('[Push] getInitialMessage failed: $error');
+    }
+  }
+
+  void _attachFcmOpenListeners() {
+    if (_fcmListenersAttached) return;
+    if (kIsWeb || !Platform.isAndroid || !DefaultFirebaseOptions.isConfigured) {
+      return;
+    }
+    _fcmListenersAttached = true;
+
+    _onOpenedSub?.cancel();
+    _onOpenedSub = FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      unawaited(_queueOrNavigate(message.data, source: 'fcm_opened'));
+    });
+  }
+
   /// Called after successful authentication.
   Future<void> onAuthenticated() async {
     await initialize();
     await _requestPermissionOnce();
     await _registerFcmTokenIfAndroid();
     await _connectSocket();
-    await _consumeInitialMessage();
+    // Router + auth redirects settle before consuming pending deep link.
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    await consumePendingNavigation();
   }
 
   Future<void> onLoggedOut() async {
@@ -140,6 +200,7 @@ class PushNotificationService {
       await _api.deactivateDeviceToken(token);
     }
     _currentToken = null;
+    // Keep pending navigation so a tap while logged out survives re-login.
   }
 
   Future<void> _requestPermissionOnce() async {
@@ -183,27 +244,10 @@ class PushNotificationService {
       _onMessageSub?.cancel();
       _onMessageSub = FirebaseMessaging.onMessage.listen(_onForegroundMessage);
 
-      _onOpenedSub?.cancel();
-      _onOpenedSub =
-          FirebaseMessaging.onMessageOpenedApp.listen(_onMessageOpened);
+      _attachFcmOpenListeners();
     } on Object catch (error) {
       debugPrint('[Push] FCM token registration failed: $error');
     }
-  }
-
-  Future<void> _consumeInitialMessage() async {
-    if (kIsWeb || !Platform.isAndroid || !DefaultFirebaseOptions.isConfigured) {
-      return;
-    }
-    try {
-      final initial = await FirebaseMessaging.instance.getInitialMessage();
-      if (initial != null) {
-        // Delay until router is ready.
-        Future<void>.delayed(const Duration(milliseconds: 600), () {
-          _navigateFromData(initial.data);
-        });
-      }
-    } on Object catch (_) {}
   }
 
   Future<void> _upsertToken(String token, {required String platform}) async {
@@ -235,10 +279,6 @@ class PushNotificationService {
     unawaited(_unreadCubit.refresh());
   }
 
-  void _onMessageOpened(RemoteMessage message) {
-    _navigateFromData(message.data);
-  }
-
   Future<void> _connectSocket() async {
     await _disconnectSocket();
     final accessToken = await _accessTokenProvider();
@@ -247,7 +287,8 @@ class PushNotificationService {
     final apiBase = _apiBaseUrlProvider();
     // apiBase ends with /api/v1 — Socket.IO is on the host origin.
     final uri = Uri.parse(apiBase);
-    final origin = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+    final origin =
+        '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
 
     try {
       final socket = io.io(
@@ -297,28 +338,44 @@ class PushNotificationService {
         ?.toString() ??
         '';
 
-    // Windows (and Android foreground via socket) show a desktop/local toast.
-    unawaited(
-      _showLocalNotification(
-        title: title,
-        body: body,
-        payload: jsonEncode({
-          'notificationId': data['id']?.toString() ?? '',
-          'type': data['entityType'] ?? data['type'] ?? data['module'],
-          'entityId': data['entityId']?.toString() ?? '',
-          'workOrderId': data['data'] is Map
-              ? (data['data'] as Map)['workOrderId']?.toString()
-              : data['workOrderId']?.toString(),
-          'overtimeId': data['data'] is Map
-              ? (data['data'] as Map)['overtimeId']?.toString()
-              : data['overtimeId']?.toString(),
-          ...Map<String, dynamic>.from(
-            data['data'] is Map ? data['data'] as Map : const {},
-          ),
-        }),
-      ),
-    );
+    final payloadMap = _socketPayloadForNavigation(data);
+
+    // Android already shows via FCM (system or foreground local). Avoid a
+    // second toast from Socket.IO while keeping realtime unread refresh.
+    final showToast = kIsWeb
+        ? false
+        : Platform.isWindows ||
+            !(Platform.isAndroid && DefaultFirebaseOptions.isConfigured);
+
+    if (showToast) {
+      unawaited(
+        _showLocalNotification(
+          title: title,
+          body: body,
+          payload: jsonEncode(payloadMap),
+        ),
+      );
+    }
     unawaited(_unreadCubit.refresh());
+  }
+
+  Map<String, dynamic> _socketPayloadForNavigation(Map<String, dynamic> data) {
+    final nested = data['data'] is Map
+        ? Map<String, dynamic>.from(data['data'] as Map)
+        : <String, dynamic>{};
+    return <String, dynamic>{
+      'notificationId': data['id']?.toString() ?? '',
+      'type': data['entityType'] ?? data['type'] ?? data['module'] ?? '',
+      'entityId': data['entityId']?.toString() ?? '',
+      'workOrderId': nested['workOrderId']?.toString() ??
+          data['workOrderId']?.toString() ??
+          '',
+      'overtimeId': nested['overtimeId']?.toString() ??
+          data['overtimeId']?.toString() ??
+          '',
+      'event': nested['event']?.toString() ?? data['type']?.toString() ?? '',
+      ...nested,
+    };
   }
 
   Future<void> _showLocalNotification({
@@ -347,38 +404,118 @@ class PushNotificationService {
     );
   }
 
-  void _handlePayload(String? payload) {
-    if (payload == null || payload.isEmpty) return;
-    try {
-      final data = jsonDecode(payload);
-      if (data is Map) {
-        _navigateFromData(Map<String, dynamic>.from(data));
-      }
-    } on Object catch (_) {}
+  Future<void> _onLocalNotificationTapped(
+    NotificationResponse response,
+  ) async {
+    final data = _decodePayload(response.payload);
+    if (data == null) return;
+    await _windowFocus.focusApp();
+    await _queueOrNavigate(data, source: 'local_tap');
   }
 
-  void _navigateFromData(Map<String, dynamic> data) {
-    final type = (data['type'] ?? data['entityType'] ?? '').toString();
-    final entityId = (data['entityId'] ??
-            data['workOrderId'] ??
-            data['overtimeId'] ??
-            '')
-        .toString();
+  Map<String, dynamic>? _decodePayload(String? payload) {
+    if (payload == null || payload.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(payload);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } on Object catch (_) {}
+    return null;
+  }
 
-    if (entityId.isEmpty) {
-      _router.push(RoutePaths.notifications);
+  Future<void> _queueOrNavigate(
+    Map<String, dynamic> data, {
+    required String source,
+  }) async {
+    final intent = resolveNotificationNavigation(data);
+    debugPrint('[Push] open ($source) → ${intent.route}');
+
+    if (_isAuthenticated) {
+      await _executeNavigation(intent);
+    } else {
+      await _persistPending(intent);
+    }
+  }
+
+  bool get _isAuthenticated =>
+      _authCubit.state.status == AuthStatus.authenticated;
+
+  Future<void> consumePendingNavigation() async {
+    if (!_isAuthenticated || _consumingPending) return;
+    _consumingPending = true;
+    try {
+      final intent = _readPending();
+      if (intent == null) return;
+      await _clearPending();
+      await _executeNavigation(intent);
+    } finally {
+      _consumingPending = false;
+    }
+  }
+
+  Future<void> _executeNavigation(NotificationNavigationIntent intent) async {
+    final key = intent.idempotencyKey;
+    if (key != null && key.isNotEmpty && key == _lastHandledIdempotencyKey) {
+      await _clearPending();
+      return;
+    }
+    if (key != null && key.isNotEmpty) {
+      _lastHandledIdempotencyKey = key;
+    }
+
+    await _clearPending();
+    await _windowFocus.focusApp();
+
+    try {
+      _router.push(intent.route);
+    } on Object catch (error) {
+      debugPrint('[Push] navigate failed: $error');
+      // Allow a later retry for the same intent if push failed.
+      if (key != null && key == _lastHandledIdempotencyKey) {
+        _lastHandledIdempotencyKey = null;
+      }
       return;
     }
 
-    if (type.contains('work_order') || type == 'work_orders') {
-      _router.push(RoutePaths.workOrderDetail(entityId));
+    final notificationId = intent.notificationId;
+    if (notificationId != null && notificationId.isNotEmpty) {
+      unawaited(_markReadAndRefresh(notificationId));
+    }
+  }
+
+  Future<void> _markReadAndRefresh(String notificationId) async {
+    final result = await _api.markAsRead(notificationId);
+    if (result is Failure) {
+      debugPrint('[Push] markAsRead failed: ${result.message}');
       return;
     }
-    if (type.contains('overtime')) {
-      _router.push(RoutePaths.overtimeAdminDetail(entityId));
-      return;
-    }
-    _router.push(RoutePaths.notifications);
+    unawaited(_unreadCubit.refresh());
+  }
+
+  Future<void> _persistPending(NotificationNavigationIntent intent) async {
+    await _preferences.setString(
+      StorageKeys.pendingNotificationNav,
+      jsonEncode(intent.toJson()),
+    );
+  }
+
+  NotificationNavigationIntent? _readPending() {
+    final raw = _preferences.getString(StorageKeys.pendingNotificationNav);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return NotificationNavigationIntent.fromJson(
+          Map<String, dynamic>.from(decoded),
+        );
+      }
+    } on Object catch (_) {}
+    return null;
+  }
+
+  Future<void> _clearPending() async {
+    await _preferences.remove(StorageKeys.pendingNotificationNav);
   }
 
   Future<void> dispose() async {

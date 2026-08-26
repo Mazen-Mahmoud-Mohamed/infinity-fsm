@@ -25,4 +25,7 @@ class StorageKeys {
   static const String lastAttendanceUtcMs = 'last_attendance_utc_ms';
   static const String securityEventQueue = 'security_event_queue';
   static const String pendingGpsAddressQueue = 'pending_gps_address_queue';
+
+  /// Pending deep-link from a notification tap (JSON [NotificationNavigationIntent]).
+  static const String pendingNotificationNav = 'pending_notification_nav';
 }

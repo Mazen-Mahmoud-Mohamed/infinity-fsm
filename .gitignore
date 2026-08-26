@@ -168,3 +168,4 @@ mobile/mobile/
 mobile/build/
 mobile/.dart_tool/
 mobile/.idea/
+*-firebase-adminsdk-*.json

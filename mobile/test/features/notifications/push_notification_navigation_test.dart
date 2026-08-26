@@ -1,29 +1,63 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/push/push_notification_service.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 
 void main() {
-  group('notification navigation payload mapping', () {
+  group('resolveNotificationNavigation', () {
     test('work_order payload maps to work order detail route', () {
-      final path = _routeForPayload({
+      final intent = resolveNotificationNavigation({
         'type': 'work_order',
         'workOrderId': 'abc123',
+        'notificationId': 'n1',
       });
-      expect(path, RoutePaths.workOrderDetail('abc123'));
+      expect(intent.route, RoutePaths.workOrderDetail('abc123'));
+      expect(intent.notificationId, 'n1');
+      expect(intent.idempotencyKey, contains('n1'));
+    });
+
+    test('WORK_ORDER_ASSIGNED event still maps via entityId', () {
+      final intent = resolveNotificationNavigation({
+        'type': 'WORK_ORDER_ASSIGNED',
+        'entityId': 'wo9',
+        'event': 'assigned',
+      });
+      expect(intent.route, RoutePaths.workOrderDetail('wo9'));
     });
 
     test('overtime payload maps to overtime admin detail route', () {
-      final path = _routeForPayload({
+      final intent = resolveNotificationNavigation({
         'type': 'overtime',
         'overtimeId': 'ot99',
       });
-      expect(path, RoutePaths.overtimeAdminDetail('ot99'));
+      expect(intent.route, RoutePaths.overtimeAdminDetail('ot99'));
+    });
+
+    test('OVERTIME_STARTED event maps via overtimeId', () {
+      final intent = resolveNotificationNavigation({
+        'event': 'OVERTIME_STARTED',
+        'overtimeId': 'ot42',
+        'type': 'OVERTIME_STARTED',
+      });
+      expect(intent.route, RoutePaths.overtimeAdminDetail('ot42'));
     });
 
     test('missing entity falls back to notifications center', () {
-      final path = _routeForPayload({'type': 'general'});
-      expect(path, RoutePaths.notifications);
+      final intent = resolveNotificationNavigation({'type': 'general'});
+      expect(intent.route, RoutePaths.notifications);
+    });
+
+    test('intent round-trips through JSON for pending storage', () {
+      final intent = resolveNotificationNavigation({
+        'type': 'work_order',
+        'workOrderId': 'w1',
+        'notificationId': 'nid',
+      });
+      final restored = NotificationNavigationIntent.fromJson(intent.toJson());
+      expect(restored?.route, intent.route);
+      expect(restored?.notificationId, 'nid');
+      expect(restored?.idempotencyKey, intent.idempotencyKey);
     });
   });
 
@@ -32,7 +66,7 @@ void main() {
       const item = AppNotification(
         id: '1',
         title: 'أمر شغل جديد',
-        body: 'تم تعيين أمر شغل جديد لك',
+        body: 'تم تعيين أمر الشغل WO-1 لك.',
         category: NotificationCategory.workOrders,
         module: 'work_orders',
         entityType: 'work_order',
@@ -50,25 +84,4 @@ void main() {
       expect(firebaseMessagingBackgroundHandler, isA<Function>());
     });
   });
-}
-
-/// Mirrors [PushNotificationService] navigation selection for unit testing.
-String _routeForPayload(Map<String, dynamic> data) {
-  final type = (data['type'] ?? data['entityType'] ?? '').toString();
-  final entityId = (data['entityId'] ??
-          data['workOrderId'] ??
-          data['overtimeId'] ??
-          '')
-      .toString();
-
-  if (entityId.isEmpty) {
-    return RoutePaths.notifications;
-  }
-  if (type.contains('work_order') || type == 'work_orders') {
-    return RoutePaths.workOrderDetail(entityId);
-  }
-  if (type.contains('overtime')) {
-    return RoutePaths.overtimeAdminDetail(entityId);
-  }
-  return RoutePaths.notifications;
 }

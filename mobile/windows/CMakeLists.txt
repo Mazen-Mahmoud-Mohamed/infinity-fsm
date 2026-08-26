@@ -52,6 +52,24 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+# Prefer a pre-extracted Firebase C++ SDK when available.
+# firebase_core's Windows CMake downloads ~1GB and uses file(ARCHIVE_EXTRACT),
+# which fails on constrained C:/OneDrive paths ("File size could not be restored").
+# Pointing FIREBASE_CPP_SDK_DIR at a local extract (e.g. on D:) skips that step.
+# Android Firebase/FCM is unaffected (uses google-services.json / Dart Firebase).
+if(NOT DEFINED ENV{FIREBASE_CPP_SDK_DIR} OR "$ENV{FIREBASE_CPP_SDK_DIR}" STREQUAL "")
+  set(_infinity_firebase_sdk_candidates
+    "D:/infinity-fsm-deps/firebase_cpp_sdk_windows"
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/firebase_cpp_sdk_windows"
+  )
+  foreach(_candidate IN LISTS _infinity_firebase_sdk_candidates)
+    if(EXISTS "${_candidate}/include/firebase/version.h")
+      set(ENV{FIREBASE_CPP_SDK_DIR} "${_candidate}")
+      message(STATUS "Using pre-extracted Firebase C++ SDK: ${_candidate}")
+      break()
+    endif()
+  endforeach()
+endif()
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.

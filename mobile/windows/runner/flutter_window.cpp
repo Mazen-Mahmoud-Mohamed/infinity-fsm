@@ -10,6 +10,30 @@
 
 namespace {
 constexpr auto kMonotonicChannel = "com.infinity.fsm/monotonic_clock";
+constexpr auto kWindowChannel = "com.infinity.fsm/window";
+
+void FocusNativeWindow(HWND hwnd) {
+  if (hwnd == nullptr) {
+    return;
+  }
+  if (IsIconic(hwnd)) {
+    ShowWindow(hwnd, SW_RESTORE);
+  } else {
+    ShowWindow(hwnd, SW_SHOW);
+  }
+  // Allow this process to steal foreground briefly (toast activation).
+  const DWORD foregroundThreadId =
+      GetWindowThreadProcessId(GetForegroundWindow(), nullptr);
+  const DWORD currentThreadId = GetCurrentThreadId();
+  if (foregroundThreadId != currentThreadId) {
+    AttachThreadInput(foregroundThreadId, currentThreadId, TRUE);
+  }
+  BringWindowToTop(hwnd);
+  SetForegroundWindow(hwnd);
+  if (foregroundThreadId != currentThreadId) {
+    AttachThreadInput(foregroundThreadId, currentThreadId, FALSE);
+  }
+}
 }
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -43,6 +67,23 @@ bool FlutterWindow::OnCreate() {
         if (call.method_name() == "elapsedRealtimeMs") {
           result->Success(flutter::EncodableValue(
               static_cast<int64_t>(::GetTickCount64())));
+        } else {
+          result->NotImplemented();
+        }
+      });
+
+  HWND hwnd = GetHandle();
+  auto window_channel =
+      std::make_shared<flutter::MethodChannel<flutter::EncodableValue>>(
+          flutter_controller_->engine()->messenger(), kWindowChannel,
+          &flutter::StandardMethodCodec::GetInstance());
+  window_channel->SetMethodCallHandler(
+      [hwnd](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>>
+                 result) {
+        if (call.method_name() == "focusWindow") {
+          FocusNativeWindow(hwnd);
+          result->Success(flutter::EncodableValue(true));
         } else {
           result->NotImplemented();
         }

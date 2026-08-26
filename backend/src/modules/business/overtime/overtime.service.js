@@ -419,10 +419,10 @@ class OvertimeService {
       overtime: record,
       actor: user,
       event: 'started',
-      titleAr: 'بدء العمل',
+      titleAr: 'بدء العمل الإضافي',
       titleEn: 'Overtime Started',
-      bodyAr: 'بدأ الفني {name} العمل',
-      bodyEn: 'Technician {name} started overtime',
+      bodyAr: 'بدأ الفني {name} العمل الإضافي.',
+      bodyEn: 'Technician {name} started overtime.',
     });
 
     return this._map(record);
@@ -583,8 +583,8 @@ class OvertimeService {
         event: 'arrived',
         titleAr: 'وصول الفني',
         titleEn: 'Technician Arrived',
-        bodyAr: 'وصل الفني {name} إلى موقع العمل',
-        bodyEn: 'Technician {name} arrived at the work site',
+        bodyAr: 'وصل الفني إلى موقع العمل.',
+        bodyEn: 'The technician arrived at the work site.',
       });
     } else if (normalized === CHECKPOINT_STAGES.FINISHED_WORK) {
       notifyOvertimeEvent({
@@ -593,10 +593,10 @@ class OvertimeService {
         overtime: record,
         actor: user,
         event: 'finished_work',
-        titleAr: 'إنهاء العمل',
-        titleEn: 'Work Finished',
-        bodyAr: 'أنهى الفني {name} العمل في الموقع',
-        bodyEn: 'Technician {name} finished work at the site',
+        titleAr: 'انتهاء العمل الإضافي',
+        titleEn: 'Overtime Finished',
+        bodyAr: 'أنهى الفني العمل الإضافي.',
+        bodyEn: 'The technician finished overtime work.',
       });
     }
 
@@ -772,10 +772,10 @@ class OvertimeService {
       overtime: record,
       actor: user,
       event: 'ended',
-      titleAr: 'إنهاء رحلة العمل',
-      titleEn: 'Overtime Journey Ended',
-      bodyAr: 'أنهى الفني {name} رحلة العمل',
-      bodyEn: 'Technician {name} ended the overtime journey',
+      titleAr: 'انتهاء العمل الإضافي',
+      titleEn: 'Overtime Ended',
+      bodyAr: 'تم إنهاء سجل العمل الإضافي.',
+      bodyEn: 'The overtime record was ended.',
     });
 
     return this._map(await this._loadWithTechnician(record._id, user.companyId));

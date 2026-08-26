@@ -20,6 +20,7 @@ import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/services/gps_service.dart';
 import 'package:mobile/core/services/logger_service.dart';
 import 'package:mobile/core/services/monotonic_clock_service.dart';
+import 'package:mobile/core/services/window_focus_service.dart';
 import 'package:mobile/core/services/overtime_session_reminder_service.dart';
 import 'package:mobile/core/services/selfie_capture_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
@@ -1472,15 +1473,19 @@ Future<void> configureDependencies() async {
     ),
   );
 
+  getIt.registerLazySingleton<WindowFocusService>(WindowFocusService.new);
+
   getIt.registerLazySingleton<PushNotificationService>(
     () => PushNotificationService(
       api: getIt<NotificationsApiDataSource>(),
       preferences: getIt<PreferencesService>(),
       appCubit: getIt<AppCubit>(),
+      authCubit: getIt<AuthCubit>(),
       unreadCubit: getIt<NotificationsUnreadCubit>(),
       router: getIt<GoRouter>(),
       apiBaseUrlProvider: () => getIt<EnvConfig>().apiBaseUrl,
       accessTokenProvider: () => getIt<TokenManager>().getAccessToken(),
+      windowFocus: getIt<WindowFocusService>(),
     ),
   );
 }

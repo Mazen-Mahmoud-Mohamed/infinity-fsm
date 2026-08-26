@@ -127,22 +127,33 @@ async function deliverSideEffects(doc, io) {
       if (!group.length) continue;
       const title = locale === 'en' ? doc.titleEn : doc.titleAr;
       const body = locale === 'en' ? doc.bodyEn : doc.bodyAr;
+      const flatData = Object.fromEntries(
+        Object.entries(doc.data || {}).map(([k, v]) => [
+          k,
+          v == null ? '' : String(v),
+        ])
+      );
+      const entityType = doc.entityType || doc.module || 'general';
+      const entityId = doc.entityId ? String(doc.entityId) : '';
+      // Visible title/body stay in `notification`; navigation lives in `data`.
+      // Stable keys are forced last so callers can rely on them for deep links.
       await sendFcmToTokens({
         tokens: group,
         title,
         body,
         data: {
+          ...flatData,
           notificationId: doc._id.toString(),
-          type: doc.entityType || doc.module || 'general',
-          entityId: doc.entityId ? String(doc.entityId) : '',
-          event: doc.type,
+          type: flatData.type || entityType,
+          entityId: flatData.entityId || entityId,
+          workOrderId:
+            flatData.workOrderId ||
+            (entityType === 'work_order' ? entityId : ''),
+          overtimeId:
+            flatData.overtimeId ||
+            (entityType === 'overtime' ? entityId : ''),
+          event: flatData.event || doc.type || '',
           recipientUserId: doc.recipientUserId.toString(),
-          ...Object.fromEntries(
-            Object.entries(doc.data || {}).map(([k, v]) => [
-              k,
-              v == null ? '' : String(v),
-            ])
-          ),
         },
       });
     }

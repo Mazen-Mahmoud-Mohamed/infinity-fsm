@@ -50,11 +50,11 @@ export function notifyWorkOrderAssigned({
       titleAr: 'أمر شغل جديد',
       titleEn: 'New Work Order',
       bodyAr: jobNumber
-        ? `تم تعيين أمر شغل جديد لك (${jobNumber})`
-        : 'تم تعيين أمر شغل جديد لك',
+        ? `تم تعيين أمر الشغل ${jobNumber} لك.`
+        : 'تم تعيين أمر شغل جديد لك.',
       bodyEn: jobNumber
-        ? `A new work order was assigned to you (${jobNumber})`
-        : 'A new work order was assigned to you',
+        ? `Work order ${jobNumber} was assigned to you.`
+        : 'A new work order was assigned to you.',
       entityType: 'work_order',
       entityId: workOrderId,
       actorId: actor?._id || null,

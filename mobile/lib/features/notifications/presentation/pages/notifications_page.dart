@@ -7,6 +7,7 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_audit_event.dart';
+import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
@@ -279,22 +280,17 @@ class _NotificationsPageState extends State<NotificationsPage> {
   }
 
   void _openNotificationTarget(BuildContext context, AppNotification item) {
-    final type = (item.entityType ?? item.module).toLowerCase();
-    final entityId = item.entityId ??
-        item.data['workOrderId']?.toString() ??
-        item.data['overtimeId']?.toString() ??
-        item.data['entityId']?.toString();
-
-    if (entityId == null || entityId.isEmpty) {
+    final intent = resolveNotificationNavigation({
+      'type': item.entityType ?? item.module,
+      'entityId': item.entityId,
+      'workOrderId': item.data['workOrderId'],
+      'overtimeId': item.data['overtimeId'],
+      'notificationId': item.id,
+      ...item.data,
+    });
+    if (intent.route == RoutePaths.notifications) {
       return;
     }
-
-    if (type.contains('work_order') || type == 'work_orders') {
-      context.push(RoutePaths.workOrderDetail(entityId));
-      return;
-    }
-    if (type.contains('overtime')) {
-      context.push(RoutePaths.overtimeAdminDetail(entityId));
-    }
+    context.push(intent.route);
   }
 }
