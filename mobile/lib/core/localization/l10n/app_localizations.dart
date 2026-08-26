@@ -788,6 +788,12 @@ abstract class AppLocalizations {
   /// **'Open location'**
   String get workOrderOpenLocation;
 
+  /// No description provided for @workOrderCustomerLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Customer Location'**
+  String get workOrderCustomerLocation;
+
   /// No description provided for @workOrderLocationUrlInvalid.
   ///
   /// In en, this message translates to:
@@ -5407,6 +5413,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manage Overtime'**
   String get overtimeManageTooltip;
+
+  /// No description provided for @overtimeTechnicianTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime'**
+  String get overtimeTechnicianTitle;
+
+  /// No description provided for @overtimeTechnicianNav.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime'**
+  String get overtimeTechnicianNav;
+
+  /// No description provided for @overtimeTechnicianMyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'My Overtime'**
+  String get overtimeTechnicianMyTooltip;
+
+  /// No description provided for @overtimeTechnicianLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading overtime...'**
+  String get overtimeTechnicianLoading;
+
+  /// No description provided for @overtimeTechnicianLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load overtime.'**
+  String get overtimeTechnicianLoadFailed;
+
+  /// No description provided for @overtimeTechnicianStartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Start overtime journey'**
+  String get overtimeTechnicianStartTitle;
+
+  /// No description provided for @overtimeTechnicianStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Overtime'**
+  String get overtimeTechnicianStart;
+
+  /// No description provided for @overtimeTechnicianMyHistory.
+  ///
+  /// In en, this message translates to:
+  /// **'My Overtime'**
+  String get overtimeTechnicianMyHistory;
+
+  /// No description provided for @overtimeTechnicianHistoryLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to load overtime history.'**
+  String get overtimeTechnicianHistoryLoadFailed;
+
+  /// No description provided for @overtimeTechnicianHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No overtime history yet.'**
+  String get overtimeTechnicianHistoryEmpty;
+
+  /// No description provided for @overtimeTechnicianEnded.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime ended. Eligible overtime calculated automatically.'**
+  String get overtimeTechnicianEnded;
+
+  /// No description provided for @overtimeTechnicianNormalStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal overtime started.'**
+  String get overtimeTechnicianNormalStarted;
+
+  /// No description provided for @overtimeTechnicianTravelStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel overtime started.'**
+  String get overtimeTechnicianTravelStarted;
+
+  /// No description provided for @overtimeTechnicianContinueExistingSession.
+  ///
+  /// In en, this message translates to:
+  /// **'You already have a running overtime session.'**
+  String get overtimeTechnicianContinueExistingSession;
+
+  /// No description provided for @overtimeTechnicianActiveSessionReminder.
+  ///
+  /// In en, this message translates to:
+  /// **'Your overtime session is still running. Don\'t forget to end it when you\'re done.'**
+  String get overtimeTechnicianActiveSessionReminder;
+
+  /// No description provided for @overtimeTechnicianTypeNormal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal Overtime'**
+  String get overtimeTechnicianTypeNormal;
+
+  /// No description provided for @overtimeTechnicianTypeTravel.
+  ///
+  /// In en, this message translates to:
+  /// **'Travel Overtime'**
+  String get overtimeTechnicianTypeTravel;
+
+  /// No description provided for @overtimeTechnicianErrorNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime session not found.'**
+  String get overtimeTechnicianErrorNotFound;
+
+  /// No description provided for @overtimeTechnicianNoRunningSession.
+  ///
+  /// In en, this message translates to:
+  /// **'No running overtime session found to end.'**
+  String get overtimeTechnicianNoRunningSession;
 
   /// No description provided for @attendanceClockIn.
   ///

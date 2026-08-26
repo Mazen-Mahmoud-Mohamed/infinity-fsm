@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:just_audio_media_kit/just_audio_media_kit.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
+import 'package:mobile/core/push/push_notification_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/device_id_generator.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
@@ -16,6 +17,8 @@ Future<void> bootstrap(Future<void> Function() runApp) async {
   tzdata.initializeTimeZones();
   await configureDependencies();
   await _ensureDeviceId();
+  // Local notification plugin + optional Firebase (Android) — no auth required.
+  await getIt<PushNotificationService>().initialize();
   await runApp();
 }
 

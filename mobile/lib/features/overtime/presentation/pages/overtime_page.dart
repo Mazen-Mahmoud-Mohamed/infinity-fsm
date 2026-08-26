@@ -5,7 +5,6 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
-import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
@@ -19,6 +18,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/presentation/pages/overtime_admin_page.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_technician_presentation.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
@@ -92,11 +92,11 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
 
     return Scaffold(
       appBar: TechnicianMainAppBar(
-        title: Text(l10n.overtime),
+        title: Text(l10n.overtimeTechnicianTitle),
         actions: [
           const NotificationsBellAction(),
           IconButton(
-            tooltip: l10n.overtimeMyTooltip,
+            tooltip: l10n.overtimeTechnicianMyTooltip,
             onPressed: () => context.push(RoutePaths.overtimeHistory),
             icon: const Icon(Icons.history),
           ),
@@ -141,7 +141,9 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
             ..hideCurrentSnackBar()
             ..showSnackBar(
               SnackBar(
-                content: Text(localizeAppMessage(l10n, state.message)),
+                content: Text(
+                  localizeTechnicianOvertimeMessage(l10n, state.message),
+                ),
                 action: isContinuePrompt
                     ? SnackBarAction(
                         label: l10n.overtimeContinueSession,
@@ -158,7 +160,7 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
           if (state.status == OvertimeLoadStatus.loading &&
               state.session == null &&
               !state.isRefreshing) {
-            return AppLoader(message: l10n.overtimeLoading);
+            return AppLoader(message: l10n.overtimeTechnicianLoading);
           }
 
           if (state.status == OvertimeLoadStatus.failure &&
@@ -166,12 +168,9 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
               !state.isOffline &&
               !isUserFacingNetworkNoise(state.message)) {
             return _ErrorView(
-              message: localizeAppMessage(
-                l10n,
-                state.message != null
-                    ? localizeAppMessage(l10n, state.message)
-                    : l10n.overtimeLoadFailed,
-              ),
+              message: state.message != null
+                  ? localizeTechnicianOvertimeMessage(l10n, state.message)
+                  : l10n.overtimeTechnicianLoadFailed,
               onRetry: () => context.read<OvertimeCubit>().initialize(),
             );
           }
@@ -272,7 +271,7 @@ class _ContinueSessionBanner extends StatelessWidget {
           const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
-              l10n.overtimeContinueExistingSession,
+              l10n.overtimeTechnicianContinueExistingSession,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: colorScheme.onTertiaryContainer,
               ),
@@ -340,7 +339,10 @@ class _StartActionsState extends State<_StartActions> {
           _ContinueSessionBanner(onContinue: widget.onContinue!),
           const SizedBox(height: AppSpacing.lg),
         ],
-        Text(l10n.overtimeStartTitle, style: theme.textTheme.titleLarge),
+        Text(
+          l10n.overtimeTechnicianStartTitle,
+          style: theme.textTheme.titleLarge,
+        ),
         const SizedBox(height: AppSpacing.xl),
         TextField(
           enabled: !isBusy,
@@ -418,7 +420,7 @@ class _StartActionsState extends State<_StartActions> {
                   ),
                 )
               : const Icon(Icons.more_time),
-          label: Text(l10n.overtimeStart),
+          label: Text(l10n.overtimeTechnicianStart),
           style: FilledButton.styleFrom(
             minimumSize: const Size.fromHeight(52),
             padding: const EdgeInsets.symmetric(vertical: 16),
@@ -453,7 +455,7 @@ class _CompletedSummaryCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.sm),
             _MetaRow(
               label: l10n.labelType,
-              value: overtimeTypeLabel(l10n, session.type),
+              value: overtimeTechnicianTypeLabel(l10n, session.type),
             ),
             _MetaRow(
               label: l10n.overtimeStatusLabel,

@@ -15,6 +15,7 @@ import settingsRoutes from '../../modules/core/settings/settings.routes.js';
 import timeRoutes from '../../modules/core/time/time.routes.js';
 import securityRoutes from '../../modules/core/security/security.routes.js';
 import dashboardRoutes from '../../modules/core/dashboard/dashboard.routes.js';
+import notificationsRoutes from '../../modules/notifications/notifications.routes.js';
 
 const router = Router();
 
@@ -74,5 +75,6 @@ router.use('/settings', settingsRoutes);
 router.use('/time', timeRoutes);
 router.use('/security', securityRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/notifications', notificationsRoutes);
 
 export default router;

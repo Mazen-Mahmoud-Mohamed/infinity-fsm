@@ -296,8 +296,7 @@ class WorkOrder extends Equatable {
       return url;
     }
     final label = locationLabel?.trim();
-    if (label != null &&
-        (label.startsWith('http://') || label.startsWith('https://'))) {
+    if (label != null && _looksLikeHttpUrl(label)) {
       return label;
     }
     return null;
@@ -314,19 +313,48 @@ class WorkOrder extends Equatable {
         uri.host.isNotEmpty;
   }
 
-  String get locationDisplay {
-    if (locationLabel != null && locationLabel!.trim().isNotEmpty) {
-      return locationLabel!.trim();
-    }
-    final url = effectiveLocationUrl;
-    if (url != null) {
-      return url;
+  /// Non-URL location text suitable for technician-facing UI.
+  /// Returns null when only a raw map URL (or nothing) is available.
+  String? get humanReadableLocationOrNull {
+    final label = locationLabel?.trim();
+    if (label != null && label.isNotEmpty && !_looksLikeHttpUrl(label)) {
+      return label;
     }
     final address = customerAddress?.displayText;
     if (address != null && address.isNotEmpty) {
       return address;
     }
+    return null;
+  }
+
+  /// Visible location title. Never returns a raw http(s) URL when [urlFallback]
+  /// is provided (technician UI).
+  String locationTitle({required String urlFallback}) {
+    final readable = humanReadableLocationOrNull;
+    if (readable != null) {
+      return readable;
+    }
+    if (hasOpenableLocationUrl) {
+      return urlFallback;
+    }
     return '—';
+  }
+
+  String get locationDisplay {
+    final readable = humanReadableLocationOrNull;
+    if (readable != null) {
+      return readable;
+    }
+    final url = effectiveLocationUrl;
+    if (url != null) {
+      return url;
+    }
+    return '—';
+  }
+
+  static bool _looksLikeHttpUrl(String value) {
+    final lower = value.trim().toLowerCase();
+    return lower.startsWith('http://') || lower.startsWith('https://');
   }
 
   List<String> get effectiveAssigneeIds {

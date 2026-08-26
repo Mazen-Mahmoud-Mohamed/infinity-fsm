@@ -4,7 +4,6 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
-import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -14,6 +13,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_history_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_technician_presentation.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_history_session_card.dart';
 
 class OvertimeHistoryPage extends StatelessWidget {
@@ -99,7 +99,7 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
         context.read<OvertimeHistoryCubit>().loadFirstPage();
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.overtimeMyHistory)),
+        appBar: AppBar(title: Text(l10n.overtimeTechnicianMyHistory)),
         body: BlocBuilder<OvertimeHistoryCubit, OvertimeHistoryState>(
           builder: (context, state) {
             if (state.status == OvertimeHistoryStatus.loading &&
@@ -117,8 +117,11 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
                     children: [
                       Text(
                         state.message != null
-                            ? localizeAppMessage(l10n, state.message)
-                            : l10n.overtimeHistoryLoadFailed,
+                            ? localizeTechnicianOvertimeMessage(
+                                l10n,
+                                state.message,
+                              )
+                            : l10n.overtimeTechnicianHistoryLoadFailed,
                       ),
                       const SizedBox(height: AppSpacing.md),
                       ElevatedButton(
@@ -142,7 +145,7 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
                     children: [
                       const InfinityEmptyBrandMark(size: 56),
                       const SizedBox(height: AppSpacing.md),
-                      Text(l10n.overtimeHistoryEmpty),
+                      Text(l10n.overtimeTechnicianHistoryEmpty),
                     ],
                   ),
                 ),

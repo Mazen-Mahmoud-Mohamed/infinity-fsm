@@ -1,0 +1,6 @@
+# Place your Firebase Android config file here as:
+#   mobile/android/app/google-services.json
+#
+# Download it from Firebase Console → Project settings → Your apps → Android.
+# Do NOT commit production secrets beyond this client config if your policy forbids it.
+# Server FCM credentials belong ONLY in backend env (FIREBASE_SERVICE_ACCOUNT_JSON).

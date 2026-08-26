@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_audit_event.dart';
+import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -253,9 +255,12 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                   final item = displayItems[index];
                                   return NotificationListTile(
                                     notification: item,
-                                    onTap: () => context
-                                        .read<NotificationsCubit>()
-                                        .markAsRead(item.id),
+                                    onTap: () {
+                                      context
+                                          .read<NotificationsCubit>()
+                                          .markAsRead(item.id);
+                                      _openNotificationTarget(context, item);
+                                    },
                                   );
                                 },
                               ),
@@ -271,5 +276,25 @@ class _NotificationsPageState extends State<NotificationsPage> {
         ),
       ),
     );
+  }
+
+  void _openNotificationTarget(BuildContext context, AppNotification item) {
+    final type = (item.entityType ?? item.module).toLowerCase();
+    final entityId = item.entityId ??
+        item.data['workOrderId']?.toString() ??
+        item.data['overtimeId']?.toString() ??
+        item.data['entityId']?.toString();
+
+    if (entityId == null || entityId.isEmpty) {
+      return;
+    }
+
+    if (type.contains('work_order') || type == 'work_orders') {
+      context.push(RoutePaths.workOrderDetail(entityId));
+      return;
+    }
+    if (type.contains('overtime')) {
+      context.push(RoutePaths.overtimeAdminDetail(entityId));
+    }
   }
 }

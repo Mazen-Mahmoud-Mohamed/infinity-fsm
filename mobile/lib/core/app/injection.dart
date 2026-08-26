@@ -173,6 +173,8 @@ import 'package:mobile/features/dashboard/data/repositories/dashboard_repository
 import 'package:mobile/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:mobile/features/dashboard/domain/usecases/get_dashboard_summary_usecase.dart';
 import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard_cubit.dart';
+import 'package:mobile/core/push/push_notification_service.dart';
+import 'package:mobile/features/notifications/data/datasources/notifications_api_datasource.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_local_datasource.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_remote_datasource.dart';
 import 'package:mobile/features/notifications/data/repositories/notifications_repository_impl.dart';
@@ -1379,10 +1381,14 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<NotificationsRemoteDataSource>(
     () => NotificationsRemoteDataSource(getIt<GetDashboardSummaryUseCase>()),
   );
+  getIt.registerLazySingleton<NotificationsApiDataSource>(
+    () => NotificationsApiDataSource(getIt<DioClient>()),
+  );
   getIt.registerLazySingleton<NotificationsRepository>(
     () => NotificationsRepositoryImpl(
       remote: getIt<NotificationsRemoteDataSource>(),
       local: getIt<NotificationsLocalDataSource>(),
+      api: getIt<NotificationsApiDataSource>(),
     ),
   );
   getIt.registerLazySingleton(
@@ -1463,6 +1469,18 @@ Future<void> configureDependencies() async {
     () => createAppRouter(
       authCubit: getIt<AuthCubit>(),
       refreshListenable: getIt<AuthRouterRefresh>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<PushNotificationService>(
+    () => PushNotificationService(
+      api: getIt<NotificationsApiDataSource>(),
+      preferences: getIt<PreferencesService>(),
+      appCubit: getIt<AppCubit>(),
+      unreadCubit: getIt<NotificationsUnreadCubit>(),
+      router: getIt<GoRouter>(),
+      apiBaseUrlProvider: () => getIt<EnvConfig>().apiBaseUrl,
+      accessTokenProvider: () => getIt<TokenManager>().getAccessToken(),
     ),
   );
 }

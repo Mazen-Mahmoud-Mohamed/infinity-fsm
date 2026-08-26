@@ -97,6 +97,8 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
             currentUserId != null &&
             workOrder.isAssignedTo(currentUserId);
         final canExecute = isAssignee;
+        final showAdminDetails = permissions?.canViewAllWorkOrders() == true ||
+            permissions?.canViewTeamWorkOrders() == true;
 
         final bottomBar = workOrder == null
             ? null
@@ -216,12 +218,14 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                             dateFormat: dateFormat,
                                             unassignedLabel:
                                                 l10n.workOrderUnassigned,
+                                            showAssigneeChip: showAdminDetails,
                                           ),
                                           const SizedBox(height: AppSpacing.md),
                                           WorkOrderExecutionPanel(
                                             workOrder: workOrder,
                                             state: state,
                                             canExecute: canExecute,
+                                            showAdminDetails: showAdminDetails,
                                             completionNotesDraft:
                                                 _completionNotesDraft,
                                             onCompletionNotesChanged: (value) {
@@ -240,20 +244,23 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                             workOrder: workOrder,
                                             state: state,
                                             canExecute: canExecute,
+                                            showAdminDetails: showAdminDetails,
                                             column: WorkOrderExecutionColumn
                                                 .sidebar,
                                           ),
-                                          const SizedBox(height: AppSpacing.sm),
-                                          WorkOrderSectionCard(
-                                            icon: Icons.timeline,
-                                            title: l10n.workOrderTimeline,
-                                            subtitle:
-                                                l10n.workOrderTimelineSubtitle,
-                                            initiallyExpanded: true,
-                                            child: WorkOrderTimelineSection(
-                                              events: workOrder.timeline,
+                                          if (showAdminDetails) ...[
+                                            const SizedBox(height: AppSpacing.sm),
+                                            WorkOrderSectionCard(
+                                              icon: Icons.timeline,
+                                              title: l10n.workOrderTimeline,
+                                              subtitle:
+                                                  l10n.workOrderTimelineSubtitle,
+                                              initiallyExpanded: true,
+                                              child: WorkOrderTimelineSection(
+                                                events: workOrder.timeline,
+                                              ),
                                             ),
-                                          ),
+                                          ],
                                         ],
                                       ),
                                     ),
@@ -264,28 +271,32 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                       dateFormat: dateFormat,
                                       unassignedLabel:
                                           l10n.workOrderUnassigned,
+                                      showAssigneeChip: showAdminDetails,
                                     ),
                                     const SizedBox(height: AppSpacing.md),
                                     WorkOrderExecutionPanel(
                                       workOrder: workOrder,
                                       state: state,
                                       canExecute: canExecute,
+                                      showAdminDetails: showAdminDetails,
                                       completionNotesDraft:
                                           _completionNotesDraft,
                                       onCompletionNotesChanged: (value) {
                                         _completionNotesDraft = value;
                                       },
                                     ),
-                                    const SizedBox(height: AppSpacing.sm),
-                                    WorkOrderSectionCard(
-                                      icon: Icons.timeline,
-                                      title: l10n.workOrderTimeline,
-                                      subtitle: l10n.workOrderTimelineSubtitle,
-                                      initiallyExpanded: true,
-                                      child: WorkOrderTimelineSection(
-                                        events: workOrder.timeline,
+                                    if (showAdminDetails) ...[
+                                      const SizedBox(height: AppSpacing.sm),
+                                      WorkOrderSectionCard(
+                                        icon: Icons.timeline,
+                                        title: l10n.workOrderTimeline,
+                                        subtitle: l10n.workOrderTimelineSubtitle,
+                                        initiallyExpanded: true,
+                                        child: WorkOrderTimelineSection(
+                                          events: workOrder.timeline,
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ],
                           ),
                         ),
@@ -366,11 +377,13 @@ class _HeaderSection extends StatelessWidget {
     required this.workOrder,
     required this.dateFormat,
     required this.unassignedLabel,
+    this.showAssigneeChip = true,
   });
 
   final WorkOrder workOrder;
   final DateFormat dateFormat;
   final String unassignedLabel;
+  final bool showAssigneeChip;
 
   @override
   Widget build(BuildContext context) {
@@ -427,15 +440,16 @@ class _HeaderSection extends StatelessWidget {
                     ),
                     visualDensity: VisualDensity.compact,
                   ),
-                Chip(
-                  avatar: const Icon(Icons.engineering_outlined, size: 16),
-                  label: Text(
-                    workOrder.assigneesDisplay.isNotEmpty
-                        ? workOrder.assigneesDisplay
-                        : unassignedLabel,
+                if (showAssigneeChip)
+                  Chip(
+                    avatar: const Icon(Icons.engineering_outlined, size: 16),
+                    label: Text(
+                      workOrder.assigneesDisplay.isNotEmpty
+                          ? workOrder.assigneesDisplay
+                          : unassignedLabel,
+                    ),
+                    visualDensity: VisualDensity.compact,
                   ),
-                  visualDensity: VisualDensity.compact,
-                ),
               ],
             ),
             if (workOrder.rejectionReason != null &&

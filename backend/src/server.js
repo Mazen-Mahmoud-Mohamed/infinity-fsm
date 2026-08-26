@@ -5,6 +5,7 @@ import { createApp } from './app.js';
 import { connectDatabase, disconnectDatabase } from './loaders/database.loader.js';
 import { initializeSocket } from './loaders/socket.loader.js';
 import { initializeCloudinary } from './config/cloudinary.config.js';
+import { setSocketIo } from './shared/utils/socket.registry.js';
 
 let isShuttingDown = false;
 
@@ -19,6 +20,7 @@ async function bootstrap() {
   const io = initializeSocket(httpServer);
 
   app.set('io', io);
+  setSocketIo(io);
 
   httpServer.listen(config.server.port, '0.0.0.0', () => {
     logger.info(

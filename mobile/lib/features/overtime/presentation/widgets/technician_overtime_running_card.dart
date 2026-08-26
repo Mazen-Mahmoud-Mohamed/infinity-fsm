@@ -8,7 +8,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_state.dart';
-import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_technician_presentation.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
 import 'package:mobile/features/overtime/presentation/widgets/technician_overtime_stage_photos.dart';
 
@@ -113,7 +113,7 @@ class TechnicianOvertimeRunningContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  overtimeTypeLabel(l10n, session.type),
+                  overtimeTechnicianTypeLabel(l10n, session.type),
                   style: theme.textTheme.titleLarge,
                 ),
                 const SizedBox(height: AppSpacing.sm),

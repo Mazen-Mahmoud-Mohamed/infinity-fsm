@@ -375,6 +375,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workOrderOpenLocation => 'Open location';
 
   @override
+  String get workOrderCustomerLocation => 'Customer Location';
+
+  @override
   String get workOrderLocationUrlInvalid =>
       'Enter a valid http(s) location URL';
 
@@ -2819,6 +2822,68 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overtimeManageTooltip => 'Manage Overtime';
+
+  @override
+  String get overtimeTechnicianTitle => 'Overtime';
+
+  @override
+  String get overtimeTechnicianNav => 'Overtime';
+
+  @override
+  String get overtimeTechnicianMyTooltip => 'My Overtime';
+
+  @override
+  String get overtimeTechnicianLoading => 'Loading overtime...';
+
+  @override
+  String get overtimeTechnicianLoadFailed => 'Unable to load overtime.';
+
+  @override
+  String get overtimeTechnicianStartTitle => 'Start overtime journey';
+
+  @override
+  String get overtimeTechnicianStart => 'Start Overtime';
+
+  @override
+  String get overtimeTechnicianMyHistory => 'My Overtime';
+
+  @override
+  String get overtimeTechnicianHistoryLoadFailed =>
+      'Unable to load overtime history.';
+
+  @override
+  String get overtimeTechnicianHistoryEmpty => 'No overtime history yet.';
+
+  @override
+  String get overtimeTechnicianEnded =>
+      'Overtime ended. Eligible overtime calculated automatically.';
+
+  @override
+  String get overtimeTechnicianNormalStarted => 'Normal overtime started.';
+
+  @override
+  String get overtimeTechnicianTravelStarted => 'Travel overtime started.';
+
+  @override
+  String get overtimeTechnicianContinueExistingSession =>
+      'You already have a running overtime session.';
+
+  @override
+  String get overtimeTechnicianActiveSessionReminder =>
+      'Your overtime session is still running. Don\'t forget to end it when you\'re done.';
+
+  @override
+  String get overtimeTechnicianTypeNormal => 'Normal Overtime';
+
+  @override
+  String get overtimeTechnicianTypeTravel => 'Travel Overtime';
+
+  @override
+  String get overtimeTechnicianErrorNotFound => 'Overtime session not found.';
+
+  @override
+  String get overtimeTechnicianNoRunningSession =>
+      'No running overtime session found to end.';
 
   @override
   String get attendanceClockIn => 'Clock In';

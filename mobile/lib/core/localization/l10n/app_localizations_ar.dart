@@ -378,6 +378,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workOrderOpenLocation => 'فتح الموقع';
 
   @override
+  String get workOrderCustomerLocation => 'موقع العميل';
+
+  @override
   String get workOrderLocationUrlInvalid =>
       'أدخل رابط موقع صالح يبدأ بـ http أو https';
 
@@ -2816,6 +2819,67 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get overtimeManageTooltip => 'إدارة العمل الإضافي';
+
+  @override
+  String get overtimeTechnicianTitle => 'العمل';
+
+  @override
+  String get overtimeTechnicianNav => 'العمل';
+
+  @override
+  String get overtimeTechnicianMyTooltip => 'وقتي';
+
+  @override
+  String get overtimeTechnicianLoading => 'جاري تحميل العمل...';
+
+  @override
+  String get overtimeTechnicianLoadFailed => 'تعذر تحميل العمل.';
+
+  @override
+  String get overtimeTechnicianStartTitle => 'بدء رحلة العمل';
+
+  @override
+  String get overtimeTechnicianStart => 'بدء العمل';
+
+  @override
+  String get overtimeTechnicianMyHistory => 'وقتي';
+
+  @override
+  String get overtimeTechnicianHistoryLoadFailed => 'تعذر تحميل سجل العمل.';
+
+  @override
+  String get overtimeTechnicianHistoryEmpty => 'لا يوجد سجل عمل بعد.';
+
+  @override
+  String get overtimeTechnicianEnded =>
+      'انتهى العمل. تم احتساب العمل المؤهل تلقائياً.';
+
+  @override
+  String get overtimeTechnicianNormalStarted => 'بدأ العمل العادي.';
+
+  @override
+  String get overtimeTechnicianTravelStarted => 'بدأ العمل للسفر.';
+
+  @override
+  String get overtimeTechnicianContinueExistingSession =>
+      'لديك بالفعل جلسة عمل قيد التشغيل.';
+
+  @override
+  String get overtimeTechnicianActiveSessionReminder =>
+      'جلسة العمل ما زالت قيد التشغيل. لا تنسَ إنهاءها عند الانتهاء.';
+
+  @override
+  String get overtimeTechnicianTypeNormal => 'عمل عادي';
+
+  @override
+  String get overtimeTechnicianTypeTravel => 'عمل للسفر';
+
+  @override
+  String get overtimeTechnicianErrorNotFound => 'جلسة العمل غير موجودة.';
+
+  @override
+  String get overtimeTechnicianNoRunningSession =>
+      'لا توجد جلسة عمل قيد التشغيل لإنهائها.';
 
   @override
   String get attendanceClockIn => 'تسجيل حضور';

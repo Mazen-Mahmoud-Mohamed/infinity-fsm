@@ -3,15 +3,38 @@ import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/domain/usecases/get_dashboard_summary_usecase.dart';
+import 'package:mobile/features/notifications/data/datasources/notifications_api_datasource.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_local_datasource.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_remote_datasource.dart';
 import 'package:mobile/features/notifications/data/repositories/notifications_repository_impl.dart';
+import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/domain/usecases/notifications_usecases.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class _FakeGetSummary extends Fake implements GetDashboardSummaryUseCase {}
 
+class _FakeApi extends Fake implements NotificationsApiDataSource {
+  @override
+  Future<Result<({List<AppNotification> items, int unreadCount})>>
+      listNotifications({
+    int page = 1,
+    int limit = 50,
+  }) async {
+    return const Failure('api unavailable', code: 'API_DOWN');
+  }
+
+  @override
+  Future<Result<int>> unreadCount() async {
+    return const Failure('api unavailable', code: 'API_DOWN');
+  }
+
+  @override
+  Future<Result<void>> markAsRead(String id) async => const Success(null);
+
+  @override
+  Future<Result<void>> markAllAsRead() async => const Success(null);
+}
 class _NoRemoteCalls extends NotificationsRemoteDataSource {
   _NoRemoteCalls() : super(_FakeGetSummary());
 
@@ -34,6 +57,7 @@ void main() {
     final repo = NotificationsRepositoryImpl(
       remote: _NoRemoteCalls(),
       local: local,
+      api: _FakeApi(),
     );
     final cubit = NotificationsUnreadCubit(
       getUnreadCount: GetNotificationsUnreadCountUseCase(repo),

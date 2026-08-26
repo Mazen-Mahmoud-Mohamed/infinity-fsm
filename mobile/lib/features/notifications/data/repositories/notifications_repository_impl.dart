@@ -1,26 +1,36 @@
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
+import 'package:mobile/features/notifications/data/datasources/notifications_api_datasource.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_local_datasource.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_remote_datasource.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/domain/repositories/notifications_repository.dart';
 
-/// Combines remote activity feed + local read-state into domain notifications.
-///
-/// Future Notification API: replace [NotificationsRemoteDataSource] only.
-/// Local read-state can later move behind the same repository methods.
+/// Combines dedicated notifications API (preferred) with dashboard activity
+/// fallback, plus local read-state for legacy feed items.
 class NotificationsRepositoryImpl implements NotificationsRepository {
   NotificationsRepositoryImpl({
     required NotificationsRemoteDataSource remote,
     required NotificationsLocalDataSource local,
+    required NotificationsApiDataSource api,
   })  : _remote = remote,
-        _local = local;
+        _local = local,
+        _api = api;
 
   final NotificationsRemoteDataSource _remote;
   final NotificationsLocalDataSource _local;
+  final NotificationsApiDataSource _api;
 
   @override
   Future<Result<List<AppNotification>>> getNotifications() async {
+    final apiResult = await _api.listNotifications();
+    switch (apiResult) {
+      case Success(:final data):
+        return Success(data.items);
+      case Failure():
+        break;
+    }
+
     final result = await _remote.fetchActivityFeed();
     return switch (result) {
       Failure(:final message, :final code) => Failure(message, code: code),
@@ -30,6 +40,10 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
 
   @override
   Future<Result<int>> getUnreadCount() async {
+    final apiCount = await _api.unreadCount();
+    if (apiCount is Success<int>) {
+      return apiCount;
+    }
     final result = await getNotifications();
     return switch (result) {
       Failure(:final message, :final code) => Failure(message, code: code),
@@ -44,12 +58,18 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
 
   @override
   Future<Result<void>> markAsRead(String id) async {
+    final apiResult = await _api.markAsRead(id);
     await _local.markAsRead(id);
-    return const Success(null);
+    if (apiResult is Failure) {
+      // Local mark still applied for legacy feed items.
+      return const Success(null);
+    }
+    return apiResult;
   }
 
   @override
   Future<Result<void>> markAllAsRead(Iterable<String> ids) async {
+    await _api.markAllAsRead();
     await _local.markAllAsRead(ids);
     return const Success(null);
   }

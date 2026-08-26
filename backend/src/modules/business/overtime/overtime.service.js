@@ -17,6 +17,8 @@ import AppError, {
   ValidationError,
 } from '../../../shared/errors/AppError.js';
 import auditService from '../../core/audit/audit.service.js';
+import { notifyOvertimeEvent } from '../../notifications/notification.hooks.js';
+import { getSocketIo } from '../../../shared/utils/socket.registry.js';
 import { resolveSessionTimeline } from './overtime.timeline.js';
 import {
   buildOvertimeExcelWorkbook,
@@ -411,6 +413,18 @@ class OvertimeService {
       },
     });
 
+    notifyOvertimeEvent({
+      io: getSocketIo(),
+      companyId: user.companyId,
+      overtime: record,
+      actor: user,
+      event: 'started',
+      titleAr: 'بدء العمل',
+      titleEn: 'Overtime Started',
+      bodyAr: 'بدأ الفني {name} العمل',
+      bodyEn: 'Technician {name} started overtime',
+    });
+
     return this._map(record);
   }
 
@@ -559,6 +573,32 @@ class OvertimeService {
       resourceId: record._id,
       metadata: { checkpoint: normalized, clientRequestId },
     });
+
+    if (normalized === CHECKPOINT_STAGES.ARRIVED) {
+      notifyOvertimeEvent({
+        io: getSocketIo(),
+        companyId: user.companyId,
+        overtime: record,
+        actor: user,
+        event: 'arrived',
+        titleAr: 'وصول الفني',
+        titleEn: 'Technician Arrived',
+        bodyAr: 'وصل الفني {name} إلى موقع العمل',
+        bodyEn: 'Technician {name} arrived at the work site',
+      });
+    } else if (normalized === CHECKPOINT_STAGES.FINISHED_WORK) {
+      notifyOvertimeEvent({
+        io: getSocketIo(),
+        companyId: user.companyId,
+        overtime: record,
+        actor: user,
+        event: 'finished_work',
+        titleAr: 'إنهاء العمل',
+        titleEn: 'Work Finished',
+        bodyAr: 'أنهى الفني {name} العمل في الموقع',
+        bodyEn: 'Technician {name} finished work at the site',
+      });
+    }
 
     return this._map(await this._loadWithTechnician(record._id, user.companyId));
   }
@@ -724,6 +764,18 @@ class OvertimeService {
         requiresManualReview: !!record.requiresManualReview,
         clientRequestId: clientRequestId || null,
       },
+    });
+
+    notifyOvertimeEvent({
+      io: getSocketIo(),
+      companyId: user.companyId,
+      overtime: record,
+      actor: user,
+      event: 'ended',
+      titleAr: 'إنهاء رحلة العمل',
+      titleEn: 'Overtime Journey Ended',
+      bodyAr: 'أنهى الفني {name} رحلة العمل',
+      bodyEn: 'Technician {name} ended the overtime journey',
     });
 
     return this._map(await this._loadWithTechnician(record._id, user.companyId));

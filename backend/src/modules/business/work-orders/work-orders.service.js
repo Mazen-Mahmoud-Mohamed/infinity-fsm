@@ -25,6 +25,11 @@ import AppError, {
   NotFoundError,
 } from '../../../shared/errors/AppError.js';
 import auditService from '../../core/audit/audit.service.js';
+import {
+  notifyWorkOrderAssigned,
+  notifyWorkOrderStatusForManagers,
+} from '../../notifications/notification.hooks.js';
+import { getSocketIo } from '../../../shared/utils/socket.registry.js';
 
 const TERMINAL_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
 
@@ -490,6 +495,17 @@ class WorkOrdersService {
       metadata: { jobNumber, status },
     });
 
+    if (assignees.length) {
+      notifyWorkOrderAssigned({
+        io: getSocketIo(),
+        companyId: auth.companyId,
+        workOrder: record,
+        actor: user,
+        newlyAssignedTechnicianIds: assignees.map((tech) => tech._id),
+        event: 'created',
+      });
+    }
+
     return this._map(record);
   }
 
@@ -564,6 +580,7 @@ class WorkOrdersService {
     }
 
     const technicianIds = parseTechnicianIdsFromBody(body);
+    const previousAssigneeIds = resolveAssigneeIds(record);
     if (technicianIds !== null) {
       await this._applyAssignments(record, auth.companyId, technicianIds);
     }
@@ -609,6 +626,21 @@ class WorkOrdersService {
       resourceId: record._id,
     });
 
+    if (technicianIds !== null) {
+      const nextIds = resolveAssigneeIds(record);
+      const newlyAdded = nextIds.filter((id) => !previousAssigneeIds.includes(id));
+      if (newlyAdded.length) {
+        notifyWorkOrderAssigned({
+          io: getSocketIo(),
+          companyId: auth.companyId,
+          workOrder: record,
+          actor: user,
+          newlyAssignedTechnicianIds: newlyAdded,
+          event: 'updated_assign',
+        });
+      }
+    }
+
     return this._map(record);
   }
 
@@ -640,6 +672,7 @@ class WorkOrdersService {
     }
 
     const record = await this._findActive(id, auth.companyId);
+    const previousAssigneeIds = resolveAssigneeIds(record);
 
     if (TERMINAL_STATUSES.has(record.status)) {
       throw new ConflictError('Cannot assign a completed or cancelled work order.');
@@ -689,6 +722,25 @@ class WorkOrdersService {
       },
     });
 
+    const nextIds = resolveAssigneeIds(record);
+    const newlyAdded = nextIds.filter((id) => !previousAssigneeIds.includes(id));
+    const notifyIds =
+      newlyAdded.length > 0
+        ? newlyAdded
+        : previousAssigneeIds.length === 0
+          ? nextIds
+          : [];
+    if (notifyIds.length) {
+      notifyWorkOrderAssigned({
+        io: getSocketIo(),
+        companyId: auth.companyId,
+        workOrder: record,
+        actor: user,
+        newlyAssignedTechnicianIds: notifyIds,
+        event: 'assigned',
+      });
+    }
+
     return this._map(record);
   }
 
@@ -715,6 +767,18 @@ class WorkOrdersService {
       module: 'work_orders',
       resourceType: 'work_order',
       resourceId: record._id,
+    });
+
+    notifyWorkOrderStatusForManagers({
+      io: getSocketIo(),
+      companyId: auth.companyId,
+      workOrder: record,
+      actor: user,
+      event: 'accepted',
+      titleAr: 'قبول أمر شغل',
+      titleEn: 'Work Order Accepted',
+      bodyAr: `قبل الفني أمر الشغل ${record.jobNumber || ''}`.trim(),
+      bodyEn: `Technician accepted work order ${record.jobNumber || ''}`.trim(),
     });
 
     return this._map(record);
@@ -852,6 +916,18 @@ class WorkOrdersService {
       module: 'work_orders',
       resourceType: 'work_order',
       resourceId: record._id,
+    });
+
+    notifyWorkOrderStatusForManagers({
+      io: getSocketIo(),
+      companyId: auth.companyId,
+      workOrder: record,
+      actor: user,
+      event: 'completed',
+      titleAr: 'إكمال أمر شغل',
+      titleEn: 'Work Order Completed',
+      bodyAr: `أكمل الفني أمر الشغل ${record.jobNumber || ''}`.trim(),
+      bodyEn: `Technician completed work order ${record.jobNumber || ''}`.trim(),
     });
 
     return this._map(record);

@@ -85,8 +85,14 @@ class NotificationListTile extends StatelessWidget {
     final scheme = theme.colorScheme;
     final unread = !notification.isRead;
     final createdAt = notification.createdAt;
-    final title = localizeAuditEvent(l10n, notification.title);
-    final body = localizeNotificationBody(l10n, notification.body);
+    // API notifications already carry localized title/body; audit feed keys
+    // still pass through localize helpers (unknown keys return unchanged).
+    final title = notification.entityType != null
+        ? notification.title
+        : localizeAuditEvent(l10n, notification.title);
+    final body = notification.entityType != null
+        ? notification.body
+        : localizeNotificationBody(l10n, notification.body);
 
     return AppListCard(
       onTap: onTap,

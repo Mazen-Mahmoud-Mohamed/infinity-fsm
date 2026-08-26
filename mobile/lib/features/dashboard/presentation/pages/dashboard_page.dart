@@ -329,6 +329,7 @@ class MainNavigationShell extends StatelessWidget {
     required int branchIndex,
     required AppLocalizations l10n,
     required bool extended,
+    required bool operational,
   }) {
     return switch (branchIndex) {
       _branchDashboard => _railDestination(
@@ -352,7 +353,9 @@ class MainNavigationShell extends StatelessWidget {
       _branchOvertime => _railDestination(
           icon: Icons.more_time_outlined,
           selectedIcon: Icons.more_time,
-          label: l10n.overtime,
+          label: operational
+              ? l10n.overtimeTechnicianTitle
+              : l10n.overtime,
           extended: extended,
         ),
       _branchProfile => _railDestination(
@@ -416,6 +419,7 @@ class MainNavigationShell extends StatelessWidget {
     required int branchIndex,
     required AppLocalizations l10n,
     required bool compact,
+    required bool operational,
   }) {
     return switch (branchIndex) {
       _branchDashboard => NavigationDestination(
@@ -436,7 +440,11 @@ class MainNavigationShell extends StatelessWidget {
       _branchOvertime => NavigationDestination(
           icon: const Icon(Icons.more_time_outlined),
           selectedIcon: const Icon(Icons.more_time),
-          label: compact ? l10n.navOvertime : l10n.overtime,
+          label: operational
+              ? (compact
+                  ? l10n.overtimeTechnicianNav
+                  : l10n.overtimeTechnicianTitle)
+              : (compact ? l10n.navOvertime : l10n.overtime),
         ),
       _branchProfile => NavigationDestination(
           icon: const Icon(Icons.person_outline),
@@ -570,6 +578,7 @@ class MainNavigationShell extends StatelessWidget {
                     branchIndex: branch,
                     l10n: l10n,
                     extended: extendedRail,
+                    operational: operational,
                   ),
               ],
             ),
@@ -603,6 +612,7 @@ class MainNavigationShell extends StatelessWidget {
                     branchIndex: branch,
                     l10n: l10n,
                     compact: compact,
+                    operational: operational,
                   ),
               ],
             )

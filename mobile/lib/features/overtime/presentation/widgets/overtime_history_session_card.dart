@@ -4,7 +4,7 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
-import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
+import 'package:mobile/features/overtime/presentation/utils/overtime_technician_presentation.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
 
 /// Technician overtime history list item.
@@ -58,7 +58,7 @@ class OvertimeHistorySessionCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.sm),
           Text(
-            overtimeTypeLabel(l10n, session.type),
+            overtimeTechnicianTypeLabel(l10n, session.type),
             style: theme.textTheme.bodyLarge,
           ),
           const SizedBox(height: AppSpacing.sm),

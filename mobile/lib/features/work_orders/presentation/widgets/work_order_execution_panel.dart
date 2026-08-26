@@ -37,6 +37,8 @@ class WorkOrderExecutionPanel extends StatelessWidget {
     this.completionNotesDraft = '',
     this.onCompletionNotesChanged,
     this.column = WorkOrderExecutionColumn.all,
+    /// When false, hides admin-only GPS/history and simplifies overview copy.
+    this.showAdminDetails = true,
   });
 
   final WorkOrder workOrder;
@@ -45,6 +47,7 @@ class WorkOrderExecutionPanel extends StatelessWidget {
   final String completionNotesDraft;
   final ValueChanged<String>? onCompletionNotesChanged;
   final WorkOrderExecutionColumn column;
+  final bool showAdminDetails;
 
   bool get _isAccepted => workOrder.status == WorkOrderStatus.accepted;
   bool get _isInProgress => workOrder.status == WorkOrderStatus.inProgress;
@@ -59,8 +62,9 @@ class WorkOrderExecutionPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _AttachmentsSection(workOrder: workOrder),
-          if (workOrder.startedLocation != null ||
-              workOrder.completedLocation != null) ...[
+          if (showAdminDetails &&
+              (workOrder.startedLocation != null ||
+                  workOrder.completedLocation != null)) ...[
             const SizedBox(height: AppSpacing.sm),
             _CapturedLocationsSection(workOrder: workOrder),
           ],
@@ -71,7 +75,8 @@ class WorkOrderExecutionPanel extends StatelessWidget {
     final showBefore = _isAccepted || _isInProgress || _isCompleted;
     final showDuringOrComplete = _isInProgress || _isCompleted;
     final includeOverviewAttachments = column == WorkOrderExecutionColumn.all;
-    final includeLocations = column == WorkOrderExecutionColumn.all;
+    final includeLocations =
+        showAdminDetails && column == WorkOrderExecutionColumn.all;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -79,6 +84,7 @@ class WorkOrderExecutionPanel extends StatelessWidget {
         _OverviewSection(
           workOrder: workOrder,
           includeAttachments: includeOverviewAttachments,
+          showAdminDetails: showAdminDetails,
         ),
         if (showBefore) ...[
           const SizedBox(height: AppSpacing.sm),
@@ -119,10 +125,12 @@ class _OverviewSection extends StatelessWidget {
   const _OverviewSection({
     required this.workOrder,
     this.includeAttachments = true,
+    this.showAdminDetails = true,
   });
 
   final WorkOrder workOrder;
   final bool includeAttachments;
+  final bool showAdminDetails;
 
   @override
   Widget build(BuildContext context) {
@@ -133,26 +141,34 @@ class _OverviewSection extends StatelessWidget {
         workOrder.attachments.where((a) => a.isImage).toList();
     final fileAttachments =
         workOrder.attachments.where((a) => !a.isImage).toList();
+    final locationValue = showAdminDetails
+        ? workOrder.locationDisplay
+        : workOrder.locationTitle(
+            urlFallback: l10n.workOrderCustomerLocation,
+          );
 
     return WorkOrderSectionCard(
       icon: Icons.info_outline,
       title: l10n.workOrderOverview,
-      subtitle: l10n.workOrderOverviewSubtitle,
+      subtitle: showAdminDetails ? l10n.workOrderOverviewSubtitle : null,
       initiallyExpanded: true,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _MetaGrid(
             items: [
-              _MetaItem(
-                label: l10n.workOrderCustomer,
-                value: workOrder.customerName ??
-                    AppLocalizations.of(context).valueNotSet,
-                icon: Icons.business_outlined,
-              ),
+              if (showAdminDetails ||
+                  (workOrder.customerName != null &&
+                      workOrder.customerName!.trim().isNotEmpty))
+                _MetaItem(
+                  label: l10n.workOrderCustomer,
+                  value: workOrder.customerName ??
+                      AppLocalizations.of(context).valueNotSet,
+                  icon: Icons.business_outlined,
+                ),
               _MetaItem(
                 label: l10n.workOrderLocation,
-                value: workOrder.locationDisplay,
+                value: locationValue,
                 icon: Icons.place_outlined,
               ),
             ],
@@ -181,7 +197,7 @@ class _OverviewSection extends StatelessWidget {
               ),
             ),
           ],
-          if (hasCoords) ...[
+          if (showAdminDetails && hasCoords) ...[
             const SizedBox(height: AppSpacing.sm),
             Align(
               alignment: AlignmentDirectional.centerStart,
@@ -203,7 +219,8 @@ class _OverviewSection extends StatelessWidget {
               ),
             ),
           ],
-          if (workOrder.description != null &&
+          if (showAdminDetails &&
+              workOrder.description != null &&
               workOrder.description!.trim().isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             _LabeledBody(
@@ -215,7 +232,9 @@ class _OverviewSection extends StatelessWidget {
               workOrder.notes!.trim().isNotEmpty) ...[
             const SizedBox(height: AppSpacing.md),
             _LabeledBody(
-              label: l10n.workOrderInternalNotes,
+              label: showAdminDetails
+                  ? l10n.workOrderInternalNotes
+                  : l10n.workOrderNotes,
               value: workOrder.notes!,
             ),
           ],
@@ -232,6 +251,7 @@ class _OverviewSection extends StatelessWidget {
               durationSeconds: workOrder.voiceNote!.duration,
               readOnly: true,
               enabled: true,
+              compact: !showAdminDetails,
             ),
           ],
           if (includeAttachments && imageAttachments.isNotEmpty) ...[

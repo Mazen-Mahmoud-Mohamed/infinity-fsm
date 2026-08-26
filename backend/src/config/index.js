@@ -100,6 +100,22 @@ const config = Object.freeze({
     ),
   }),
 
+  /**
+   * Firebase Cloud Messaging (server-side only).
+   * Prefer FIREBASE_SERVICE_ACCOUNT_JSON (stringified JSON) on hosts like Render.
+   * Or FIREBASE_SERVICE_ACCOUNT_PATH to a local JSON file that is NOT committed.
+   */
+  fcm: Object.freeze({
+    enabled:
+      optionalEnv('FCM_ENABLED', 'true').toLowerCase() !== 'false' &&
+      Boolean(
+        optionalEnv('FIREBASE_SERVICE_ACCOUNT_JSON') ||
+          optionalEnv('FIREBASE_SERVICE_ACCOUNT_PATH')
+      ),
+    serviceAccountJson: optionalEnv('FIREBASE_SERVICE_ACCOUNT_JSON'),
+    serviceAccountPath: optionalEnv('FIREBASE_SERVICE_ACCOUNT_PATH'),
+  }),
+
   attendance: Object.freeze({
     gpsAccuracyThresholdMeters: parseInt(
       optionalEnv('ATTENDANCE_GPS_ACCURACY_THRESHOLD_METERS', '100'),

@@ -9,6 +9,7 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/theme/app_system_ui.dart';
 import 'package:mobile/core/theme/app_theme.dart';
+import 'package:mobile/core/push/push_notification_service.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -75,6 +76,7 @@ class _InfinityAppAuthSyncBootstrapState
       if (context.read<AuthCubit>().state.status == AuthStatus.authenticated) {
         context.read<OvertimeSyncCubit>().resumeAuthenticatedSync();
         context.read<AttendanceSyncCubit>().resumeAuthenticatedSync();
+        getIt<PushNotificationService>().onAuthenticated();
       }
     });
   }
@@ -133,11 +135,13 @@ class _InfinityAppShell extends StatelessWidget {
               unread.refresh();
               attendanceSync.resumeAuthenticatedSync();
               overtimeSync.resumeAuthenticatedSync();
+              getIt<PushNotificationService>().onAuthenticated();
             } else if (state.status == AuthStatus.unauthenticated) {
               unread.clear();
               getIt<AttendanceCubit>().resetForLogout();
               attendanceSync.pauseAuthenticatedSync();
               overtimeSync.pauseAuthenticatedSync();
+              getIt<PushNotificationService>().onLoggedOut();
             }
           },
         ),

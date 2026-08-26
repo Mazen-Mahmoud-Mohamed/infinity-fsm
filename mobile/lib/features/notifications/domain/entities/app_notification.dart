@@ -27,6 +27,9 @@ class AppNotification extends Equatable {
     this.actorName,
     this.createdAt,
     this.isRead = false,
+    this.entityType,
+    this.entityId,
+    this.data = const {},
   });
 
   final String id;
@@ -37,6 +40,9 @@ class AppNotification extends Equatable {
   final String? actorName;
   final DateTime? createdAt;
   final bool isRead;
+  final String? entityType;
+  final String? entityId;
+  final Map<String, dynamic> data;
 
   AppNotification copyWith({bool? isRead}) {
     return AppNotification(
@@ -48,6 +54,9 @@ class AppNotification extends Equatable {
       actorName: actorName,
       createdAt: createdAt,
       isRead: isRead ?? this.isRead,
+      entityType: entityType,
+      entityId: entityId,
+      data: data,
     );
   }
 
@@ -85,6 +94,16 @@ class AppNotification extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [id, title, body, category, module, actorName, createdAt, isRead];
+  List<Object?> get props => [
+        id,
+        title,
+        body,
+        category,
+        module,
+        actorName,
+        createdAt,
+        isRead,
+        entityType,
+        entityId,
+      ];
 }
