@@ -57,7 +57,11 @@ class _TechnicianInterfaceSettingsPageState
 
     switch (result) {
       case Success():
-        await getIt<TechnicianInterfaceCubit>().load(force: true);
+        final companyId = context.read<AuthCubit>().state.user?.companyId;
+        await getIt<TechnicianInterfaceCubit>().load(
+          force: true,
+          companyId: companyId,
+        );
       case Failure(:final message):
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

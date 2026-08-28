@@ -207,4 +207,11 @@ class TechnicianInterfaceConfigModel extends TechnicianInterfaceConfig {
       profile: readFlag('profile', true),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'overtime': overtime,
+        'workOrders': workOrders,
+        'attendance': attendance,
+        'profile': profile,
+      };
 }

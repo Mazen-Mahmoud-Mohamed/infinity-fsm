@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/cache/session_query_cache.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/settings/data/datasources/technician_interface_local_datasource.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 
@@ -46,23 +47,45 @@ class TechnicianInterfaceState extends Equatable {
 /// Runtime technician navigation config (effective flags for the signed-in user).
 class TechnicianInterfaceCubit extends Cubit<TechnicianInterfaceState> {
   TechnicianInterfaceCubit({
-    required this._getConfig,
-    required this._sessionQueryCache,
-  }) : super(const TechnicianInterfaceState());
+    required GetTechnicianInterfaceConfigUseCase getConfig,
+    required SessionQueryCache sessionQueryCache,
+    required TechnicianInterfaceLocalDataSource localDataSource,
+  })  : _getConfig = getConfig,
+        _sessionQueryCache = sessionQueryCache,
+        _localDataSource = localDataSource,
+        super(const TechnicianInterfaceState());
 
   static const _cacheKey = 'settings:technician-interface:config';
 
   final GetTechnicianInterfaceConfigUseCase _getConfig;
   final SessionQueryCache _sessionQueryCache;
+  final TechnicianInterfaceLocalDataSource _localDataSource;
 
-  Future<void> load({bool force = false}) async {
+  String? _activeCompanyId;
+
+  /// Loads effective technician navigation flags.
+  ///
+  /// When [companyId] is provided, the last persisted configuration for that
+  /// company is applied immediately (offline-safe) before the network fetch.
+  Future<void> load({bool force = false, String? companyId}) async {
+    if (companyId != null && companyId.isNotEmpty) {
+      _activeCompanyId = companyId;
+    }
+
+    final persisted = _readPersistedConfig();
+    final sessionCached =
+        _sessionQueryCache.get<TechnicianInterfaceConfig>(_cacheKey);
+    final immediate = persisted ?? sessionCached;
+
     if (!force) {
-      final cached = _sessionQueryCache.get<TechnicianInterfaceConfig>(_cacheKey);
-      if (cached != null) {
+      if (immediate != null) {
+        if (sessionCached == null) {
+          _sessionQueryCache.set(_cacheKey, immediate);
+        }
         emit(
           state.copyWith(
             status: TechnicianInterfaceLoadStatus.ready,
-            config: cached,
+            config: immediate,
             isRefreshing: true,
           ),
         );
@@ -76,6 +99,14 @@ class TechnicianInterfaceCubit extends Cubit<TechnicianInterfaceState> {
       } else {
         emit(state.copyWith(isRefreshing: true));
       }
+    } else if (immediate != null) {
+      emit(
+        state.copyWith(
+          status: TechnicianInterfaceLoadStatus.ready,
+          config: immediate,
+          isRefreshing: true,
+        ),
+      );
     } else {
       emit(
         state.copyWith(
@@ -89,6 +120,10 @@ class TechnicianInterfaceCubit extends Cubit<TechnicianInterfaceState> {
     switch (result) {
       case Success(data: final data):
         _sessionQueryCache.set(_cacheKey, data);
+        final companyId = _activeCompanyId;
+        if (companyId != null && companyId.isNotEmpty) {
+          await _localDataSource.write(companyId, data);
+        }
         emit(
           TechnicianInterfaceState(
             status: TechnicianInterfaceLoadStatus.ready,
@@ -97,13 +132,14 @@ class TechnicianInterfaceCubit extends Cubit<TechnicianInterfaceState> {
           ),
         );
       case Failure(:final message):
-        final cached = _sessionQueryCache.get<TechnicianInterfaceConfig>(_cacheKey);
+        final fallback = _readPersistedConfig() ??
+            _sessionQueryCache.get<TechnicianInterfaceConfig>(_cacheKey);
         emit(
           TechnicianInterfaceState(
-            status: cached != null
+            status: fallback != null
                 ? TechnicianInterfaceLoadStatus.ready
                 : TechnicianInterfaceLoadStatus.failure,
-            config: cached ?? TechnicianInterfaceConfig.defaults,
+            config: fallback ?? TechnicianInterfaceConfig.defaults,
             isRefreshing: false,
             message: message,
           ),
@@ -113,7 +149,14 @@ class TechnicianInterfaceCubit extends Cubit<TechnicianInterfaceState> {
 
   void clear() {
     _sessionQueryCache.invalidate(_cacheKey);
+    _activeCompanyId = null;
     emit(const TechnicianInterfaceState());
+  }
+
+  TechnicianInterfaceConfig? _readPersistedConfig() {
+    final companyId = _activeCompanyId;
+    if (companyId == null || companyId.isEmpty) return null;
+    return _localDataSource.read(companyId);
   }
 }
 
@@ -160,10 +203,13 @@ class TechnicianInterfaceSettingsState extends Equatable {
 class TechnicianInterfaceSettingsCubit
     extends Cubit<TechnicianInterfaceSettingsState> {
   TechnicianInterfaceSettingsCubit({
-    required this._getSettings,
-    required this._updateSettings,
-    required this._sessionQueryCache,
-  }) : super(const TechnicianInterfaceSettingsState());
+    required GetTechnicianInterfaceSettingsUseCase getSettings,
+    required UpdateTechnicianInterfaceSettingsUseCase updateSettings,
+    required SessionQueryCache sessionQueryCache,
+  })  : _getSettings = getSettings,
+        _updateSettings = updateSettings,
+        _sessionQueryCache = sessionQueryCache,
+        super(const TechnicianInterfaceSettingsState());
 
   static const _cacheKey = 'settings:technician-interface:admin';
 

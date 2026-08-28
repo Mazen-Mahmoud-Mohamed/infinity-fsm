@@ -52,7 +52,7 @@ class _SplashPageState extends State<SplashPage> {
     if (authStatus == AuthStatus.authenticated) {
       final user = authCubit.state.user;
       if (user != null && user.usesOperationalHome) {
-        await getIt<TechnicianInterfaceCubit>().load();
+        await getIt<TechnicianInterfaceCubit>().load(companyId: user.companyId);
       }
 
       if (!mounted) {

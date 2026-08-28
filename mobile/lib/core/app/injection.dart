@@ -162,6 +162,7 @@ import 'package:mobile/features/roles/domain/repositories/roles_repository.dart'
 import 'package:mobile/features/roles/domain/usecases/roles_usecases.dart';
 import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
 import 'package:mobile/features/settings/data/datasources/settings_remote_datasource.dart';
+import 'package:mobile/features/settings/data/datasources/technician_interface_local_datasource.dart';
 import 'package:mobile/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
@@ -1313,10 +1314,14 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton(
     () => GetTechnicianInterfaceConfigUseCase(getIt<SettingsRepository>()),
   );
+  getIt.registerLazySingleton<TechnicianInterfaceLocalDataSource>(
+    () => TechnicianInterfaceLocalDataSource(getIt<PreferencesService>()),
+  );
   getIt.registerLazySingleton<TechnicianInterfaceCubit>(
     () => TechnicianInterfaceCubit(
       getConfig: getIt<GetTechnicianInterfaceConfigUseCase>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
+      localDataSource: getIt<TechnicianInterfaceLocalDataSource>(),
     ),
   );
   getIt.registerFactory<OrganizationSettingsCubit>(

@@ -28,4 +28,8 @@ class StorageKeys {
 
   /// Pending deep-link from a notification tap (JSON [NotificationNavigationIntent]).
   static const String pendingNotificationNav = 'pending_notification_nav';
+
+  /// Prefix for per-company technician interface visibility cache.
+  static const String technicianInterfaceConfigPrefix =
+      'technician_interface_config';
 }

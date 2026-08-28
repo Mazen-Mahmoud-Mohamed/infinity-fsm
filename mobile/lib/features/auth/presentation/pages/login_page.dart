@@ -52,7 +52,10 @@ class _LoginView extends StatelessWidget {
         if (state is LoginSuccess) {
           context.read<AuthCubit>().setAuthenticated(state.user);
           if (state.user.usesOperationalHome) {
-            await getIt<TechnicianInterfaceCubit>().load(force: true);
+            await getIt<TechnicianInterfaceCubit>().load(
+              force: true,
+              companyId: state.user.companyId,
+            );
             if (!context.mounted) return;
             context.go(
               resolveTechnicianHomeRoute(
