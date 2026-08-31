@@ -21,6 +21,11 @@ service-account*.json
 **/service-account*.json
 **/google-services.json
 !**/google-services.json.example
+*-firebase-adminsdk-*.json
+**/*firebase-adminsdk*.json
+# Local-only Firebase client config generated from google-services.json
+# (tracked firebase_options.dart uses REPLACE_WITH_* placeholders only)
+mobile/lib/core/push/firebase_options.local.dart
 secrets/
 **/secrets/
 
@@ -168,4 +173,4 @@ mobile/mobile/
 mobile/build/
 mobile/.dart_tool/
 mobile/.idea/
-*-firebase-adminsdk-*.json
+infinity-fsm-firebase-adminsdk*.json

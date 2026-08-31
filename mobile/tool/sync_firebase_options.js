@@ -87,5 +87,6 @@ class DefaultFirebaseOptions {
 
 fs.writeFileSync(outPath, dart, 'utf8');
 console.log('UPDATED_FIREBASE_OPTIONS');
+console.log('Do not commit firebase_options.dart after sync — it contains local secrets.');
 console.log('package_ok=true');
 console.log('isConfigured_will_be_true=true');

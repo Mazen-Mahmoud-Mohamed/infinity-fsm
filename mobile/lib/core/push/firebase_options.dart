@@ -1,6 +1,9 @@
 /// Firebase options for Infinity FSM.
 ///
-/// Android values are generated from mobile/android/app/google-services.json.
+/// **Template only — do not commit real API keys.**
+/// Generate the local file from `mobile/android/app/google-services.json`:
+/// `node mobile/tool/sync_firebase_options.js`
+///
 /// Server FCM credentials must stay on the backend only
 /// (FIREBASE_SERVICE_ACCOUNT_JSON / FIREBASE_SERVICE_ACCOUNT_PATH).
 library;
