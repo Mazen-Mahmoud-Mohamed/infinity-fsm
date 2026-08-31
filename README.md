@@ -1,6 +1,6 @@
 # INFINITY
 
-Enterprise Field Service Management for workforce operations — attendance, overtime journeys, work orders, and administration.
+Enterprise Field Service Management for workforce operations — work orders, overtime journeys, attendance, notifications, and administration.
 
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
@@ -19,37 +19,43 @@ Enterprise Field Service Management for workforce operations — attendance, ove
 1. [Overview](#1-overview)
 2. [Main Features](#2-main-features)
 3. [User Roles](#3-user-roles)
-4. [Technician Interface Control](#4-technician-interface-control)
-5. [Overtime Workflow](#5-overtime-workflow)
-6. [Offline & Sync](#6-offline--sync)
-7. [Performance Optimizations](#7-performance-optimizations)
-8. [Localization](#8-localization)
-9. [Security](#9-security)
-10. [Technology Stack](#10-technology-stack)
-11. [Project Structure](#11-project-structure)
-12. [Development Setup](#12-development-setup)
-13. [Testing](#13-testing)
-14. [Build & Release](#14-build--release)
-15. [Environment Variables](#15-environment-variables)
-16. [Deployment](#16-deployment)
-17. [API Overview](#17-api-overview)
-18. [Performance Notes](#18-performance-notes)
-19. [Important Implementation Notes](#19-important-implementation-notes)
-20. [Documentation](#20-documentation)
-21. [License](#21-license)
-22. [Author](#22-author)
+4. [Technician Experience](#4-technician-experience)
+5. [Technician Interface Control](#5-technician-interface-control)
+6. [Overtime Workflow](#6-overtime-workflow)
+7. [Notifications](#7-notifications)
+8. [Offline & Sync](#8-offline--sync)
+9. [Performance Optimizations](#9-performance-optimizations)
+10. [Localization](#10-localization)
+11. [Security](#11-security)
+12. [Technology Stack](#12-technology-stack)
+13. [Project Structure](#13-project-structure)
+14. [Development Setup](#14-development-setup)
+15. [Testing](#15-testing)
+16. [Build & Release](#16-build--release)
+17. [Environment Variables](#17-environment-variables)
+18. [Firebase Integration](#18-firebase-integration)
+19. [Deployment](#19-deployment)
+20. [API Overview](#20-api-overview)
+21. [Performance Notes](#21-performance-notes)
+22. [Important Implementation Notes](#22-important-implementation-notes)
+23. [Recent Updates](#23-recent-updates)
+24. [Troubleshooting](#24-troubleshooting)
+25. [Documentation](#25-documentation)
+26. [License](#26-license)
+27. [Author](#27-author)
 
 ---
 
 ## 1. Overview
 
-**INFINITY** helps organizations run field operations from a single system:
+**INFINITY** helps organizations run field operations from a single full-stack platform:
 
-- Clock attendance with GPS evidence
-- Capture multi-stage overtime journeys (photos, voice, notes, GPS)
-- Assign and complete work orders
-- Manage inventory, assets, preventive maintenance, and service reports
-- Give admins and supervisors role-based dashboards and review tools
+- Create, assign, and complete **work orders** with customer/site context
+- Capture multi-stage **overtime journeys** (photos, voice, notes, GPS)
+- Track **attendance** with GPS evidence
+- Deliver **realtime and push notifications** to technicians and managers
+- Give admins and supervisors role-based dashboards, review tools, and **technician interface control**
+- Manage inventory, assets, preventive maintenance, and service reports where enabled
 
 | Topic | Detail |
 |-------|--------|
@@ -58,7 +64,7 @@ Enterprise Field Service Management for workforce operations — attendance, ove
 | **Platforms** | **Android** (phones/tablets) · **Windows** desktop |
 | **Locales** | Arabic **RTL** · English **LTR** |
 | **Client** | Flutter · Material 3 · Clean Architecture · Cubit · Repository Pattern |
-| **API** | Node.js · Express · MongoDB · JWT · Socket.IO |
+| **API** | Node.js · Express · MongoDB · JWT · Socket.IO · Firebase Admin (FCM) |
 | **API version** | `/api/v1` |
 
 The Windows window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android packaging is unchanged.
@@ -87,7 +93,7 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 - Role-based dashboard sections
 - Period filters: Today · This Week · This Month · This Year · Custom
 - Dashboard summary request deduplication (in-flight + short fresh reuse)
-- Notification bell seeded from dashboard activity (no dedicated `/notifications` API)
+- Notification bell with unread count (notifications API + dashboard fallback)
 
 ### ⏱️ Overtime Management
 
@@ -102,10 +108,49 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 
 ### 📝 Work Orders
 
-- Listing and technician assignments
-- Status flow through create → assign → track → complete
-- Attachments / photos where supported in the work-order UI
+- Create, list, assign, accept, reject, complete, and cancel work orders
+- Status flow: `PENDING` → `ASSIGNED` → `ACCEPTED` / `REJECTED` → `IN_PROGRESS` → `COMPLETED` / `CANCELLED`
+- Priorities: `LOW` · `MEDIUM` · `HIGH` · `CRITICAL`
+- **Multiple technician assignees** (`assignedTechnicianIds`) with a primary assignee
+- Scheduled date/time, customer information, location label, and optional location URL
+- **Customer phone numbers** (optional, zero or more per work order)
+- Notes, voice notes, attachments, and execution photos (before / during / after where supported)
 - Timeline-oriented detail flows
+- Technician execution workflow with permission-aware UI (admin vs technician views)
+
+#### Customer phone numbers
+
+| Topic | Behavior |
+|-------|----------|
+| **Optional** | A work order may contain zero, one, or multiple customer phone numbers |
+| **API field** | Additive `customerPhoneNumbers` array on create/update |
+| **Create default** | Missing value defaults to an empty array |
+| **Update** | Omitting the field preserves the existing stored value |
+| **Normalization** | Trimmed strings; empty values are not submitted |
+| **De-duplication** | Digit-based de-duplication; display text is preserved |
+| **Country codes** | No automatic country-code rewrite |
+| **Technician UI** | Technicians see phone numbers when present on assigned work orders |
+| **Call action** | Single number → **Call** opens the device dialer (`tel:`); does **not** auto-dial |
+| **Multiple numbers** | Technician selects a number before opening the dialer |
+
+Backend validation and normalization live in `work-orders.service.js` / `work-orders.validator.js`. Client helpers: `work_order_phone_numbers.dart`.
+
+### 🔔 Notifications
+
+- **In-app notification center** (`/notifications`) with unread count and mark-as-read
+- **Firebase Cloud Messaging (Android)** for device push delivery
+- **Socket.IO** realtime delivery (`notification:new`) while connected
+- **Local OS notifications** (Android foreground + Windows toast while app is running)
+- Persisted recipient notifications with deduplication keys
+- Multi-device FCM token registration (`/notifications/device-tokens`)
+- Rich contextual titles/bodies (technician name, job number, customer, site where available)
+- Structured `data` payload for navigation (`workOrderId`, `overtimeId`, `jobNumber`, etc.)
+- **Deep-link navigation** to work-order and overtime admin detail routes
+- Pending navigation queue until auth/router bootstrap completes
+- Mark-as-read when a notification is opened
+- Idempotent navigation (duplicate tap protection)
+
+See [§7 Notifications](#7-notifications) for platform behavior (Android FCM, Windows Socket.IO, deep links).
 
 ### 🕐 Attendance
 
@@ -135,6 +180,7 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 
 - API health–based connectivity (authoritative sync gate)
 - Offline mode for overtime pending actions
+- **Cached technician interface configuration** (per company) for offline navigation
 - Retry synchronization on reconnect
 - Configurable sync interval (`5 / 15 / 30 / 60` minutes)
 - Wi‑Fi-only sync for overtime (when enabled)
@@ -156,7 +202,45 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 
 ---
 
-## 4. Technician Interface Control
+## 4. Technician Experience
+
+The technician app is intentionally **simplified** for field execution. Technicians use the **operational home** (not the executive admin dashboard).
+
+### Configurable sections (Admin → Technician Interface)
+
+| Section | Typical label | Backend flag |
+|---------|---------------|--------------|
+| Overtime / work journeys | **العمل** | `overtime` |
+| Work Orders | **أوامر العمل** | `workOrders` |
+| Profile | **أنا** | `profile` |
+| Attendance | **الحضور** | `attendance` |
+
+Only enabled sections appear in technician bottom navigation / rail. Disabled sections are removed from normal navigation; existing route guards redirect deep links according to authorization rules (notification deep links still target entity routes when permitted).
+
+### Work Order detail — technician vs admin
+
+Technician work-order detail **hides administrative metadata** when the user lacks team/all work-order view permissions (`showAdminDetails` gate in `work_order_detail_page.dart`).
+
+**Typically hidden from technicians** (when admin details are off):
+
+- Captured GPS coordinates and administrative location metadata
+- Timeline / event administrative metadata
+- Assignee administration details beyond what the technician needs
+- Raw map URLs and administrative coordinate controls
+
+**Operational information preserved** for technicians (when present on the work order):
+
+- Title, job number, status, priority, scheduled date/time
+- Customer name and **customer phone numbers** (with Call action)
+- Location label and open-location action
+- Notes, voice note, attachments, execution photos
+- Primary workflow actions (accept, start, complete, etc.)
+
+Permissions and admin interface configuration both apply — not every technician sees every field on every work order.
+
+---
+
+## 5. Technician Interface Control
 
 **Admin Settings → Technician Interface** (`settings:manage`).
 
@@ -175,9 +259,23 @@ Defaults are all **enabled**.
 
 Config is readable by authenticated users for navigation; only admins with settings manage may update it.
 
+### Offline persistence (technician app)
+
+| Topic | Behavior |
+|-------|----------|
+| **Source of truth** | Server configuration (`GET /settings/technician-interface/config`) |
+| **Local cache** | Last successfully received config stored per company in SharedPreferences (`technician_interface_config:{companyId}`) |
+| **Offline startup** | Cached config loads **immediately** — the app does **not** revert to all sections just because the device is offline |
+| **Online sync** | Cached config shown first; network fetch updates cache and UI when newer |
+| **Admin changes while offline** | Technician cannot receive updates until connectivity returns and sync succeeds |
+| **First install offline** | Falls back to existing application defaults when no cache exists yet |
+| **Logout** | In-memory session cache clears; disk cache remains until replaced by a newer server config |
+
+Implementation: `TechnicianInterfaceCubit` + `TechnicianInterfaceLocalDataSource`.
+
 ---
 
-## 5. Overtime Workflow
+## 6. Overtime Workflow
 
 ```
 START
@@ -232,9 +330,97 @@ Authorized Admin / Supervisor users can export workbooks (ExcelJS):
 
 Branch and Department are intentionally excluded from export filters/columns.
 
+### Overtime notifications — checkpoint vs journey end
+
+The v2 journey distinguishes two late-stage events that must **not** be confused in notification copy:
+
+| Event | Trigger | Meaning | Example title (AR) |
+|-------|---------|---------|-------------------|
+| **`finished_work`** | `recordCheckpoint(..., finishedWork)` | Technician finished **work at the site** (mid-journey checkpoint) | **إنهاء العمل في الموقع** |
+| **`ended`** | `end()` with `endJourney` checkpoint | Technician **ended the overtime journey** (final stage) | **إنهاء رحلة العمل الإضافي** |
+
+Workflow order: **start journey → arrive → finish work at site → end journey**.
+
+> **Known limitation:** Overtime records do not currently store a linked work-order number. Overtime notifications therefore cannot include a WO reference unless the backend model is extended.
+
 ---
 
-## 6. Offline & Sync
+## 7. Notifications
+
+INFINITY delivers operational notifications through **persistence + realtime + push**, without replacing existing business modules.
+
+### Channels
+
+| Channel | Platform | When active |
+|---------|----------|-------------|
+| **In-app center** | Android · Windows | Authenticated users — list, unread count, mark-as-read |
+| **Firebase Cloud Messaging** | **Android** | Device push (foreground, background, terminated) |
+| **Socket.IO** | Android · **Windows** | Realtime `notification:new` while authenticated and connected |
+| **Local OS notification** | Android · Windows | Foreground FCM mirror; Windows toast via Socket.IO while app is running |
+
+Windows does **not** use FCM for background/terminated push in the current implementation. Windows notifications arrive via **Socket.IO while the application process is running**.
+
+### Recipients & events (implemented hooks)
+
+| Audience | Event | When |
+|----------|-------|------|
+| **Technician** | Work order assigned | New/changed assignee |
+| **Admin / Supervisor** | Work order accepted | Technician accepts |
+| **Admin / Supervisor** | Work order completed | Technician completes |
+| **Admin / Supervisor** | Overtime started | Journey start |
+| **Admin / Supervisor** | Overtime arrived | Arrived at work site checkpoint |
+| **Admin / Supervisor** | Overtime finished work | Finished work at site checkpoint |
+| **Admin / Supervisor** | Overtime ended | Journey ended |
+
+Hooks: `backend/src/modules/notifications/notification.hooks.js`. Delivery: persist → Socket.IO → FCM (Android tokens).
+
+### Structured payload (navigation + context)
+
+Visible title/body are for humans; **`data`** carries machine-readable fields where available:
+
+`notificationId` · `type` · `entityType` · `entityId` · `workOrderId` · `overtimeId` · `jobNumber` · `customerName` · `locationLabel` · `actorName` · `technicianName` · `siteAddress` · `event`
+
+Copy builders include technician/customer/site context when present in the source entity — no invented fields.
+
+Example body pattern (placeholders only):
+
+> تم إكمال أمر الشغل `{jobNumber}` بواسطة `{technicianName}`.
+
+### Deep linking & tap behavior
+
+| Route | Purpose |
+|-------|---------|
+| `/work-orders/:id` | Work order detail |
+| `/overtime/admin/:id` | Overtime admin detail |
+
+| State | Android behavior |
+|-------|------------------|
+| **Foreground** | Local notification → tap → navigate |
+| **Background** | FCM system notification → `onMessageOpenedApp` → navigate |
+| **Terminated** | `getInitialMessage()` + launch details → **pending navigation** until auth/router ready |
+| **Logged out** | Intent stored in preferences → consumed once after login |
+
+Additional behaviors (implemented):
+
+- **Mark-as-read** when opened (`PUT /notifications/:id/read`)
+- **Idempotent navigation** (duplicate tap / dual callback protection)
+- **Windows focus** — toast click brings the INFINITY window to foreground and navigates
+
+Client: `PushNotificationService` + `notification_navigation.dart`.
+
+### Android push prerequisites
+
+- Firebase project configured for Android package **`com.example.mobile`**
+- `google-services.json` in `mobile/android/app/` (use `google-services.json.example` as template — **do not commit** production secrets)
+- Backend Firebase Admin credentials via environment (see [§18 Firebase Integration](#18-firebase-integration))
+- `FCM_ENABLED=true` on the API
+- Android 13+ notification permission granted by the user
+
+Android release builds use **core library desugaring** (`desugar_jdk_libs`) required by `flutter_local_notifications`.
+
+---
+
+## 8. Offline & Sync
 
 | Concern | Implementation |
 |---------|----------------|
@@ -244,17 +430,18 @@ Branch and Department are intentionally excluded from export filters/columns.
 | **Probe reuse** | Fresh successful online probe reused for **5 seconds** |
 | **Windows false-offline** | Generic OS/internet checkers can report false negatives on Windows; **API health remains authoritative** for sync |
 | **Pending queue** | Overtime actions persisted locally and retried |
+| **Technician interface cache** | Per-company visibility flags persisted locally; used on offline cold start |
 | **Auto sync** | Configurable on/off |
 | **Intervals** | `5 / 15 / 30 / 60` minutes (default `5`) |
 | **Wi‑Fi-only** | Implemented for **overtime** sync when enabled |
 | **Single-flight** | Sync cubits avoid overlapping sync cycles (follow-up when needed) |
 | **Restore sync** | Connectivity restore triggers sync when API becomes reachable |
 
-Attendance and other modules use offline banners / caching patterns where implemented. Overtime has the most complete offline path.
+Attendance and other modules use offline banners / caching patterns where implemented. **Overtime** has the most complete offline business-data path. **Technician interface visibility** is offline-resilient via local config cache; the app is **not** fully offline-capable for all business modules.
 
 ---
 
-## 7. Performance Optimizations
+## 9. Performance Optimizations
 
 Optimizations below are **present in the current codebase**.
 
@@ -299,7 +486,7 @@ Android on-device frame timings are environment-dependent; use Flutter profile m
 
 ---
 
-## 8. Localization
+## 10. Localization
 
 | Topic | Detail |
 |-------|--------|
@@ -315,7 +502,7 @@ Dashboard charts and overtime Excel exports respect locale / RTL where implement
 
 ---
 
-## 9. Security
+## 11. Security
 
 Verified behavior only:
 
@@ -330,7 +517,9 @@ Verified behavior only:
 - Helmet, CORS allow-list, rate limiting
 - Device clock skew checks; GPS accuracy thresholds
 - Client log sanitization for tokens / passwords
-- Secrets via environment only — never commit `.env`
+- Secrets via environment only — never commit `.env`, service-account JSON, or `google-services.json`
+
+> **Never commit** Firebase service-account JSON files, private keys, API secrets, database credentials, JWT secrets, or other sensitive credentials to Git. **Never paste credentials into this README.**
 
 ### Windows Remember Me (summary)
 
@@ -343,7 +532,7 @@ Verified behavior only:
 
 ---
 
-## 10. Technology Stack
+## 12. Technology Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -359,14 +548,15 @@ Verified behavior only:
 | Backend | Node.js (≥ 20) / Express |
 | Database | MongoDB / Mongoose |
 | Authentication | JWT + bcrypt |
-| Realtime | Socket.IO (authenticated rooms; ping/pong foundation) |
+| Realtime | Socket.IO (authenticated rooms; operational notifications) |
+| Push (Android) | Firebase Cloud Messaging + Firebase Admin SDK (backend) |
 | Excel | ExcelJS |
 | Desktop | Windows |
 | Mobile | Android |
 
 ---
 
-## 11. Project Structure
+## 13. Project Structure
 
 ```
 infinity-fsm/
@@ -375,7 +565,8 @@ infinity-fsm/
 │   │   ├── config/
 │   │   ├── modules/
 │   │   │   ├── core/        # auth, rbac, dashboard, users, settings, …
-│   │   │   └── business/    # attendance, overtime, work-orders, …
+│   │   │   ├── business/    # attendance, overtime, work-orders, …
+│   │   │   └── notifications/  # in-app + FCM + device tokens + hooks
 │   │   ├── routes/          # /api/v1
 │   │   ├── shared/          # middleware, utils
 │   │   └── __tests__/
@@ -383,8 +574,8 @@ infinity-fsm/
 │   └── .env.example
 ├── mobile/                  # Flutter client (Android + Windows)
 │   ├── lib/
-│   │   ├── core/            # theme, router, l10n, DI, network, storage
-│   │   ├── features/        # auth, dashboard, attendance, overtime, …
+│   │   ├── core/            # theme, router, l10n, DI, network, storage, push
+│   │   ├── features/        # auth, dashboard, attendance, overtime, notifications, …
 │   │   └── shared/
 │   ├── android/
 │   ├── windows/             # runner title: INFINITY
@@ -405,7 +596,7 @@ infinity-fsm/
 
 ---
 
-## 12. Development Setup
+## 14. Development Setup
 
 ### Requirements
 
@@ -415,6 +606,8 @@ infinity-fsm/
 - MongoDB (local or Atlas) / configured backend
 - Cloudinary account for production media uploads
 - Windows desktop: Visual Studio **Desktop development with C++** workload
+- Android push: Firebase project + `google-services.json` (local file, not committed)
+- Backend push: Firebase Admin service-account credentials via environment (see §17–§18)
 
 ### Backend
 
@@ -462,7 +655,7 @@ Default / production API base is configured in `mobile/lib/core/config/env_confi
 
 ---
 
-## 13. Testing
+## 15. Testing
 
 ### Backend (Jest)
 
@@ -474,6 +667,10 @@ Under `backend/src/__tests__/`, including:
 - Auth parallel role prefetch
 - Dashboard live-activity / list-projection payload tests
 - RBAC
+- **Notification hooks** (copy builders, context fields)
+- **Push delivery** (`notifications.push.test.js`)
+- **Work order customer phones** and multi-assignee/location tests
+- **Technician interface settings**
 
 ```bash
 cd backend
@@ -489,7 +686,11 @@ Under `mobile/test/`, including:
 - Overtime offline lifecycle, sync scheduler, reconciliation, forensics
 - Connectivity service
 - Settings / localization / Technician Interface navigation
-- Work orders / attendance areas as covered by existing suites
+- **Technician interface offline local cache**
+- **Push notification navigation** / pending intent mapping
+- **Notifications unread seed**
+- Work orders (customer phones, technician UI, form flows)
+- Attendance areas as covered by existing suites
 
 ```bash
 cd mobile
@@ -503,12 +704,14 @@ Recent ConnectivityService interface updates are covered by updated overtime tes
 
 ---
 
-## 14. Build & Release
+## 16. Build & Release
 
 ### Android
 
 ```bash
 cd mobile
+flutter clean
+flutter pub get
 flutter build apk --release
 # optional Play Store bundle:
 flutter build appbundle --release
@@ -522,6 +725,8 @@ Typical APK output:
 
 ```bash
 cd mobile
+flutter clean
+flutter pub get
 flutter build windows --release
 ```
 
@@ -529,13 +734,17 @@ Output:
 
 `mobile/build/windows/x64/runner/Release/` (executable name `mobile.exe`; window title **INFINITY**)
 
+Windows builds require Visual Studio C++ tooling, CMake, and NuGet (Flutter downloads NuGet when needed). **`firebase_core`** may download/extract the Firebase C++ SDK during Windows builds — low disk space on `C:` or OneDrive paths can cause extraction failures. See `mobile/windows/FIREBASE_CPP_SDK.md` for optional pre-extracted SDK setup.
+
 Optional installer: root `installer.iss` (Inno Setup) packages the Windows Release build.
 
-Release APK and Windows builds have been successfully produced and exercised on real devices/desktops in current project validation. Do not commit signing keystores, API secrets, or `.env` files.
+Release APK and Windows builds have been successfully produced in project validation. Build success depends on the local toolchain and environment — do not assume every machine will succeed without the prerequisites above.
+
+Do not commit signing keystores, API secrets, `.env`, `google-services.json`, or Firebase service-account JSON files.
 
 ---
 
-## 15. Environment Variables
+## 17. Environment Variables
 
 Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 
@@ -552,29 +761,78 @@ Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 | `LOG_LEVEL` | Pino level |
 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | Media uploads |
 | `SOCKET_CORS_ORIGINS` | Socket.IO CORS |
+| `FCM_ENABLED` | `true` / `false` — disable push without removing code |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | **Option A:** full service-account JSON as one line (recommended on Render) |
+| `FIREBASE_SERVICE_ACCOUNT_PATH` | **Option B:** absolute path to service-account JSON file (local dev) |
 | `DEVICE_CLOCK_SKEW_SECONDS` | Clock drift allowance |
 | `ATTENDANCE_GPS_ACCURACY_THRESHOLD_METERS` | Attendance GPS gate |
 | `OVERTIME_MAX_SESSION_HOURS` | Soft review threshold (default `16`) |
 | `OVERTIME_MAX_REQUEST_HOURS` / `OVERTIME_MIN_REQUEST_HOURS` | Request bounds |
 | `OVERTIME_GPS_ACCURACY_THRESHOLD_METERS` | Overtime GPS gate |
 
+**FCM credentials:** provide **either** `FIREBASE_SERVICE_ACCOUNT_JSON` **or** `FIREBASE_SERVICE_ACCOUNT_PATH` — not both required. Push is enabled when `FCM_ENABLED` is not `false` and credentials resolve.
+
 **Client:** `--dart-define=API_BASE_URL=...` and `--dart-define=ENV=development|production`.
+
+> **Security:** Never commit Firebase service-account JSON files, private keys, API secrets, database credentials, JWT secrets, or other sensitive credentials to Git.
 
 ---
 
-## 16. Deployment
+## 18. Firebase Integration
+
+| Component | Configuration |
+|-----------|---------------|
+| **Android app ID** | `com.example.mobile` (`mobile/android/app/build.gradle.kts`) |
+| **Android client config** | `mobile/android/app/google-services.json` (from Firebase console; use `google-services.json.example` locally) |
+| **Flutter Firebase options** | `mobile/lib/core/push/firebase_options.dart` (synced from Android config via `mobile/tool/sync_firebase_options.js`) |
+| **Android FCM** | `firebase_core` + `firebase_messaging`; default channel `infinity_default`; app name **INFINITY** |
+| **Backend FCM** | Firebase Admin SDK — `backend/src/modules/notifications/fcm.service.js` |
+| **Windows** | `firebase_core` Windows native dependency for plugin compatibility; **push delivery on Windows uses Socket.IO**, not FCM |
+
+### Backend setup (Render / local)
+
+1. Create a Firebase project and enable Cloud Messaging.
+2. Add an Android app with package name **`com.example.mobile`**.
+3. Download `google-services.json` into `mobile/android/app/` (**gitignored** — do not commit).
+4. Create a Firebase **service account** with FCM permissions.
+5. Configure the backend with **one** of:
+   - `FIREBASE_SERVICE_ACCOUNT_JSON=<paste JSON as single line>` (Render secret), or
+   - `FIREBASE_SERVICE_ACCOUNT_PATH=/absolute/path/to/service-account.json` (local only)
+6. Set `FCM_ENABLED=true` (or `false` to disable push during development).
+
+**Do not** commit service-account JSON, private keys, or `google-services.json` contents to the repository or this README.
+
+---
+
+## 19. Deployment
 
 | Component | Current state |
 |-----------|---------------|
-| **Backend API** | Production base URL points at a **Render** web service (`EnvConfig.productionApiBaseUrl`). Configure MongoDB, JWT, Cloudinary, and CORS via the host’s environment settings. |
+| **Backend API** | Production base URL: `https://infinity-fsm-api.onrender.com/api/v1` (`EnvConfig.productionApiBaseUrl`). Hosted on **Render**. Configure MongoDB, JWT, Cloudinary, CORS, Socket.IO, and Firebase Admin via Render environment secrets. |
 | **Mobile / Desktop** | Distributed as **built artifacts** (Android APK/AAB, Windows Release folder / optional Inno Setup installer) — not a separate hosted web frontend. |
 | **`infra/`** | Planning notes only (Docker/CI planned). No live Docker/CI pipeline configs are required to run the app today. |
 
-Bind the API to the platform port (e.g. `PORT`) and keep secrets in the host environment — never in the repository.
+Typical backend release flow:
+
+```
+Local changes
+    ↓
+Tests / validation (npm test · flutter test · flutter analyze)
+    ↓
+Git commit
+    ↓
+GitHub
+    ↓
+Render deployment (manual or connected service — configure in Render dashboard)
+    ↓
+Backend live
+```
+
+Bind the API to the platform port (`PORT`) and keep secrets in the host environment — never in the repository.
 
 ---
 
-## 17. API Overview
+## 20. API Overview
 
 Primary mount: **`/api/v1`**
 
@@ -586,6 +844,7 @@ Primary mount: **`/api/v1`**
 | Overtime | `/overtime` | Journey, review, export |
 | Attendance | `/attendance` | Clock / history / admin |
 | Work Orders | `/work-orders` | CRUD & workflow |
+| **Notifications** | `/notifications` | In-app inbox, unread count, mark-as-read, device tokens |
 | Settings | `/settings` | Including technician interface config |
 | Organization | `/organization` | Company / org |
 | Users / Roles | `/users`, `/roles` | Admin RBAC |
@@ -593,11 +852,13 @@ Primary mount: **`/api/v1`**
 | Reports | `/reports` | Operational reports |
 | Time / Security | `/time`, `/security` | Platform helpers |
 
-Fuller catalog: [docs/API.md](./docs/API.md). Prefer **mounted routes in code** over older planned docs. Dedicated `/notifications` and `/search` APIs are **not** mounted; the app uses dashboard activity and client-side search across existing APIs.
+Fuller catalog: [docs/API.md](./docs/API.md). Prefer **mounted routes in code** over older planned docs. There is **no** dedicated `/search` API; global search queries existing module endpoints client-side.
+
+Realtime notification events are emitted on Socket.IO (`notification:new`) to authenticated user rooms.
 
 ---
 
-## 18. Performance Notes
+## 21. Performance Notes
 
 - Avoid global caching of **real-time** overtime running state
 - Dashboard uses **controlled, short-lived** deduplication (in-flight + ~5s fresh reuse) — not a long-lived stale cache
@@ -607,7 +868,7 @@ Fuller catalog: [docs/API.md](./docs/API.md). Prefer **mounted routes in code** 
 
 ---
 
-## 19. Important Implementation Notes
+## 22. Important Implementation Notes
 
 | Topic | Guarantee |
 |-------|-----------|
@@ -616,15 +877,51 @@ Fuller catalog: [docs/API.md](./docs/API.md). Prefer **mounted routes in code** 
 | Technician UI | Hides technical metadata where designed; admin retains detailed review data |
 | Rejection reason | Visible to technician in history when present |
 | Offline | Overtime actions persisted and retried; reconciliation when server already confirmed a stage |
-| Technician Interface | Company-scoped; Admin/Supervisor navigation unrestricted |
+| Technician Interface | Company-scoped; Admin/Supervisor navigation unrestricted; **offline cache per company** |
+| Notifications | Persist → Socket.IO → FCM (Android); push failures do not fail business operations |
 | Maps | OpenStreetMap only |
 | SessionQueryCache | Used to avoid duplicate network fetches where wired |
 | Dashboard loading | Prefer `isRefreshing` / cached summary over full-page loaders when data exists |
 | Product name | **INFINITY** in UI / Windows title; package `mobile` unchanged |
 
+| Product name | **INFINITY** in UI / Windows title; package `mobile` unchanged; Android `applicationId` `com.example.mobile` |
+
 ---
 
-## 20. Documentation
+## 23. Recent Updates
+
+Recent shipped improvements (verify in code before relying on docs alone):
+
+- Work order **customer phone numbers** (optional multi-number support + Call action)
+- **Technician-simplified** work-order detail (permission-aware admin metadata hiding)
+- **Admin-controlled technician interface visibility** with **offline per-company cache**
+- **Notifications module** — in-app center, persistence, unread state, mark-as-read
+- **Firebase Cloud Messaging** on Android + Firebase Admin on backend
+- **Socket.IO** realtime notifications (including Windows while app is running)
+- Professional **notification copy** with technician/customer/site context
+- **Notification deep links**, pending navigation, idempotent tap handling, Windows focus on click
+- Clear overtime wording: **إنهاء العمل في الموقع** vs **إنهاء رحلة العمل الإضافي**
+- Android **core library desugaring** for `flutter_local_notifications`
+- Windows **Firebase C++ SDK** optional pre-extract path (`mobile/windows/FIREBASE_CPP_SDK.md`)
+
+---
+
+## 24. Troubleshooting
+
+| Symptom | Likely cause / check |
+|---------|----------------------|
+| Android push never arrives | Missing/invalid `google-services.json`; `DefaultFirebaseOptions.isConfigured` false; backend `FCM_ENABLED` or Firebase Admin credentials missing |
+| FCM works but no tap navigation | Auth/router not ready — pending navigation should consume after login; verify `PushNotificationService` |
+| Windows no notifications when app closed | Expected — Windows uses Socket.IO while the process is running, not FCM background push |
+| Windows build fails on Firebase SDK extract | Low `C:` disk space or OneDrive path — see `mobile/windows/FIREBASE_CPP_SDK.md` |
+| Technician sees all tabs offline | Ensure app version with local interface cache; verify prior online sync stored config for the company |
+| Admin changed interface; technician still sees old tabs offline | Expected until connectivity returns and `TechnicianInterfaceCubit.load()` succeeds |
+| Render push skipped | Set `FIREBASE_SERVICE_ACCOUNT_JSON` secret; confirm `FCM_ENABLED=true` |
+| Notification permission denied (Android 13+) | User must grant POST_NOTIFICATIONS in system settings |
+
+---
+
+## 25. Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -643,13 +940,13 @@ Fuller catalog: [docs/API.md](./docs/API.md). Prefer **mounted routes in code** 
 
 ---
 
-## 21. License
+## 26. License
 
 Released under the [MIT License](./LICENSE).
 
 ---
 
-## 22. Author
+## 27. Author
 
 **Mazen Mahmoud** — Total-Com Solutions
 
