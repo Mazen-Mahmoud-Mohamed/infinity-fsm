@@ -70,6 +70,9 @@ NotificationNavigationIntent resolveNotificationNavigation(
     route = targetId == null || targetId.isEmpty
         ? RoutePaths.notifications
         : RoutePaths.overtimeAdminDetail(targetId);
+  } else if (_isAppUpdateType(type)) {
+    route = RoutePaths.settingsUpdates;
+    targetId = null;
   } else if (entityId.isNotEmpty && type.contains('work')) {
     route = RoutePaths.workOrderDetail(entityId);
     targetId = entityId;
@@ -99,4 +102,8 @@ bool _isWorkOrderType(String type) {
 
 bool _isOvertimeType(String type) {
   return type.contains('overtime');
+}
+
+bool _isAppUpdateType(String type) {
+  return type.contains('app_update') || type == 'update';
 }

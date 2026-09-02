@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/features/app_update/data/datasources/app_update_local_datasource.dart';
 import 'package:mobile/features/app_update/data/datasources/app_update_remote_datasource.dart';
+import 'package:mobile/features/app_update/data/services/app_update_download_coordinator.dart';
 import 'package:mobile/features/app_update/data/services/app_update_download_service.dart';
 import 'package:mobile/features/app_update/data/services/app_update_install_service.dart';
 import 'package:mobile/features/app_update/domain/entities/app_release_manifest.dart';
@@ -14,18 +15,18 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
   AppUpdateRepositoryImpl({
     required AppUpdateRemoteDataSource remote,
     required AppUpdateLocalDataSource local,
-    required AppUpdateDownloadService downloadService,
+    required AppUpdateDownloadCoordinator downloadCoordinator,
     required AppUpdateInstallService installService,
     required ConnectivityService connectivityService,
   })  : _remote = remote,
         _local = local,
-        _downloadService = downloadService,
+        _downloadCoordinator = downloadCoordinator,
         _installService = installService,
         _connectivityService = connectivityService;
 
   final AppUpdateRemoteDataSource _remote;
   final AppUpdateLocalDataSource _local;
-  final AppUpdateDownloadService _downloadService;
+  final AppUpdateDownloadCoordinator _downloadCoordinator;
   final AppUpdateInstallService _installService;
   final ConnectivityService _connectivityService;
 
@@ -39,6 +40,9 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
     if (Platform.isIOS) return 'ios';
     return 'other';
   }
+
+  @override
+  bool get isDownloadInProgress => _downloadCoordinator.isDownloading;
 
   @override
   Future<({String version, int build})> getInstalledVersion() async {
@@ -55,6 +59,36 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
   @override
   Future<DateTime?> getLastCheckedAt() async {
     return _local.readLastCheckedAt();
+  }
+
+  @override
+  Future<DateTime?> getLastAutoCheckAt() async {
+    return _local.readLastAutoCheckAt();
+  }
+
+  @override
+  Future<void> writeLastAutoCheckAt(DateTime value) async {
+    await _local.writeLastAutoCheckAt(value);
+  }
+
+  @override
+  Future<String?> getLastNotifiedUpdateVersion() async {
+    return _local.readLastNotifiedUpdateVersion();
+  }
+
+  @override
+  Future<void> writeLastNotifiedUpdateVersion(String version) async {
+    await _local.writeLastNotifiedUpdateVersion(version);
+  }
+
+  @override
+  Future<String?> getDismissedBannerVersion() async {
+    return _local.readDismissedBannerVersion();
+  }
+
+  @override
+  Future<void> writeDismissedBannerVersion(String version) async {
+    await _local.writeDismissedBannerVersion(version);
   }
 
   @override
@@ -84,7 +118,7 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
       throw const AppUpdateDownloadException('offline');
     }
 
-    final file = await _downloadService.downloadArtifact(
+    final path = await _downloadCoordinator.downloadArtifact(
       artifact: artifact,
       platformKey: platformKey,
       version: version,
@@ -92,10 +126,10 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
     );
 
     await _local.writeDownloadedArtifact(
-      path: file.path,
+      path: path,
       version: version,
     );
-    return file.path;
+    return path;
   }
 
   @override
@@ -117,6 +151,59 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
   @override
   Future<String?> getDownloadedArtifactVersion() async {
     return _local.readDownloadedVersion();
+  }
+
+  @override
+  Future<bool> isAutoUpdateEnabled() async => _local.readAutoUpdateEnabled();
+
+  @override
+  Future<void> writeAutoUpdateEnabled(bool enabled) async {
+    await _local.writeAutoUpdateEnabled(enabled);
+  }
+
+  @override
+  Future<String?> getAutoUpdateProcessingVersion() async {
+    return _local.readAutoUpdateProcessingVersion();
+  }
+
+  @override
+  Future<void> writeAutoUpdateProcessingVersion(String version) async {
+    await _local.writeAutoUpdateProcessingVersion(version);
+  }
+
+  @override
+  Future<void> clearAutoUpdateProcessingVersion() async {
+    await _local.clearAutoUpdateProcessingVersion();
+  }
+
+  @override
+  Future<String?> getAutoUpdateFailedLock() async {
+    return _local.readAutoUpdateFailedLock();
+  }
+
+  @override
+  Future<void> writeAutoUpdateFailedLock(String lock) async {
+    await _local.writeAutoUpdateFailedLock(lock);
+  }
+
+  @override
+  Future<DateTime?> getAutoUpdateFailedAt() async {
+    return _local.readAutoUpdateFailedAt();
+  }
+
+  @override
+  Future<void> writeAutoUpdateFailedAt(DateTime value) async {
+    await _local.writeAutoUpdateFailedAt(value);
+  }
+
+  @override
+  Future<String?> getAutoUpdateInstallAttemptedLock() async {
+    return _local.readAutoUpdateInstallAttemptedLock();
+  }
+
+  @override
+  Future<void> writeAutoUpdateInstallAttemptedLock(String lock) async {
+    await _local.writeAutoUpdateInstallAttemptedLock(lock);
   }
 }
 

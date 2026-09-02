@@ -8774,6 +8774,114 @@ abstract class AppLocalizations {
   /// **'Preparing installation…'**
   String get settingsUpdateInstalling;
 
+  /// No description provided for @appUpdateNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'INFINITY update available'**
+  String get appUpdateNotificationTitle;
+
+  /// No description provided for @appUpdateNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Version {version} is now available.'**
+  String appUpdateNotificationBody(String version);
+
+  /// No description provided for @appUpdateBannerMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'New INFINITY update available: v{version}'**
+  String appUpdateBannerMessage(String version);
+
+  /// No description provided for @appUpdateActionUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get appUpdateActionUpdate;
+
+  /// No description provided for @appUpdateActionDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get appUpdateActionDismiss;
+
+  /// No description provided for @appUpdateActionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get appUpdateActionRetry;
+
+  /// No description provided for @appUpdateReadyToInstall.
+  ///
+  /// In en, this message translates to:
+  /// **'Ready to install'**
+  String get appUpdateReadyToInstall;
+
+  /// No description provided for @appUpdateAlreadyDownloaded.
+  ///
+  /// In en, this message translates to:
+  /// **'Update already downloaded'**
+  String get appUpdateAlreadyDownloaded;
+
+  /// No description provided for @settingsAutoUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto Update'**
+  String get settingsAutoUpdate;
+
+  /// No description provided for @settingsAutoUpdateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Automatically download and install new app versions when they become available.'**
+  String get settingsAutoUpdateDescription;
+
+  /// No description provided for @settingsAutoUpdateEnabledHint.
+  ///
+  /// In en, this message translates to:
+  /// **'New versions will download and install automatically in the background.'**
+  String get settingsAutoUpdateEnabledHint;
+
+  /// No description provided for @settingsAutoUpdateDisabledHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Available updates will appear as notifications and the in-app banner.'**
+  String get settingsAutoUpdateDisabledHint;
+
+  /// No description provided for @settingsAutoUpdateStatusEnabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto update enabled'**
+  String get settingsAutoUpdateStatusEnabled;
+
+  /// No description provided for @settingsAutoUpdateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto downloading v{version}…'**
+  String settingsAutoUpdateDownloading(String version);
+
+  /// No description provided for @settingsAutoUpdateVerifying.
+  ///
+  /// In en, this message translates to:
+  /// **'Verifying update…'**
+  String get settingsAutoUpdateVerifying;
+
+  /// No description provided for @settingsAutoUpdateReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Update ready'**
+  String get settingsAutoUpdateReady;
+
+  /// No description provided for @settingsAutoUpdateInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Installing update…'**
+  String get settingsAutoUpdateInstalling;
+
+  /// No description provided for @settingsAutoUpdateFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto update failed'**
+  String get settingsAutoUpdateFailed;
+
   /// No description provided for @settingsAdminLogs.
   ///
   /// In en, this message translates to:

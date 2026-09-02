@@ -4646,6 +4646,69 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsUpdateInstalling => 'Preparing installation…';
 
   @override
+  String get appUpdateNotificationTitle => 'INFINITY update available';
+
+  @override
+  String appUpdateNotificationBody(String version) {
+    return 'Version $version is now available.';
+  }
+
+  @override
+  String appUpdateBannerMessage(String version) {
+    return 'New INFINITY update available: v$version';
+  }
+
+  @override
+  String get appUpdateActionUpdate => 'Update';
+
+  @override
+  String get appUpdateActionDismiss => 'Dismiss';
+
+  @override
+  String get appUpdateActionRetry => 'Retry';
+
+  @override
+  String get appUpdateReadyToInstall => 'Ready to install';
+
+  @override
+  String get appUpdateAlreadyDownloaded => 'Update already downloaded';
+
+  @override
+  String get settingsAutoUpdate => 'Auto Update';
+
+  @override
+  String get settingsAutoUpdateDescription =>
+      'Automatically download and install new app versions when they become available.';
+
+  @override
+  String get settingsAutoUpdateEnabledHint =>
+      'New versions will download and install automatically in the background.';
+
+  @override
+  String get settingsAutoUpdateDisabledHint =>
+      'Available updates will appear as notifications and the in-app banner.';
+
+  @override
+  String get settingsAutoUpdateStatusEnabled => 'Auto update enabled';
+
+  @override
+  String settingsAutoUpdateDownloading(String version) {
+    return 'Auto downloading v$version…';
+  }
+
+  @override
+  String get settingsAutoUpdateVerifying => 'Verifying update…';
+
+  @override
+  String get settingsAutoUpdateReady => 'Update ready';
+
+  @override
+  String get settingsAutoUpdateInstalling => 'Installing update…';
+
+  @override
+  String get settingsAutoUpdateFailed => 'Auto update failed';
+
+  @override
   String get settingsAdminLogs => 'Application logs';
 
   @override

@@ -21,6 +21,7 @@ import 'package:mobile/features/dashboard/presentation/widgets/dashboard_dense_w
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_period_selector.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_sections.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
+import 'package:mobile/features/app_update/presentation/widgets/update_available_banner.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
@@ -532,6 +533,7 @@ class MainNavigationShell extends StatelessWidget {
             return OfflineBanner(snapshot: state.connectivity);
           },
         ),
+        const UpdateAvailableBanner(),
         Expanded(child: navigationShell),
       ],
     );

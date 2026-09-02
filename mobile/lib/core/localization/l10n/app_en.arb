@@ -1742,6 +1742,45 @@
   "settingsUpdateOfflineCheck": "Unable to check for updates while offline",
   "settingsUpdateInvalidResponse": "Update information is unavailable",
   "settingsUpdateInstalling": "Preparing installation…",
+  "appUpdateNotificationTitle": "INFINITY update available",
+  "appUpdateNotificationBody": "Version {version} is now available.",
+  "@appUpdateNotificationBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateBannerMessage": "New INFINITY update available: v{version}",
+  "@appUpdateBannerMessage": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateActionUpdate": "Update",
+  "appUpdateActionDismiss": "Dismiss",
+  "appUpdateActionRetry": "Retry",
+  "appUpdateReadyToInstall": "Ready to install",
+  "appUpdateAlreadyDownloaded": "Update already downloaded",
+  "settingsAutoUpdate": "Auto Update",
+  "settingsAutoUpdateDescription": "Automatically download and install new app versions when they become available.",
+  "settingsAutoUpdateEnabledHint": "New versions will download and install automatically in the background.",
+  "settingsAutoUpdateDisabledHint": "Available updates will appear as notifications and the in-app banner.",
+  "settingsAutoUpdateStatusEnabled": "Auto update enabled",
+  "settingsAutoUpdateDownloading": "Auto downloading v{version}…",
+  "@settingsAutoUpdateDownloading": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAutoUpdateVerifying": "Verifying update…",
+  "settingsAutoUpdateReady": "Update ready",
+  "settingsAutoUpdateInstalling": "Installing update…",
+  "settingsAutoUpdateFailed": "Auto update failed",
   "settingsAdminLogs": "Application logs",
   "settingsSearchLogs": "Search logs",
   "settingsLogAll": "All",

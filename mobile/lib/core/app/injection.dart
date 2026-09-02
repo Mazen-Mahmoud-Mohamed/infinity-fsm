@@ -29,8 +29,11 @@ import 'package:mobile/core/storage/token_manager.dart';
 import 'package:mobile/features/app_update/data/datasources/app_update_local_datasource.dart';
 import 'package:mobile/features/app_update/data/datasources/app_update_remote_datasource.dart';
 import 'package:mobile/features/app_update/data/repositories/app_update_repository_impl.dart';
+import 'package:mobile/features/app_update/data/services/app_auto_update_manager.dart';
+import 'package:mobile/features/app_update/data/services/app_update_download_coordinator.dart';
 import 'package:mobile/features/app_update/data/services/app_update_download_service.dart';
 import 'package:mobile/features/app_update/data/services/app_update_install_service.dart';
+import 'package:mobile/features/app_update/data/services/app_update_notification_service.dart';
 import 'package:mobile/features/app_update/domain/repositories/app_update_repository.dart';
 import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
 import 'package:mobile/features/attendance/data/datasources/attendance_local_datasource.dart';
@@ -1381,6 +1384,12 @@ Future<void> configureDependencies() async {
   getIt.registerLazySingleton<AppUpdateDownloadService>(
     AppUpdateDownloadService.new,
   );
+  getIt.registerLazySingleton<AppUpdateDownloadCoordinator>(
+    () => AppUpdateDownloadCoordinator(getIt<AppUpdateDownloadService>()),
+  );
+  getIt.registerLazySingleton<AppUpdateNotificationService>(
+    AppUpdateNotificationService.new,
+  );
   getIt.registerLazySingleton<AppUpdateInstallService>(
     AppUpdateInstallService.new,
   );
@@ -1388,15 +1397,22 @@ Future<void> configureDependencies() async {
     () => AppUpdateRepositoryImpl(
       remote: getIt<AppUpdateRemoteDataSource>(),
       local: getIt<AppUpdateLocalDataSource>(),
-      downloadService: getIt<AppUpdateDownloadService>(),
+      downloadCoordinator: getIt<AppUpdateDownloadCoordinator>(),
       installService: getIt<AppUpdateInstallService>(),
       connectivityService: getIt<ConnectivityService>(),
     ),
   );
-  getIt.registerFactory<UpdateCenterCubit>(
+  getIt.registerLazySingleton<AppAutoUpdateManager>(
+    () => AppAutoUpdateManager(getIt<AppUpdateRepository>()),
+  );
+  getIt.registerLazySingleton<UpdateCenterCubit>(
     () => UpdateCenterCubit(
       repository: getIt<AppUpdateRepository>(),
-      releaseChannel: 'stable',
+      downloadCoordinator: getIt<AppUpdateDownloadCoordinator>(),
+      notificationService: getIt<AppUpdateNotificationService>(),
+      autoUpdateManager: getIt<AppAutoUpdateManager>(),
+      releaseChannel: getIt<AppCubit>().state.releaseChannel,
+      localeCodeProvider: () => getIt<AppCubit>().state.localeCode,
     ),
   );
 

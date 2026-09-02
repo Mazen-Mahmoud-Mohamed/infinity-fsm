@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,6 +12,8 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/theme/app_system_ui.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/push/push_notification_service.dart';
+import 'package:mobile/features/app_update/data/services/app_update_notification_service.dart';
+import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -44,9 +48,14 @@ class InfinityApp extends StatelessWidget {
         BlocProvider<TechnicianInterfaceCubit>.value(
           value: getIt<TechnicianInterfaceCubit>(),
         ),
+        BlocProvider<UpdateCenterCubit>.value(
+          value: getIt<UpdateCenterCubit>(),
+        ),
       ],
-      child: const _InfinityAppAuthSyncBootstrap(
-        child: _InfinityAppShell(),
+      child: const _InfinityAppUpdateBootstrap(
+        child: _InfinityAppAuthSyncBootstrap(
+          child: _InfinityAppShell(),
+        ),
       ),
     );
   }
@@ -83,6 +92,88 @@ class _InfinityAppAuthSyncBootstrapState
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+class _InfinityAppUpdateBootstrap extends StatefulWidget {
+  const _InfinityAppUpdateBootstrap({required this.child});
+
+  final Widget child;
+
+  @override
+  State<_InfinityAppUpdateBootstrap> createState() =>
+      _InfinityAppUpdateBootstrapState();
+}
+
+class _InfinityAppUpdateBootstrapState extends State<_InfinityAppUpdateBootstrap>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthCubit>().state.status ==
+          AuthStatus.authenticated;
+      getIt<UpdateCenterCubit>().bindReleaseChannel(
+        context.read<AppCubit>().state.releaseChannel,
+      );
+      unawaited(getIt<UpdateCenterCubit>().onAppReady(isAuthenticated: auth));
+      unawaited(getIt<AppUpdateNotificationService>().initialize());
+    });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed &&
+        context.read<AuthCubit>().state.status == AuthStatus.authenticated) {
+      getIt<UpdateCenterCubit>().maybeAutoCheck(
+        reason: AppUpdateAutoCheckReason.resumed,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AppCubit, AppState>(
+          listenWhen: (previous, current) =>
+              previous.releaseChannel != current.releaseChannel,
+          listener: (_, state) {
+            getIt<UpdateCenterCubit>().bindReleaseChannel(state.releaseChannel);
+          },
+        ),
+        BlocListener<AppCubit, AppState>(
+          listenWhen: (previous, current) =>
+              !previous.connectivity.canSync && current.connectivity.canSync,
+          listener: (_, state) {
+            if (context.read<AuthCubit>().state.status !=
+                AuthStatus.authenticated) {
+              return;
+            }
+            getIt<UpdateCenterCubit>().maybeAutoCheck(
+              reason: AppUpdateAutoCheckReason.connectivityRestored,
+            );
+          },
+        ),
+        BlocListener<AuthCubit, AuthState>(
+          listenWhen: (previous, current) =>
+              previous.status != current.status &&
+              current.status == AuthStatus.authenticated,
+          listener: (_, state) {
+            getIt<UpdateCenterCubit>().onAppReady(isAuthenticated: true);
+          },
+        ),
+      ],
+      child: widget.child,
+    );
+  }
 }
 
 class _InfinityAppShell extends StatelessWidget {

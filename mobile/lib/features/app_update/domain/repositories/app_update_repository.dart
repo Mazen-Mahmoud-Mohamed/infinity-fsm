@@ -27,5 +27,41 @@ abstract class AppUpdateRepository {
 
   Future<String?> getDownloadedArtifactVersion();
 
+  Future<String?> getLastNotifiedUpdateVersion();
+
+  Future<void> writeLastNotifiedUpdateVersion(String version);
+
+  Future<String?> getDismissedBannerVersion();
+
+  Future<void> writeDismissedBannerVersion(String version);
+
+  Future<DateTime?> getLastAutoCheckAt();
+
+  Future<void> writeLastAutoCheckAt(DateTime value);
+
+  bool get isDownloadInProgress;
+
+  Future<bool> isAutoUpdateEnabled();
+
+  Future<void> writeAutoUpdateEnabled(bool enabled);
+
+  Future<String?> getAutoUpdateProcessingVersion();
+
+  Future<void> writeAutoUpdateProcessingVersion(String version);
+
+  Future<void> clearAutoUpdateProcessingVersion();
+
+  Future<String?> getAutoUpdateFailedLock();
+
+  Future<void> writeAutoUpdateFailedLock(String lock);
+
+  Future<DateTime?> getAutoUpdateFailedAt();
+
+  Future<void> writeAutoUpdateFailedAt(DateTime value);
+
+  Future<String?> getAutoUpdateInstallAttemptedLock();
+
+  Future<void> writeAutoUpdateInstallAttemptedLock(String lock);
+
   String get currentPlatformKey;
 }

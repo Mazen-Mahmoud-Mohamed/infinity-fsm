@@ -12,6 +12,7 @@ enum UpdateCenterStatus {
   downloading,
   downloadReady,
   downloadFailed,
+  verifying,
   installing,
 }
 
@@ -25,8 +26,13 @@ class UpdateCenterState extends Equatable {
     this.availability = UpdateAvailability.unknown,
     this.lastCheckedAt,
     this.downloadProgress,
+    this.downloadReceivedBytes,
+    this.downloadTotalBytes,
     this.downloadedPath,
     this.errorCode,
+    this.showUpdateBanner = false,
+    this.autoUpdateEnabled = false,
+    this.autoUpdateOwned = false,
   });
 
   final UpdateCenterStatus status;
@@ -37,18 +43,25 @@ class UpdateCenterState extends Equatable {
   final UpdateAvailability availability;
   final DateTime? lastCheckedAt;
   final double? downloadProgress;
+  final int? downloadReceivedBytes;
+  final int? downloadTotalBytes;
   final String? downloadedPath;
   final String? errorCode;
+  final bool showUpdateBanner;
+  final bool autoUpdateEnabled;
+  final bool autoUpdateOwned;
 
   bool get isBusy =>
       status == UpdateCenterStatus.checking ||
       status == UpdateCenterStatus.downloading ||
+      status == UpdateCenterStatus.verifying ||
       status == UpdateCenterStatus.installing;
 
   bool get canDownload =>
       availability == UpdateAvailability.updateAvailable &&
       !isBusy &&
-      status != UpdateCenterStatus.downloadReady;
+      status != UpdateCenterStatus.downloadReady &&
+      status != UpdateCenterStatus.verifying;
 
   bool get canInstall =>
       status == UpdateCenterStatus.downloadReady &&
@@ -69,10 +82,17 @@ class UpdateCenterState extends Equatable {
     DateTime? lastCheckedAt,
     double? downloadProgress,
     bool clearDownloadProgress = false,
+    int? downloadReceivedBytes,
+    bool clearDownloadReceivedBytes = false,
+    int? downloadTotalBytes,
+    bool clearDownloadTotalBytes = false,
     String? downloadedPath,
     bool clearDownloadedPath = false,
     String? errorCode,
     bool clearErrorCode = false,
+    bool? showUpdateBanner,
+    bool? autoUpdateEnabled,
+    bool? autoUpdateOwned,
   }) {
     return UpdateCenterState(
       status: status ?? this.status,
@@ -84,9 +104,18 @@ class UpdateCenterState extends Equatable {
       lastCheckedAt: lastCheckedAt ?? this.lastCheckedAt,
       downloadProgress:
           clearDownloadProgress ? null : (downloadProgress ?? this.downloadProgress),
+      downloadReceivedBytes: clearDownloadReceivedBytes
+          ? null
+          : (downloadReceivedBytes ?? this.downloadReceivedBytes),
+      downloadTotalBytes: clearDownloadTotalBytes
+          ? null
+          : (downloadTotalBytes ?? this.downloadTotalBytes),
       downloadedPath:
           clearDownloadedPath ? null : (downloadedPath ?? this.downloadedPath),
       errorCode: clearErrorCode ? null : (errorCode ?? this.errorCode),
+      showUpdateBanner: showUpdateBanner ?? this.showUpdateBanner,
+      autoUpdateEnabled: autoUpdateEnabled ?? this.autoUpdateEnabled,
+      autoUpdateOwned: autoUpdateOwned ?? this.autoUpdateOwned,
     );
   }
 
@@ -100,7 +129,12 @@ class UpdateCenterState extends Equatable {
         availability,
         lastCheckedAt,
         downloadProgress,
+        downloadReceivedBytes,
+        downloadTotalBytes,
         downloadedPath,
         errorCode,
+        showUpdateBanner,
+        autoUpdateEnabled,
+        autoUpdateOwned,
       ];
 }

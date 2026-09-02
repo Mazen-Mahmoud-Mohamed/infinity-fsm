@@ -4,7 +4,6 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
-import 'package:mobile/features/app_update/domain/repositories/app_update_repository.dart';
 import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
 import 'package:mobile/features/app_update/presentation/cubit/update_center_state.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
@@ -19,11 +18,10 @@ class UpdateCenterPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final releaseChannel = context.read<AppCubit>().state.releaseChannel;
 
-    return BlocProvider(
-      create: (_) => UpdateCenterCubit(
-        repository: getIt<AppUpdateRepository>(),
-        releaseChannel: releaseChannel,
-      )..initialize(),
+    return BlocProvider.value(
+      value: getIt<UpdateCenterCubit>()
+        ..bindReleaseChannel(releaseChannel)
+        ..initialize(),
       child: _UpdateCenterView(embedded: embedded),
     );
   }
@@ -35,6 +33,25 @@ class _UpdateCenterView extends StatelessWidget {
   final bool embedded;
 
   String _statusLabel(AppLocalizations l10n, UpdateCenterState state) {
+    if (state.autoUpdateEnabled || state.autoUpdateOwned) {
+      return switch (state.status) {
+        UpdateCenterStatus.downloading =>
+          state.latestRelease == null
+              ? l10n.settingsUpdateDownloading
+              : l10n.settingsAutoUpdateDownloading(state.latestRelease!.version),
+        UpdateCenterStatus.verifying => l10n.settingsAutoUpdateVerifying,
+        UpdateCenterStatus.downloadReady => l10n.settingsAutoUpdateReady,
+        UpdateCenterStatus.installing => l10n.settingsAutoUpdateInstalling,
+        UpdateCenterStatus.downloadFailed => l10n.settingsAutoUpdateFailed,
+        _ => state.autoUpdateEnabled
+            ? l10n.settingsAutoUpdateStatusEnabled
+            : _manualStatusLabel(l10n, state),
+      };
+    }
+    return _manualStatusLabel(l10n, state);
+  }
+
+  String _manualStatusLabel(AppLocalizations l10n, UpdateCenterState state) {
     return switch (state.status) {
       UpdateCenterStatus.idle => l10n.settingsUpdateNeverChecked,
       UpdateCenterStatus.checking => l10n.settingsUpdateChecking,
@@ -46,7 +63,8 @@ class _UpdateCenterView extends StatelessWidget {
         l10n.settingsUpdatePlatformUnavailable,
       UpdateCenterStatus.checkFailed => _checkFailureLabel(l10n, state.errorCode),
       UpdateCenterStatus.downloading => l10n.settingsUpdateDownloading,
-      UpdateCenterStatus.downloadReady => l10n.settingsUpdateDownloadComplete,
+      UpdateCenterStatus.verifying => l10n.settingsAutoUpdateVerifying,
+      UpdateCenterStatus.downloadReady => l10n.appUpdateReadyToInstall,
       UpdateCenterStatus.downloadFailed => l10n.settingsUpdateDownloadFailed,
       UpdateCenterStatus.installing => l10n.settingsUpdateInstalling,
     };
@@ -64,6 +82,13 @@ class _UpdateCenterView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     if (value == null) return l10n.settingsUpdateNeverChecked;
     return AppFormatters.mediumDateTime(context).format(value.toLocal());
+  }
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 
   Future<void> _showReleaseNotes(
@@ -113,6 +138,29 @@ class _UpdateCenterView extends StatelessWidget {
           embedded: embedded,
           children: [
             SettingsCard(
+              title: l10n.settingsAutoUpdate,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(l10n.settingsAutoUpdate),
+                    subtitle: Text(l10n.settingsAutoUpdateDescription),
+                    value: state.autoUpdateEnabled,
+                    onChanged: (value) => context
+                        .read<UpdateCenterCubit>()
+                        .setAutoUpdateEnabled(value),
+                  ),
+                  Text(
+                    state.autoUpdateEnabled
+                        ? l10n.settingsAutoUpdateEnabledHint
+                        : l10n.settingsAutoUpdateDisabledHint,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+              ),
+            ),
+            SettingsCard(
               title: l10n.settingsUpdateCenter,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -149,10 +197,20 @@ class _UpdateCenterView extends StatelessWidget {
                     label: l10n.settingsUpdateStatus,
                     value: _statusLabel(l10n, state),
                   ),
-                  if (state.status == UpdateCenterStatus.downloading &&
-                      state.downloadProgress != null) ...[
+                  if (state.status == UpdateCenterStatus.downloading ||
+                      state.status == UpdateCenterStatus.verifying) ...[
                     const SizedBox(height: AppSpacing.sm),
-                    LinearProgressIndicator(value: state.downloadProgress),
+                    if (state.downloadProgress != null)
+                      LinearProgressIndicator(value: state.downloadProgress),
+                    if (state.downloadReceivedBytes != null &&
+                        state.downloadTotalBytes != null &&
+                        state.downloadTotalBytes! > 0) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        '${_formatBytes(state.downloadReceivedBytes!)} / ${_formatBytes(state.downloadTotalBytes!)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ],
                   const SizedBox(height: AppSpacing.sm),
                   Align(
@@ -162,6 +220,7 @@ class _UpdateCenterView extends StatelessWidget {
                         switch (state.status) {
                           UpdateCenterStatus.checking ||
                           UpdateCenterStatus.downloading ||
+                          UpdateCenterStatus.verifying ||
                           UpdateCenterStatus.installing =>
                             Icons.hourglass_top,
                           UpdateCenterStatus.upToDate ||
@@ -213,7 +272,18 @@ class _UpdateCenterView extends StatelessWidget {
                             ),
                     child: Text(l10n.settingsViewReleaseNotes),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  if (state.status == UpdateCenterStatus.downloadFailed) ...[
+                    const SizedBox(height: AppSpacing.sm),
+                    OutlinedButton(
+                      onPressed: state.isBusy
+                          ? null
+                          : () => context
+                              .read<UpdateCenterCubit>()
+                              .downloadUpdate(),
+                      child: Text(l10n.appUpdateActionRetry),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
                   if (state.canInstall) ...[
                     FilledButton(
                       style: FilledButton.styleFrom(

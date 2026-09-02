@@ -1707,6 +1707,45 @@
   "settingsUpdateOfflineCheck": "تعذر التحقق من التحديثات بدون اتصال",
   "settingsUpdateInvalidResponse": "معلومات التحديث غير متاحة",
   "settingsUpdateInstalling": "جاري تجهيز التثبيت…",
+  "appUpdateNotificationTitle": "تحديث جديد لـ INFINITY",
+  "appUpdateNotificationBody": "الإصدار {version} متاح الآن.",
+  "@appUpdateNotificationBody": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateBannerMessage": "تحديث جديد لـ INFINITY: v{version}",
+  "@appUpdateBannerMessage": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "appUpdateActionUpdate": "تحديث",
+  "appUpdateActionDismiss": "تجاهل",
+  "appUpdateActionRetry": "إعادة المحاولة",
+  "appUpdateReadyToInstall": "جاهز للتثبيت",
+  "appUpdateAlreadyDownloaded": "تم تنزيل التحديث مسبقاً",
+  "settingsAutoUpdate": "التحديث التلقائي",
+  "settingsAutoUpdateDescription": "تنزيل وتثبيت إصدارات التطبيق الجديدة تلقائيًا عند توفرها.",
+  "settingsAutoUpdateEnabledHint": "سيتم تنزيل الإصدارات الجديدة وتثبيتها تلقائيًا في الخلفية.",
+  "settingsAutoUpdateDisabledHint": "ستظهر التحديثات المتاحة عبر الإشعارات والشريط داخل التطبيق.",
+  "settingsAutoUpdateStatusEnabled": "التحديث التلقائي مفعّل",
+  "settingsAutoUpdateDownloading": "جاري التنزيل التلقائي v{version}…",
+  "@settingsAutoUpdateDownloading": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsAutoUpdateVerifying": "جاري التحقق من التحديث…",
+  "settingsAutoUpdateReady": "التحديث جاهز",
+  "settingsAutoUpdateInstalling": "جاري تثبيت التحديث…",
+  "settingsAutoUpdateFailed": "فشل التحديث التلقائي",
   "settingsAdminLogs": "سجلات التطبيق",
   "settingsSearchLogs": "بحث في السجلات",
   "settingsLogAll": "الكل",

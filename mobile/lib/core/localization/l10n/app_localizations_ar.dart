@@ -4616,6 +4616,69 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsUpdateInstalling => 'جاري تجهيز التثبيت…';
 
   @override
+  String get appUpdateNotificationTitle => 'تحديث جديد لـ INFINITY';
+
+  @override
+  String appUpdateNotificationBody(String version) {
+    return 'الإصدار $version متاح الآن.';
+  }
+
+  @override
+  String appUpdateBannerMessage(String version) {
+    return 'تحديث جديد لـ INFINITY: v$version';
+  }
+
+  @override
+  String get appUpdateActionUpdate => 'تحديث';
+
+  @override
+  String get appUpdateActionDismiss => 'تجاهل';
+
+  @override
+  String get appUpdateActionRetry => 'إعادة المحاولة';
+
+  @override
+  String get appUpdateReadyToInstall => 'جاهز للتثبيت';
+
+  @override
+  String get appUpdateAlreadyDownloaded => 'تم تنزيل التحديث مسبقاً';
+
+  @override
+  String get settingsAutoUpdate => 'التحديث التلقائي';
+
+  @override
+  String get settingsAutoUpdateDescription =>
+      'تنزيل وتثبيت إصدارات التطبيق الجديدة تلقائيًا عند توفرها.';
+
+  @override
+  String get settingsAutoUpdateEnabledHint =>
+      'سيتم تنزيل الإصدارات الجديدة وتثبيتها تلقائيًا في الخلفية.';
+
+  @override
+  String get settingsAutoUpdateDisabledHint =>
+      'ستظهر التحديثات المتاحة عبر الإشعارات والشريط داخل التطبيق.';
+
+  @override
+  String get settingsAutoUpdateStatusEnabled => 'التحديث التلقائي مفعّل';
+
+  @override
+  String settingsAutoUpdateDownloading(String version) {
+    return 'جاري التنزيل التلقائي v$version…';
+  }
+
+  @override
+  String get settingsAutoUpdateVerifying => 'جاري التحقق من التحديث…';
+
+  @override
+  String get settingsAutoUpdateReady => 'التحديث جاهز';
+
+  @override
+  String get settingsAutoUpdateInstalling => 'جاري تثبيت التحديث…';
+
+  @override
+  String get settingsAutoUpdateFailed => 'فشل التحديث التلقائي';
+
+  @override
   String get settingsAdminLogs => 'سجلات التطبيق';
 
   @override
