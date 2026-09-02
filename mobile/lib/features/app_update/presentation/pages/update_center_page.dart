@@ -165,6 +165,13 @@ class _UpdateCenterView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Text(
+                    l10n.settingsUpdateTestReleaseMarker,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
                   SettingsInfoRow(
                     label: l10n.serverMgmtAppVersion,
                     value: state.installedVersion.isEmpty

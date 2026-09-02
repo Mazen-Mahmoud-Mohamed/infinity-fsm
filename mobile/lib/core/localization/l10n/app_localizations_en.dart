@@ -4558,6 +4558,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsUpdateCenter => 'Update center';
 
   @override
+  String get settingsUpdateTestReleaseMarker => 'v1.0.3 Test Release';
+
+  @override
   String get settingsLatestVersion => 'Latest available version';
 
   @override

@@ -1708,6 +1708,7 @@
   "settingsPrefsRestored": "Preferences restored",
   "settingsConfirm": "Confirm",
   "settingsUpdateCenter": "Update center",
+  "settingsUpdateTestReleaseMarker": "v1.0.3 Test Release",
   "settingsLatestVersion": "Latest available version",
   "settingsReleaseChannel": "Release channel",
   "settingsReleaseDate": "Release date",

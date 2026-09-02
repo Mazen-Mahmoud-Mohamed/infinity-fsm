@@ -1680,6 +1680,7 @@
   "settingsPrefsRestored": "تمت استعادة التفضيلات",
   "settingsConfirm": "تأكيد",
   "settingsUpdateCenter": "مركز التحديثات",
+  "settingsUpdateTestReleaseMarker": "إصدار تجريبي v1.0.3",
   "settingsLatestVersion": "أحدث إصدار متاح",
   "settingsReleaseChannel": "قناة الإصدار",
   "settingsReleaseDate": "تاريخ الإصدار",

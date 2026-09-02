@@ -8612,6 +8612,12 @@ abstract class AppLocalizations {
   /// **'Update center'**
   String get settingsUpdateCenter;
 
+  /// No description provided for @settingsUpdateTestReleaseMarker.
+  ///
+  /// In en, this message translates to:
+  /// **'v1.0.3 Test Release'**
+  String get settingsUpdateTestReleaseMarker;
+
   /// No description provided for @settingsLatestVersion.
   ///
   /// In en, this message translates to:

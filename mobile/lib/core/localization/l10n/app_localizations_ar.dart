@@ -4530,6 +4530,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsUpdateCenter => 'مركز التحديثات';
 
   @override
+  String get settingsUpdateTestReleaseMarker => 'إصدار تجريبي v1.0.3';
+
+  @override
   String get settingsLatestVersion => 'أحدث إصدار متاح';
 
   @override
