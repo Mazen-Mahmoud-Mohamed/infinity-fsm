@@ -11,7 +11,9 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
-import 'package:mobile/core/widgets/desktop/app_desktop_action_card.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_nav_tile.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
@@ -65,7 +67,7 @@ class _InventoryDashboardView extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.inventory)),
+      appBar: isDesktop ? null : AppBar(title: Text(l10n.inventory)),
       body: BlocBuilder<InventoryDashboardCubit, InventoryDashboardState>(
         buildWhen: (previous, current) =>
             previous.status != current.status ||
@@ -125,6 +127,21 @@ class _InventoryDashboardView extends StatelessWidget {
                         chrome: AppBottomChrome.system,
                       ),
                       children: [
+                        if (isDesktop) ...[
+                          AppDesktopPageHeader(
+                            title: l10n.inventory,
+                            trailing: canCreate
+                                ? FilledButton.icon(
+                                    onPressed: () => context.push(
+                                      RoutePaths.inventoryPartForm,
+                                    ),
+                                    icon: const Icon(Icons.add),
+                                    label: Text(l10n.inventoryCreatePart),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
                         AppDesktopStatGrid(
                           phoneColumns: 2,
                           tabletColumns: 4,
@@ -170,30 +187,35 @@ class _InventoryDashboardView extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         if (isDesktop)
-                          AppDesktopStatGrid(
-                            phoneColumns: 1,
-                            tabletColumns: 2,
-                            desktopColumns: 3,
+                          GridView.count(
+                            crossAxisCount: 3,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            mainAxisSpacing: AppSpacing.md,
+                            crossAxisSpacing: AppSpacing.md,
+                            childAspectRatio: 2.8,
                             children: [
-                              AppDesktopActionCard(
+                              AppDesktopNavTile(
                                 title: l10n.inventorySpareParts,
+                                subtitle: l10n.inventoryTotalParts,
                                 icon: Icons.inventory_2_outlined,
                                 onTap: () =>
                                     context.push(RoutePaths.inventoryParts),
                               ),
-                              AppDesktopActionCard(
+                              AppDesktopNavTile(
                                 title: l10n.inventoryStockHistory,
+                                subtitle: l10n.inventoryRecentMovements,
                                 icon: Icons.history,
                                 onTap: () => context
                                     .push(RoutePaths.inventoryStockHistory),
                               ),
-                              if (canCreate)
-                                AppDesktopActionCard(
-                                  title: l10n.inventoryCreatePart,
-                                  icon: Icons.add,
-                                  onTap: () => context
-                                      .push(RoutePaths.inventoryPartForm),
-                                ),
+                              AppDesktopNavTile(
+                                title: l10n.inventoryWarehouses,
+                                subtitle: l10n.inventoryManage,
+                                icon: Icons.warehouse_outlined,
+                                onTap: () => context
+                                    .push(RoutePaths.inventoryWarehouses),
+                              ),
                             ],
                           )
                         else
@@ -230,14 +252,23 @@ class _InventoryDashboardView extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.sm),
                         if ((dashboard?.recentMovements ?? const []).isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(
-                              vertical: AppSpacing.xl,
-                            ),
-                            child: Center(
-                              child: Text(l10n.inventoryMovementsEmpty),
-                            ),
-                          )
+                          isDesktop
+                              ? AppDesktopEmptyState(
+                                  icon: Icons.swap_horiz_outlined,
+                                  title: l10n.inventoryMovementsEmpty,
+                                  actionLabel: l10n.inventorySpareParts,
+                                  onAction: () => context.push(
+                                    RoutePaths.inventoryParts,
+                                  ),
+                                )
+                              : Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.xl,
+                                  ),
+                                  child: Center(
+                                    child: Text(l10n.inventoryMovementsEmpty),
+                                  ),
+                                )
                         else
                           ...dashboard!.recentMovements.map(
                             (movement) => Padding(

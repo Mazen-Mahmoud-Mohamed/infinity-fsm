@@ -12,6 +12,7 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_action_bar.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
 import 'package:mobile/features/auth/domain/services/permission_checker.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -59,8 +60,11 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
     final dateFormat = AppFormatters.mediumDateTime(context);
     final width = MediaQuery.sizeOf(context).width;
     final isDesktop = AppBreakpoints.isDesktop(width);
-    final maxWidth = isDesktop ? 1200.0 : double.infinity;
-    final horizontalPad = width >= 700 ? AppSpacing.xl : AppSpacing.md;
+    final maxWidth =
+        isDesktop ? AppBreakpoints.contentWideMax : double.infinity;
+    final horizontalPad = isDesktop
+        ? AppSpacing.lg
+        : (width >= 700 ? AppSpacing.xl : AppSpacing.md);
 
     return BlocConsumer<WorkOrderDetailCubit, WorkOrderDetailState>(
       listenWhen: (previous, current) =>
@@ -109,6 +113,7 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                 currentUserId: currentUserId,
                 completionNotesDraft: _completionNotesDraft,
                 onAssign: () => _assignTechnician(context, l10n),
+                isDesktop: isDesktop,
               );
 
         return PopScope(
@@ -187,28 +192,26 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                           ),
                         ),
                       )
-                    : Align(
-                        alignment: Alignment.topCenter,
-                        child: ConstrainedBox(
-                          constraints: BoxConstraints(maxWidth: maxWidth),
-                          child: ListView(
-                            padding: AppScrollPadding.resolve(
-                              context,
-                              base: EdgeInsets.fromLTRB(
-                                horizontalPad,
-                                AppSpacing.md,
-                                horizontalPad,
-                                AppSpacing.xl,
-                              ),
-                              chrome: bottomBar != null
-                                  ? AppBottomChrome.stickyActions
-                                  : AppBottomChrome.system,
-                            ),
-                            children: isDesktop
-                                ? [
+                    : isDesktop
+                        ? Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: ListView(
+                                  padding: AppScrollPadding.resolve(
+                                    context,
+                                    base: EdgeInsets.fromLTRB(
+                                      horizontalPad,
+                                      AppSpacing.md,
+                                      horizontalPad,
+                                      AppSpacing.md,
+                                    ),
+                                    chrome: AppBottomChrome.system,
+                                  ),
+                                  children: [
                                     AppDesktopSplitView(
-                                      startFlex: 7,
-                                      endFlex: 3,
+                                      startFlex: 13,
+                                      endFlex: 7,
                                       start: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.stretch,
@@ -249,7 +252,9 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                                 .sidebar,
                                           ),
                                           if (showAdminDetails) ...[
-                                            const SizedBox(height: AppSpacing.sm),
+                                            const SizedBox(
+                                              height: AppSpacing.sm,
+                                            ),
                                             WorkOrderSectionCard(
                                               icon: Icons.timeline,
                                               title: l10n.workOrderTimeline,
@@ -264,8 +269,39 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                         ],
                                       ),
                                     ),
-                                  ]
-                                : [
+                                  ],
+                                ),
+                              ),
+                              if (bottomBar != null)
+                                Padding(
+                                  padding: EdgeInsets.fromLTRB(
+                                    horizontalPad,
+                                    AppSpacing.sm,
+                                    horizontalPad,
+                                    AppSpacing.md,
+                                  ),
+                                  child: bottomBar,
+                                ),
+                            ],
+                          )
+                        : Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxWidth),
+                          child: ListView(
+                            padding: AppScrollPadding.resolve(
+                              context,
+                              base: EdgeInsets.fromLTRB(
+                                horizontalPad,
+                                AppSpacing.md,
+                                horizontalPad,
+                                AppSpacing.xl,
+                              ),
+                              chrome: bottomBar != null
+                                  ? AppBottomChrome.stickyActions
+                                  : AppBottomChrome.system,
+                            ),
+                            children: [
                                     _HeaderSection(
                                       workOrder: workOrder,
                                       dateFormat: dateFormat,
@@ -301,7 +337,7 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                           ),
                         ),
                       ),
-            bottomNavigationBar: bottomBar,
+            bottomNavigationBar: isDesktop ? null : bottomBar,
           ),
         );
       },
@@ -495,6 +531,7 @@ class _PrimaryActionBar extends StatelessWidget {
     required this.currentUserId,
     required this.completionNotesDraft,
     required this.onAssign,
+    this.isDesktop = false,
   });
 
   final AppLocalizations l10n;
@@ -503,6 +540,7 @@ class _PrimaryActionBar extends StatelessWidget {
   final String? currentUserId;
   final String completionNotesDraft;
   final VoidCallback onAssign;
+  final bool isDesktop;
 
   bool _isAssignee(WorkOrder workOrder) {
     if (currentUserId == null) {
@@ -614,6 +652,16 @@ class _PrimaryActionBar extends StatelessWidget {
 
     if (primary == null && secondary == null) {
       return const SizedBox.shrink();
+    }
+
+    if (isDesktop) {
+      return AppDesktopActionBar(
+        alignment: AlignmentDirectional.centerEnd,
+        children: [
+          if (secondary != null) secondary!,
+          if (primary != null) primary!,
+        ],
+      );
     }
 
     return Material(

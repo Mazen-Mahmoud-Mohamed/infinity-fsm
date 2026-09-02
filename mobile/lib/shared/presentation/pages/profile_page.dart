@@ -14,6 +14,9 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/branding/infinity_brand.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
@@ -45,14 +48,17 @@ class _ProfileView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final pagePad = AppBreakpoints.pagePadding(width);
+    final isDesktop = AppBreakpoints.isDesktop(width);
 
     return Scaffold(
-      appBar: TechnicianMainAppBar(
-        title: Text(l10n.profile),
-        actions: const [
-          NotificationsBellAction(),
-        ],
-      ),
+      appBar: isDesktop
+          ? null
+          : TechnicianMainAppBar(
+              title: Text(l10n.profile),
+              actions: const [
+                NotificationsBellAction(),
+              ],
+            ),
       body: BlocBuilder<ProfileCubit, ProfileState>(
         builder: (context, state) {
           final user = state.user ?? context.watch<AuthCubit>().state.user;
@@ -66,6 +72,124 @@ class _ProfileView extends StatelessWidget {
           final permissions = user?.permissions ?? const <String>[];
           final groups = _groupPermissions(permissions);
 
+          final accountSection = [
+            _ProfileHeaderCard(
+              isDesktop: isDesktop,
+              imageUrl: user?.profilePhotoUrl,
+              name: user?.fullName ?? l10n.profile,
+              email: user?.email ?? '-',
+              role: localizeRoleLabel(
+                l10n,
+                user?.primaryRole ?? '',
+              ),
+              fallbackLabel: user?.fullName ?? user?.email ?? '?',
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            AppListCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _ProfileRow(
+                    label: l10n.email,
+                    value: user?.email ?? '-',
+                  ),
+                  _ProfileRow(
+                    label: l10n.profilePhone,
+                    value: user?.phone ?? '-',
+                  ),
+                  _ProfileRow(
+                    label: l10n.roleLabel,
+                    value: localizeRoleLabel(
+                      l10n,
+                      user?.primaryRole ?? '',
+                    ),
+                  ),
+                  _ProfileRow(
+                    label: l10n.companyLabel,
+                    value: org?.company?.name ?? '-',
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.lock_outline),
+              title: Text(l10n.settingsChangePassword),
+              onTap: () => context.push(RoutePaths.usersChangePassword),
+            ),
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.logout),
+              title: Text(l10n.logout),
+              onTap: () async {
+                await context.read<AuthCubit>().logout();
+                if (context.mounted) {
+                  context.go(RoutePaths.login);
+                }
+              },
+            ),
+          ];
+
+          final permissionsSection = [
+            Text(
+              l10n.rolesPermissions,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            if (roles.isNotEmpty) ...[
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.sm,
+                children: roles
+                    .map(
+                      (role) => Chip(
+                        avatar: const Icon(Icons.badge_outlined, size: 16),
+                        label: Text(localizeRoleLabel(l10n, role)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
+            if (permissions.isEmpty)
+              Text(
+                l10n.profileNoPermissions,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              )
+            else
+              Column(
+                children: [
+                  for (final entry in groups.entries)
+                    RolePermissionGroupCard(
+                      module: entry.key,
+                      count: entry.value.length,
+                      initiallyExpanded: groups.length <= 3,
+                      children: [
+                        for (final permission in entry.value)
+                          RolePermissionTile(
+                            permissionKey: permission,
+                            showCheckbox: false,
+                          ),
+                      ],
+                    ),
+                ],
+              ),
+            if (state.message != null &&
+                !isUserFacingNetworkNoise(state.message)) ...[
+              const SizedBox(height: AppSpacing.md),
+              Text(
+                localizeAppMessage(l10n, state.message),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+              ),
+            ],
+          ];
+
           return Column(
             children: [
               AppRefreshBar(visible: state.isRefreshing),
@@ -76,7 +200,9 @@ class _ProfileView extends StatelessWidget {
                         forceRefresh: true,
                       ),
                   child: AppPageFrame(
-                    maxWidth: AppBreakpoints.contentMax,
+                    maxWidth: isDesktop
+                        ? AppBreakpoints.contentWideMax
+                        : AppBreakpoints.contentMax,
                     child: ListView(
                       padding: AppScrollPadding.resolve(
                         context,
@@ -84,109 +210,29 @@ class _ProfileView extends StatelessWidget {
                         chrome: AppBottomChrome.system,
                       ),
                       children: [
-                        _ProfileHeaderCard(
-                          isDesktop: AppBreakpoints.isDesktop(width),
-                          imageUrl: user?.profilePhotoUrl,
-                          name: user?.fullName ?? l10n.profile,
-                          email: user?.email ?? '-',
-                          role: localizeRoleLabel(
-                            l10n,
-                            user?.primaryRole ?? '',
-                          ),
-                          fallbackLabel:
-                              user?.fullName ?? user?.email ?? '?',
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        AppListCard(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _ProfileRow(
-                                label: l10n.email,
-                                value: user?.email ?? '-',
-                              ),
-                              _ProfileRow(
-                                label: l10n.profilePhone,
-                                value: user?.phone ?? '-',
-                              ),
-                              _ProfileRow(
-                                label: l10n.roleLabel,
-                                value: localizeRoleLabel(
-                                  l10n,
-                                  user?.primaryRole ?? '',
-                                ),
-                              ),
-                              _ProfileRow(
-                                label: l10n.companyLabel,
-                                value: org?.company?.name ?? '-',
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                        Text(
-                          l10n.rolesPermissions,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        if (roles.isNotEmpty) ...[
-                          Wrap(
-                            spacing: AppSpacing.sm,
-                            runSpacing: AppSpacing.sm,
-                            children: roles
-                                .map(
-                                  (role) => Chip(
-                                    avatar: const Icon(Icons.badge_outlined, size: 16),
-                                    label: Text(localizeRoleLabel(l10n, role)),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                )
-                                .toList(),
+                        if (isDesktop) ...[
+                          AppDesktopWorkspacePadding(
+                            child: AppDesktopPageHeader(title: l10n.profile),
                           ),
                           const SizedBox(height: AppSpacing.md),
                         ],
-                        if (permissions.isEmpty)
-                          Text(
-                            l10n.profileNoPermissions,
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .onSurfaceVariant,
-                                ),
+                        if (isDesktop)
+                          AppDesktopSplitView(
+                            start: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: accountSection,
+                            ),
+                            end: AppDesktopSurface(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: permissionsSection,
+                              ),
+                            ),
                           )
-                        else
-                          Column(
-                            children: [
-                              for (final entry in groups.entries)
-                                RolePermissionGroupCard(
-                                  module: entry.key,
-                                  count: entry.value.length,
-                                  initiallyExpanded: groups.length <= 3,
-                                  children: [
-                                    for (final permission in entry.value)
-                                      RolePermissionTile(
-                                        permissionKey: permission,
-                                        showCheckbox: false,
-                                      ),
-                                  ],
-                                ),
-                            ],
-                          ),
-                        if (state.message != null &&
-                            !isUserFacingNetworkNoise(state.message)) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          Text(
-                            localizeAppMessage(l10n, state.message),
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                          ),
+                        else ...[
+                          ...accountSection,
+                          ...permissionsSection,
                         ],
                         const SizedBox(height: AppSpacing.xl),
                         const Center(
@@ -214,25 +260,6 @@ class _ProfileView extends StatelessWidget {
                                       .onSurfaceVariant,
                                 ),
                           ),
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.lock_outline),
-                          title: Text(l10n.settingsChangePassword),
-                          onTap: () =>
-                              context.push(RoutePaths.usersChangePassword),
-                        ),
-                        ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.logout),
-                          title: Text(l10n.logout),
-                          onTap: () async {
-                            await context.read<AuthCubit>().logout();
-                            if (context.mounted) {
-                              context.go(RoutePaths.login);
-                            }
-                          },
                         ),
                       ],
                     ),

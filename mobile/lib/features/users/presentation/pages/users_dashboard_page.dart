@@ -11,7 +11,8 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
-import 'package:mobile/core/widgets/desktop/app_desktop_action_card.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_nav_tile.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
@@ -122,6 +123,20 @@ class _UsersDashboardView extends StatelessWidget {
                       chrome: AppBottomChrome.system,
                     ),
                     children: [
+                      if (isDesktop && !embedded) ...[
+                        AppDesktopPageHeader(
+                          title: l10n.usersTitle,
+                          trailing: canCreate
+                              ? FilledButton.icon(
+                                  onPressed: () =>
+                                      context.push(RoutePaths.usersForm),
+                                  icon: const Icon(Icons.person_add_alt_1),
+                                  label: Text(l10n.usersCreate),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
                       if (embedded) ...[
                         Text(
                           l10n.usersTitle,
@@ -178,26 +193,32 @@ class _UsersDashboardView extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       if (isDesktop || embedded)
-                        AppDesktopStatGrid(
-                          phoneColumns: 1,
-                          tabletColumns: 2,
-                          desktopColumns: 2,
+                        GridView.count(
+                          crossAxisCount: isDesktop ? 3 : 2,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: AppSpacing.md,
+                          crossAxisSpacing: AppSpacing.md,
+                          childAspectRatio: isDesktop ? 2.6 : 2.2,
                           children: [
-                            AppDesktopActionCard(
+                            AppDesktopNavTile(
                               title: l10n.usersList,
+                              subtitle: l10n.usersTotal,
                               icon: Icons.list_alt,
                               onTap: () =>
                                   context.push(RoutePaths.usersList),
                             ),
                             if (canCreate)
-                              AppDesktopActionCard(
+                              AppDesktopNavTile(
                                 title: l10n.usersCreate,
+                                subtitle: l10n.usersStatusActive,
                                 icon: Icons.person_add_alt_1,
                                 onTap: () =>
                                     context.push(RoutePaths.usersForm),
                               ),
-                            AppDesktopActionCard(
+                            AppDesktopNavTile(
                               title: l10n.usersChangePassword,
+                              subtitle: l10n.settingsChangePassword,
                               icon: Icons.lock_outline,
                               onTap: () => context
                                   .push(RoutePaths.usersChangePassword),
@@ -239,16 +260,19 @@ class _UsersDashboardView extends StatelessWidget {
     if (embedded) return body;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.usersTitle),
-        actions: [
-          IconButton(
-            tooltip: l10n.usersChangePassword,
-            icon: const Icon(Icons.lock_outline),
-            onPressed: () => context.push(RoutePaths.usersChangePassword),
-          ),
-        ],
-      ),
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              title: Text(l10n.usersTitle),
+              actions: [
+                IconButton(
+                  tooltip: l10n.usersChangePassword,
+                  icon: const Icon(Icons.lock_outline),
+                  onPressed: () =>
+                      context.push(RoutePaths.usersChangePassword),
+                ),
+              ],
+            ),
       body: body,
     );
   }

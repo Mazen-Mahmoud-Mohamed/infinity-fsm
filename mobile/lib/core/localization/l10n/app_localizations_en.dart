@@ -306,6 +306,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get retry => 'Retry';
 
   @override
+  String get refresh => 'Refresh';
+
+  @override
   String get errorGeneric => 'Something went wrong. Please try again.';
 
   @override
@@ -314,6 +317,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get workOrderCreate => 'Create';
+
+  @override
+  String get workOrderCreateOrder => 'Create Order';
 
   @override
   String get workOrderEdit => 'Edit work order';
@@ -3290,6 +3296,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overtimeEligible => 'Overtime Hours';
+
+  @override
+  String get overtimePerDiem => 'Per Diem';
 
   @override
   String get overtimeWorkedHours => 'Worked Hours';

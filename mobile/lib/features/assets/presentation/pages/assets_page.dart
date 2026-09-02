@@ -11,7 +11,8 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
-import 'package:mobile/core/widgets/desktop/app_desktop_action_card.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_nav_tile.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/presentation/cubit/assets_dashboard_cubit.dart';
@@ -66,7 +67,7 @@ class _AssetsDashboardView extends StatelessWidget {
     );
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.assets)),
+      appBar: isDesktop ? null : AppBar(title: Text(l10n.assets)),
       body: BlocBuilder<AssetsDashboardCubit, AssetsDashboardState>(
         buildWhen: (previous, current) =>
             previous.status != current.status ||
@@ -125,6 +126,20 @@ class _AssetsDashboardView extends StatelessWidget {
                         chrome: AppBottomChrome.system,
                       ),
                       children: [
+                        if (isDesktop) ...[
+                          AppDesktopPageHeader(
+                            title: l10n.assets,
+                            trailing: canCreate
+                                ? FilledButton.icon(
+                                    onPressed: () =>
+                                        context.push(RoutePaths.assetsForm),
+                                    icon: const Icon(Icons.add),
+                                    label: Text(l10n.assetsCreate),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(height: AppSpacing.lg),
+                        ],
                         AppDesktopStatGrid(
                           phoneColumns: 2,
                           tabletColumns: 3,
@@ -178,33 +193,40 @@ class _AssetsDashboardView extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.lg),
                         if (isDesktop)
-                          AppDesktopStatGrid(
-                            phoneColumns: 1,
-                            tabletColumns: 2,
-                            desktopColumns: 4,
+                          GridView.count(
+                            crossAxisCount: 2,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            mainAxisSpacing: AppSpacing.md,
+                            crossAxisSpacing: AppSpacing.md,
+                            childAspectRatio: 2.6,
                             children: [
-                              AppDesktopActionCard(
+                              AppDesktopNavTile(
                                 title: l10n.assetsList,
+                                subtitle: l10n.assetsTotal,
                                 icon: Icons.list_alt,
                                 onTap: () =>
                                     context.push(RoutePaths.assetsList),
                               ),
-                              AppDesktopActionCard(
+                              AppDesktopNavTile(
                                 title: l10n.assetsCategories,
+                                subtitle: l10n.assetsStatusActive,
                                 icon: Icons.category_outlined,
                                 onTap: () =>
                                     context.push(RoutePaths.assetsCategories),
                               ),
-                              AppDesktopActionCard(
+                              AppDesktopNavTile(
                                 title: l10n.assetsHistory,
+                                subtitle: l10n.assetsStatusRetired,
                                 icon: Icons.history,
                                 onTap: () =>
                                     context.push(RoutePaths.assetsHistory),
                               ),
                               if (canCreate)
-                                AppDesktopActionCard(
+                                AppDesktopNavTile(
                                   title: l10n.assetsCreate,
-                                  icon: Icons.add,
+                                  subtitle: l10n.assetsList,
+                                  icon: Icons.add_circle_outline,
                                   onTap: () =>
                                       context.push(RoutePaths.assetsForm),
                                 ),

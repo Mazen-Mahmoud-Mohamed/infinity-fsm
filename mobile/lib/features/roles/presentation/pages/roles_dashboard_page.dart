@@ -11,7 +11,8 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
-import 'package:mobile/core/widgets/desktop/app_desktop_action_card.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_nav_tile.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
@@ -128,6 +129,19 @@ class _RolesDashboardView extends StatelessWidget {
                       chrome: AppBottomChrome.fab,
                     ),
                     children: [
+                      if (isDesktop && !embedded) ...[
+                        AppDesktopPageHeader(
+                          title: l10n.rolesTitle,
+                          trailing: canCreate
+                              ? FilledButton.icon(
+                                  onPressed: () => _openCreate(context),
+                                  icon: const Icon(Icons.add),
+                                  label: Text(l10n.rolesCreate),
+                                )
+                              : null,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
                       if (embedded) ...[
                         Text(
                           l10n.rolesTitle,
@@ -184,20 +198,25 @@ class _RolesDashboardView extends StatelessWidget {
                       ),
                       const SizedBox(height: AppSpacing.lg),
                       if (isDesktop || embedded)
-                        AppDesktopStatGrid(
-                          phoneColumns: 1,
-                          tabletColumns: 2,
-                          desktopColumns: 2,
+                        GridView.count(
+                          crossAxisCount: isDesktop ? 2 : 2,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: AppSpacing.md,
+                          crossAxisSpacing: AppSpacing.md,
+                          childAspectRatio: 2.6,
                           children: [
-                            AppDesktopActionCard(
+                            AppDesktopNavTile(
                               title: l10n.rolesList,
+                              subtitle: l10n.rolesTotal,
                               icon: Icons.list_alt,
                               onTap: () =>
                                   context.push(RoutePaths.rolesList),
                             ),
                             if (canCreate)
-                              AppDesktopActionCard(
+                              AppDesktopNavTile(
                                 title: l10n.rolesCreate,
+                                subtitle: l10n.rolesCustom,
                                 icon: Icons.add,
                                 onTap: () => _openCreate(context),
                               ),
@@ -235,8 +254,8 @@ class _RolesDashboardView extends StatelessWidget {
     if (embedded) return body;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.rolesTitle)),
-      floatingActionButton: canCreate
+      appBar: isDesktop ? null : AppBar(title: Text(l10n.rolesTitle)),
+      floatingActionButton: !isDesktop && canCreate
           ? FloatingActionButton.extended(
               onPressed: () => _openCreate(context),
               icon: const Icon(Icons.add),

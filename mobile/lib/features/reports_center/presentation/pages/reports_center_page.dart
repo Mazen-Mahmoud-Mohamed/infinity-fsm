@@ -7,6 +7,9 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_nav_tile.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/features/auth/domain/services/permission_checker.dart';
@@ -64,6 +67,7 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
     final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final isPhone = AppBreakpoints.isPhone(width);
+    final isDesktop = AppBreakpoints.isDesktop(width);
     final canGenerate = context.select(
       (AuthCubit c) =>
           c.state.user?.permissionChecker.canGenerateReports() == true,
@@ -75,18 +79,20 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
     return BlocProvider.value(
       value: _cubit,
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(l10n.reportsCenter),
-          actions: [
-            if (!isPhone)
-              IconButton(
-                tooltip: l10n.reportsCenterFilters,
-                onPressed: () =>
-                    showReportsCenterFilterSheet(context, cubit: _cubit),
-                icon: const Icon(Icons.tune),
+        appBar: isDesktop
+            ? null
+            : AppBar(
+                title: Text(l10n.reportsCenter),
+                actions: [
+                  if (!isPhone)
+                    IconButton(
+                      tooltip: l10n.reportsCenterFilters,
+                      onPressed: () =>
+                          showReportsCenterFilterSheet(context, cubit: _cubit),
+                      icon: const Icon(Icons.tune),
+                    ),
+                ],
               ),
-          ],
-        ),
         body: BlocConsumer<ReportsCenterCubit, ReportsCenterState>(
           listenWhen: (p, c) => p.module != c.module,
           listener: (context, state) {
@@ -111,6 +117,32 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
             return Column(
               children: [
                 AppRefreshBar(visible: state.isRefreshing),
+                if (isDesktop)
+                  AppDesktopWorkspacePadding(
+                    child: AppDesktopPageHeader(
+                      title: l10n.reportsCenter,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: l10n.reportsCenterFilters,
+                            onPressed: () => showReportsCenterFilterSheet(
+                              context,
+                              cubit: _cubit,
+                            ),
+                            icon: const Icon(Icons.tune),
+                          ),
+                          if (canGenerate)
+                            FilledButton.icon(
+                              onPressed: () =>
+                                  context.push(RoutePaths.reportsGenerate),
+                              icon: const Icon(Icons.note_add_outlined),
+                              label: Text(l10n.reportsGenerate),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     AppSpacing.md,
@@ -143,7 +175,7 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
                 ),
                 if (state.module == ReportsCenterModule.serviceReports)
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
+                    padding: EdgeInsets.fromLTRB(
                       AppSpacing.md,
                       AppSpacing.sm,
                       AppSpacing.md,
@@ -151,32 +183,68 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
                     ),
                     child: Align(
                       alignment: AlignmentDirectional.centerStart,
-                      child: Wrap(
-                        spacing: AppSpacing.sm,
-                        runSpacing: AppSpacing.sm,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: () =>
-                                context.push(RoutePaths.reportsList),
-                            icon: const Icon(Icons.list_alt),
-                            label: Text(l10n.reportsList),
-                          ),
-                          if (canGenerate) ...[
-                            FilledButton.tonalIcon(
-                              onPressed: () =>
-                                  context.push(RoutePaths.reportsSignature),
-                              icon: const Icon(Icons.draw),
-                              label: Text(l10n.reportsCaptureSignature),
+                      child: isDesktop
+                          ? GridView.count(
+                              crossAxisCount: 3,
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              mainAxisSpacing: AppSpacing.sm,
+                              crossAxisSpacing: AppSpacing.sm,
+                              childAspectRatio: 3.2,
+                              children: [
+                                AppDesktopNavTile(
+                                  title: l10n.reportsList,
+                                  subtitle: l10n.reportsCenter,
+                                  icon: Icons.list_alt,
+                                  onTap: () =>
+                                      context.push(RoutePaths.reportsList),
+                                ),
+                                if (canGenerate) ...[
+                                  AppDesktopNavTile(
+                                    title: l10n.reportsCaptureSignature,
+                                    subtitle: l10n.reportsGenerate,
+                                    icon: Icons.draw,
+                                    onTap: () => context.push(
+                                      RoutePaths.reportsSignature,
+                                    ),
+                                  ),
+                                  AppDesktopNavTile(
+                                    title: l10n.reportsGenerate,
+                                    subtitle: l10n.reportsCenter,
+                                    icon: Icons.note_add_outlined,
+                                    onTap: () => context.push(
+                                      RoutePaths.reportsGenerate,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            )
+                          : Wrap(
+                              spacing: AppSpacing.sm,
+                              runSpacing: AppSpacing.sm,
+                              children: [
+                                FilledButton.tonalIcon(
+                                  onPressed: () =>
+                                      context.push(RoutePaths.reportsList),
+                                  icon: const Icon(Icons.list_alt),
+                                  label: Text(l10n.reportsList),
+                                ),
+                                if (canGenerate) ...[
+                                  FilledButton.tonalIcon(
+                                    onPressed: () => context
+                                        .push(RoutePaths.reportsSignature),
+                                    icon: const Icon(Icons.draw),
+                                    label: Text(l10n.reportsCaptureSignature),
+                                  ),
+                                  FilledButton.tonalIcon(
+                                    onPressed: () => context
+                                        .push(RoutePaths.reportsGenerate),
+                                    icon: const Icon(Icons.note_add_outlined),
+                                    label: Text(l10n.reportsGenerate),
+                                  ),
+                                ],
+                              ],
                             ),
-                            FilledButton.tonalIcon(
-                              onPressed: () =>
-                                  context.push(RoutePaths.reportsGenerate),
-                              icon: const Icon(Icons.note_add_outlined),
-                              label: Text(l10n.reportsGenerate),
-                            ),
-                          ],
-                        ],
-                      ),
                     ),
                   ),
                 if (state.module == ReportsCenterModule.overtime &&

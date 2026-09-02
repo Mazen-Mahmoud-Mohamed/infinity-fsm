@@ -9,6 +9,8 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
@@ -380,11 +382,21 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
         : _selectedSection.clamp(0, filtered.length - 1);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.settings)),
+      appBar: isDesktop ? null : AppBar(title: Text(l10n.settings)),
       body: AppPageFrame(
         maxWidth: AppBreakpoints.contentWideMax,
         child: Column(
           children: [
+            if (isDesktop)
+              AppDesktopWorkspacePadding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.sm,
+                ),
+                child: AppDesktopPageHeader(title: l10n.settings),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 AppSpacing.md,

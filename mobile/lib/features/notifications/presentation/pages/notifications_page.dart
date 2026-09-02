@@ -15,6 +15,7 @@ import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:mobile/features/notifications/presentation/widgets/notifications_desktop_view.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notification_list_tile.dart';
 
 class NotificationsPage extends StatefulWidget {
@@ -46,11 +47,14 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final pagePadding = AppBreakpoints.pagePadding(width);
+    final isDesktop = AppBreakpoints.isDesktop(width);
 
     return BlocProvider.value(
       value: _cubit,
       child: Scaffold(
-        appBar: AppBar(
+        appBar: isDesktop
+            ? null
+            : AppBar(
           title: Text(l10n.notifications),
           actions: [
             BlocBuilder<NotificationsCubit, NotificationsState>(
@@ -67,7 +71,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ],
         ),
-        body: BlocBuilder<NotificationsCubit, NotificationsState>(
+        body: AppBreakpoints.isDesktopOf(context)
+            ? NotificationsDesktopView(searchController: _searchController)
+            : BlocBuilder<NotificationsCubit, NotificationsState>(
           builder: (context, state) {
             if (state.status == NotificationsStatus.loading &&
                 state.items.isEmpty) {

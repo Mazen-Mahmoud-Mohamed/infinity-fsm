@@ -11,7 +11,6 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
-import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -22,6 +21,8 @@ import 'package:mobile/features/overtime/presentation/cubit/overtime_admin_cubit
 import 'package:mobile/features/overtime/presentation/utils/overtime_excel_export_flow.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_admin_desktop_table.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_export_filters.dart';
@@ -75,9 +76,210 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final dateFormat = AppFormatters.mediumDateTime(context);
+    final isDesktop = AppBreakpoints.isDesktopOf(context);
     final canExport = canExportOvertimeExcel(
       context.watch<AuthCubit>().state.user,
     );
+
+    if (isDesktop) {
+      return Scaffold(
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                  0,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    BlocBuilder<OvertimeAdminCubit, OvertimeAdminState>(
+                      buildWhen: (previous, current) =>
+                          previous.isRefreshing != current.isRefreshing,
+                      builder: (context, state) {
+                        return AppRefreshBar(visible: state.isRefreshing);
+                      },
+                    ),
+                    Text(
+                      l10n.overtimeManagement,
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    BlocBuilder<OvertimeAdminCubit, OvertimeAdminState>(
+                      buildWhen: (previous, current) =>
+                          previous.filterStatus != current.filterStatus,
+                      builder: (context, state) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Align(
+                              alignment: AlignmentDirectional.centerStart,
+                              child: ConstrainedBox(
+                                constraints:
+                                    const BoxConstraints(maxWidth: 480),
+                                child: TextField(
+                                  controller: _searchController,
+                                  textInputAction: TextInputAction.search,
+                                  decoration: InputDecoration(
+                                    hintText: l10n.overtimeSearchTechnician,
+                                    prefixIcon: const Icon(Icons.search),
+                                    isDense: true,
+                                    suffixIcon: _searchController.text.isEmpty
+                                        ? null
+                                        : IconButton(
+                                            icon: const Icon(Icons.clear),
+                                            onPressed: () {
+                                              _searchController.clear();
+                                              context
+                                                  .read<OvertimeAdminCubit>()
+                                                  .search('');
+                                              setState(() {});
+                                            },
+                                          ),
+                                  ),
+                                  onChanged: (_) => setState(() {}),
+                                  onSubmitted: (value) => context
+                                      .read<OvertimeAdminCubit>()
+                                      .search(value),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: AppSpacing.sm),
+                            SingleChildScrollView(
+                              scrollDirection: Axis.horizontal,
+                              child: Row(
+                                children: [
+                                  _FilterChip(
+                                    label: l10n.workOrderFilterAll,
+                                    selected: state.filterStatus == null,
+                                    onSelected: () => context
+                                        .read<OvertimeAdminCubit>()
+                                        .setFilter(null),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _FilterChip(
+                                    label: l10n.filterPending,
+                                    selected: state.filterStatus ==
+                                        OvertimeStatus.pendingReview,
+                                    onSelected: () => context
+                                        .read<OvertimeAdminCubit>()
+                                        .setFilter(
+                                            OvertimeStatus.pendingReview),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _FilterChip(
+                                    label: l10n.filterApproved,
+                                    selected: state.filterStatus ==
+                                        OvertimeStatus.approved,
+                                    onSelected: () => context
+                                        .read<OvertimeAdminCubit>()
+                                        .setFilter(OvertimeStatus.approved),
+                                  ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _FilterChip(
+                                    label: l10n.filterRejected,
+                                    selected: state.filterStatus ==
+                                        OvertimeStatus.rejected,
+                                    onSelected: () => context
+                                        .read<OvertimeAdminCubit>()
+                                        .setFilter(OvertimeStatus.rejected),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Expanded(
+                      child: BlocBuilder<OvertimeAdminCubit, OvertimeAdminState>(
+                        buildWhen: (previous, current) =>
+                            previous.status != current.status ||
+                            previous.items != current.items ||
+                            previous.isRefreshing != current.isRefreshing,
+                        builder: (context, state) {
+                          return _buildOvertimeListBody(
+                            context,
+                            state: state,
+                            l10n: l10n,
+                            dateFormat: dateFormat,
+                            isDesktop: true,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (canExport)
+              SafeArea(
+                top: false,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    border: Border(
+                      top: BorderSide(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .outlineVariant
+                            .withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ),
+                  child: SizedBox(
+                    height: 72,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSpacing.lg,
+                        AppSpacing.sm,
+                        AppSpacing.lg,
+                        AppSpacing.md,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          SizedBox(
+                            width: 160,
+                            height: 48,
+                            child: FilledButton.icon(
+                              key: const Key('overtime-export-excel'),
+                              onPressed: () {
+                                final state =
+                                    context.read<OvertimeAdminCubit>().state;
+                                showOvertimeExcelExportFlow(
+                                  context,
+                                  initialFilters: OvertimeExportFilters(
+                                    status: state.filterStatus,
+                                    search: state.search.isEmpty
+                                        ? null
+                                        : state.search,
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.file_download_outlined),
+                              label: Text(
+                                l10n.overtimeExportExcel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -116,9 +318,8 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
               label: Text(l10n.overtimeExportExcel),
             )
           : null,
-      body: AppPageFrame(
-        maxWidth: AppBreakpoints.contentWideMax,
-        child: Column(
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(
@@ -155,7 +356,8 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
             builder: (context, state) {
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Row(
                   children: [
                     _FilterChip(
@@ -197,80 +399,100 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
           const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: BlocBuilder<OvertimeAdminCubit, OvertimeAdminState>(
-              builder: (context, state) {
-                if (state.status == OvertimeAdminStatus.loading &&
-                    state.items.isEmpty) {
-                  return AppLoader(message: l10n.overtimeLoading);
-                }
-
-                if (state.status == OvertimeAdminStatus.failure &&
-                    state.items.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            state.message != null
-                                ? localizeAppMessage(l10n, state.message)
-                                : l10n.overtimeLoadFailed,
-                          ),
-                          const SizedBox(height: AppSpacing.md),
-                          ElevatedButton(
-                            onPressed: () => context
-                                .read<OvertimeAdminCubit>()
-                                .loadFirstPage(),
-                            child: Text(l10n.retry),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                }
-
-                if (state.items.isEmpty) {
-                  return Center(
-                    child: Text(l10n.overtimeAdminEmpty),
-                  );
-                }
-
-                return Column(
-                  children: [
-                    AppRefreshBar(visible: state.isRefreshing),
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: () => context
-                            .read<OvertimeAdminCubit>()
-                            .loadFirstPage(),
-                        child: AppResponsiveCardList(
-                          controller: _scrollController,
-                          chrome: AppBottomChrome.system,
-                          itemCount: state.items.length,
-                          loadingMore:
-                              state.status == OvertimeAdminStatus.loadingMore,
-                          itemBuilder: (context, index) {
-                            final session = state.items[index];
-                            return _AdminSessionCard(
-                              session: session,
-                              dateFormat: dateFormat,
-                              l10n: l10n,
-                              onTap: () => context.push(
-                                RoutePaths.overtimeAdminDetail(session.id),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
+              builder: (context, state) => _buildOvertimeListBody(
+                context,
+                state: state,
+                l10n: l10n,
+                dateFormat: dateFormat,
+                isDesktop: false,
+              ),
             ),
           ),
         ],
       ),
-      ),
+    );
+  }
+
+  Widget _buildOvertimeListBody(
+    BuildContext context, {
+    required OvertimeAdminState state,
+    required AppLocalizations l10n,
+    required DateFormat dateFormat,
+    required bool isDesktop,
+  }) {
+    if (state.status == OvertimeAdminStatus.loading && state.items.isEmpty) {
+      return AppLoader(message: l10n.overtimeLoading);
+    }
+
+    if (state.status == OvertimeAdminStatus.failure && state.items.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.lg),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                state.message != null
+                    ? localizeAppMessage(l10n, state.message)
+                    : l10n.overtimeLoadFailed,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              ElevatedButton(
+                onPressed: () =>
+                    context.read<OvertimeAdminCubit>().loadFirstPage(),
+                child: Text(l10n.retry),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (state.items.isEmpty) {
+      return isDesktop
+          ? AppDesktopEmptyState(
+              icon: Icons.more_time_outlined,
+              title: l10n.overtimeAdminEmpty,
+            )
+          : Center(child: Text(l10n.overtimeAdminEmpty));
+    }
+
+    return Column(
+      children: [
+        if (!isDesktop) AppRefreshBar(visible: state.isRefreshing),
+        Expanded(
+          child: RefreshIndicator(
+            onRefresh: () =>
+                context.read<OvertimeAdminCubit>().loadFirstPage(),
+            child: isDesktop
+                ? OvertimeAdminDesktopTable(
+                    sessions: state.items,
+                    dateFormat: dateFormat,
+                    scrollController: _scrollController,
+                    loadingMore:
+                        state.status == OvertimeAdminStatus.loadingMore,
+                  )
+                : AppResponsiveCardList(
+                    controller: _scrollController,
+                    chrome: AppBottomChrome.system,
+                    itemCount: state.items.length,
+                    loadingMore:
+                        state.status == OvertimeAdminStatus.loadingMore,
+                    itemBuilder: (context, index) {
+                      final session = state.items[index];
+                      return _AdminSessionCard(
+                        session: session,
+                        dateFormat: dateFormat,
+                        l10n: l10n,
+                        onTap: () => context.push(
+                          RoutePaths.overtimeAdminDetail(session.id),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -292,6 +514,7 @@ class _FilterChip extends StatelessWidget {
       label: Text(label),
       selected: selected,
       onSelected: (_) => onSelected(),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

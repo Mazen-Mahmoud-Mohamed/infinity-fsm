@@ -23,6 +23,7 @@ import 'package:mobile/features/work_orders/domain/entities/work_order_status.da
 import 'package:mobile/features/work_orders/presentation/cubit/work_orders_list_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/utils/work_order_labels.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_badges.dart';
+import 'package:mobile/features/work_orders/presentation/widgets/work_orders_desktop_view.dart';
 
 class WorkOrdersPage extends StatefulWidget {
   const WorkOrdersPage({super.key});
@@ -102,6 +103,16 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
 
   @override
   Widget build(BuildContext context) {
+    if (AppBreakpoints.isDesktopOf(context)) {
+      return WorkOrdersDesktopView(
+        isAdminMode: widget.isAdminMode,
+        scrollController: _scrollController,
+        searchController: _searchController,
+        onSearchChanged: () => setState(() {}),
+        onOpenForm: () => _openForm(context),
+      );
+    }
+
     final l10n = AppLocalizations.of(context);
     final dateFormat = AppFormatters.mediumDateTime(context);
     final width = MediaQuery.sizeOf(context).width;

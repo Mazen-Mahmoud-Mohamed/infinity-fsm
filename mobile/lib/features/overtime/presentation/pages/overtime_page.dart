@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
@@ -11,6 +12,10 @@ import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
@@ -89,25 +94,28 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
         .user
         ?.permissionChecker;
     final syncState = context.watch<OvertimeSyncCubit>().state;
+    final isDesktop = AppBreakpoints.isDesktopOf(context);
 
     return Scaffold(
-      appBar: TechnicianMainAppBar(
-        title: Text(l10n.overtimeTechnicianTitle),
-        actions: [
-          const NotificationsBellAction(),
-          IconButton(
-            tooltip: l10n.overtimeTechnicianMyTooltip,
-            onPressed: () => context.push(RoutePaths.overtimeHistory),
-            icon: const Icon(Icons.history),
-          ),
-          if (permissions?.canViewAllOvertime() == true)
-            IconButton(
-              tooltip: l10n.overtimeManageTooltip,
-              onPressed: () => context.push(RoutePaths.overtimeAdmin),
-              icon: const Icon(Icons.admin_panel_settings_outlined),
+      appBar: isDesktop
+          ? null
+          : TechnicianMainAppBar(
+              title: Text(l10n.overtimeTechnicianTitle),
+              actions: [
+                const NotificationsBellAction(),
+                IconButton(
+                  tooltip: l10n.overtimeTechnicianMyTooltip,
+                  onPressed: () => context.push(RoutePaths.overtimeHistory),
+                  icon: const Icon(Icons.history),
+                ),
+                if (permissions?.canViewAllOvertime() == true)
+                  IconButton(
+                    tooltip: l10n.overtimeManageTooltip,
+                    onPressed: () => context.push(RoutePaths.overtimeAdmin),
+                    icon: const Icon(Icons.admin_panel_settings_outlined),
+                  ),
+              ],
             ),
-        ],
-      ),
       body: BlocConsumer<OvertimeCubit, OvertimeState>(
         buildWhen: (previous, current) {
           // Elapsed ticker only bumps [elapsedSeconds]; keep heavy body
@@ -177,6 +185,38 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
 
           return Column(
             children: [
+              if (isDesktop)
+                AppDesktopWorkspacePadding(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.sm,
+                  ),
+                  child: AppDesktopPageHeader(
+                    title: l10n.overtimeTechnicianTitle,
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          tooltip: l10n.overtimeTechnicianMyTooltip,
+                          onPressed: () =>
+                              context.push(RoutePaths.overtimeHistory),
+                          icon: const Icon(Icons.history),
+                        ),
+                        if (permissions?.canViewAllOvertime() == true)
+                          IconButton(
+                            tooltip: l10n.overtimeManageTooltip,
+                            onPressed: () =>
+                                context.push(RoutePaths.overtimeAdmin),
+                            icon: const Icon(
+                              Icons.admin_panel_settings_outlined,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
               AppRefreshBar(visible: state.isRefreshing),
               Expanded(
                 child: RefreshIndicator(
@@ -189,51 +229,23 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
                       chrome: AppBottomChrome.system,
                     ),
                     children: [
-                      if (state.offerContinueSession && state.isRunning) ...[
-                        _ContinueSessionBanner(
-                          onContinue: () => context
-                              .read<OvertimeCubit>()
-                              .continueExistingSession(),
-                        ),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-                      if (state.completedSession != null) ...[
-                        _CompletedSummaryCard(session: state.completedSession!),
-                        const SizedBox(height: AppSpacing.lg),
-                      ],
-                      if (state.isRunning && state.session != null)
-                        TechnicianOvertimeRunningCard(
-                          session: state.session!,
-                          isBusy: state.isBusy,
-                          busyAction: state.busyAction,
-                          pendingActions: syncState.pendingActions,
-                          onAdvance: () => context
-                              .read<OvertimeCubit>()
-                              .completeNextCheckpoint(),
+                      if (AppBreakpoints.isDesktopOf(context))
+                        AppPageFrame(
+                          maxWidth: AppBreakpoints.contentWideMax,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: _overtimeTechnicianBody(
+                              context: context,
+                              state: state,
+                              syncState: syncState,
+                            ),
+                          ),
                         )
                       else
-                        _StartActions(
-                          isBusy: state.isBusy,
-                          isStarting: state.isStarting,
-                          offerContinueSession: state.offerContinueSession,
-                          onStart:
-                              ({
-                                required bool travel,
-                                required bool overnight,
-                              }) {
-                                final cubit = context.read<OvertimeCubit>();
-                                if (!travel) {
-                                  cubit.start(type: OvertimeType.normal);
-                                } else {
-                                  cubit.start(
-                                    type: OvertimeType.travel,
-                                    isOvernight: overnight,
-                                  );
-                                }
-                              },
-                          onContinue: () => context
-                              .read<OvertimeCubit>()
-                              .continueExistingSession(),
+                        ..._overtimeTechnicianBody(
+                          context: context,
+                          state: state,
+                          syncState: syncState,
                         ),
                     ],
                   ),
@@ -244,6 +256,96 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
         },
       ),
     );
+  }
+
+  List<Widget> _overtimeTechnicianBody({
+    required BuildContext context,
+    required OvertimeState state,
+    required OvertimeSyncState syncState,
+  }) {
+    return [
+      if (state.offerContinueSession && state.isRunning) ...[
+        _ContinueSessionBanner(
+          onContinue: () =>
+              context.read<OvertimeCubit>().continueExistingSession(),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+      ],
+      if (state.completedSession != null) ...[
+        _CompletedSummaryCard(session: state.completedSession!),
+        const SizedBox(height: AppSpacing.lg),
+      ],
+      if (state.isRunning && state.session != null)
+        AppBreakpoints.isDesktopOf(context)
+            ? AppDesktopSplitView(
+                start: TechnicianOvertimeRunningCard(
+                  session: state.session!,
+                  isBusy: state.isBusy,
+                  busyAction: state.busyAction,
+                  pendingActions: syncState.pendingActions,
+                  onAdvance: () =>
+                      context.read<OvertimeCubit>().completeNextCheckpoint(),
+                ),
+                end: const SizedBox.shrink(),
+              )
+            : TechnicianOvertimeRunningCard(
+                session: state.session!,
+                isBusy: state.isBusy,
+                busyAction: state.busyAction,
+                pendingActions: syncState.pendingActions,
+                onAdvance: () =>
+                    context.read<OvertimeCubit>().completeNextCheckpoint(),
+              )
+      else
+        AppBreakpoints.isDesktopOf(context)
+            ? AppDesktopSplitView(
+                startFlex: 3,
+                endFlex: 2,
+                start: _StartActions(
+                  isBusy: state.isBusy,
+                  isStarting: state.isStarting,
+                  offerContinueSession: state.offerContinueSession,
+                  onStart: ({
+                    required bool travel,
+                    required bool overnight,
+                  }) {
+                    final cubit = context.read<OvertimeCubit>();
+                    if (!travel) {
+                      cubit.start(type: OvertimeType.normal);
+                    } else {
+                      cubit.start(
+                        type: OvertimeType.travel,
+                        isOvernight: overnight,
+                      );
+                    }
+                  },
+                  onContinue: () =>
+                      context.read<OvertimeCubit>().continueExistingSession(),
+                ),
+                end: const SizedBox.shrink(),
+              )
+            : _StartActions(
+                isBusy: state.isBusy,
+                isStarting: state.isStarting,
+                offerContinueSession: state.offerContinueSession,
+                onStart: ({
+                  required bool travel,
+                  required bool overnight,
+                }) {
+                  final cubit = context.read<OvertimeCubit>();
+                  if (!travel) {
+                    cubit.start(type: OvertimeType.normal);
+                  } else {
+                    cubit.start(
+                      type: OvertimeType.travel,
+                      isOvernight: overnight,
+                    );
+                  }
+                },
+                onContinue: () =>
+                    context.read<OvertimeCubit>().continueExistingSession(),
+              ),
+    ];
   }
 }
 

@@ -10,6 +10,9 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_shell_body.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_sidebar.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_top_bar.dart';
 import 'package:mobile/features/attendance/presentation/widgets/attendance_summary_card.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
@@ -53,26 +56,29 @@ class _DashboardViewState extends State<_DashboardView> {
     final width = MediaQuery.sizeOf(context).width;
     final isPhone = AppBreakpoints.isPhone(width);
     final isCompact = AppBreakpoints.isDashboardCompact(width);
+    final isDesktop = AppBreakpoints.isDesktop(width);
     final pagePadding =
         isCompact ? AppSpacing.sm + 4 : AppBreakpoints.pagePadding(width);
     final sectionGap = isCompact ? AppSpacing.sm : (isPhone ? AppSpacing.md : AppSpacing.lg);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          l10n.dashboard,
-          style: DashboardTypography.pageTitle(context),
-        ),
-        actions: [
-          const GlobalSearchAction(),
-          const NotificationsBellAction(),
-          IconButton(
-            tooltip: l10n.settings,
-            onPressed: () => context.go(RoutePaths.settings),
-            icon: const Icon(Icons.settings_outlined),
-          ),
-        ],
-      ),
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              title: Text(
+                l10n.dashboard,
+                style: DashboardTypography.pageTitle(context),
+              ),
+              actions: [
+                const GlobalSearchAction(),
+                const NotificationsBellAction(),
+                IconButton(
+                  tooltip: l10n.settings,
+                  onPressed: () => context.go(RoutePaths.settings),
+                  icon: const Icon(Icons.settings_outlined),
+                ),
+              ],
+            ),
       body: Column(
         children: [
           // Isolate refresh indicator so isRefreshing does not rebuild content.
@@ -464,6 +470,7 @@ class MainNavigationShell extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
     final isPhone = AppBreakpoints.isPhone(width);
+    final isDesktop = AppBreakpoints.isDesktop(width);
     final compact = width < 400;
     final veryCompact = width < 340;
     final extendedRail = width >= 1100;
@@ -528,6 +535,40 @@ class MainNavigationShell extends StatelessWidget {
         Expanded(child: navigationShell),
       ],
     );
+
+    if (isDesktop) {
+      final sidebarCollapsed = width < 1280;
+      final sections = buildDesktopSidebarSections(
+        l10n: l10n,
+        operational: operational,
+        railBranches: railBranches,
+      );
+
+      return Scaffold(
+        body: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            AppDesktopSidebar(
+              sections: sections,
+              selectedBranch: currentBranch,
+              onBranchSelected: _goBranch,
+              collapsed: sidebarCollapsed,
+            ),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const AppDesktopTopBar(),
+                  Expanded(
+                    child: AppDesktopShellBody(child: shellBody),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     if (!isPhone) {
       final railSelected = railBranches.indexOf(currentBranch);

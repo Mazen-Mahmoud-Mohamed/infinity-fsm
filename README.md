@@ -10,7 +10,9 @@ Enterprise Field Service Management for workforce operations — work orders, ov
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=for-the-badge&logo=android&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
 
-**INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform for maintenance companies and field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android** and **Windows**.
+**INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform developed for **Total-Com Solutions** and maintenance companies with field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android**, **tablets**, and **Windows**.
+
+On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop experience** — sidebar navigation, global top bar, desktop page layouts, data tables, and fixed bottom action footers. Mobile and tablet layouts remain **responsive first-class flows**; they are not stretched desktop layouts.
 
 ---
 
@@ -18,6 +20,7 @@ Enterprise Field Service Management for workforce operations — work orders, ov
 
 1. [Overview](#1-overview)
 2. [Main Features](#2-main-features)
+   - [Windows Desktop Experience](#windows-desktop-experience)
 3. [User Roles](#3-user-roles)
 4. [Technician Experience](#4-technician-experience)
 5. [Technician Interface Control](#5-technician-interface-control)
@@ -106,6 +109,20 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 - Company overtime policy (soft 16h manual-review flag; no hard 48h end cap)
 - Excel export (summary / detailed) with English & Arabic workbooks
 
+#### Desktop Overtime Management (Windows)
+
+| Feature | Behavior |
+|---------|----------|
+| **Layout** | Title → search → status filters → expanded table → fixed bottom **Export Excel** |
+| **Search** | Technician search (same desktop toolbar pattern as Work Orders) |
+| **Status filters** | All · Pending · Approved · Rejected |
+| **Table columns** | Technician · Type · Status · **Per Diem** · Start · End · Overtime Hours |
+| **Technician column** | Shows **`OvertimeTechnicianSummary.displayName` only** (email is not shown in the desktop table; it remains in models, API, and search logic) |
+| **Per Diem column** | Uses the existing **`OvertimeSession.isOvernight`** boolean (travel overnight / per-diem condition). Rendered as compact **Yes** / **No** badges — **no new backend field** |
+| **Export** | **Export Excel** stays in the fixed bottom footer (not above search) |
+
+Mobile/tablet admin overtime continues to use responsive session cards (`AppResponsiveCardList`).
+
 ### 📝 Work Orders
 
 - Create, list, assign, accept, reject, complete, and cancel work orders
@@ -117,6 +134,19 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 - Notes, voice notes, attachments, and execution photos (before / during / after where supported)
 - Timeline-oriented detail flows
 - Technician execution workflow with permission-aware UI (admin vs technician views)
+
+#### Desktop Work Orders (Windows)
+
+| Feature | Behavior |
+|---------|----------|
+| **List** | `WorkOrdersDesktopView` — searchable table with status filter chips |
+| **Columns** | Job number, title, customer, location, technicians (admin), priority, status, scheduled date |
+| **Search** | Technician/job search field (max width 480 px, aligned with page title) |
+| **Actions** | **Create Order** and **Refresh** in a fixed bottom footer (compact buttons, right-aligned) |
+| **Create / edit** | Desktop form layout in `work_order_form_page.dart` with fixed bottom **Close** / **Save** |
+| **Refresh** | Pull-to-refresh on the table; footer Refresh always available |
+
+Mobile and tablet continue to use the existing card/list presentation on narrower viewports.
 
 #### Customer phone numbers
 
@@ -158,6 +188,8 @@ See [§7 Notifications](#7-notifications) for platform behavior (Android FCM, Wi
 - Shared `AttendanceCubit` (single status / today fetch and poll)
 - Attendance sync with connectivity awareness
 - GPS accuracy gates on the backend
+- **Desktop admin table** (`AttendanceAdminDesktopTable`) for reviewing sessions on wide viewports
+- **`AppDesktopDataTable`** uses matching **min/max row height (52 px)** so desktop DataTable rendering stays stable on Windows
 
 ### 📦 Inventory · Assets · PM · Reports
 
@@ -187,6 +219,32 @@ See [§7 Notifications](#7-notifications) for platform behavior (Android FCM, Wi
 - Global search palette across existing module APIs (no dedicated `/search` API)
 
 > **Vehicles** is schema-ready documentation only and is **not** implemented in the API or UI.
+
+### Windows Desktop Experience
+
+Activated at **`AppBreakpoints.tabletMax` (900 px+)** on Windows (and wide desktop viewports). Shared building blocks live under `mobile/lib/core/widgets/desktop/`.
+
+| Area | Desktop behavior |
+|------|------------------|
+| **Shell** | Collapsible **sidebar** navigation + global **top bar** inside `MainNavigationShell` |
+| **Page layout** | Title, search, filters, and scrollable content aligned to the desktop workspace width |
+| **Tables** | `AppDesktopDataTable` — rounded surface, normalized **52 px** row/header height, horizontal scroll for wide datasets |
+| **Empty / loading** | Desktop empty states and refresh bars; existing data stays visible during refresh (`isRefreshing`) |
+| **Action footers** | Fixed bottom **SafeArea** footers for primary actions (Work Orders, Overtime, Work Order form) |
+
+**Module desktop surfaces (current):**
+
+| Module | Desktop presentation |
+|--------|----------------------|
+| **Work Orders** | Full-width table, search, status filters, **Create Order** + **Refresh** in fixed bottom footer |
+| **Work Order create/edit** | Desktop form layout with fixed bottom **Close** / **Save** |
+| **Overtime Management** | Table with technician search, status filters, **Export Excel** in fixed bottom footer |
+| **Attendance (admin)** | Desktop data table for session review |
+| **Users / Roles** | Desktop tables for list management |
+| **Notifications** | Desktop list view |
+| **Dashboard, Inventory, Assets, PM, Reports, Settings, Profile** | Desktop-aware page layouts and spacing |
+
+Mobile/tablet code paths are unchanged for modules that branch on `AppBreakpoints.isDesktopOf(context)`.
 
 ---
 
@@ -575,11 +633,14 @@ infinity-fsm/
 ├── mobile/                  # Flutter client (Android + Windows)
 │   ├── lib/
 │   │   ├── core/            # theme, router, l10n, DI, network, storage, push
+│   │   │   └── widgets/desktop/  # AppDesktopDataTable, sidebar, top bar, …
 │   │   ├── features/        # auth, dashboard, attendance, overtime, notifications, …
 │   │   └── shared/
 │   ├── android/
 │   ├── windows/             # runner title: INFINITY
 │   ├── test/
+│   │   └── features/desktop/    # shell, Work Orders geometry, Overtime table tests
+│   ├── scripts/             # optional desktop runtime verification (PowerShell)
 │   └── assets/
 ├── docs/                    # Architecture, API, RBAC, roadmap, …
 ├── infra/                   # Deployment planning notes
@@ -691,6 +752,7 @@ Under `mobile/test/`, including:
 - **Notifications unread seed**
 - Work orders (customer phones, technician UI, form flows)
 - Attendance areas as covered by existing suites
+- **Desktop UI** — shell layout bounds, Work Orders geometry, Overtime admin desktop table (technician name, Per Diem column, column order)
 
 ```bash
 cd mobile
@@ -698,9 +760,11 @@ flutter test
 flutter analyze
 ```
 
+**Latest full-suite result:** **259 / 259** tests passed (after the Windows desktop UI work).
+
 Recent ConnectivityService interface updates are covered by updated overtime test fakes (lifecycle, forensics, reconciliation, scheduler). Run those suites after connectivity changes.
 
-> Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate.
+> Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate. The desktop release build and test suite are the authoritative validation gates for UI changes.
 
 ---
 
@@ -882,8 +946,8 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 | Maps | OpenStreetMap only |
 | SessionQueryCache | Used to avoid duplicate network fetches where wired |
 | Dashboard loading | Prefer `isRefreshing` / cached summary over full-page loaders when data exists |
-| Product name | **INFINITY** in UI / Windows title; package `mobile` unchanged |
-
+| Desktop UI | Activated at 900 px+; mobile/tablet layouts remain separate responsive paths |
+| Overtime Per Diem (desktop) | **`isOvernight`** only — no new API field |
 | Product name | **INFINITY** in UI / Windows title; package `mobile` unchanged; Android `applicationId` `com.example.mobile` |
 
 ---
@@ -891,6 +955,20 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 ## 23. Recent Updates
 
 Recent shipped improvements (verify in code before relying on docs alone):
+
+### Windows desktop UI (current release)
+
+- **Dedicated Windows desktop shell** — sidebar navigation, global top bar, desktop page layouts
+- **Desktop data tables** — `AppDesktopDataTable` with stable row height and rounded surfaces
+- **Work Orders desktop workspace** — search, status filters, table, fixed bottom **Create Order** / **Refresh**
+- **Work Order create/edit desktop form** — fixed bottom **Close** / **Save**
+- **Overtime Management desktop table** — aligned with Work Orders proportions; technician **display name only** (no email in table cells)
+- **Overtime Per Diem column** — uses existing **`OvertimeSession.isOvernight`** (Yes/No badges)
+- **Overtime Export Excel** — remains in fixed bottom footer on desktop
+- **Attendance admin desktop table** — stable DataTable constraints on Windows
+- **Desktop widget tests** under `mobile/test/features/desktop/`
+
+### Earlier improvements
 
 - Work order **customer phone numbers** (optional multi-number support + Call action)
 - **Technician-simplified** work-order detail (permission-aware admin metadata hiding)

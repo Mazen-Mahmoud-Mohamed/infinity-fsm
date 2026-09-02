@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
@@ -10,6 +11,10 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
+import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/attendance/domain/entities/attendance_status_snapshot.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
@@ -62,6 +67,7 @@ class _AttendanceDashboardView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
     final permissions =
         context.watch<AuthCubit>().state.user?.permissionChecker;
+    final isDesktop = AppBreakpoints.isDesktopOf(context);
 
     return BlocListener<AttendanceCubit, AttendanceState>(
       listenWhen: (previous, current) =>
@@ -83,23 +89,25 @@ class _AttendanceDashboardView extends StatelessWidget {
           );
       },
       child: Scaffold(
-        appBar: TechnicianMainAppBar(
-          title: Text(l10n.attendance),
-          actions: [
-            const NotificationsBellAction(),
-            IconButton(
-              tooltip: l10n.attendanceHistoryTooltip,
-              icon: const Icon(Icons.history),
-              onPressed: () => context.push(RoutePaths.attendanceHistory),
-            ),
-            if (permissions?.canViewAllAttendance() == true)
-              IconButton(
-                tooltip: l10n.attendanceManageTooltip,
-                icon: const Icon(Icons.admin_panel_settings_outlined),
-                onPressed: () => context.push(RoutePaths.attendanceAdmin),
+        appBar: isDesktop
+            ? null
+            : TechnicianMainAppBar(
+                title: Text(l10n.attendance),
+                actions: [
+                  const NotificationsBellAction(),
+                  IconButton(
+                    tooltip: l10n.attendanceHistoryTooltip,
+                    icon: const Icon(Icons.history),
+                    onPressed: () => context.push(RoutePaths.attendanceHistory),
+                  ),
+                  if (permissions?.canViewAllAttendance() == true)
+                    IconButton(
+                      tooltip: l10n.attendanceManageTooltip,
+                      icon: const Icon(Icons.admin_panel_settings_outlined),
+                      onPressed: () => context.push(RoutePaths.attendanceAdmin),
+                    ),
+                ],
               ),
-          ],
-        ),
         body: BlocBuilder<AttendanceCubit, AttendanceState>(
           buildWhen: (previous, current) {
             if (previous.loadStatus != current.loadStatus ||
@@ -143,47 +151,99 @@ class _AttendanceDashboardView extends StatelessWidget {
 
             final snapshot =
                 state.status ?? AttendanceStatusSnapshot.empty();
+            final isDesktop = AppBreakpoints.isDesktopOf(context);
+
+            final statusPanel = [
+              TodayStatusCard(snapshot: snapshot),
+              const SizedBox(height: AppSpacing.lg),
+              ClockActionButtons(
+                status: snapshot.status,
+                isBusy: state.loadStatus ==
+                    AttendanceLoadStatus.actionInProgress,
+                onClockIn: () => context.read<AttendanceCubit>().clockIn(),
+                onClockOut: () => context.read<AttendanceCubit>().clockOut(),
+                onStartBreak: () =>
+                    context.read<AttendanceCubit>().startBreak(),
+                onEndBreak: () => context.read<AttendanceCubit>().endBreak(),
+              ),
+            ];
+
+            final timelinePanel = [
+              Text(
+                l10n.attendanceTimeline,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: AppSpacing.md),
+              AttendanceTimeline(
+                events: state.today?.events ?? const [],
+              ),
+            ];
 
             return Column(
               children: [
+                if (isDesktop)
+                  AppDesktopWorkspacePadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                    ),
+                    child: AppDesktopPageHeader(
+                      title: l10n.attendance,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: l10n.attendanceHistoryTooltip,
+                            icon: const Icon(Icons.history),
+                            onPressed: () =>
+                                context.push(RoutePaths.attendanceHistory),
+                          ),
+                          if (permissions?.canViewAllAttendance() == true)
+                            IconButton(
+                              tooltip: l10n.attendanceManageTooltip,
+                              icon: const Icon(
+                                Icons.admin_panel_settings_outlined,
+                              ),
+                              onPressed: () =>
+                                  context.push(RoutePaths.attendanceAdmin),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                 AppRefreshBar(visible: state.isRefreshing),
                 Expanded(
                   child: RefreshIndicator(
                     onRefresh: () =>
                         context.read<AttendanceCubit>().refresh(),
-                    child: ListView(
-                      padding: AppScrollPadding.resolve(
-                        context,
-                        base: const EdgeInsets.all(AppSpacing.lg),
-                        chrome: AppBottomChrome.system,
-                      ),
-                      children: [
-                        TodayStatusCard(snapshot: snapshot),
-                        const SizedBox(height: AppSpacing.lg),
-                        ClockActionButtons(
-                          status: snapshot.status,
-                          isBusy: state.loadStatus ==
-                              AttendanceLoadStatus.actionInProgress,
-                          onClockIn: () =>
-                              context.read<AttendanceCubit>().clockIn(),
-                          onClockOut: () =>
-                              context.read<AttendanceCubit>().clockOut(),
-                          onStartBreak: () =>
-                              context.read<AttendanceCubit>().startBreak(),
-                          onEndBreak: () =>
-                              context.read<AttendanceCubit>().endBreak(),
-                        ),
-                        const SizedBox(height: AppSpacing.xl),
-                        Text(
-                          l10n.attendanceTimeline,
-                          style: Theme.of(context).textTheme.titleMedium,
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        AttendanceTimeline(
-                          events: state.today?.events ?? const [],
-                        ),
-                      ],
-                    ),
+                    child: isDesktop
+                        ? AppPageFrame(
+                            maxWidth: AppBreakpoints.contentWideMax,
+                            child: AppDesktopSplitView(
+                              start: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: statusPanel,
+                              ),
+                              end: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: timelinePanel,
+                              ),
+                            ),
+                          )
+                        : ListView(
+                            padding: AppScrollPadding.resolve(
+                              context,
+                              base: const EdgeInsets.all(AppSpacing.lg),
+                              chrome: AppBottomChrome.system,
+                            ),
+                            children: [
+                              ...statusPanel,
+                              const SizedBox(height: AppSpacing.xl),
+                              ...timelinePanel,
+                            ],
+                          ),
                   ),
                 ),
               ],

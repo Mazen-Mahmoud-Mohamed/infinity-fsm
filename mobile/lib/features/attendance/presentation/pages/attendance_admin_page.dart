@@ -13,7 +13,6 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
-import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -21,6 +20,9 @@ import 'package:mobile/features/attendance/domain/entities/attendance_record.dar
 import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
 import 'package:mobile/features/attendance/presentation/cubit/attendance_admin_cubit.dart';
 import 'package:mobile/features/attendance/presentation/utils/attendance_admin_labels.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_layout.dart';
+import 'package:mobile/features/attendance/presentation/widgets/attendance_admin_desktop_table.dart';
 import 'package:mobile/features/attendance/presentation/widgets/attendance_status_badge.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/utils/dashboard_period_range.dart';
@@ -92,42 +94,69 @@ class _AttendanceAdminViewState extends State<_AttendanceAdminView> {
     final l10n = AppLocalizations.of(context);
     final timeFormat = AppFormatters.jm(context);
     final dateTimeFormat = AppFormatters.mediumDateTime(context);
+    final isDesktop = AppBreakpoints.isDesktopOf(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.attendanceManagement)),
-      body: AppPageFrame(
-        maxWidth: AppBreakpoints.contentWideMax,
-        child: Column(
+      appBar: isDesktop ? null : AppBar(title: Text(l10n.attendanceManagement)),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.md,
-              AppSpacing.lg,
-              AppSpacing.sm,
-            ),
-            child: TextField(
-              controller: _searchController,
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                hintText: l10n.attendanceSearchEmployee,
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isEmpty
-                    ? null
-                    : IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          context.read<AttendanceAdminCubit>().search('');
-                          setState(() {});
-                        },
-                      ),
+          if (isDesktop)
+            AppDesktopListPageHeader(
+              title: l10n.attendanceManagement,
+              toolbar: TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: l10n.attendanceSearchEmployee,
+                  prefixIcon: const Icon(Icons.search),
+                  isDense: true,
+                  suffixIcon: _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            context.read<AttendanceAdminCubit>().search('');
+                            setState(() {});
+                          },
+                        ),
+                ),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (value) =>
+                    context.read<AttendanceAdminCubit>().search(value),
               ),
-              onChanged: (_) => setState(() {}),
-              onSubmitted: (value) =>
-                  context.read<AttendanceAdminCubit>().search(value),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg,
+                AppSpacing.md,
+                AppSpacing.lg,
+                AppSpacing.sm,
+              ),
+              child: TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                decoration: InputDecoration(
+                  hintText: l10n.attendanceSearchEmployee,
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: _searchController.text.isEmpty
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            context.read<AttendanceAdminCubit>().search('');
+                            setState(() {});
+                          },
+                        ),
+                ),
+                onChanged: (_) => setState(() {}),
+                onSubmitted: (value) =>
+                    context.read<AttendanceAdminCubit>().search(value),
+              ),
             ),
-          ),
           BlocBuilder<AttendanceAdminCubit, AttendanceAdminState>(
             buildWhen: (previous, current) =>
                 previous.period != current.period ||
@@ -333,7 +362,12 @@ class _AttendanceAdminViewState extends State<_AttendanceAdminView> {
                 }
 
                 if (state.items.isEmpty) {
-                  return Center(child: Text(l10n.attendanceAdminEmpty));
+                  return isDesktop
+                      ? AppDesktopEmptyState(
+                          icon: Icons.access_time_outlined,
+                          title: l10n.attendanceAdminEmpty,
+                        )
+                      : Center(child: Text(l10n.attendanceAdminEmpty));
                 }
 
                 return Column(
@@ -344,7 +378,15 @@ class _AttendanceAdminViewState extends State<_AttendanceAdminView> {
                         onRefresh: () => context
                             .read<AttendanceAdminCubit>()
                             .loadFirstPage(),
-                        child: AppResponsiveCardList(
+                        child: AppBreakpoints.isDesktopOf(context)
+                            ? AttendanceAdminDesktopTable(
+                                records: state.items,
+                                timeFormat: timeFormat,
+                                scrollController: _scrollController,
+                                loadingMore: state.status ==
+                                    AttendanceAdminStatus.loadingMore,
+                              )
+                            : AppResponsiveCardList(
                           controller: _scrollController,
                           chrome: AppBottomChrome.system,
                           itemCount: state.items.length,
@@ -373,7 +415,6 @@ class _AttendanceAdminViewState extends State<_AttendanceAdminView> {
             ),
           ),
         ],
-      ),
       ),
     );
   }

@@ -310,6 +310,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get retry => 'إعادة المحاولة';
 
   @override
+  String get refresh => 'تحديث';
+
+  @override
   String get errorGeneric => 'حدث خطأ. يرجى المحاولة مرة أخرى.';
 
   @override
@@ -317,6 +320,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get workOrderCreate => 'إنشاء';
+
+  @override
+  String get workOrderCreateOrder => 'إنشاء أمر عمل';
 
   @override
   String get workOrderEdit => 'تعديل أمر العمل';
@@ -3282,6 +3288,9 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get overtimeEligible => 'ساعات الإضافي';
+
+  @override
+  String get overtimePerDiem => 'بدل يومي';
 
   @override
   String get overtimeWorkedHours => 'ساعات العمل';

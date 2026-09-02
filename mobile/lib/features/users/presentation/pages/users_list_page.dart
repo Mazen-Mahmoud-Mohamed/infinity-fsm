@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
+import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
@@ -11,10 +12,14 @@ import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_layout.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_toolbar.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/users/domain/entities/user_management_entities.dart';
 import 'package:mobile/features/users/presentation/cubit/users_cubits.dart';
 import 'package:mobile/features/users/presentation/widgets/user_status_badge.dart';
+import 'package:mobile/features/users/presentation/widgets/users_desktop_table.dart';
 
 class UsersListPage extends StatefulWidget {
   const UsersListPage({super.key, this.initialStatus});
@@ -59,41 +64,67 @@ class _UsersListPageState extends State<UsersListPage> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final isDesktop = AppBreakpoints.isDesktopOf(context);
     final canCreate = context.select(
       (AuthCubit c) => c.state.user?.permissionChecker.canCreateUsers() == true,
     );
 
+    Future<void> openCreate() async {
+      final changed = await context.push<bool>(RoutePaths.usersForm);
+      if (changed == true && mounted) {
+        await _cubit.loadFirstPage();
+      }
+    }
+
     return BlocProvider.value(
       value: _cubit,
       child: Scaffold(
-        appBar: AppBar(title: Text(l10n.usersList)),
-        floatingActionButton: canCreate
+        appBar: isDesktop ? null : AppBar(title: Text(l10n.usersList)),
+        floatingActionButton: !isDesktop && canCreate
             ? FloatingActionButton.extended(
-                onPressed: () async {
-                  final changed =
-                      await context.push<bool>(RoutePaths.usersForm);
-                  if (changed == true && mounted) {
-                    await _cubit.loadFirstPage();
-                  }
-                },
+                onPressed: openCreate,
                 icon: const Icon(Icons.person_add_alt_1),
                 label: Text(l10n.usersCreate),
               )
             : null,
         body: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.all(AppSpacing.md),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: l10n.usersSearchHint,
-                  prefixIcon: const Icon(Icons.search),
+            if (isDesktop)
+              AppDesktopListPageHeader(
+                title: l10n.usersList,
+                trailing: canCreate
+                    ? FilledButton.icon(
+                        onPressed: openCreate,
+                        icon: const Icon(Icons.person_add_alt_1),
+                        label: Text(l10n.usersCreate),
+                      )
+                    : null,
+                toolbar: AppDesktopToolbar(
+                  search: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: l10n.usersSearchHint,
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                    ),
+                    textInputAction: TextInputAction.search,
+                    onSubmitted: _cubit.search,
+                  ),
                 ),
-                textInputAction: TextInputAction.search,
-                onSubmitted: _cubit.search,
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: TextField(
+                  controller: _searchController,
+                  decoration: InputDecoration(
+                    hintText: l10n.usersSearchHint,
+                    prefixIcon: const Icon(Icons.search),
+                  ),
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: _cubit.search,
+                ),
               ),
-            ),
             BlocBuilder<UsersListCubit, UsersListState>(
               buildWhen: (p, c) => p.filterStatus != c.filterStatus,
               builder: (context, state) {
@@ -165,7 +196,22 @@ class _UsersListPageState extends State<UsersListPage> {
                     );
                   }
                   if (state.items.isEmpty) {
-                    return Center(child: Text(l10n.usersEmpty));
+                    return isDesktop
+                        ? AppDesktopEmptyState(
+                            icon: Icons.people_outline,
+                            title: l10n.usersEmpty,
+                          )
+                        : Center(child: Text(l10n.usersEmpty));
+                  }
+                  if (isDesktop) {
+                    return RefreshIndicator(
+                      onRefresh: () => _cubit.loadFirstPage(),
+                      child: UsersDesktopTable(
+                        users: state.items,
+                        scrollController: _scrollController,
+                        loadingMore: state.hasMore,
+                      ),
+                    );
                   }
                   return RefreshIndicator(
                     onRefresh: () => _cubit.loadFirstPage(),

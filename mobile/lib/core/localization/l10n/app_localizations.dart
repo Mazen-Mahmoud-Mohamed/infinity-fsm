@@ -656,6 +656,12 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get retry;
 
+  /// No description provided for @refresh.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get refresh;
+
   /// No description provided for @errorGeneric.
   ///
   /// In en, this message translates to:
@@ -673,6 +679,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create'**
   String get workOrderCreate;
+
+  /// No description provided for @workOrderCreateOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Create Order'**
+  String get workOrderCreateOrder;
 
   /// No description provided for @workOrderEdit.
   ///
@@ -6295,6 +6307,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overtime Hours'**
   String get overtimeEligible;
+
+  /// No description provided for @overtimePerDiem.
+  ///
+  /// In en, this message translates to:
+  /// **'Per Diem'**
+  String get overtimePerDiem;
 
   /// No description provided for @overtimeWorkedHours.
   ///
