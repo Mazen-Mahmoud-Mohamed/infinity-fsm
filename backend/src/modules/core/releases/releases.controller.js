@@ -4,7 +4,7 @@ import releasesService from './releases.service.js';
 
 export const getLatestRelease = asyncHandler(async (req, res) => {
   const channel = req.query.channel || 'stable';
-  const data = releasesService.getLatestRelease(channel);
+  const data = await releasesService.getLatestRelease(channel);
 
   sendSuccess(res, data ?? {
     version: null,

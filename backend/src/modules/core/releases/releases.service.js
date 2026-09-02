@@ -1,79 +1,91 @@
-const ALLOWED_CHANNELS = new Set(['stable', 'beta']);
+import logger from '../../../shared/utils/logger.util.js';
+import { getEnvReleaseManifest } from './releases.env.js';
+import {
+  fetchLatestGithubReleaseManifest,
+  readGithubConfig,
+} from './releases.github.js';
 
-function readEnvString(key) {
-  const value = process.env[key];
-  if (value == null) return '';
-  return String(value).trim();
+const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
+
+let cache = {
+  channel: null,
+  manifest: null,
+  expiresAt: 0,
+};
+
+function readReleaseSourceMode() {
+  const mode = (process.env.APP_RELEASE_SOURCE ?? 'auto').trim().toLowerCase();
+  if (mode === 'github' || mode === 'env' || mode === 'auto') {
+    return mode;
+  }
+  return 'auto';
 }
 
-function readEnvInt(key) {
-  const raw = readEnvString(key);
-  if (!raw) return null;
+function readCacheTtlMs() {
+  const raw = process.env.APP_RELEASE_GITHUB_CACHE_TTL_MS;
+  if (!raw) return DEFAULT_CACHE_TTL_MS;
   const parsed = Number.parseInt(raw, 10);
-  return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_CACHE_TTL_MS;
 }
 
-function parseReleaseDate(raw) {
-  if (!raw) return null;
-  const date = new Date(raw);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.toISOString();
-}
-
-function normalizeHttpsUrl(raw) {
-  if (!raw) return null;
-  try {
-    const parsed = new URL(raw);
-    if (parsed.protocol !== 'https:') return null;
-    return parsed.toString();
-  } catch {
-    return null;
+function getCachedManifest(channel) {
+  if (cache.channel === channel && cache.expiresAt > Date.now()) {
+    return cache.manifest;
   }
+  return undefined;
 }
 
-function buildPlatformArtifact(prefix) {
-  const downloadUrl = normalizeHttpsUrl(readEnvString(`${prefix}_URL`));
-  if (!downloadUrl) {
-    return { available: false };
-  }
-
-  const sha256 = readEnvString(`${prefix}_SHA256`).toLowerCase() || null;
-  const size = readEnvInt(`${prefix}_SIZE`);
-
-  return {
-    available: true,
-    downloadUrl,
-    ...(sha256 ? { sha256 } : {}),
-    ...(size != null ? { size } : {}),
+function setCachedManifest(channel, manifest) {
+  cache = {
+    channel,
+    manifest,
+    expiresAt: Date.now() + readCacheTtlMs(),
   };
 }
 
-function getReleaseManifest(channel = 'stable') {
-  const normalizedChannel = ALLOWED_CHANNELS.has(channel) ? channel : 'stable';
-  const version = readEnvString('APP_RELEASE_VERSION');
-  const build = readEnvInt('APP_RELEASE_BUILD');
-
-  if (!version || build == null) {
-    return null;
+async function getGithubReleaseManifest(channel) {
+  const cached = getCachedManifest(channel);
+  if (cached !== undefined) {
+    return cached;
   }
 
-  return {
-    version,
-    build,
-    channel: readEnvString('APP_RELEASE_CHANNEL') || normalizedChannel,
-    releaseDate: parseReleaseDate(readEnvString('APP_RELEASE_DATE')),
-    releaseNotes: readEnvString('APP_RELEASE_NOTES') || null,
-    windows: buildPlatformArtifact('APP_RELEASE_WINDOWS'),
-    android: buildPlatformArtifact('APP_RELEASE_ANDROID'),
-  };
+  const manifest = await fetchLatestGithubReleaseManifest(channel);
+  setCachedManifest(channel, manifest);
+  return manifest;
 }
 
 export default {
-  getLatestRelease(channel) {
-    const manifest = getReleaseManifest(channel);
-    if (!manifest) {
+  async getLatestRelease(channel = 'stable') {
+    const sourceMode = readReleaseSourceMode();
+    const github = readGithubConfig();
+
+    if (sourceMode !== 'env') {
+      if (github.isConfigured) {
+        try {
+          const githubManifest = await getGithubReleaseManifest(channel);
+          if (githubManifest) {
+            return githubManifest;
+          }
+        } catch (error) {
+          logger.warn('GitHub release lookup failed; attempting APP_RELEASE_* fallback', {
+            message: error.message,
+          });
+        }
+      }
+    }
+
+    if (sourceMode === 'github') {
       return null;
     }
-    return manifest;
+
+    return getEnvReleaseManifest(channel);
+  },
+
+  clearCache() {
+    cache = {
+      channel: null,
+      manifest: null,
+      expiresAt: 0,
+    };
   },
 };

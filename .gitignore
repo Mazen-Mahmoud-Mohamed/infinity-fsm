@@ -47,6 +47,8 @@ secrets/
 build/
 **/build/
 mobile/build/
+dist/
+**/dist/
 .android/
 .ios/
 
