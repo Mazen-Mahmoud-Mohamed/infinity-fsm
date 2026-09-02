@@ -122,15 +122,45 @@ describe('releases.service orchestration', () => {
             assets: [
               {
                 name: 'app-release.apk',
-                browser_download_url: 'https://github.com/example/app-release.apk',
-                size: 100,
+                browser_download_url:
+                  'https://github.com/example/infinity-fsm/releases/download/v1.0.2/app-release.apk',
+                size: 82258668,
               },
               {
                 name: 'INFINITY-Setup-1.0.2.exe',
-                browser_download_url: 'https://github.com/example/setup.exe',
-                size: 200,
+                browser_download_url:
+                  'https://github.com/example/infinity-fsm/releases/download/v1.0.2/INFINITY-Setup-1.0.2.exe',
+                size: 21026731,
+              },
+              {
+                name: 'release-manifest.json',
+                browser_download_url:
+                  'https://github.com/example/infinity-fsm/releases/download/v1.0.2/release-manifest.json',
+                size: 600,
               },
             ],
+          }),
+        };
+      }
+      if (url.includes('release-manifest.json')) {
+        return {
+          ok: true,
+          json: async () => ({
+            version: '1.0.2',
+            build: 3,
+            channel: 'stable',
+            android: {
+              assetName: 'app-release.apk',
+              sha256: 'c'.repeat(64),
+              size: 82258668,
+              available: true,
+            },
+            windows: {
+              assetName: 'INFINITY-Setup-1.0.2.exe',
+              sha256: 'd'.repeat(64),
+              size: 21026731,
+              available: true,
+            },
           }),
         };
       }
@@ -143,6 +173,33 @@ describe('releases.service orchestration', () => {
 
     expect(manifest.version).toBe('1.0.2');
     expect(manifest.build).toBe(3);
+    expect(manifest.android.downloadUrl).toContain('/v1.0.2/');
+  });
+
+  it('does not cache null GitHub responses', async () => {
+    const fetchMock = jest.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        tag_name: 'v1.0.2',
+        draft: true,
+        prerelease: false,
+        assets: [],
+      }),
+    }));
+    globalThis.fetch = fetchMock;
+
+    process.env.APP_RELEASE_VERSION = '1.0.1';
+    process.env.APP_RELEASE_BUILD = '2';
+    process.env.APP_RELEASE_ANDROID_URL =
+      'https://cdn.example.com/infinity/app-release-v1.0.1.apk';
+
+    const service = (await import('../modules/core/releases/releases.service.js')).default;
+    service.clearCache();
+
+    await service.getLatestRelease('stable');
+    await service.getLatestRelease('stable');
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it('falls back to APP_RELEASE_* when GitHub fails', async () => {

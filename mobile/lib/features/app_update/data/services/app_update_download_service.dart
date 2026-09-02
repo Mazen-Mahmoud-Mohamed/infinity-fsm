@@ -4,11 +4,15 @@ import 'package:dio/dio.dart';
 import 'package:mobile/features/app_update/domain/entities/app_release_manifest.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:crypto/crypto.dart';
+import 'package:mobile/features/app_update/domain/utils/app_update_artifact_verifier.dart';
+import 'package:mobile/features/app_update/domain/utils/app_update_release_identity.dart';
 
 class AppUpdateDownloadService {
-  AppUpdateDownloadService({Dio? dio}) : _dio = dio ?? _createDio();
+  AppUpdateDownloadService({Dio? dio, AppUpdateArtifactVerifier? verifier})
+      : _dio = dio ?? _createDio(),
+        _verifier = verifier ?? const AppUpdateArtifactVerifier();
 
+  final AppUpdateArtifactVerifier _verifier;
   final Dio _dio;
 
   static Dio _createDio() {
@@ -24,6 +28,7 @@ class AppUpdateDownloadService {
     required AppReleaseArtifact artifact,
     required String platformKey,
     required String version,
+    required int build,
     void Function(int received, int? total)? onProgress,
   }) async {
     final url = artifact.downloadUrl;
@@ -32,10 +37,12 @@ class AppUpdateDownloadService {
     }
 
     final directory = await _updatesDirectory();
-    final extension = platformKey == 'android' ? 'apk' : 'exe';
-    final safeVersion = version.replaceAll(RegExp(r'[^0-9A-Za-z._-]'), '_');
     final destination = File(
-      p.join(directory.path, 'infinity-$platformKey-$safeVersion.$extension'),
+      p.join(
+        directory.path,
+        AppUpdateReleaseIdentity(version: version, build: build)
+            .fileName(platformKey: platformKey),
+      ),
     );
 
     var startByte = 0;
@@ -69,20 +76,10 @@ class AppUpdateDownloadService {
       rethrow;
     }
 
-    if (artifact.sha256 != null && artifact.sha256!.isNotEmpty) {
-      final valid = await _verifySha256(destination, artifact.sha256!);
-      if (!valid) {
-        await destination.delete();
-        throw const AppUpdateDownloadException('checksum_mismatch');
-      }
-    }
-
-    if (artifact.size != null && artifact.size! > 0) {
-      final length = await destination.length();
-      if (length != artifact.size) {
-        await destination.delete();
-        throw const AppUpdateDownloadException('size_mismatch');
-      }
+    final valid = await _verifier.verify(file: destination, artifact: artifact);
+    if (!valid) {
+      await destination.delete();
+      throw const AppUpdateDownloadException('verification_failed');
     }
 
     return destination;
@@ -146,11 +143,6 @@ class AppUpdateDownloadService {
     return dir;
   }
 
-  Future<bool> _verifySha256(File file, String expectedHex) async {
-    final bytes = await file.readAsBytes();
-    final digest = sha256.convert(bytes).toString();
-    return digest.toLowerCase() == expectedHex.toLowerCase();
-  }
 }
 
 class AppUpdateDownloadException implements Exception {

@@ -33,6 +33,7 @@ class AppUpdateDownloadCoordinator {
     required AppReleaseArtifact artifact,
     required String platformKey,
     required String version,
+    required int build,
     AppUpdateDownloadProgress? onProgress,
   }) {
     if (_activeDownload != null) {
@@ -52,6 +53,7 @@ class AppUpdateDownloadCoordinator {
           artifact: artifact,
           platformKey: platformKey,
           version: version,
+          build: build,
           onProgress: (received, total) {
             _lastReceived = received;
             _lastTotal = total;

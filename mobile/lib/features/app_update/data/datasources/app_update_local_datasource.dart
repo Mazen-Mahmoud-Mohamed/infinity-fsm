@@ -12,6 +12,7 @@ class AppUpdateLocalDataSource {
   static const _lastCheckedKey = 'app_update_last_checked_at_v1';
   static const _downloadedPathKey = 'app_update_downloaded_path_v1';
   static const _downloadedVersionKey = 'app_update_downloaded_version_v1';
+  static const _downloadedBuildKey = 'app_update_downloaded_build_v1';
   static const _lastNotifiedVersionKey = 'app_update_last_notified_version_v1';
   static const _lastAutoCheckKey = 'app_update_last_auto_check_at_v1';
   static const _dismissedBannerVersionKey = 'app_update_dismissed_banner_v1';
@@ -77,17 +78,26 @@ class AppUpdateLocalDataSource {
   String? readDownloadedVersion() =>
       _preferences.getString(_downloadedVersionKey);
 
+  int? readDownloadedBuild() {
+    final raw = _preferences.getString(_downloadedBuildKey);
+    if (raw == null || raw.isEmpty) return null;
+    return int.tryParse(raw);
+  }
+
   Future<void> writeDownloadedArtifact({
     required String path,
     required String version,
+    required int build,
   }) async {
     await _preferences.setString(_downloadedPathKey, path);
     await _preferences.setString(_downloadedVersionKey, version);
+    await _preferences.setString(_downloadedBuildKey, build.toString());
   }
 
   Future<void> clearDownloadedArtifact() async {
     await _preferences.remove(_downloadedPathKey);
     await _preferences.remove(_downloadedVersionKey);
+    await _preferences.remove(_downloadedBuildKey);
   }
 
   bool readAutoUpdateEnabled() =>

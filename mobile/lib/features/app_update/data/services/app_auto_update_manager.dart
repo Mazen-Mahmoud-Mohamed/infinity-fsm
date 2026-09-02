@@ -68,11 +68,11 @@ class AppAutoUpdateManager {
       return true;
     }
 
-    final downloadedPath = await _repository.getDownloadedArtifactPath();
-    final downloadedVersion = await _repository.getDownloadedArtifactVersion();
-    if (downloadedPath != null &&
-        downloadedVersion == manifest.version &&
-        await File(downloadedPath).exists()) {
+    final downloadedPath = await _repository.resolveVerifiedDownloadedPath(
+      manifest: manifest,
+      platformKey: platformKey,
+    );
+    if (downloadedPath != null) {
       callbacks.onState(
         UpdateCenterStatus.downloadReady,
         downloadedPath: downloadedPath,
@@ -155,6 +155,7 @@ class AppAutoUpdateManager {
         artifact: artifact,
         platformKey: platformKey,
         version: manifest.version,
+        build: manifest.build,
         onProgress: callbacks.onProgress,
       );
 

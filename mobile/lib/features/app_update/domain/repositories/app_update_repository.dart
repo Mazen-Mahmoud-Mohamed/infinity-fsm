@@ -15,6 +15,7 @@ abstract class AppUpdateRepository {
     required AppReleaseArtifact artifact,
     required String platformKey,
     required String version,
+    required int build,
     void Function(int received, int? total)? onProgress,
   });
 
@@ -23,9 +24,18 @@ abstract class AppUpdateRepository {
     required String platformKey,
   });
 
+  Future<String?> resolveVerifiedDownloadedPath({
+    required AppReleaseManifest manifest,
+    required String platformKey,
+  });
+
+  Future<void> clearDownloadedArtifact();
+
   Future<String?> getDownloadedArtifactPath();
 
   Future<String?> getDownloadedArtifactVersion();
+
+  Future<int?> getDownloadedArtifactBuild();
 
   Future<String?> getLastNotifiedUpdateVersion();
 

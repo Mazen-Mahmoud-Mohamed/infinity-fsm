@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import 'package:flutter/foundation.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/features/app_update/data/datasources/app_update_local_datasource.dart';
@@ -9,6 +11,8 @@ import 'package:mobile/features/app_update/data/services/app_update_download_ser
 import 'package:mobile/features/app_update/data/services/app_update_install_service.dart';
 import 'package:mobile/features/app_update/domain/entities/app_release_manifest.dart';
 import 'package:mobile/features/app_update/domain/repositories/app_update_repository.dart';
+import 'package:mobile/features/app_update/domain/utils/app_update_artifact_verifier.dart';
+import 'package:mobile/features/app_update/domain/utils/app_update_release_identity.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 class AppUpdateRepositoryImpl implements AppUpdateRepository {
@@ -18,17 +22,20 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
     required AppUpdateDownloadCoordinator downloadCoordinator,
     required AppUpdateInstallService installService,
     required ConnectivityService connectivityService,
+    AppUpdateArtifactVerifier? artifactVerifier,
   })  : _remote = remote,
         _local = local,
         _downloadCoordinator = downloadCoordinator,
         _installService = installService,
-        _connectivityService = connectivityService;
+        _connectivityService = connectivityService,
+        _artifactVerifier = artifactVerifier ?? const AppUpdateArtifactVerifier();
 
   final AppUpdateRemoteDataSource _remote;
   final AppUpdateLocalDataSource _local;
   final AppUpdateDownloadCoordinator _downloadCoordinator;
   final AppUpdateInstallService _installService;
   final ConnectivityService _connectivityService;
+  final AppUpdateArtifactVerifier _artifactVerifier;
 
   PackageInfo? _packageInfo;
 
@@ -112,6 +119,7 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
     required AppReleaseArtifact artifact,
     required String platformKey,
     required String version,
+    required int build,
     void Function(int received, int? total)? onProgress,
   }) async {
     if (!_connectivityService.currentSnapshot.canSync) {
@@ -122,15 +130,71 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
       artifact: artifact,
       platformKey: platformKey,
       version: version,
+      build: build,
       onProgress: onProgress,
     );
 
     await _local.writeDownloadedArtifact(
       path: path,
       version: version,
+      build: build,
     );
     return path;
   }
+
+  @override
+  Future<String?> resolveVerifiedDownloadedPath({
+    required AppReleaseManifest manifest,
+    required String platformKey,
+  }) async {
+    final artifact = manifest.artifactForPlatform(platformKey);
+    if (!artifact.available) {
+      await _local.clearDownloadedArtifact();
+      return null;
+    }
+
+    final storedPath = _local.readDownloadedPath();
+    final storedVersion = _local.readDownloadedVersion();
+    final storedBuild = _local.readDownloadedBuild();
+    final identity = AppUpdateReleaseIdentity(
+      version: manifest.version,
+      build: manifest.build,
+    );
+
+    if (!identity.matchesVersionAndBuild(
+      storedVersion: storedVersion,
+      storedBuild: storedBuild,
+    )) {
+      await _local.clearDownloadedArtifact();
+      return null;
+    }
+
+    final expectedFileName = identity.fileName(platformKey: platformKey);
+    if (storedPath == null || p.basename(storedPath) != expectedFileName) {
+      await _local.clearDownloadedArtifact();
+      return null;
+    }
+
+    final file = File(storedPath);
+    if (!await file.exists()) {
+      await _local.clearDownloadedArtifact();
+      return null;
+    }
+
+    final valid = await _artifactVerifier.verify(file: file, artifact: artifact);
+    if (!valid) {
+      await _local.clearDownloadedArtifact();
+      if (await file.exists()) {
+        await file.delete();
+      }
+      return null;
+    }
+
+    return storedPath;
+  }
+
+  @override
+  Future<void> clearDownloadedArtifact() => _local.clearDownloadedArtifact();
 
   @override
   Future<void> installDownloadedUpdate({
@@ -151,6 +215,11 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
   @override
   Future<String?> getDownloadedArtifactVersion() async {
     return _local.readDownloadedVersion();
+  }
+
+  @override
+  Future<int?> getDownloadedArtifactBuild() async {
+    return _local.readDownloadedBuild();
   }
 
   @override

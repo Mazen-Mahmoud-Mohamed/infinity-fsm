@@ -63,8 +63,6 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
     final cached = await _repository.getCachedRelease();
     final lastChecked = await _repository.getLastCheckedAt();
     final platformKey = _repository.currentPlatformKey;
-    final downloadedPath = await _repository.getDownloadedArtifactPath();
-    final downloadedVersion = await _repository.getDownloadedArtifactVersion();
     final dismissedBanner = await _repository.getDismissedBannerVersion();
     final autoUpdateEnabled = await _repository.isAutoUpdateEnabled();
 
@@ -77,19 +75,22 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
             platformKey: platformKey,
           );
 
+    final downloadedPath = cached == null
+        ? null
+        : await _repository.resolveVerifiedDownloadedPath(
+            manifest: cached,
+            platformKey: platformKey,
+          );
+
     UpdateCenterStatus status = _statusForAvailability(availability);
     String? restoredDownloadPath;
     var autoUpdateOwned = false;
 
     if (!kIsWeb &&
         availability == UpdateAvailability.updateAvailable &&
-        downloadedPath != null &&
-        downloadedVersion == cached?.version) {
-      final file = File(downloadedPath);
-      if (await file.exists()) {
-        status = UpdateCenterStatus.downloadReady;
-        restoredDownloadPath = downloadedPath;
-      }
+        downloadedPath != null) {
+      status = UpdateCenterStatus.downloadReady;
+      restoredDownloadPath = downloadedPath;
     }
 
     if (_repository.isDownloadInProgress) {
@@ -308,6 +309,7 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
         artifact: artifact,
         platformKey: state.platformKey,
         version: manifest.version,
+        build: manifest.build,
         onProgress: _emitDownloadProgress,
       );
 
@@ -441,8 +443,6 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
     bool showCheckingComplete = false,
   }) async {
     final dismissedBanner = await _repository.getDismissedBannerVersion();
-    final downloadedPath = await _repository.getDownloadedArtifactPath();
-    final downloadedVersion = await _repository.getDownloadedArtifactVersion();
     final autoUpdateEnabled = state.autoUpdateEnabled;
 
     UpdateCenterStatus nextStatus = _repository.isDownloadInProgress
@@ -452,14 +452,13 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
     String? restoredDownloadPath;
     var autoUpdateOwned = state.autoUpdateOwned;
 
-    if (!kIsWeb &&
-        availability == UpdateAvailability.updateAvailable &&
-        downloadedPath != null &&
-        downloadedVersion == manifest.version) {
-      final file = File(downloadedPath);
-      if (await file.exists()) {
+    if (!kIsWeb && availability == UpdateAvailability.updateAvailable) {
+      restoredDownloadPath = await _repository.resolveVerifiedDownloadedPath(
+        manifest: manifest,
+        platformKey: state.platformKey,
+      );
+      if (restoredDownloadPath != null) {
         nextStatus = UpdateCenterStatus.downloadReady;
-        restoredDownloadPath = downloadedPath;
       }
     }
 

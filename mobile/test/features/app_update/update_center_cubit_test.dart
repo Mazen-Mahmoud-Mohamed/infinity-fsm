@@ -36,6 +36,7 @@ class _FakeAppUpdateRepository implements AppUpdateRepository {
   String? installAttemptedLock;
   String? downloadedPath;
   String? downloadedVersion;
+  int? downloadedBuild;
 
   @override
   String get currentPlatformKey => platformKey;
@@ -66,6 +67,7 @@ class _FakeAppUpdateRepository implements AppUpdateRepository {
     required AppReleaseArtifact artifact,
     required String platformKey,
     required String version,
+    required int build,
     void Function(int received, int? total)? onProgress,
   }) async {
     downloadCount += 1;
@@ -75,8 +77,30 @@ class _FakeAppUpdateRepository implements AppUpdateRepository {
     downloading = false;
     downloadedPath = '/tmp/update.exe';
     downloadedVersion = version;
+    downloadedBuild = build;
     return downloadedPath!;
   }
+
+  @override
+  Future<String?> resolveVerifiedDownloadedPath({
+    required AppReleaseManifest manifest,
+    required String platformKey,
+  }) async {
+    if (downloadedPath == null) return null;
+    if (downloadedVersion != manifest.version) return null;
+    if (downloadedBuild != manifest.build) return null;
+    return downloadedPath;
+  }
+
+  @override
+  Future<void> clearDownloadedArtifact() async {
+    downloadedPath = null;
+    downloadedVersion = null;
+    downloadedBuild = null;
+  }
+
+  @override
+  Future<int?> getDownloadedArtifactBuild() async => downloadedBuild;
 
   @override
   Future<void> installDownloadedUpdate({
@@ -183,6 +207,7 @@ AppReleaseManifest _manifest({
   String version = '1.0.1',
   int build = 2,
   bool windows = true,
+  bool android = false,
 }) {
   return AppReleaseManifest(
     version: version,
@@ -196,7 +221,12 @@ AppReleaseManifest _manifest({
       sha256: 'abc',
       size: 100,
     ),
-    android: const AppReleaseArtifact(available: false),
+    android: AppReleaseArtifact(
+      available: android,
+      downloadUrl: android ? 'https://cdn.example.com/app-release.apk' : null,
+      sha256: 'def',
+      size: 200,
+    ),
   );
 }
 
@@ -323,6 +353,20 @@ void main() {
       expect(cubit.state.showUpdateBanner, isFalse);
 
       await cubit.close();
+    });
+
+    test('v1.0.1 stored artifact does not satisfy v1.0.2 manifest', () async {
+      final repository = _FakeAppUpdateRepository(manifest: _manifest(version: '1.0.2', build: 3));
+      repository.downloadedPath = '/tmp/infinity-android-1.0.1-b2.apk';
+      repository.downloadedVersion = '1.0.1';
+      repository.downloadedBuild = 2;
+
+      final resolved = await repository.resolveVerifiedDownloadedPath(
+        manifest: _manifest(version: '1.0.2', build: 3),
+        platformKey: 'android',
+      );
+
+      expect(resolved, isNull);
     });
 
     test('download completes with progress', () async {

@@ -50,8 +50,21 @@ async function getGithubReleaseManifest(channel) {
   }
 
   const manifest = await fetchLatestGithubReleaseManifest(channel);
-  setCachedManifest(channel, manifest);
+  if (manifest) {
+    setCachedManifest(channel, manifest);
+  }
   return manifest;
+}
+
+function logResolvedManifest(source, manifest) {
+  if (!manifest) return;
+  logger.info('Release manifest resolved', {
+    source,
+    version: manifest.version,
+    build: manifest.build,
+    androidUrl: manifest.android?.downloadUrl ?? null,
+    androidSize: manifest.android?.size ?? null,
+  });
 }
 
 export default {
@@ -64,6 +77,7 @@ export default {
         try {
           const githubManifest = await getGithubReleaseManifest(channel);
           if (githubManifest) {
+            logResolvedManifest('github', githubManifest);
             return githubManifest;
           }
         } catch (error) {
@@ -78,7 +92,15 @@ export default {
       return null;
     }
 
-    return getEnvReleaseManifest(channel);
+    const envManifest = getEnvReleaseManifest(channel);
+    if (envManifest) {
+      logger.warn('Release manifest resolved from APP_RELEASE_* fallback', {
+        version: envManifest.version,
+        build: envManifest.build,
+        androidUrl: envManifest.android?.downloadUrl ?? null,
+      });
+    }
+    return envManifest;
   },
 
   clearCache() {
