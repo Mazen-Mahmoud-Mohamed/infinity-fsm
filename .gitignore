@@ -176,3 +176,5 @@ mobile/build/
 mobile/.dart_tool/
 mobile/.idea/
 infinity-fsm-firebase-adminsdk*.json
+infinity-v1.0.2-signing.keystore
+mobile/android/key.properties

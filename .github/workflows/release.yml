@@ -4,9 +4,19 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing release tag to rebuild (example: v1.0.3)'
+        required: true
+        type: string
 
 permissions:
   contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+  EXPECTED_ANDROID_CERT_SHA256: f4fa51efb27eed8b3c3c95529130b2ce76fa006f23a9ee59e49f07dc3a3a21c7
 
 jobs:
   resolve-version:
@@ -19,10 +29,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate release tag input
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          TAG="${{ inputs.release_tag }}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid release tag: $TAG"
+            exit 1
+          fi
+
       - name: Resolve release version from tag and pubspec
         id: version
         run: |
-          node scripts/release/resolve-release-version.mjs --tag "${GITHUB_REF_NAME}" > release-version.json
+          node scripts/release/resolve-release-version.mjs --tag "${{ env.RELEASE_TAG }}" > release-version.json
           VERSION=$(node -p "require('./release-version.json').version")
           BUILD=$(node -p "require('./release-version.json').build")
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
@@ -53,14 +72,89 @@ jobs:
         working-directory: mobile
         run: flutter pub get
 
+      - name: Validate Android signing secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          missing=0
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "Missing ANDROID_KEYSTORE_BASE64 secret"
+            missing=1
+          fi
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "Missing ANDROID_KEYSTORE_PASSWORD secret"
+            missing=1
+          fi
+          if [ -z "$KEY_ALIAS" ]; then
+            echo "Missing ANDROID_KEY_ALIAS secret"
+            missing=1
+          fi
+          if [ -z "$KEY_PASSWORD" ]; then
+            echo "Missing ANDROID_KEY_PASSWORD secret"
+            missing=1
+          fi
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Prepare Android release keystore
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          KEYSTORE_PATH="${RUNNER_TEMP}/android-release.keystore"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+
       - name: Build Android release APK
         working-directory: mobile
         env:
           GRADLE_OPTS: '-Dorg.gradle.jvmargs=-Xmx4g -XX:MaxMetaspaceSize=1g'
+          ANDROID_KEYSTORE_PATH: ${{ env.ANDROID_KEYSTORE_PATH }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: >
           flutter build apk --release
           --build-name=${{ needs.resolve-version.outputs.version }}
           --build-number=${{ needs.resolve-version.outputs.build }}
+
+      - name: Verify APK release certificate
+        run: |
+          APK="mobile/build/app/outputs/flutter-apk/app-release.apk"
+          if [ ! -f "$APK" ]; then
+            echo "Release APK was not generated"
+            exit 1
+          fi
+
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-$HOME/Android/Sdk}}"
+          APKSIGNER=$(find "$SDK_ROOT/build-tools" -name apksigner -type f 2>/dev/null | sort -V | tail -n 1)
+          if [ -z "$APKSIGNER" ]; then
+            echo "apksigner was not found under $SDK_ROOT/build-tools"
+            exit 1
+          fi
+
+          CERT_SHA256=$("$APKSIGNER" verify --print-certs "$APK" | grep -i 'SHA-256 digest' | head -n 1 | sed -E 's/.*SHA-256 digest:[[:space:]]*//I' | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')
+          if [ -z "$CERT_SHA256" ]; then
+            echo "Unable to read APK certificate SHA-256"
+            exit 1
+          fi
+
+          echo "Verified APK certificate SHA-256: $CERT_SHA256"
+          if [ "$CERT_SHA256" != "${{ env.EXPECTED_ANDROID_CERT_SHA256 }}" ]; then
+            echo "APK certificate SHA-256 does not match the expected v1.0.2 signing certificate"
+            exit 1
+          fi
+
+      - name: Remove release keystore
+        if: always()
+        run: |
+          if [ -n "${ANDROID_KEYSTORE_PATH:-}" ] && [ -f "$ANDROID_KEYSTORE_PATH" ]; then
+            rm -f "$ANDROID_KEYSTORE_PATH"
+          fi
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
@@ -157,10 +251,26 @@ jobs:
             --windows "dist/releases/INFINITY-Setup-$VERSION.exe" \
             --output dist/releases/release-manifest.json
 
+      - name: Remove stale release assets before re-upload
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ env.RELEASE_TAG }}"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG does not exist yet"
+            exit 1
+          fi
+
+          mapfile -t asset_ids < <(gh release view "$TAG" --json assets -q '.assets[].id')
+          for asset_id in "${asset_ids[@]}"; do
+            gh api -X DELETE "repos/${{ github.repository }}/releases/assets/${asset_id}"
+          done
+
       - name: Publish GitHub Release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ env.RELEASE_TAG }}
           name: INFINITY FSM v${{ needs.resolve-version.outputs.version }}
           body: |
             INFINITY FSM v${{ needs.resolve-version.outputs.version }}
