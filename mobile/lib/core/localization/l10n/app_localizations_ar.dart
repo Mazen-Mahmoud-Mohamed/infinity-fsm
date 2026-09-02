@@ -3290,7 +3290,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeEligible => 'ساعات الإضافي';
 
   @override
-  String get overtimePerDiem => 'بدل يومي';
+  String get overtimePerDiem => 'المبيت';
 
   @override
   String get overtimeWorkedHours => 'ساعات العمل';
@@ -4567,6 +4567,53 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsDownloadUpdateSoon => 'سيتم توفير التنزيل لاحقاً.';
+
+  @override
+  String get settingsUpdateAheadOfServer => 'أحدث من الإصدار المنشور';
+
+  @override
+  String get settingsUpdatePlatformUnavailable =>
+      'يتوفر تحديث، لكنه غير متاح لهذه المنصة';
+
+  @override
+  String settingsUpdateAvailableVersion(String version) {
+    return 'يتوفر تحديث: $version';
+  }
+
+  @override
+  String get settingsUpdateLastChecked => 'آخر فحص';
+
+  @override
+  String get settingsUpdateNeverChecked => 'لم يتم الفحص بعد';
+
+  @override
+  String get settingsUpdateDownloading => 'جاري تنزيل التحديث…';
+
+  @override
+  String get settingsUpdateDownloadComplete => 'اكتمل التنزيل';
+
+  @override
+  String get settingsUpdateDownloadFailed => 'تعذر تنزيل التحديث';
+
+  @override
+  String get settingsUpdateReleaseNotesUnavailable =>
+      'ملاحظات الإصدار غير متاحة';
+
+  @override
+  String get settingsUpdateInstallAndRestart => 'تثبيت وإعادة التشغيل';
+
+  @override
+  String get settingsUpdateInstallAndroid => 'تثبيت التحديث';
+
+  @override
+  String get settingsUpdateOfflineCheck =>
+      'تعذر التحقق من التحديثات بدون اتصال';
+
+  @override
+  String get settingsUpdateInvalidResponse => 'معلومات التحديث غير متاحة';
+
+  @override
+  String get settingsUpdateInstalling => 'جاري تجهيز التثبيت…';
 
   @override
   String get settingsAdminLogs => 'سجلات التطبيق';

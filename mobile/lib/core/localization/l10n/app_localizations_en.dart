@@ -3298,7 +3298,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeEligible => 'Overtime Hours';
 
   @override
-  String get overtimePerDiem => 'Per Diem';
+  String get overtimePerDiem => 'Overnight Stay';
 
   @override
   String get overtimeWorkedHours => 'Worked Hours';
@@ -4596,6 +4596,54 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsDownloadUpdateSoon =>
       'OTA downloads will be available in a future release.';
+
+  @override
+  String get settingsUpdateAheadOfServer => 'Ahead of published release';
+
+  @override
+  String get settingsUpdatePlatformUnavailable =>
+      'Update published, but not available for this platform';
+
+  @override
+  String settingsUpdateAvailableVersion(String version) {
+    return 'Update available: $version';
+  }
+
+  @override
+  String get settingsUpdateLastChecked => 'Last checked';
+
+  @override
+  String get settingsUpdateNeverChecked => 'Not checked yet';
+
+  @override
+  String get settingsUpdateDownloading => 'Downloading update…';
+
+  @override
+  String get settingsUpdateDownloadComplete => 'Download complete';
+
+  @override
+  String get settingsUpdateDownloadFailed => 'Unable to download update';
+
+  @override
+  String get settingsUpdateReleaseNotesUnavailable =>
+      'Release notes unavailable';
+
+  @override
+  String get settingsUpdateInstallAndRestart => 'Install and restart';
+
+  @override
+  String get settingsUpdateInstallAndroid => 'Install update';
+
+  @override
+  String get settingsUpdateOfflineCheck =>
+      'Unable to check for updates while offline';
+
+  @override
+  String get settingsUpdateInvalidResponse =>
+      'Update information is unavailable';
+
+  @override
+  String get settingsUpdateInstalling => 'Preparing installation…';
 
   @override
   String get settingsAdminLogs => 'Application logs';

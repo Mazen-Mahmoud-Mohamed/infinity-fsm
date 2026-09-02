@@ -95,7 +95,7 @@ void main() {
       expect(find.text('jane.tech@example.com'), findsNothing);
     });
 
-    testWidgets('includes Per Diem column in the required order', (tester) async {
+    testWidgets('includes Overnight Stay column in the required order', (tester) async {
       await _pumpDesktopTable(
         tester,
         sessions: [
@@ -125,7 +125,7 @@ void main() {
         'Technician',
         'Type',
         'Status',
-        'Per Diem',
+        'Overnight Stay',
         'Start',
         'End',
         'Overtime Hours',

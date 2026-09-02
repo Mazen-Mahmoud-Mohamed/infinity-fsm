@@ -78,6 +78,7 @@ class ApiConstants {
   static const String rolesPermissions = '/roles/permissions';
 
   static const String settingsOrganization = '/settings/organization';
+  static const String releasesLatest = '/releases/latest';
   static const String settingsOrganizationLogo = '/settings/organization/logo';
   static const String settingsSystem = '/settings/system';
   static const String settingsOvertime = '/settings/overtime';

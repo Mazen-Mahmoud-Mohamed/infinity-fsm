@@ -1231,7 +1231,7 @@
   "overtimeRunningTimer": "Running timer",
   "overtimeLastSessionSummary": "Last session summary",
   "overtimeEligible": "Overtime Hours",
-  "overtimePerDiem": "Per Diem",
+  "overtimePerDiem": "Overnight Stay",
   "overtimeWorkedHours": "Worked Hours",
   "overtimeApprovedHours": "Accepted hours",
   "overtimeApprovePartial": "Approve Partial",
@@ -1721,6 +1721,27 @@
   "settingsViewReleaseNotes": "View release notes",
   "settingsDownloadUpdate": "Download update",
   "settingsDownloadUpdateSoon": "OTA downloads will be available in a future release.",
+  "settingsUpdateAheadOfServer": "Ahead of published release",
+  "settingsUpdatePlatformUnavailable": "Update published, but not available for this platform",
+  "settingsUpdateAvailableVersion": "Update available: {version}",
+  "@settingsUpdateAvailableVersion": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsUpdateLastChecked": "Last checked",
+  "settingsUpdateNeverChecked": "Not checked yet",
+  "settingsUpdateDownloading": "Downloading update…",
+  "settingsUpdateDownloadComplete": "Download complete",
+  "settingsUpdateDownloadFailed": "Unable to download update",
+  "settingsUpdateReleaseNotesUnavailable": "Release notes unavailable",
+  "settingsUpdateInstallAndRestart": "Install and restart",
+  "settingsUpdateInstallAndroid": "Install update",
+  "settingsUpdateOfflineCheck": "Unable to check for updates while offline",
+  "settingsUpdateInvalidResponse": "Update information is unavailable",
+  "settingsUpdateInstalling": "Preparing installation…",
   "settingsAdminLogs": "Application logs",
   "settingsSearchLogs": "Search logs",
   "settingsLogAll": "All",

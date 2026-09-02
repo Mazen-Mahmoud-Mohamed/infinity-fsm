@@ -6311,7 +6311,7 @@ abstract class AppLocalizations {
   /// No description provided for @overtimePerDiem.
   ///
   /// In en, this message translates to:
-  /// **'Per Diem'**
+  /// **'Overnight Stay'**
   String get overtimePerDiem;
 
   /// No description provided for @overtimeWorkedHours.
@@ -8689,6 +8689,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OTA downloads will be available in a future release.'**
   String get settingsDownloadUpdateSoon;
+
+  /// No description provided for @settingsUpdateAheadOfServer.
+  ///
+  /// In en, this message translates to:
+  /// **'Ahead of published release'**
+  String get settingsUpdateAheadOfServer;
+
+  /// No description provided for @settingsUpdatePlatformUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Update published, but not available for this platform'**
+  String get settingsUpdatePlatformUnavailable;
+
+  /// No description provided for @settingsUpdateAvailableVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Update available: {version}'**
+  String settingsUpdateAvailableVersion(String version);
+
+  /// No description provided for @settingsUpdateLastChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Last checked'**
+  String get settingsUpdateLastChecked;
+
+  /// No description provided for @settingsUpdateNeverChecked.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked yet'**
+  String get settingsUpdateNeverChecked;
+
+  /// No description provided for @settingsUpdateDownloading.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading update…'**
+  String get settingsUpdateDownloading;
+
+  /// No description provided for @settingsUpdateDownloadComplete.
+  ///
+  /// In en, this message translates to:
+  /// **'Download complete'**
+  String get settingsUpdateDownloadComplete;
+
+  /// No description provided for @settingsUpdateDownloadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to download update'**
+  String get settingsUpdateDownloadFailed;
+
+  /// No description provided for @settingsUpdateReleaseNotesUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Release notes unavailable'**
+  String get settingsUpdateReleaseNotesUnavailable;
+
+  /// No description provided for @settingsUpdateInstallAndRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Install and restart'**
+  String get settingsUpdateInstallAndRestart;
+
+  /// No description provided for @settingsUpdateInstallAndroid.
+  ///
+  /// In en, this message translates to:
+  /// **'Install update'**
+  String get settingsUpdateInstallAndroid;
+
+  /// No description provided for @settingsUpdateOfflineCheck.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to check for updates while offline'**
+  String get settingsUpdateOfflineCheck;
+
+  /// No description provided for @settingsUpdateInvalidResponse.
+  ///
+  /// In en, this message translates to:
+  /// **'Update information is unavailable'**
+  String get settingsUpdateInvalidResponse;
+
+  /// No description provided for @settingsUpdateInstalling.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing installation…'**
+  String get settingsUpdateInstalling;
 
   /// No description provided for @settingsAdminLogs.
   ///

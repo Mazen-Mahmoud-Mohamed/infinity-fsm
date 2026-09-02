@@ -32,6 +32,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+export 'package:mobile/features/app_update/presentation/pages/update_center_page.dart';
+
 // â”€â”€â”€ Account overview â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 class AccountOverviewPage extends StatefulWidget {
@@ -827,149 +829,6 @@ class DangerZonePage extends StatelessWidget {
 }
 
 // â”€â”€â”€ Update center â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-enum _UpdateStatus { idle, checking, upToDate, available, failed }
-
-class UpdateCenterPage extends StatefulWidget {
-  const UpdateCenterPage({super.key, this.embedded = false});
-
-  final bool embedded;
-
-  @override
-  State<UpdateCenterPage> createState() => _UpdateCenterPageState();
-}
-
-class _UpdateCenterPageState extends State<UpdateCenterPage> {
-  _UpdateStatus _status = _UpdateStatus.idle;
-
-  Future<void> _check() async {
-    setState(() => _status = _UpdateStatus.checking);
-    await Future<void>.delayed(const Duration(milliseconds: 800));
-    if (!mounted) return;
-    final online = context.read<AppCubit>().state.isOnline;
-    if (!online) {
-      setState(() => _status = _UpdateStatus.failed);
-      return;
-    }
-    // Architecture-ready: no OTA endpoint yet â€” report up to date.
-    setState(() => _status = _UpdateStatus.upToDate);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final channel = context.watch<AppCubit>().state.releaseChannel;
-
-    final statusLabel = switch (_status) {
-      _UpdateStatus.idle => l10n.settingsUpdateIdle,
-      _UpdateStatus.checking => l10n.settingsUpdateChecking,
-      _UpdateStatus.upToDate => l10n.settingsUpdateUpToDate,
-      _UpdateStatus.available => l10n.settingsUpdateAvailable,
-      _UpdateStatus.failed => l10n.settingsUpdateFailed,
-    };
-
-    final body = SettingsPageBody(
-      embedded: widget.embedded,
-      children: [
-        SettingsCard(
-          title: l10n.settingsUpdateCenter,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SettingsInfoRow(
-                label: l10n.serverMgmtAppVersion,
-                value: AppConfig.appVersion,
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsLatestVersion,
-                value: AppConfig.appVersion,
-              ),
-              SettingsInfoRow(
-                label: l10n.serverMgmtBuildNumber,
-                value: AppConfig.buildNumber,
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsReleaseChannel,
-                value: channel,
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsReleaseDate,
-                value: l10n.settingsNotAvailable,
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsUpdateStatus,
-                value: statusLabel,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Align(
-                alignment: AlignmentDirectional.centerStart,
-                child: Chip(
-                  avatar: Icon(
-                    switch (_status) {
-                      _UpdateStatus.checking => Icons.hourglass_top,
-                      _UpdateStatus.upToDate => Icons.check_circle_outline,
-                      _UpdateStatus.available => Icons.system_update_alt,
-                      _UpdateStatus.failed => Icons.error_outline,
-                      _UpdateStatus.idle => Icons.info_outline,
-                    },
-                    size: 18,
-                  ),
-                  label: Text(statusLabel),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  minimumSize: const Size.fromHeight(kSettingsControlHeight),
-                ),
-                onPressed:
-                    _status == _UpdateStatus.checking ? null : _check,
-                icon: _status == _UpdateStatus.checking
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.system_update_alt),
-                label: Text(l10n.settingsCheckForUpdates),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  minimumSize: const Size.fromHeight(kSettingsControlHeight),
-                ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.settingsComingSoonAction)),
-                  );
-                },
-                child: Text(l10n.settingsViewReleaseNotes),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              TextButton(
-                style: TextButton.styleFrom(
-                  minimumSize: const Size.fromHeight(kSettingsControlHeight),
-                ),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.settingsDownloadUpdateSoon)),
-                  );
-                },
-                child: Text(l10n.settingsDownloadUpdate),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    if (widget.embedded) return body;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsUpdateCenter)),
-      body: body,
-    );
-  }
-}
 
 // â”€â”€â”€ Admin logs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

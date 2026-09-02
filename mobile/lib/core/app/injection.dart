@@ -26,6 +26,13 @@ import 'package:mobile/core/services/selfie_capture_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/storage/secure_storage_service.dart';
 import 'package:mobile/core/storage/token_manager.dart';
+import 'package:mobile/features/app_update/data/datasources/app_update_local_datasource.dart';
+import 'package:mobile/features/app_update/data/datasources/app_update_remote_datasource.dart';
+import 'package:mobile/features/app_update/data/repositories/app_update_repository_impl.dart';
+import 'package:mobile/features/app_update/data/services/app_update_download_service.dart';
+import 'package:mobile/features/app_update/data/services/app_update_install_service.dart';
+import 'package:mobile/features/app_update/domain/repositories/app_update_repository.dart';
+import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
 import 'package:mobile/features/attendance/data/datasources/attendance_local_datasource.dart';
 import 'package:mobile/features/attendance/data/datasources/attendance_remote_datasource.dart';
 import 'package:mobile/features/attendance/data/repositories/attendance_repository_impl.dart';
@@ -1362,6 +1369,34 @@ Future<void> configureDependencies() async {
       tokenManager: getIt<TokenManager>(),
       connectivityService: getIt<ConnectivityService>(),
       appRuntimeInfo: getIt<AppRuntimeInfo>(),
+    ),
+  );
+
+  getIt.registerLazySingleton<AppUpdateRemoteDataSource>(
+    () => AppUpdateRemoteDataSource(getIt<DioClient>()),
+  );
+  getIt.registerLazySingleton<AppUpdateLocalDataSource>(
+    () => AppUpdateLocalDataSource(getIt<PreferencesService>()),
+  );
+  getIt.registerLazySingleton<AppUpdateDownloadService>(
+    AppUpdateDownloadService.new,
+  );
+  getIt.registerLazySingleton<AppUpdateInstallService>(
+    AppUpdateInstallService.new,
+  );
+  getIt.registerLazySingleton<AppUpdateRepository>(
+    () => AppUpdateRepositoryImpl(
+      remote: getIt<AppUpdateRemoteDataSource>(),
+      local: getIt<AppUpdateLocalDataSource>(),
+      downloadService: getIt<AppUpdateDownloadService>(),
+      installService: getIt<AppUpdateInstallService>(),
+      connectivityService: getIt<ConnectivityService>(),
+    ),
+  );
+  getIt.registerFactory<UpdateCenterCubit>(
+    () => UpdateCenterCubit(
+      repository: getIt<AppUpdateRepository>(),
+      releaseChannel: 'stable',
     ),
   );
 

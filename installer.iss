@@ -3,7 +3,7 @@
 ; Non-commercial use only
 
 #define MyAppName "INFINITY"
-#define MyAppVersion "1.0.0 Beta"
+#define MyAppVersion "1.0.1"
 #define MyAppPublisher "Mazen Mahmoud"
 #define MyAppURL "https://github.com/Mazen-Mahmoud-Mohamed/infinity-fsm"
 #define MyAppExeName "mobile.exe"
@@ -33,7 +33,7 @@ DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only).
 ;PrivilegesRequired=lowest
 OutputDir=C:\Users\mmahm\Desktop\Infinity Releases
-OutputBaseFilename=INFINITY-FSM-Setup-v1.0.0
+OutputBaseFilename=INFINITY-Setup-1.0.1
 SetupIconFile=C:\Users\mmahm\OneDrive\Desktop\new infinity project\assets\INFINITY_icon.ico
 SolidCompression=yes
 WizardStyle=modern dynamic
