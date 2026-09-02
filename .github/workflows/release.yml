@@ -257,14 +257,26 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           TAG="${{ env.RELEASE_TAG }}"
+          VERSION="${{ needs.resolve-version.outputs.version }}"
+
           if ! gh release view "$TAG" >/dev/null 2>&1; then
             echo "Release $TAG does not exist yet"
             exit 1
           fi
 
-          mapfile -t asset_ids < <(gh release view "$TAG" --json assets -q '.assets[].id')
-          for asset_id in "${asset_ids[@]}"; do
-            gh api -X DELETE "repos/${{ github.repository }}/releases/assets/${asset_id}"
+          ASSETS=(
+            "app-release.apk"
+            "INFINITY-Setup-${VERSION}.exe"
+            "release-manifest.json"
+          )
+
+          for asset_name in "${ASSETS[@]}"; do
+            if gh release view "$TAG" --json assets -q ".assets[] | select(.name==\"${asset_name}\") | .name" | grep -Fxq "$asset_name"; then
+              gh release delete-asset "$TAG" "$asset_name" --yes
+              echo "Deleted existing asset: $asset_name"
+            else
+              echo "Asset not present on release $TAG: $asset_name (skipping)"
+            fi
           done
 
       - name: Publish GitHub Release assets
