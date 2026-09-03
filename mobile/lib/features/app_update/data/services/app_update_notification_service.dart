@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mobile/core/push/android_notification_channels.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/services/window_focus_service.dart';
 import 'package:mobile/features/app_update/domain/utils/app_update_notification_identity.dart';
@@ -21,7 +22,6 @@ class AppUpdateNotificationService {
   final WindowFocusService _windowFocus;
   final bool Function()? _isPushEnabled;
 
-  static const _channelId = 'infinity_updates';
   static const _notificationIdBase = 9100;
 
   bool _initialized = false;
@@ -35,17 +35,11 @@ class AppUpdateNotificationService {
     }
 
     if (Platform.isAndroid) {
+      // Idempotent with PushNotificationService startup channel creation.
       await _local
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(
-            const AndroidNotificationChannel(
-              _channelId,
-              'INFINITY Updates',
-              description: 'Application update availability',
-              importance: Importance.high,
-            ),
-          );
+          ?.createNotificationChannel(AndroidNotificationChannels.updates);
     }
   }
 
@@ -83,15 +77,16 @@ class AppUpdateNotificationService {
 
     final notificationId = _notificationIdBase + dedupeKey.hashCode.abs() % 100;
 
+    const channel = AndroidNotificationChannels.updates;
     await _local.show(
       id: notificationId,
       title: title,
       body: body,
       notificationDetails: NotificationDetails(
         android: AndroidNotificationDetails(
-          _channelId,
-          'INFINITY Updates',
-          channelDescription: 'Application update availability',
+          channel.id,
+          channel.name,
+          channelDescription: channel.description,
           importance: Importance.high,
           priority: Priority.high,
           tag: dedupeKey,

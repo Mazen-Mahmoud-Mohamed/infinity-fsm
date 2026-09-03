@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
+import 'package:mobile/core/push/android_notification_channels.dart';
 import 'package:mobile/core/push/firebase_options.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/services/window_focus_service.dart';
@@ -109,13 +110,6 @@ class PushNotificationService {
   StreamSubscription<RemoteMessage>? _onOpenedSub;
   StreamSubscription<String>? _onTokenRefreshSub;
 
-  static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
-    'infinity_default',
-    'INFINITY',
-    description: 'Infinity FSM notifications',
-    importance: Importance.defaultImportance,
-  );
-
   Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
@@ -166,10 +160,15 @@ class PushNotificationService {
     );
 
     if (!kIsWeb && Platform.isAndroid) {
-      await _local
+      final androidPlugin = _local
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(_channel);
+              AndroidFlutterLocalNotificationsPlugin>();
+      // Create both channels before any FCM message can arrive. Android's
+      // createNotificationChannel is idempotent for the same channel id, so
+      // AppUpdateNotificationService may safely recreate `infinity_updates`.
+      for (final channel in AndroidNotificationChannels.requiredAtStartup) {
+        await androidPlugin?.createNotificationChannel(channel);
+      }
     }
   }
 
@@ -500,11 +499,12 @@ class PushNotificationService {
       return;
     }
 
+    const channel = AndroidNotificationChannels.defaultChannel;
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
-        _channel.id,
-        _channel.name,
-        channelDescription: _channel.description,
+        channel.id,
+        channel.name,
+        channelDescription: channel.description,
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
         icon: '@mipmap/ic_launcher',
