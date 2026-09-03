@@ -6,14 +6,21 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:mobile/features/app_update/domain/utils/app_update_artifact_verifier.dart';
 import 'package:mobile/features/app_update/domain/utils/app_update_release_identity.dart';
+import 'package:mobile/features/app_update/domain/utils/version_comparator.dart';
 
 class AppUpdateDownloadService {
-  AppUpdateDownloadService({Dio? dio, AppUpdateArtifactVerifier? verifier})
-      : _dio = dio ?? _createDio(),
-        _verifier = verifier ?? const AppUpdateArtifactVerifier();
+  AppUpdateDownloadService({
+    Dio? dio,
+    AppUpdateArtifactVerifier? verifier,
+    Future<Directory> Function()? updatesDirectoryProvider,
+  })  : _dio = dio ?? _createDio(),
+        _verifier = verifier ?? const AppUpdateArtifactVerifier(),
+        _updatesDirectoryProvider =
+            updatesDirectoryProvider ?? _defaultUpdatesDirectory;
 
   final AppUpdateArtifactVerifier _verifier;
   final Dio _dio;
+  final Future<Directory> Function() _updatesDirectoryProvider;
 
   static Dio _createDio() {
     return Dio(
@@ -36,7 +43,7 @@ class AppUpdateDownloadService {
       throw const AppUpdateDownloadException('missing_download_url');
     }
 
-    final directory = await _updatesDirectory();
+    final directory = await _updatesDirectoryProvider();
     final destination = File(
       p.join(
         directory.path,
@@ -83,6 +90,65 @@ class AppUpdateDownloadService {
     }
 
     return destination;
+  }
+
+  /// Deletes stale Update Center artifacts under the updates directory.
+  ///
+  /// Keeps:
+  /// - [keepPath] when provided (active pending download)
+  /// - artifacts newer than the currently installed version/build
+  ///
+  /// Removes older/equal versioned APK/EXE files. Never touches anything
+  /// outside the updates directory. Does not delete the installed app or
+  /// business/auth data.
+  Future<int> cleanupStaleArtifacts({
+    required String installedVersion,
+    required int installedBuild,
+    String? keepPath,
+  }) async {
+    final directory = await _updatesDirectoryProvider();
+    if (!await directory.exists()) return 0;
+
+    final normalizedKeep = keepPath == null || keepPath.isEmpty
+        ? null
+        : p.normalize(keepPath);
+    var deleted = 0;
+
+    await for (final entity in directory.list(followLinks: false)) {
+      if (entity is! File) continue;
+      final path = p.normalize(entity.path);
+      if (normalizedKeep != null && path == normalizedKeep) {
+        continue;
+      }
+
+      final name = p.basename(path);
+      if (!name.startsWith('infinity-')) {
+        continue;
+      }
+
+      final identity = AppUpdateReleaseIdentity.tryParseFileName(name);
+      if (identity != null) {
+        final comparison = compareAppVersions(
+          currentVersion: installedVersion,
+          currentBuild: installedBuild,
+          latestVersion: identity.version,
+          latestBuild: identity.build,
+        );
+        // Keep only pending updates that are newer than what is installed.
+        if (comparison == VersionComparison.updateAvailable) {
+          continue;
+        }
+      }
+
+      try {
+        await entity.delete();
+        deleted++;
+      } on Object {
+        // Best-effort cleanup; ignore files locked by the package installer.
+      }
+    }
+
+    return deleted;
   }
 
   Future<void> _downloadWithOptionalResume({
@@ -134,7 +200,7 @@ class AppUpdateDownloadService {
     );
   }
 
-  Future<Directory> _updatesDirectory() async {
+  static Future<Directory> _defaultUpdatesDirectory() async {
     final base = await getApplicationSupportDirectory();
     final dir = Directory(p.join(base.path, 'updates'));
     if (!await dir.exists()) {
@@ -142,7 +208,6 @@ class AppUpdateDownloadService {
     }
     return dir;
   }
-
 }
 
 class AppUpdateDownloadException implements Exception {

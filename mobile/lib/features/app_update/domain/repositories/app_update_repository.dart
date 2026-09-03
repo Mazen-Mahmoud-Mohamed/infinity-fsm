@@ -31,6 +31,14 @@ abstract class AppUpdateRepository {
 
   Future<void> clearDownloadedArtifact();
 
+  /// Removes stale APK/EXE files from the Update Center updates directory.
+  /// Keeps [keepPath] and any artifact newer than the installed version.
+  Future<int> cleanupStaleUpdateArtifacts({
+    required String installedVersion,
+    required int installedBuild,
+    String? keepPath,
+  });
+
   Future<String?> getDownloadedArtifactPath();
 
   Future<String?> getDownloadedArtifactVersion();

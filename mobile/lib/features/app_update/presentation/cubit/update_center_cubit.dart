@@ -93,6 +93,17 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
       restoredDownloadPath = downloadedPath;
     }
 
+    if (!kIsWeb) {
+      // Drop retained APKs/EXEs from previous updates; keep only a pending
+      // newer artifact (and any explicit keepPath) so storage does not grow
+      // across releases. Safe while an installer may still hold a newer file.
+      await _repository.cleanupStaleUpdateArtifacts(
+        installedVersion: installed.version,
+        installedBuild: installed.build,
+        keepPath: restoredDownloadPath,
+      );
+    }
+
     if (_repository.isDownloadInProgress) {
       status = UpdateCenterStatus.downloading;
       autoUpdateOwned = autoUpdateEnabled;

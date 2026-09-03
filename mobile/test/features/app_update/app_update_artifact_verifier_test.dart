@@ -41,6 +41,22 @@ void main() {
         isFalse,
       );
     });
+
+    test('tryParseFileName round-trips Android and Windows names', () {
+      const android = AppUpdateReleaseIdentity(version: '1.0.8', build: 9);
+      final androidName = android.fileName(platformKey: 'android');
+      final parsedAndroid = AppUpdateReleaseIdentity.tryParseFileName(androidName);
+      expect(parsedAndroid?.version, '1.0.8');
+      expect(parsedAndroid?.build, 9);
+
+      const windows = AppUpdateReleaseIdentity(version: '1.0.8', build: 9);
+      final windowsName = windows.fileName(platformKey: 'windows');
+      final parsedWindows = AppUpdateReleaseIdentity.tryParseFileName(windowsName);
+      expect(parsedWindows?.version, '1.0.8');
+      expect(parsedWindows?.build, 9);
+
+      expect(AppUpdateReleaseIdentity.tryParseFileName('random.bin'), isNull);
+    });
   });
 
   group('AppUpdateArtifactVerifier', () {

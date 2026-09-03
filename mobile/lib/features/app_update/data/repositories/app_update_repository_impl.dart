@@ -20,12 +20,14 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
     required AppUpdateRemoteDataSource remote,
     required AppUpdateLocalDataSource local,
     required AppUpdateDownloadCoordinator downloadCoordinator,
+    required AppUpdateDownloadService downloadService,
     required AppUpdateInstallService installService,
     required ConnectivityService connectivityService,
     AppUpdateArtifactVerifier? artifactVerifier,
   })  : _remote = remote,
         _local = local,
         _downloadCoordinator = downloadCoordinator,
+        _downloadService = downloadService,
         _installService = installService,
         _connectivityService = connectivityService,
         _artifactVerifier = artifactVerifier ?? const AppUpdateArtifactVerifier();
@@ -33,6 +35,7 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
   final AppUpdateRemoteDataSource _remote;
   final AppUpdateLocalDataSource _local;
   final AppUpdateDownloadCoordinator _downloadCoordinator;
+  final AppUpdateDownloadService _downloadService;
   final AppUpdateInstallService _installService;
   final ConnectivityService _connectivityService;
   final AppUpdateArtifactVerifier _artifactVerifier;
@@ -139,6 +142,12 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
       version: version,
       build: build,
     );
+    final installed = await getInstalledVersion();
+    await _downloadService.cleanupStaleArtifacts(
+      installedVersion: installed.version,
+      installedBuild: installed.build,
+      keepPath: path,
+    );
     return path;
   }
 
@@ -194,7 +203,32 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
   }
 
   @override
-  Future<void> clearDownloadedArtifact() => _local.clearDownloadedArtifact();
+  Future<void> clearDownloadedArtifact() async {
+    final path = _local.readDownloadedPath();
+    await _local.clearDownloadedArtifact();
+    if (path == null || path.isEmpty) return;
+    try {
+      final file = File(path);
+      if (await file.exists()) {
+        await file.delete();
+      }
+    } on Object {
+      // Best-effort; package installer may still hold the file briefly.
+    }
+  }
+
+  @override
+  Future<int> cleanupStaleUpdateArtifacts({
+    required String installedVersion,
+    required int installedBuild,
+    String? keepPath,
+  }) {
+    return _downloadService.cleanupStaleArtifacts(
+      installedVersion: installedVersion,
+      installedBuild: installedBuild,
+      keepPath: keepPath,
+    );
+  }
 
   @override
   Future<void> installDownloadedUpdate({

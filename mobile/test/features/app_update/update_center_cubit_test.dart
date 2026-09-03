@@ -100,6 +100,15 @@ class _FakeAppUpdateRepository implements AppUpdateRepository {
   }
 
   @override
+  Future<int> cleanupStaleUpdateArtifacts({
+    required String installedVersion,
+    required int installedBuild,
+    String? keepPath,
+  }) async {
+    return 0;
+  }
+
+  @override
   Future<int?> getDownloadedArtifactBuild() async => downloadedBuild;
 
   @override

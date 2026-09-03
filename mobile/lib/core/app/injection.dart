@@ -1405,6 +1405,7 @@ Future<void> configureDependencies() async {
       remote: getIt<AppUpdateRemoteDataSource>(),
       local: getIt<AppUpdateLocalDataSource>(),
       downloadCoordinator: getIt<AppUpdateDownloadCoordinator>(),
+      downloadService: getIt<AppUpdateDownloadService>(),
       installService: getIt<AppUpdateInstallService>(),
       connectivityService: getIt<ConnectivityService>(),
     ),
