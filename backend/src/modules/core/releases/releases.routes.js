@@ -8,9 +8,16 @@ const router = Router();
 
 router.post(
   '/webhook/github',
-  express.raw({ type: 'application/json' }),
+  express.raw({ type: 'application/json', limit: '10mb' }),
   (req, _res, next) => {
-    req.rawBody = req.body;
+    // After global JSON exclusion, express.raw provides the original Buffer.
+    if (Buffer.isBuffer(req.body)) {
+      req.rawBody = req.body;
+    } else if (typeof req.body === 'string') {
+      req.rawBody = Buffer.from(req.body, 'utf8');
+    } else {
+      req.rawBody = undefined;
+    }
     next();
   },
   releasesWebhookController.githubReleaseWebhook,

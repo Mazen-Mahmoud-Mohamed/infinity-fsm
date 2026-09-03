@@ -7,7 +7,7 @@ import {
 
 export const githubReleaseWebhook = asyncHandler(async (req, res) => {
   const rawBody = req.rawBody;
-  if (!rawBody) {
+  if (!Buffer.isBuffer(rawBody) || rawBody.length === 0) {
     res.status(400).json({
       success: false,
       message: 'Missing raw request body',
@@ -15,7 +15,16 @@ export const githubReleaseWebhook = asyncHandler(async (req, res) => {
     return;
   }
 
-  if (!verifyGithubSignature(rawBody, req.headers['x-hub-signature-256'])) {
+  const signatureHeader = req.headers['x-hub-signature-256'];
+  if (!signatureHeader) {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid webhook signature',
+    });
+    return;
+  }
+
+  if (!verifyGithubSignature(rawBody, signatureHeader)) {
     res.status(401).json({
       success: false,
       message: 'Invalid webhook signature',

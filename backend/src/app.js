@@ -6,9 +6,29 @@ import config from './config/index.js';
 import logger from './shared/utils/logger.util.js';
 import requestIdMiddleware from './shared/middleware/requestId.middleware.js';
 import { globalRateLimiter } from './shared/middleware/rateLimiter.middleware.js';
+import { isGithubReleaseWebhookRequest } from './shared/middleware/githubWebhookBody.middleware.js';
 import errorHandler from './shared/middleware/errorHandler.middleware.js';
 import notFoundHandler from './shared/middleware/notFound.middleware.js';
 import apiRoutes from './routes/index.js';
+
+const jsonBodyParser = express.json({ limit: '10mb' });
+const urlencodedBodyParser = express.urlencoded({
+  extended: true,
+  limit: '10mb',
+});
+
+/**
+ * Skip body parsers that consume the stream for the GitHub release webhook.
+ * That route uses express.raw() so HMAC can verify the original bytes.
+ */
+function skipGithubWebhookBodyParsers(parser) {
+  return (req, res, next) => {
+    if (isGithubReleaseWebhookRequest(req)) {
+      return next();
+    }
+    return parser(req, res, next);
+  };
+}
 
 export function createApp() {
   const app = express();
@@ -24,8 +44,8 @@ export function createApp() {
       credentials: true,
     })
   );
-  app.use(express.json({ limit: '10mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(skipGithubWebhookBodyParsers(jsonBodyParser));
+  app.use(skipGithubWebhookBodyParsers(urlencodedBodyParser));
   app.use(requestIdMiddleware);
   app.use(
     pinoHttp({

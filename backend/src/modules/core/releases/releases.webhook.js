@@ -14,6 +14,10 @@ export function verifyGithubSignature(rawBody, signatureHeader) {
     return false;
   }
 
+  if (!Buffer.isBuffer(rawBody) && typeof rawBody !== 'string') {
+    return false;
+  }
+
   const signature = String(signatureHeader || '').trim();
   if (!signature.startsWith('sha256=')) {
     return false;
