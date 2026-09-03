@@ -71,6 +71,11 @@ function findAsset(assets, patterns) {
   return null;
 }
 
+function findManifestAsset(assets) {
+  if (!Array.isArray(assets)) return null;
+  return assets.find((asset) => asset.name === MANIFEST_ASSET_NAME) ?? null;
+}
+
 function manifestArtifactFromAsset(asset) {
   if (!asset?.browser_download_url) {
     return { available: false };
@@ -152,6 +157,173 @@ export function synthesizeGithubReleaseManifest(release, channel = 'stable') {
   );
 }
 
+async function downloadReleaseManifestJson(manifestAsset, token) {
+  const response = await globalThis.fetch(manifestAsset.browser_download_url, {
+    headers: githubHeaders(token),
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to download ${MANIFEST_ASSET_NAME} (${response.status})`);
+  }
+  return response.json();
+}
+
+/**
+ * Resolve a normalized manifest from a GitHub release object.
+ * Prefers release-manifest.json; falls back to asset synthesis.
+ */
+export async function resolveManifestFromGithubRelease(
+  release,
+  channel = 'stable',
+  { token } = {},
+) {
+  if (!release || release.draft || release.prerelease) {
+    return null;
+  }
+
+  const normalizedChannel = normalizeChannel(channel);
+  const assets = Array.isArray(release.assets) ? release.assets : [];
+  const manifestAsset = findManifestAsset(assets);
+
+  if (manifestAsset?.browser_download_url) {
+    try {
+      const json = await downloadReleaseManifestJson(
+        manifestAsset,
+        token ?? readGithubConfig().token,
+      );
+      const parsed = parseGithubReleaseManifestJson(
+        json,
+        normalizedChannel,
+        assets,
+      );
+      if (parsed) {
+        return parsed;
+      }
+    } catch (error) {
+      logger.warn(
+        'Failed to parse GitHub release-manifest.json; falling back to asset synthesis',
+        {
+          message: error.message,
+          tag: release.tag_name ?? null,
+        },
+      );
+    }
+  }
+
+  return synthesizeGithubReleaseManifest(release, normalizedChannel);
+}
+
+function assertManifestMatchesTag(manifest, tagName) {
+  const expectedVersion = parseSemverTag(tagName);
+  if (!manifest || !expectedVersion) {
+    return null;
+  }
+  if (String(manifest.version) !== expectedVersion) {
+    logger.warn('Resolved GitHub manifest version does not match release tag', {
+      tag: tagName,
+      version: manifest.version,
+    });
+    return null;
+  }
+  return manifest;
+}
+
+export async function fetchGithubReleaseByTag(tagName) {
+  const github = readGithubConfig();
+  if (!github.isConfigured) {
+    return null;
+  }
+
+  const tag = String(tagName || '').trim();
+  if (!tag) {
+    return null;
+  }
+
+  const encodedTag = encodeURIComponent(tag);
+  const url = `https://api.github.com/repos/${github.owner}/${github.repo}/releases/tags/${encodedTag}`;
+
+  try {
+    return await fetchJson(url, github.token);
+  } catch (error) {
+    logger.warn('Failed to fetch GitHub release by tag', {
+      owner: github.owner,
+      repo: github.repo,
+      tag,
+      status: error.status,
+      message: error.message,
+    });
+    throw error;
+  }
+}
+
+export async function fetchGithubReleaseManifestByTag(
+  tagName,
+  channel = 'stable',
+) {
+  const github = readGithubConfig();
+  if (!github.isConfigured) {
+    return null;
+  }
+
+  const release = await fetchGithubReleaseByTag(tagName);
+  if (!release) {
+    return null;
+  }
+
+  const manifest = await resolveManifestFromGithubRelease(release, channel, {
+    token: github.token,
+  });
+  return assertManifestMatchesTag(manifest, tagName);
+}
+
+/**
+ * Race-safe webhook resolution: use the webhook release / exact tag,
+ * never GitHub /releases/latest.
+ */
+export async function resolveGithubReleaseManifestForWebhook(
+  release,
+  channel = 'stable',
+) {
+  const github = readGithubConfig();
+  if (!github.isConfigured) {
+    return null;
+  }
+
+  const tagName = String(release?.tag_name || '').trim();
+  if (!tagName || !parseSemverTag(tagName)) {
+    return null;
+  }
+
+  let manifest = await resolveManifestFromGithubRelease(release, channel, {
+    token: github.token,
+  });
+  manifest = assertManifestMatchesTag(manifest, tagName);
+
+  const hasManifestAsset = Boolean(findManifestAsset(release?.assets));
+  const needsTagRefresh = !manifest || !hasManifestAsset;
+
+  if (needsTagRefresh) {
+    try {
+      const byTag = await fetchGithubReleaseManifestByTag(tagName, channel);
+      if (byTag) {
+        manifest = byTag;
+      }
+    } catch (error) {
+      if (!manifest) {
+        throw error;
+      }
+      logger.warn(
+        'GitHub release-by-tag refresh failed; keeping payload-derived manifest',
+        {
+          tag: tagName,
+          message: error.message,
+        },
+      );
+    }
+  }
+
+  return manifest;
+}
+
 export async function fetchLatestGithubReleaseManifest(channel = 'stable') {
   const github = readGithubConfig();
   if (!github.isConfigured) {
@@ -174,35 +346,9 @@ export async function fetchLatestGithubReleaseManifest(channel = 'stable') {
     throw error;
   }
 
-  if (!release || release.draft || release.prerelease) {
-    return null;
-  }
-
-  const manifestAsset = Array.isArray(release.assets)
-    ? release.assets.find((asset) => asset.name === MANIFEST_ASSET_NAME)
-    : null;
-
-  if (manifestAsset?.browser_download_url) {
-    try {
-      const response = await globalThis.fetch(manifestAsset.browser_download_url, {
-        headers: githubHeaders(github.token),
-      });
-      if (!response.ok) {
-        throw new Error(`Failed to download ${MANIFEST_ASSET_NAME} (${response.status})`);
-      }
-      const json = await response.json();
-      const parsed = parseGithubReleaseManifestJson(json, normalizedChannel, release.assets);
-      if (parsed) {
-        return parsed;
-      }
-    } catch (error) {
-      logger.warn('Failed to parse GitHub release-manifest.json; falling back to asset synthesis', {
-        message: error.message,
-      });
-    }
-  }
-
-  return synthesizeGithubReleaseManifest(release, normalizedChannel);
+  return resolveManifestFromGithubRelease(release, normalizedChannel, {
+    token: github.token,
+  });
 }
 
-export { readGithubConfig };
+export { readGithubConfig, MANIFEST_ASSET_NAME };

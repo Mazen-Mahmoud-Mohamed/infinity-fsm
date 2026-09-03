@@ -129,7 +129,7 @@ describe('releases webhook', () => {
     });
   });
 
-  it('handleGithubReleaseWebhook notifies once per release and is dedupe-safe', async () => {
+  it('handleGithubReleaseWebhook notifies from payload release and is dedupe-safe', async () => {
     jest.unstable_mockModule(
       '../modules/core/organization/models/user.model.js',
       () => ({
@@ -157,37 +157,41 @@ describe('releases webhook', () => {
       })
     );
 
-    const getLatestRelease = jest.fn().mockResolvedValue({
+    const resolveManifestForGithubWebhookRelease = jest.fn().mockResolvedValue({
       version: '1.0.3',
       build: 4,
       channel: 'stable',
       android: { available: true },
       windows: { available: true },
     });
-    const clearCache = jest.fn();
 
     jest.unstable_mockModule(
       '../modules/core/releases/releases.service.js',
       () => ({
         default: {
-          clearCache,
-          getLatestRelease,
+          clearCache: jest.fn(),
+          getLatestRelease: jest.fn(),
+          resolveManifestForGithubWebhookRelease,
         },
       })
     );
 
     const { handleGithubReleaseWebhook } = await loadWebhookModule();
+    const release = { tag_name: 'v1.0.3', assets: [] };
 
     const first = await handleGithubReleaseWebhook({
-      payload: { action: 'published' },
+      payload: { action: 'published', release },
       io: null,
     });
     const second = await handleGithubReleaseWebhook({
-      payload: { action: 'published' },
+      payload: { action: 'published', release },
       io: null,
     });
 
-    expect(clearCache).toHaveBeenCalled();
+    expect(resolveManifestForGithubWebhookRelease).toHaveBeenCalledWith(
+      release,
+      expect.any(String),
+    );
     expect(first.handled).toBe(true);
     expect(first.version).toBe('1.0.3');
     expect(first.build).toBe(4);
@@ -197,5 +201,27 @@ describe('releases webhook', () => {
     expect(notifyUsers).toHaveBeenCalledTimes(2);
     expect(notifyUsers.mock.calls[0][0].dedupeKey).toBe('app-update:v1.0.3:4');
     expect(notifyUsers.mock.calls[1][0].dedupeKey).toBe('app-update:v1.0.3:4');
+  });
+
+  it('handleGithubReleaseWebhook returns missing_release without payload.release', async () => {
+    jest.unstable_mockModule(
+      '../modules/core/releases/releases.service.js',
+      () => ({
+        default: {
+          resolveManifestForGithubWebhookRelease: jest.fn(),
+        },
+      })
+    );
+
+    const { handleGithubReleaseWebhook } = await loadWebhookModule();
+    const result = await handleGithubReleaseWebhook({
+      payload: { action: 'published' },
+      io: null,
+    });
+    expect(result).toMatchObject({
+      handled: true,
+      notified: 0,
+      reason: 'missing_release',
+    });
   });
 });

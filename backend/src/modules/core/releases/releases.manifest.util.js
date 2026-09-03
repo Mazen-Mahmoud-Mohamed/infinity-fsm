@@ -114,3 +114,56 @@ export function parseBuildFromReleaseBody(body) {
   const parsed = Number.parseInt(match[1], 10);
   return Number.isFinite(parsed) && parsed >= 0 ? parsed : null;
 }
+
+/**
+ * Compare two release identities (version + build).
+ * @returns {number} negative if left < right, 0 if equal, positive if left > right
+ */
+export function compareReleaseIdentities(left, right) {
+  if (!left?.version || !right?.version) {
+    return 0;
+  }
+
+  const versionCmp = compareSemverParts(left.version, right.version);
+  if (versionCmp !== 0) {
+    return versionCmp;
+  }
+
+  const leftBuild = Number(left.build) || 0;
+  const rightBuild = Number(right.build) || 0;
+  return leftBuild - rightBuild;
+}
+
+export function isReleaseIdentityNewerOrEqual(candidate, current) {
+  if (!candidate?.version) return false;
+  if (!current?.version) return true;
+  return compareReleaseIdentities(candidate, current) >= 0;
+}
+
+function compareSemverParts(left, right) {
+  const leftParts = parseSemverParts(left);
+  const rightParts = parseSemverParts(right);
+  for (let i = 0; i < 3; i += 1) {
+    if (leftParts[i] < rightParts[i]) return -1;
+    if (leftParts[i] > rightParts[i]) return 1;
+  }
+  return 0;
+}
+
+function parseSemverParts(raw) {
+  const cleaned = String(raw || '')
+    .trim()
+    .split('+')[0]
+    .split('-')[0];
+  const parts = cleaned.split('.');
+  const values = [];
+  for (let i = 0; i < 3; i += 1) {
+    if (i >= parts.length) {
+      values.push(0);
+      continue;
+    }
+    const parsed = Number.parseInt(String(parts[i]).replace(/[^0-9]/g, ''), 10);
+    values.push(Number.isFinite(parsed) ? parsed : 0);
+  }
+  return values;
+}

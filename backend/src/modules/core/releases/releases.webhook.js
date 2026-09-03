@@ -138,11 +138,20 @@ export async function handleGithubReleaseWebhook({ payload, io }) {
     return { handled: false, reason: 'ignored_event' };
   }
 
-  releasesService.clearCache();
-
   const channel =
     (process.env.APP_RELEASE_CHANNEL || 'stable').trim() || 'stable';
-  const manifest = await releasesService.getLatestRelease(channel);
+  const release = payload?.release;
+
+  if (!release?.tag_name) {
+    logger.warn('GitHub release webhook missing payload.release.tag_name');
+    return { handled: true, notified: 0, reason: 'missing_release' };
+  }
+
+  // Race-safe: resolve the exact webhook release/tag — never /releases/latest.
+  const manifest = await releasesService.resolveManifestForGithubWebhookRelease(
+    release,
+    channel,
+  );
   if (!manifest?.version) {
     return { handled: true, notified: 0, reason: 'no_manifest' };
   }
@@ -150,6 +159,7 @@ export async function handleGithubReleaseWebhook({ payload, io }) {
   const result = await notifyAppUpdateRelease({ manifest, io });
 
   logger.info('GitHub release webhook processed', {
+    tag: release.tag_name,
     version: result.version,
     build: result.build,
     notified: result.notified,
@@ -162,6 +172,7 @@ export async function handleGithubReleaseWebhook({ payload, io }) {
     build: result.build,
     notified: result.notified,
     dedupeKey: result.dedupeKey,
+    tag: release.tag_name,
   };
 }
 

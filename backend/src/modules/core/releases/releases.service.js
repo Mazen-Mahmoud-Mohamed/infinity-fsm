@@ -3,7 +3,9 @@ import { getEnvReleaseManifest } from './releases.env.js';
 import {
   fetchLatestGithubReleaseManifest,
   readGithubConfig,
+  resolveGithubReleaseManifestForWebhook,
 } from './releases.github.js';
+import { isReleaseIdentityNewerOrEqual } from './releases.manifest.util.js';
 
 const DEFAULT_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -41,6 +43,35 @@ function setCachedManifest(channel, manifest) {
     manifest,
     expiresAt: Date.now() + readCacheTtlMs(),
   };
+}
+
+/**
+ * Update the GitHub latest-release cache only when the candidate is newer
+ * or equal to the currently cached identity. Never downgrade on webhook races.
+ */
+function rememberGithubManifest(channel, manifest) {
+  if (!manifest?.version) {
+    return false;
+  }
+
+  const current =
+    cache.channel === channel && cache.expiresAt > Date.now()
+      ? cache.manifest
+      : null;
+
+  if (current && !isReleaseIdentityNewerOrEqual(manifest, current)) {
+    logger.info('Skipped GitHub release cache downgrade', {
+      channel,
+      cachedVersion: current.version,
+      cachedBuild: current.build,
+      candidateVersion: manifest.version,
+      candidateBuild: manifest.build,
+    });
+    return false;
+  }
+
+  setCachedManifest(channel, manifest);
+  return true;
 }
 
 async function getGithubReleaseManifest(channel) {
@@ -103,11 +134,41 @@ export default {
     return envManifest;
   },
 
+  /**
+   * Resolve the exact release from a GitHub webhook payload and safely
+   * refresh the latest-release cache (upgrade-only).
+   */
+  async resolveManifestForGithubWebhookRelease(release, channel = 'stable') {
+    const sourceMode = readReleaseSourceMode();
+    const github = readGithubConfig();
+
+    if (sourceMode === 'env' || !github.isConfigured) {
+      return null;
+    }
+
+    const manifest = await resolveGithubReleaseManifestForWebhook(
+      release,
+      channel,
+    );
+    if (!manifest) {
+      return null;
+    }
+
+    rememberGithubManifest(channel, manifest);
+    logResolvedManifest('github_webhook', manifest);
+    return manifest;
+  },
+
   clearCache() {
     cache = {
       channel: null,
       manifest: null,
       expiresAt: 0,
     };
+  },
+
+  /** Test helper: inspect cache identity without exposing TTL internals. */
+  getCachedReleaseForTests(channel = 'stable') {
+    return getCachedManifest(channel) ?? null;
   },
 };

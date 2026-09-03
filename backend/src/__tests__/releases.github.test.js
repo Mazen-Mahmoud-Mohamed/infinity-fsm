@@ -3,6 +3,8 @@ import {
   parseBuildFromReleaseBody,
   parseSemverTag,
   normalizeReleaseManifest,
+  compareReleaseIdentities,
+  isReleaseIdentityNewerOrEqual,
 } from '../modules/core/releases/releases.manifest.util.js';
 import {
   parseGithubReleaseManifestJson,
@@ -68,6 +70,27 @@ describe('releases.manifest.util', () => {
     expect(manifest.build).toBe(3);
     expect(manifest.windows.available).toBe(true);
     expect(manifest.android.available).toBe(true);
+  });
+
+  it('compares release identities for cache upgrade safety', () => {
+    expect(
+      compareReleaseIdentities(
+        { version: '1.0.10', build: 11 },
+        { version: '1.0.9', build: 10 },
+      ),
+    ).toBeGreaterThan(0);
+    expect(
+      isReleaseIdentityNewerOrEqual(
+        { version: '1.0.10', build: 11 },
+        { version: '1.0.9', build: 10 },
+      ),
+    ).toBe(true);
+    expect(
+      isReleaseIdentityNewerOrEqual(
+        { version: '1.0.9', build: 10 },
+        { version: '1.0.10', build: 11 },
+      ),
+    ).toBe(false);
   });
 });
 
@@ -220,5 +243,68 @@ describe('releases.github fetch', () => {
     await expect(fetchLatestGithubReleaseManifest('stable')).rejects.toThrow(
       'GitHub API request failed (503)',
     );
+  });
+
+  it('fetches an exact release manifest by tag', async () => {
+    globalThis.fetch = jest.fn(async (url) => {
+      if (url.includes('/releases/tags/v1.0.10')) {
+        return {
+          ok: true,
+          json: async () => ({
+            tag_name: 'v1.0.10',
+            draft: false,
+            prerelease: false,
+            assets: [
+              {
+                name: 'app-release.apk',
+                browser_download_url:
+                  'https://github.com/example/infinity-fsm/releases/download/v1.0.10/app-release.apk',
+                size: 82000000,
+              },
+              {
+                name: 'INFINITY-Setup-1.0.10.exe',
+                browser_download_url:
+                  'https://github.com/example/infinity-fsm/releases/download/v1.0.10/INFINITY-Setup-1.0.10.exe',
+                size: 21000000,
+              },
+              {
+                name: 'release-manifest.json',
+                browser_download_url:
+                  'https://github.com/example/infinity-fsm/releases/download/v1.0.10/release-manifest.json',
+                size: 600,
+              },
+            ],
+          }),
+        };
+      }
+      if (url.endsWith('release-manifest.json')) {
+        return {
+          ok: true,
+          json: async () => ({
+            version: '1.0.10',
+            build: 11,
+            channel: 'stable',
+            android: {
+              assetName: 'app-release.apk',
+              sha256: 'a'.repeat(64),
+              size: 82000000,
+            },
+            windows: {
+              assetName: 'INFINITY-Setup-1.0.10.exe',
+              sha256: 'b'.repeat(64),
+              size: 21000000,
+            },
+          }),
+        };
+      }
+      throw new Error(`Unexpected fetch URL: ${url}`);
+    });
+
+    const { fetchGithubReleaseManifestByTag } = await import(
+      '../modules/core/releases/releases.github.js'
+    );
+    const manifest = await fetchGithubReleaseManifestByTag('v1.0.10', 'stable');
+    expect(manifest.version).toBe('1.0.10');
+    expect(manifest.build).toBe(11);
   });
 });

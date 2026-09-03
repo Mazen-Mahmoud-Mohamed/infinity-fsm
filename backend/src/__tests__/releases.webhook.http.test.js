@@ -294,10 +294,9 @@ describe('GitHub release webhook createApp integration', () => {
       '../modules/core/releases/releases.service.js',
       () => ({
         default: {
-          clearCache: jest.fn(),
-          getLatestRelease: jest.fn().mockResolvedValue({
-            version: '1.0.9',
-            build: 10,
+          resolveManifestForGithubWebhookRelease: jest.fn().mockResolvedValue({
+            version: '1.0.10',
+            build: 11,
             channel: 'stable',
             android: { available: true },
             windows: { available: true },
@@ -310,19 +309,20 @@ describe('GitHub release webhook createApp integration', () => {
       '../modules/core/releases/releases.webhook.js'
     );
 
+    const release = { tag_name: 'v1.0.10', assets: [] };
     const first = await handleGithubReleaseWebhook({
-      payload: { action: 'published' },
+      payload: { action: 'published', release },
       io: null,
     });
     const second = await handleGithubReleaseWebhook({
-      payload: { action: 'published' },
+      payload: { action: 'published', release },
       io: null,
     });
 
     expect(first.notified).toBe(1);
     expect(second.notified).toBe(0);
     expect(notifyUsers).toHaveBeenCalledTimes(2);
-    expect(notifyUsers.mock.calls[0][0].dedupeKey).toBe('app-update:v1.0.9:10');
-    expect(notifyUsers.mock.calls[1][0].dedupeKey).toBe('app-update:v1.0.9:10');
+    expect(notifyUsers.mock.calls[0][0].dedupeKey).toBe('app-update:v1.0.10:11');
+    expect(notifyUsers.mock.calls[1][0].dedupeKey).toBe('app-update:v1.0.10:11');
   });
 });
