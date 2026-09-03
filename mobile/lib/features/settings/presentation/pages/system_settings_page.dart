@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/app/injection.dart';
-import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
@@ -9,6 +8,7 @@ import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
 import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_package_version_rows.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class SystemSettingsPage extends StatefulWidget {
@@ -62,10 +62,10 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                          state.message != null
-                              ? localizeAppMessage(l10n, state.message)
-                              : l10n.settingsLoadFailed,
-                        ),
+                  state.message != null
+                      ? localizeAppMessage(l10n, state.message)
+                      : l10n.settingsLoadFailed,
+                ),
                 FilledButton(
                   onPressed: _cubit.load,
                   child: Text(l10n.retry),
@@ -87,38 +87,20 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                   child: LinearProgressIndicator(minHeight: 2),
                 ),
               SettingsCard(
-                title: l10n.settingsCacheManagement,
+                title: l10n.settingsImageCacheTitle,
                 leading: const Icon(Icons.tune_outlined),
-                child: Column(
-                  children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.backup_outlined),
-                      title: Text(l10n.settingsBackupRestore),
-                      subtitle: Text(l10n.settingsUiOnly),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.settingsComingSoonAction),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const Icon(Icons.cached_outlined),
-                      title: Text(l10n.settingsCacheManagement),
-                      subtitle: Text(l10n.settingsUiOnly),
-                      onTap: () async {
-                        final messenger = ScaffoldMessenger.of(context);
-                        await context.read<AppCubit>().clearLocalCache();
-                        messenger.showSnackBar(
-                          SnackBar(content: Text(l10n.settingsCacheCleared)),
-                        );
-                      },
-                    ),
-                  ],
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.cached_outlined),
+                  title: Text(l10n.settingsClearImageCache),
+                  subtitle: Text(l10n.settingsImageCacheHint),
+                  onTap: () async {
+                    final messenger = ScaffoldMessenger.of(context);
+                    await context.read<AppCubit>().clearLocalCache();
+                    messenger.showSnackBar(
+                      SnackBar(content: Text(l10n.settingsCacheCleared)),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -153,10 +135,9 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
                         label: l10n.settingsBackendVersion,
                         value: info?.backendVersion ?? '-',
                       ),
-                      SettingsInfoRow(
-                        label: l10n.settingsAppVersion,
-                        value:
-                            '${AppConfig.appName} ${AppConfig.appVersion}',
+                      SettingsPackageVersionRows(
+                        versionLabel: l10n.settingsAppVersion,
+                        buildLabel: l10n.serverMgmtBuildNumber,
                       ),
                       SettingsInfoRow(
                         label: l10n.settingsUptime,

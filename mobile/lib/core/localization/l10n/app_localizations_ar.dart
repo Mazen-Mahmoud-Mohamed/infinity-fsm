@@ -4406,7 +4406,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsCacheSize => 'حجم التخزين المؤقت';
 
   @override
-  String get settingsImagesSize => 'ذاكرة الصور';
+  String get settingsImagesSize => 'صور في الذاكرة';
 
   @override
   String get settingsTempFiles => 'الملفات المؤقتة';
@@ -4416,6 +4416,16 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsClearCache => 'مسح التخزين المؤقت';
+
+  @override
+  String get settingsImageCacheTitle => 'ذاكرة الصور';
+
+  @override
+  String get settingsImageCacheHint =>
+      'يمسح ذاكرة صور Flutter في الذاكرة فقط. لا يحذف بيانات العمل ولا يسجل خروجك.';
+
+  @override
+  String get settingsClearImageCache => 'مسح ذاكرة الصور';
 
   @override
   String get settingsSupportTitle => 'الدعم';
@@ -4442,6 +4452,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsDeviceName => 'اسم الجهاز';
 
   @override
+  String get settingsHostName => 'اسم المضيف';
+
+  @override
   String get settingsBiometricStatus => 'تسجيل الدخول البيومتري';
 
   @override
@@ -4452,6 +4465,10 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsLogoutAllDevices => 'تسجيل الخروج من كل الأجهزة';
+
+  @override
+  String get settingsLogoutAllDevicesConfirm =>
+      'تسجيل الخروج من Infinity FSM على كل الأجهزة؟ ستحتاج إلى تسجيل الدخول مرة أخرى على هذا الجهاز.';
 
   @override
   String get settingsApplicationTitle => 'التطبيق';
@@ -4500,7 +4517,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsDangerZoneHint =>
-      'هذه الإجراءات تعيد ضبط التفضيلات المحلية والتخزين المؤقت فقط. لا يتم حذف بيانات العمل.';
+      'هذه الإجراءات تعيد ضبط التفضيلات المحلية وذاكرة الصور في الذاكرة فقط. لا تحذف بيانات العمل ولا تمسح المصادقة.';
 
   @override
   String get settingsResetPreferences => 'إعادة ضبط التفضيلات';
@@ -4511,14 +4528,14 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsClearCacheConfirm =>
-      'مسح ذاكرة الصور المحلية؟ لن يتم حذف بيانات المستخدم.';
+      'مسح ذاكرة الصور في الذاكرة؟ بيانات العمل وجلسة تسجيل الدخول لن تتأثر.';
 
   @override
   String get settingsRestoreDefaults => 'استعادة الإعدادات الافتراضية';
 
   @override
   String get settingsRestoreDefaultsConfirm =>
-      'استعادة كل التفضيلات الافتراضية ومسح التخزين المؤقت المحلي؟';
+      'استعادة التفضيلات الافتراضية ومسح ذاكرة الصور في الذاكرة؟ بيانات العمل والمصادقة لن تُمسح.';
 
   @override
   String get settingsPrefsRestored => 'تمت استعادة التفضيلات';

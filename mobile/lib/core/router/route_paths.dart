@@ -72,9 +72,7 @@ class RoutePaths {
   static const String settingsSupport = '/settings/support';
   static const String settingsSecurity = '/settings/security';
   static const String settingsApplication = '/settings/application';
-  static const String settingsPerformance = '/settings/performance';
   static const String settingsAccessibility = '/settings/accessibility';
-  static const String settingsBackup = '/settings/backup';
   static const String settingsDanger = '/settings/danger';
   static const String settingsUpdates = '/settings/updates';
   static const String settingsLogs = '/settings/logs';

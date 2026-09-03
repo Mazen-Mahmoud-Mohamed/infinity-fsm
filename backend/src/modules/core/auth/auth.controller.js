@@ -17,6 +17,11 @@ export const logout = asyncHandler(async (req, res) => {
   sendSuccess(res, { message: 'Logged out successfully' }, 200);
 });
 
+export const logoutAllDevices = asyncHandler(async (req, res) => {
+  const result = await authService.logoutAllDevices(req, req.user);
+  sendSuccess(res, result, 200);
+});
+
 export const getMe = asyncHandler(async (req, res) => {
   const user = await authService.getMe(req.user._id);
   sendSuccess(res, user, 200);

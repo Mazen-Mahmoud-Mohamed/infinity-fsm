@@ -20,6 +20,8 @@ class CurrentUser extends Equatable {
     this.departmentId,
     this.teamId,
     this.positionId,
+    this.lastLoginAt,
+    this.createdAt,
   });
 
   final String id;
@@ -39,6 +41,8 @@ class CurrentUser extends Equatable {
   final String? departmentId;
   final String? teamId;
   final String? positionId;
+  final DateTime? lastLoginAt;
+  final DateTime? createdAt;
 
   String get primaryRole => roles.isNotEmpty ? roles.first : 'user';
 
@@ -75,5 +79,7 @@ class CurrentUser extends Equatable {
         departmentId,
         teamId,
         positionId,
+        lastLoginAt,
+        createdAt,
       ];
 }

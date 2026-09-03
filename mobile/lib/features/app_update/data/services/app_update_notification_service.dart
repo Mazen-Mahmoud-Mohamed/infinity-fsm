@@ -12,11 +12,14 @@ class AppUpdateNotificationService {
   AppUpdateNotificationService({
     FlutterLocalNotificationsPlugin? localNotifications,
     WindowFocusService? windowFocus,
+    bool Function()? isPushEnabled,
   })  : _local = localNotifications ?? FlutterLocalNotificationsPlugin(),
-        _windowFocus = windowFocus ?? WindowFocusService();
+        _windowFocus = windowFocus ?? WindowFocusService(),
+        _isPushEnabled = isPushEnabled;
 
   final FlutterLocalNotificationsPlugin _local;
   final WindowFocusService _windowFocus;
+  final bool Function()? _isPushEnabled;
 
   static const _channelId = 'infinity_updates';
   static const _notificationIdBase = 9100;
@@ -54,6 +57,9 @@ class AppUpdateNotificationService {
     required String updateActionLabel,
   }) async {
     if (kIsWeb || (!Platform.isAndroid && !Platform.isWindows)) {
+      return;
+    }
+    if (_isPushEnabled != null && !_isPushEnabled()) {
       return;
     }
 

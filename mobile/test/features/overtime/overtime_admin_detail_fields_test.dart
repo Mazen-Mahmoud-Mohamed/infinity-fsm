@@ -10,6 +10,7 @@ import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:mobile/features/auth/domain/usecases/logout_all_devices_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/restore_session_usecase.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -114,6 +115,7 @@ void main() {
       restoreSessionUseCase: RestoreSessionUseCase(_FakeAuthRepo()),
       getCurrentUserUseCase: GetCurrentUserUseCase(_FakeAuthRepo()),
       logoutUseCase: LogoutUseCase(_FakeAuthRepo()),
+      logoutAllDevicesUseCase: LogoutAllDevicesUseCase(_FakeAuthRepo()),
       authSessionService: sessionService,
       sessionQueryCache: SessionQueryCache(),
     )..setAuthenticated(admin);

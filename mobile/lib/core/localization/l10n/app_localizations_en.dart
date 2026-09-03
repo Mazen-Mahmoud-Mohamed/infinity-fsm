@@ -4434,7 +4434,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCacheSize => 'Cache size';
 
   @override
-  String get settingsImagesSize => 'Images cache';
+  String get settingsImagesSize => 'Images in memory';
 
   @override
   String get settingsTempFiles => 'Temporary files';
@@ -4444,6 +4444,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsClearCache => 'Clear cache';
+
+  @override
+  String get settingsImageCacheTitle => 'Image cache';
+
+  @override
+  String get settingsImageCacheHint =>
+      'Clears the in-memory Flutter image cache only. Does not delete business data or sign you out.';
+
+  @override
+  String get settingsClearImageCache => 'Clear image cache';
 
   @override
   String get settingsSupportTitle => 'Support';
@@ -4470,6 +4480,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDeviceName => 'Device name';
 
   @override
+  String get settingsHostName => 'Host name';
+
+  @override
   String get settingsBiometricStatus => 'Biometric login';
 
   @override
@@ -4480,6 +4493,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLogoutAllDevices => 'Log out all devices';
+
+  @override
+  String get settingsLogoutAllDevicesConfirm =>
+      'Sign out of Infinity FSM on every device? You will need to sign in again on this device.';
 
   @override
   String get settingsApplicationTitle => 'Application';
@@ -4528,7 +4545,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsDangerZoneHint =>
-      'These actions only reset local preferences and cache. Business data is never deleted.';
+      'These actions only reset local preferences and the in-memory image cache. They never delete business data or wipe authentication.';
 
   @override
   String get settingsResetPreferences => 'Reset preferences';
@@ -4539,14 +4556,14 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsClearCacheConfirm =>
-      'Clear the local image cache? User data will not be deleted.';
+      'Clear the in-memory image cache? Business data and your signed-in session are not affected.';
 
   @override
   String get settingsRestoreDefaults => 'Restore default settings';
 
   @override
   String get settingsRestoreDefaultsConfirm =>
-      'Restore all preference defaults and clear local cache?';
+      'Restore preference defaults and clear the in-memory image cache? Business data and authentication are not wiped.';
 
   @override
   String get settingsPrefsRestored => 'Preferences restored';

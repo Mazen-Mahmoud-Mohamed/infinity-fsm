@@ -237,6 +237,18 @@ class PushNotificationService {
     // Keep pending navigation so a tap while logged out survives re-login.
   }
 
+  /// Applies the Settings push master switch without tearing down auth sockets.
+  Future<void> applyPushPreference(bool enabled) async {
+    if (!enabled) {
+      final token = _currentToken;
+      if (token != null && token.isNotEmpty) {
+        await _api.deactivateDeviceToken(token);
+      }
+      return;
+    }
+    await _registerFcmTokenIfAndroid();
+  }
+
   Future<void> _requestPermissionOnce() async {
     if (_permissionAsked) return;
     _permissionAsked = true;
@@ -484,6 +496,10 @@ class PushNotificationService {
     required String body,
     String? payload,
   }) async {
+    if (!_appCubit.state.notificationPushEnabled) {
+      return;
+    }
+
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
         _channel.id,

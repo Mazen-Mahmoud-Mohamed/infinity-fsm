@@ -28,5 +28,7 @@ abstract class AuthRepository {
 
   Future<Result<void>> logout();
 
+  Future<Result<void>> logoutAllDevices();
+
   Future<Result<void>> refreshTokens();
 }

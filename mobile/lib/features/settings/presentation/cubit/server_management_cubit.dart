@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/config/api_endpoint_service.dart';
 import 'package:mobile/core/config/app_config.dart';
+import 'package:mobile/core/services/app_package_info.dart';
 import 'package:mobile/core/services/app_runtime_info.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/storage/token_manager.dart';
@@ -403,8 +404,8 @@ class ServerManagementCubit extends Cubit<ServerManagementState> {
         'Quality: ${p?.quality.name ?? t?.quality.name ?? 'unknown'}',
       )
       ..writeln()
-      ..writeln('App Version: ${d?.appVersion ?? AppConfig.appVersion}')
-      ..writeln('Build: ${d?.buildNumber ?? AppConfig.buildNumber}')
+      ..writeln('App Version: ${d?.appVersion ?? AppConfig.appVersionFallback}')
+      ..writeln('Build: ${d?.buildNumber ?? AppConfig.buildNumberFallback}')
       ..writeln('Platform: ${d?.platform ?? '-'}')
       ..writeln('Device: ${d?.deviceModel ?? '-'}')
       ..writeln('Network: ${d?.networkType ?? '-'}')
@@ -463,8 +464,8 @@ class ServerManagementCubit extends Cubit<ServerManagementState> {
     final p = state.pingResult;
     return {
       'generatedAt': DateTime.now().toIso8601String(),
-      'appVersion': d?.appVersion ?? AppConfig.appVersion,
-      'buildNumber': d?.buildNumber ?? AppConfig.buildNumber,
+      'appVersion': d?.appVersion ?? AppConfig.appVersionFallback,
+      'buildNumber': d?.buildNumber ?? AppConfig.buildNumberFallback,
       'platform': d?.platform,
       'deviceModel': d?.deviceModel,
       'androidVersion': d?.androidVersion,
@@ -530,11 +531,13 @@ class ServerManagementCubit extends Cubit<ServerManagementState> {
           : ApiHealthStatus.error;
     }
 
+    final packageInfo = await AppPackageInfo.load();
+
     emit(
       state.copyWith(
         diagnostics: ServerDiagnosticsSnapshot(
-          appVersion: AppConfig.appVersion,
-          buildNumber: AppConfig.buildNumber,
+          appVersion: packageInfo.version,
+          buildNumber: packageInfo.buildNumber,
           platform: _platformLabel(),
           androidVersion: _androidVersion,
           deviceModel: _deviceModel,

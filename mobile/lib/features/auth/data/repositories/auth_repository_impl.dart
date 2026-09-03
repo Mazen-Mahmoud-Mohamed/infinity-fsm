@@ -205,4 +205,18 @@ class AuthRepositoryImpl implements AuthRepository {
       return NetworkErrorMapper.map(error);
     }
   }
+
+  @override
+  Future<Result<void>> logoutAllDevices() async {
+    try {
+      if (await _connectivityService.isConnected) {
+        await _remoteDataSource.logoutAllDevices();
+      }
+      await _localDataSource.clearSession();
+      return const Success(null);
+    } on Object catch (error) {
+      await _localDataSource.clearSession();
+      return NetworkErrorMapper.map(error);
+    }
+  }
 }

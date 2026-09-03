@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
+import 'package:mobile/core/services/app_package_info.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_package_version_rows.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_tiles.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
+import 'package:mobile/core/push/push_notification_service.dart';
 
 class LanguageSettingsPage extends StatelessWidget {
   const LanguageSettingsPage({super.key, this.embedded = false});
@@ -361,66 +365,19 @@ class NotificationPreferencesPage extends StatelessWidget {
         SettingsCard(
           title: l10n.settingsNotificationPreferences,
           leading: const Icon(Icons.notifications_outlined),
-          child: Column(
-            children: [
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.settingsPushNotifications),
-                value: state.notificationPushEnabled,
-                onChanged: (value) => context
-                    .read<AppCubit>()
-                    .setNotificationPreferences(pushEnabled: value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.settingsEmailNotifications),
-                value: state.notificationEmailEnabled,
-                onChanged: (value) => context
-                    .read<AppCubit>()
-                    .setNotificationPreferences(emailEnabled: value),
-              ),
-              const Divider(height: 24),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.settingsNotifAttendance),
-                value: state.notifAttendance,
-                onChanged: (value) => context
-                    .read<AppCubit>()
-                    .setNotificationPreferences(attendance: value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.settingsNotifTasks),
-                value: state.notifTasks,
-                onChanged: (value) => context
-                    .read<AppCubit>()
-                    .setNotificationPreferences(tasks: value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.settingsNotifOvertime),
-                value: state.notifOvertime,
-                onChanged: (value) => context
-                    .read<AppCubit>()
-                    .setNotificationPreferences(overtime: value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.settingsNotifSync),
-                value: state.notifSync,
-                onChanged: (value) => context
-                    .read<AppCubit>()
-                    .setNotificationPreferences(sync: value),
-              ),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(l10n.settingsNotifUpdates),
-                value: state.notifUpdates,
-                onChanged: (value) => context
-                    .read<AppCubit>()
-                    .setNotificationPreferences(updates: value),
-              ),
-            ],
+          child: SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.settingsPushNotifications),
+            value: state.notificationPushEnabled,
+            onChanged: (value) async {
+              await context
+                  .read<AppCubit>()
+                  .setNotificationPreferences(pushEnabled: value);
+              if (getIt.isRegistered<PushNotificationService>()) {
+                await getIt<PushNotificationService>()
+                    .applyPushPreference(value);
+              }
+            },
           ),
         ),
       ],
@@ -512,13 +469,9 @@ class _AboutSettingsPageState extends State<AboutSettingsPage> {
                 ),
               ),
               const Divider(height: 24),
-              SettingsInfoRow(
-                label: l10n.serverMgmtAppVersion,
-                value: AppConfig.appVersion,
-              ),
-              SettingsInfoRow(
-                label: l10n.serverMgmtBuildNumber,
-                value: AppConfig.buildNumber,
+              SettingsPackageVersionRows(
+                versionLabel: l10n.serverMgmtAppVersion,
+                buildLabel: l10n.serverMgmtBuildNumber,
               ),
               SettingsInfoRow(
                 label: l10n.settingsReleaseChannel,
@@ -567,13 +520,16 @@ class _AboutSettingsPageState extends State<AboutSettingsPage> {
               SettingsTile(
                 icon: Icons.code,
                 title: l10n.settingsOpenSourcePackages,
-                onTap: () => showLicensePage(
-                  context: context,
-                  applicationName: AppConfig.appName,
-                  applicationVersion:
-                      '${AppConfig.appVersion}+${AppConfig.buildNumber}',
-                  applicationLegalese: AppConfig.companyName,
-                ),
+                onTap: () async {
+                  final info = await AppPackageInfo.load();
+                  if (!context.mounted) return;
+                  showLicensePage(
+                    context: context,
+                    applicationName: AppConfig.appName,
+                    applicationVersion: '${info.version}+${info.buildNumber}',
+                    applicationLegalese: AppConfig.companyName,
+                  );
+                },
               ),
               const Divider(height: 1),
               SettingsTile(

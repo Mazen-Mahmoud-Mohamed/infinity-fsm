@@ -565,19 +565,9 @@ GoRouter createAppRouter({
                         const ApplicationInfoPage(),
                   ),
                   GoRoute(
-                    path: 'performance',
-                    builder: (context, state) =>
-                        const PerformanceSettingsPage(),
-                  ),
-                  GoRoute(
                     path: 'accessibility',
                     builder: (context, state) =>
                         const AccessibilitySettingsPage(),
-                  ),
-                  GoRoute(
-                    path: 'backup',
-                    builder: (context, state) =>
-                        const BackupSettingsPage(),
                   ),
                   GoRoute(
                     path: 'danger',

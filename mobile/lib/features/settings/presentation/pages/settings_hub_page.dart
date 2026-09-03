@@ -35,9 +35,7 @@ enum _SettingsEmbedTarget {
   support,
   security,
   application,
-  performance,
   accessibility,
-  backup,
   danger,
   updates,
   overtime,
@@ -181,13 +179,6 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
             embedTarget: _SettingsEmbedTarget.storage,
           ),
           _SettingsItem(
-            icon: Icons.speed_outlined,
-            title: l10n.settingsPerformanceTitle,
-            keywords: ['performance', 'memory', 'latency'],
-            onTap: () => context.push(RoutePaths.settingsPerformance),
-            embedTarget: _SettingsEmbedTarget.performance,
-          ),
-          _SettingsItem(
             icon: Icons.phone_android_outlined,
             title: l10n.settingsApplicationTitle,
             keywords: ['application', 'version', 'api', 'environment'],
@@ -210,14 +201,6 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
               embedTarget: _SettingsEmbedTarget.system,
               onLongPress: () => openServerManagementSecurely(context),
             ),
-          _SettingsItem(
-            icon: Icons.backup_outlined,
-            title: l10n.settingsBackupRestore,
-            keywords: ['backup', 'restore'],
-            onTap: () => context.push(RoutePaths.settingsBackup),
-            embedTarget: _SettingsEmbedTarget.backup,
-            subtitle: l10n.settingsUiOnly,
-          ),
           _SettingsItem(
             icon: Icons.warning_amber_outlined,
             title: l10n.settingsDangerZone,
@@ -290,20 +273,6 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
             icon: Icons.info_outline,
             title: l10n.settingsAboutApp,
             keywords: ['about', 'version', 'licenses'],
-            onTap: () => context.push(RoutePaths.settingsAbout),
-            embedTarget: _SettingsEmbedTarget.about,
-          ),
-          _SettingsItem(
-            icon: Icons.privacy_tip_outlined,
-            title: l10n.settingsPrivacyPolicy,
-            keywords: ['privacy'],
-            onTap: () => context.push(RoutePaths.settingsAbout),
-            embedTarget: _SettingsEmbedTarget.about,
-          ),
-          _SettingsItem(
-            icon: Icons.description_outlined,
-            title: l10n.settingsTermsOfService,
-            keywords: ['terms'],
             onTap: () => context.push(RoutePaths.settingsAbout),
             embedTarget: _SettingsEmbedTarget.about,
           ),
@@ -661,11 +630,8 @@ class _SettingsEmbeddedContent extends StatelessWidget {
         const SecuritySettingsPage(embedded: true),
       _SettingsEmbedTarget.application =>
         const ApplicationInfoPage(embedded: true),
-      _SettingsEmbedTarget.performance =>
-        const PerformanceSettingsPage(embedded: true),
       _SettingsEmbedTarget.accessibility =>
         const AccessibilitySettingsPage(embedded: true),
-      _SettingsEmbedTarget.backup => const BackupSettingsPage(embedded: true),
       _SettingsEmbedTarget.danger => const DangerZonePage(embedded: true),
       _SettingsEmbedTarget.updates => const UpdateCenterPage(embedded: true),
     };

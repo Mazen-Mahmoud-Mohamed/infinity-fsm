@@ -54,4 +54,8 @@ class AuthRemoteDataSource {
       },
     );
   }
+
+  Future<void> logoutAllDevices() async {
+    await _client.post<Map<String, dynamic>>(ApiConstants.authLogoutAll);
+  }
 }

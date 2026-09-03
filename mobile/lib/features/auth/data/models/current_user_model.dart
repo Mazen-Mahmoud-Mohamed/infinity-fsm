@@ -19,6 +19,8 @@ class CurrentUserModel extends CurrentUser {
     super.departmentId,
     super.teamId,
     super.positionId,
+    super.lastLoginAt,
+    super.createdAt,
   });
 
   factory CurrentUserModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +48,8 @@ class CurrentUserModel extends CurrentUser {
       departmentId: organization['departmentId'] as String?,
       teamId: organization['teamId'] as String?,
       positionId: organization['positionId'] as String?,
+      lastLoginAt: DateTime.tryParse(json['lastLoginAt']?.toString() ?? ''),
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? ''),
     );
   }
 
@@ -68,6 +72,8 @@ class CurrentUserModel extends CurrentUser {
       departmentId: user.departmentId,
       teamId: user.teamId,
       positionId: user.positionId,
+      lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
     );
   }
 
@@ -84,6 +90,8 @@ class CurrentUserModel extends CurrentUser {
       'avatarUrl': profilePhotoUrl,
       'roles': roles,
       'permissions': permissions,
+      'lastLoginAt': lastLoginAt?.toIso8601String(),
+      'createdAt': createdAt?.toIso8601String(),
       'organization': {
         'branchId': branchId,
         'regionId': regionId,

@@ -8375,7 +8375,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsImagesSize.
   ///
   /// In en, this message translates to:
-  /// **'Images cache'**
+  /// **'Images in memory'**
   String get settingsImagesSize;
 
   /// No description provided for @settingsTempFiles.
@@ -8395,6 +8395,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear cache'**
   String get settingsClearCache;
+
+  /// No description provided for @settingsImageCacheTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Image cache'**
+  String get settingsImageCacheTitle;
+
+  /// No description provided for @settingsImageCacheHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Clears the in-memory Flutter image cache only. Does not delete business data or sign you out.'**
+  String get settingsImageCacheHint;
+
+  /// No description provided for @settingsClearImageCache.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear image cache'**
+  String get settingsClearImageCache;
 
   /// No description provided for @settingsSupportTitle.
   ///
@@ -8444,6 +8462,12 @@ abstract class AppLocalizations {
   /// **'Device name'**
   String get settingsDeviceName;
 
+  /// No description provided for @settingsHostName.
+  ///
+  /// In en, this message translates to:
+  /// **'Host name'**
+  String get settingsHostName;
+
   /// No description provided for @settingsBiometricStatus.
   ///
   /// In en, this message translates to:
@@ -8467,6 +8491,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Log out all devices'**
   String get settingsLogoutAllDevices;
+
+  /// No description provided for @settingsLogoutAllDevicesConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign out of Infinity FSM on every device? You will need to sign in again on this device.'**
+  String get settingsLogoutAllDevicesConfirm;
 
   /// No description provided for @settingsApplicationTitle.
   ///
@@ -8561,7 +8591,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDangerZoneHint.
   ///
   /// In en, this message translates to:
-  /// **'These actions only reset local preferences and cache. Business data is never deleted.'**
+  /// **'These actions only reset local preferences and the in-memory image cache. They never delete business data or wipe authentication.'**
   String get settingsDangerZoneHint;
 
   /// No description provided for @settingsResetPreferences.
@@ -8579,7 +8609,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsClearCacheConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Clear the local image cache? User data will not be deleted.'**
+  /// **'Clear the in-memory image cache? Business data and your signed-in session are not affected.'**
   String get settingsClearCacheConfirm;
 
   /// No description provided for @settingsRestoreDefaults.
@@ -8591,7 +8621,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsRestoreDefaultsConfirm.
   ///
   /// In en, this message translates to:
-  /// **'Restore all preference defaults and clear local cache?'**
+  /// **'Restore preference defaults and clear the in-memory image cache? Business data and authentication are not wiped.'**
   String get settingsRestoreDefaultsConfirm;
 
   /// No description provided for @settingsPrefsRestored.

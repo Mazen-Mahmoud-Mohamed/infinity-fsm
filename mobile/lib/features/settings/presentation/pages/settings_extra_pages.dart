@@ -6,7 +6,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/config/api_endpoint_service.dart';
-import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/config/env_config.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
@@ -14,7 +13,6 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/services/app_log_buffer.dart';
-import 'package:mobile/core/services/app_runtime_info.dart';
 import 'package:mobile/core/services/biometric_auth_service.dart';
 import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
@@ -23,8 +21,10 @@ import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cu
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/settings/presentation/pages/server_management_page.dart';
+import 'package:mobile/features/settings/presentation/utils/admin_settings_unlock_session.dart';
 import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_package_version_rows.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_tiles.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 import 'package:mobile/shared/presentation/utils/profile_photo_update.dart';
@@ -109,11 +109,17 @@ class _AccountOverviewPageState extends State<AccountOverviewPage> {
               ),
               SettingsInfoRow(
                 label: l10n.settingsAccountCreated,
-                value: l10n.settingsNotAvailable,
+                value: user?.createdAt == null
+                    ? l10n.settingsNotAvailable
+                    : AppFormatters.mediumDateTime(context)
+                        .format(user!.createdAt!.toLocal()),
               ),
               SettingsInfoRow(
                 label: l10n.settingsLastLogin,
-                value: l10n.settingsNotAvailable,
+                value: user?.lastLoginAt == null
+                    ? l10n.settingsNotAvailable
+                    : AppFormatters.mediumDateTime(context)
+                        .format(user!.lastLoginAt!.toLocal()),
               ),
             ],
           ),
@@ -180,10 +186,6 @@ class SyncSettingsPage extends StatelessWidget {
               SettingsInfoRow(
                 label: l10n.settingsPendingUploads,
                 value: '$pending',
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsPendingDownloads,
-                value: '0',
               ),
               SettingsInfoRow(
                 label: l10n.settingsSyncStatus,
@@ -283,7 +285,7 @@ class StorageSettingsPage extends StatelessWidget {
       embedded: embedded,
       children: [
         SettingsCard(
-          title: l10n.settingsStorageTitle,
+          title: l10n.settingsImageCacheTitle,
           child: Column(
             children: [
               SettingsInfoRow(
@@ -294,9 +296,10 @@ class StorageSettingsPage extends StatelessWidget {
                 label: l10n.settingsImagesSize,
                 value: '${cache.currentSize} entries',
               ),
-              SettingsInfoRow(
-                label: l10n.settingsTempFiles,
-                value: l10n.settingsManagedByOs,
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                l10n.settingsImageCacheHint,
+                style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: AppSpacing.md),
               FilledButton.tonalIcon(
@@ -308,7 +311,7 @@ class StorageSettingsPage extends StatelessWidget {
                   );
                 },
                 icon: const Icon(Icons.cleaning_services_outlined),
-                label: Text(l10n.settingsClearCache),
+                label: Text(l10n.settingsClearImageCache),
               ),
             ],
           ),
@@ -385,12 +388,6 @@ class SupportSettingsPage extends StatelessWidget {
               ),
               const Divider(height: 1),
               SettingsTile(
-                icon: Icons.help_outline,
-                title: l10n.settingsFaq,
-                onTap: () => _open(Uri.parse('https://infinityfsm.com/faq')),
-              ),
-              const Divider(height: 1),
-              SettingsTile(
                 icon: Icons.privacy_tip_outlined,
                 title: l10n.settingsPrivacyPolicy,
                 onTap: () => context.push(RoutePaths.settingsAbout),
@@ -440,10 +437,13 @@ class SecuritySettingsPage extends StatelessWidget {
               ),
               SettingsInfoRow(
                 label: l10n.settingsLastLogin,
-                value: l10n.settingsNotAvailable,
+                value: user?.lastLoginAt == null
+                    ? l10n.settingsNotAvailable
+                    : AppFormatters.mediumDateTime(context)
+                        .format(user!.lastLoginAt!.toLocal()),
               ),
               SettingsInfoRow(
-                label: l10n.settingsDeviceName,
+                label: l10n.settingsHostName,
                 value: Platform.localHostname,
               ),
               FutureBuilder<bool>(
@@ -467,11 +467,30 @@ class SecuritySettingsPage extends StatelessWidget {
               SettingsTile(
                 icon: Icons.devices_other_outlined,
                 title: l10n.settingsLogoutAllDevices,
-                subtitle: l10n.settingsComingSoonAction,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.settingsComingSoonAction)),
+                onTap: () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: Text(l10n.settingsLogoutAllDevices),
+                      content: Text(l10n.settingsLogoutAllDevicesConfirm),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: Text(l10n.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(l10n.settingsConfirm),
+                        ),
+                      ],
+                    ),
                   );
+                  if (confirmed != true || !context.mounted) return;
+                  final navigator = GoRouter.of(context);
+                  getIt<AdminSettingsUnlockSession>().clear();
+                  await context.read<AuthCubit>().logoutAllDevices();
+                  if (!context.mounted) return;
+                  navigator.go(RoutePaths.login);
                 },
               ),
             ],
@@ -508,20 +527,16 @@ class ApplicationInfoPage extends StatelessWidget {
           title: l10n.settingsApplicationTitle,
           child: Column(
             children: [
-              SettingsInfoRow(
-                label: l10n.serverMgmtAppVersion,
-                value: AppConfig.appVersion,
-              ),
-              SettingsInfoRow(
-                label: l10n.serverMgmtBuildNumber,
-                value: AppConfig.buildNumber,
+              SettingsPackageVersionRows(
+                versionLabel: l10n.serverMgmtAppVersion,
+                buildLabel: l10n.serverMgmtBuildNumber,
               ),
               SettingsInfoRow(
                 label: l10n.serverMgmtPlatform,
                 value: Theme.of(context).platform.name,
               ),
               SettingsInfoRow(
-                label: l10n.serverMgmtDeviceModel,
+                label: l10n.settingsHostName,
                 value: Platform.localHostname,
               ),
               SettingsInfoRow(
@@ -549,68 +564,6 @@ class ApplicationInfoPage extends StatelessWidget {
     if (embedded) return body;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsApplicationTitle)),
-      body: body,
-    );
-  }
-}
-
-// â”€â”€â”€ Performance (read-only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class PerformanceSettingsPage extends StatelessWidget {
-  const PerformanceSettingsPage({super.key, this.embedded = false});
-
-  final bool embedded;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-    final cache = PaintingBinding.instance.imageCache;
-    final online = context.watch<AppCubit>().state.isOnline;
-    final uptime = getIt<AppRuntimeInfo>().uptime;
-
-    final body = SettingsPageBody(
-      embedded: embedded,
-      children: [
-        SettingsCard(
-          title: l10n.settingsPerformanceTitle,
-          child: Column(
-            children: [
-              SettingsInfoRow(
-                label: l10n.settingsMemoryUsage,
-                value: l10n.settingsManagedByOs,
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsCacheUsage,
-                value:
-                    '${(cache.currentSizeBytes / 1024).toStringAsFixed(0)} KB',
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsNetworkLatency,
-                value: l10n.settingsUseServerMgmt,
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsDatabaseConnection,
-                value: online ? l10n.serverMgmtOnline : l10n.serverMgmtOffline,
-              ),
-              SettingsInfoRow(
-                label: l10n.settingsServerHealth,
-                value: online
-                    ? l10n.serverMgmtHealthHealthy
-                    : l10n.serverMgmtHealthError,
-              ),
-              SettingsInfoRow(
-                label: l10n.serverMgmtAppUptime,
-                value: '${uptime.inMinutes} min',
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    if (embedded) return body;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsPerformanceTitle)),
       body: body,
     );
   }
@@ -668,42 +621,6 @@ class AccessibilitySettingsPage extends StatelessWidget {
     if (embedded) return body;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settingsAccessibilityTitle)),
-      body: body,
-    );
-  }
-}
-
-// â”€â”€â”€ Backup placeholder â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-class BackupSettingsPage extends StatelessWidget {
-  const BackupSettingsPage({super.key, this.embedded = false});
-
-  final bool embedded;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context);
-
-    final body = SettingsPageBody(
-      embedded: embedded,
-      children: [
-        SettingsCard(
-          title: l10n.settingsBackupRestore,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(l10n.settingsBackupUnavailable),
-              const SizedBox(height: AppSpacing.sm),
-              Text(l10n.settingsRestoreUnavailable),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    if (embedded) return body;
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.settingsBackupRestore)),
       body: body,
     );
   }
@@ -779,7 +696,7 @@ class DangerZonePage extends StatelessWidget {
                 onPressed: () async {
                   final ok = await _confirm(
                     context,
-                    l10n.settingsClearCache,
+                    l10n.settingsClearImageCache,
                     l10n.settingsClearCacheConfirm,
                   );
                   if (!ok || !context.mounted) return;
@@ -789,7 +706,7 @@ class DangerZonePage extends StatelessWidget {
                     SnackBar(content: Text(l10n.settingsCacheCleared)),
                   );
                 },
-                child: Text(l10n.settingsClearCache),
+                child: Text(l10n.settingsClearImageCache),
               ),
               const SizedBox(height: AppSpacing.sm),
               FilledButton(
@@ -1156,20 +1073,11 @@ class _DeveloperOptionsPageState extends State<DeveloperOptionsPage> {
                 onTap: () => context.push(RoutePaths.settingsLogs),
               ),
               const Divider(height: 1),
-              SettingsTile(
-                icon: Icons.flag_outlined,
-                title: l10n.settingsFeatureFlags,
-                subtitle: l10n.settingsReadOnly,
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(l10n.settingsNoFeatureFlags)),
-                  );
-                },
-              ),
-              const Divider(height: 1),
-              SettingsInfoRow(
-                label: l10n.serverMgmtAppVersion,
-                value: '${AppConfig.appVersion}+${AppConfig.buildNumber}',
+              SettingsPackageVersionRows(
+                versionLabel: l10n.serverMgmtAppVersion,
+                buildLabel: l10n.serverMgmtBuildNumber,
+                combined: true,
+                combinedLabel: l10n.serverMgmtAppVersion,
               ),
               SettingsInfoRow(
                 label: l10n.serverMgmtEnvironment,

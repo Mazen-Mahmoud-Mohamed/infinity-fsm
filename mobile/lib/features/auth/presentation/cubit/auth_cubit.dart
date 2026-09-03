@@ -7,6 +7,7 @@ import 'package:mobile/core/services/auth_session_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/domain/usecases/get_current_user_usecase.dart';
+import 'package:mobile/features/auth/domain/usecases/logout_all_devices_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/restore_session_usecase.dart';
 
@@ -53,11 +54,13 @@ class AuthCubit extends Cubit<AuthState> {
     required RestoreSessionUseCase restoreSessionUseCase,
     required GetCurrentUserUseCase getCurrentUserUseCase,
     required LogoutUseCase logoutUseCase,
+    required LogoutAllDevicesUseCase logoutAllDevicesUseCase,
     required AuthSessionService authSessionService,
     required SessionQueryCache sessionQueryCache,
   })  : _restoreSessionUseCase = restoreSessionUseCase,
         _getCurrentUserUseCase = getCurrentUserUseCase,
         _logoutUseCase = logoutUseCase,
+        _logoutAllDevicesUseCase = logoutAllDevicesUseCase,
         _authSessionService = authSessionService,
         _sessionQueryCache = sessionQueryCache,
         super(const AuthState()) {
@@ -76,6 +79,7 @@ class AuthCubit extends Cubit<AuthState> {
   final RestoreSessionUseCase _restoreSessionUseCase;
   final GetCurrentUserUseCase _getCurrentUserUseCase;
   final LogoutUseCase _logoutUseCase;
+  final LogoutAllDevicesUseCase _logoutAllDevicesUseCase;
   final AuthSessionService _authSessionService;
   final SessionQueryCache _sessionQueryCache;
   StreamSubscription<void>? _sessionSubscription;
@@ -145,6 +149,27 @@ class AuthCubit extends Cubit<AuthState> {
 
   Future<void> logout() async {
     final result = await _logoutUseCase();
+    _sessionQueryCache.clear();
+
+    switch (result) {
+      case Success():
+        emit(
+          const AuthState(
+            status: AuthStatus.unauthenticated,
+          ),
+        );
+      case Failure(message: final message):
+        emit(
+          AuthState(
+            status: AuthStatus.unauthenticated,
+            message: message,
+          ),
+        );
+    }
+  }
+
+  Future<void> logoutAllDevices() async {
+    final result = await _logoutAllDevicesUseCase();
     _sessionQueryCache.clear();
 
     switch (result) {

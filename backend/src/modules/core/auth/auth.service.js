@@ -183,6 +183,46 @@ class AuthService {
     });
   }
 
+  /**
+   * Revoke every refresh session for the user and deactivate push tokens.
+   * Used by Settings → Security → Logout all devices.
+   */
+  async logoutAllDevices(req, user) {
+    const refreshResult = await RefreshToken.updateMany(
+      { userId: user._id, revokedAt: null },
+      { revokedAt: new Date() }
+    );
+
+    let deactivatedPush = 0;
+    try {
+      const { deactivateAllDeviceTokens } = await import(
+        '../../notifications/deviceToken.service.js'
+      );
+      const pushResult = await deactivateAllDeviceTokens(user, {
+        companyId: user.companyId,
+      });
+      deactivatedPush = pushResult.deactivated ?? 0;
+    } catch {
+      // Push cleanup is best-effort; session revocation is authoritative.
+    }
+
+    await auditService.logAuthEvent(req, {
+      companyId: user.companyId,
+      actorId: user._id,
+      actorRole: user.roles[0],
+      action: 'auth.logout_all_devices',
+      metadata: {
+        revokedSessions: refreshResult.modifiedCount,
+        deactivatedPushTokens: deactivatedPush,
+      },
+    });
+
+    return {
+      revokedSessions: refreshResult.modifiedCount,
+      deactivatedPushTokens: deactivatedPush,
+    };
+  }
+
   async getMe(userId) {
     const user = await User.findOne({
       _id: userId,
@@ -241,6 +281,7 @@ class AuthService {
         positionId: user.positionId?.toString() || null,
       },
       lastLoginAt: user.lastLoginAt,
+      createdAt: user.createdAt,
     };
 
     if (includePermissions) {

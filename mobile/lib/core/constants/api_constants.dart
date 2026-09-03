@@ -4,6 +4,7 @@ class ApiConstants {
   static const String authLogin = '/auth/login';
   static const String authRefresh = '/auth/refresh';
   static const String authLogout = '/auth/logout';
+  static const String authLogoutAll = '/auth/logout-all';
   static const String authMe = '/auth/me';
 
   static const String organizationContext = '/organization/me/context';

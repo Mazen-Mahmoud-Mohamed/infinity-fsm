@@ -61,6 +61,7 @@ import 'package:mobile/features/auth/data/repositories/auth_repository_impl.dart
 import 'package:mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/features/auth/domain/usecases/get_current_user_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/login_usecase.dart';
+import 'package:mobile/features/auth/domain/usecases/logout_all_devices_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/restore_session_usecase.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -297,6 +298,9 @@ Future<void> configureDependencies() async {
     () => GetCurrentUserUseCase(getIt<AuthRepository>()),
   );
   getIt.registerLazySingleton(() => LogoutUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(
+    () => LogoutAllDevicesUseCase(getIt<AuthRepository>()),
+  );
 
   getIt.registerLazySingleton<OrganizationMemoryCache>(
     OrganizationMemoryCache.new,
@@ -331,6 +335,7 @@ Future<void> configureDependencies() async {
       restoreSessionUseCase: getIt<RestoreSessionUseCase>(),
       getCurrentUserUseCase: getIt<GetCurrentUserUseCase>(),
       logoutUseCase: getIt<LogoutUseCase>(),
+      logoutAllDevicesUseCase: getIt<LogoutAllDevicesUseCase>(),
       authSessionService: getIt<AuthSessionService>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
     ),
@@ -1388,7 +1393,9 @@ Future<void> configureDependencies() async {
     () => AppUpdateDownloadCoordinator(getIt<AppUpdateDownloadService>()),
   );
   getIt.registerLazySingleton<AppUpdateNotificationService>(
-    AppUpdateNotificationService.new,
+    () => AppUpdateNotificationService(
+      isPushEnabled: () => getIt<AppCubit>().state.notificationPushEnabled,
+    ),
   );
   getIt.registerLazySingleton<AppUpdateInstallService>(
     AppUpdateInstallService.new,
