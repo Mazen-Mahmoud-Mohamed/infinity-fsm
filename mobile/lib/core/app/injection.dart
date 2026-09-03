@@ -1541,6 +1541,8 @@ Future<void> configureDependencies() async {
       router: getIt<GoRouter>(),
       apiBaseUrlProvider: () => getIt<EnvConfig>().apiBaseUrl,
       accessTokenProvider: () => getIt<TokenManager>().getAccessToken(),
+      appUpdateLocal: getIt<AppUpdateLocalDataSource>(),
+      updateCenterCubitProvider: () => getIt<UpdateCenterCubit>(),
       windowFocus: getIt<WindowFocusService>(),
     ),
   );

@@ -137,10 +137,15 @@ async function deliverSideEffects(doc, io) {
       const entityId = doc.entityId ? String(doc.entityId) : '';
       // Visible title/body stay in `notification`; navigation lives in `data`.
       // Stable keys are forced last so callers can rely on them for deep links.
+      const isAppUpdate =
+        entityType === 'app_update' ||
+        doc.type === 'app_update' ||
+        doc.module === 'app_update';
       await sendFcmToTokens({
         tokens: group,
         title,
         body,
+        androidChannelId: isAppUpdate ? 'infinity_updates' : 'infinity_default',
         data: {
           ...flatData,
           notificationId: doc._id.toString(),

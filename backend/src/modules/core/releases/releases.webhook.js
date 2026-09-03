@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import DevicePushToken from '../../notifications/models/devicePushToken.model.js';
+import User from '../organization/models/user.model.js';
 import { notifyUsers } from '../../notifications/notifications.service.js';
 import logger from '../../../shared/utils/logger.util.js';
 import releasesService from './releases.service.js';
@@ -40,18 +40,26 @@ function isReleaseEvent(payload) {
   return event === 'published' || event === 'released' || event === 'created';
 }
 
-async function listRecipientUserIdsByPlatform(platform) {
-  const tokens = await DevicePushToken.find({
-    active: true,
-    platform,
+export function buildAppUpdateDedupeKey(version, build) {
+  return `app-update:v${version}:${build}`;
+}
+
+/**
+ * Active users grouped by company — covers Android FCM token holders and
+ * Windows Socket.IO recipients without requiring a Windows push token.
+ */
+export async function listActiveRecipientsByCompany() {
+  const users = await User.find({
+    isActive: true,
+    deletedAt: null,
   })
-    .select('userId companyId')
+    .select('_id companyId')
     .lean();
 
   const byCompany = new Map();
-  for (const token of tokens) {
-    const companyId = token.companyId?.toString?.();
-    const userId = token.userId?.toString?.();
+  for (const user of users) {
+    const companyId = user.companyId?.toString?.();
+    const userId = user._id?.toString?.();
     if (!companyId || !userId) continue;
     if (!byCompany.has(companyId)) {
       byCompany.set(companyId, new Set());
@@ -61,21 +69,33 @@ async function listRecipientUserIdsByPlatform(platform) {
   return byCompany;
 }
 
-async function notifyPlatformUsers({
-  manifest,
-  platform,
-  io,
-}) {
-  const artifact = manifest?.[platform];
-  if (!artifact?.available) {
-    return { platform, notified: 0 };
+function buildNotificationCopy(version) {
+  const versionLabel = `v${version}`;
+  return {
+    titleEn: 'New update available',
+    titleAr: 'تحديث جديد متاح',
+    bodyEn: `A new INFINITY FSM version is available (${versionLabel}).`,
+    bodyAr: `يتوفر الآن إصدار جديد من INFINITY FSM (${versionLabel}).`,
+  };
+}
+
+/**
+ * Persist + deliver one app_update notification per active user via the
+ * existing notifyUsers pipeline (Socket.IO + FCM).
+ */
+export async function notifyAppUpdateRelease({ manifest, io }) {
+  if (!manifest?.version) {
+    return { notified: 0, reason: 'no_manifest' };
   }
 
-  const recipientsByCompany = await listRecipientUserIdsByPlatform(platform);
-  let notified = 0;
-  const version = manifest.version;
-  const dedupeKey = `update:v${version}:${platform}`;
+  const version = String(manifest.version);
+  const build = Number(manifest.build) || 0;
+  const channel = String(manifest.channel || 'stable');
+  const dedupeKey = buildAppUpdateDedupeKey(version, build);
+  const copy = buildNotificationCopy(version);
+  const recipientsByCompany = await listActiveRecipientsByCompany();
 
+  let notified = 0;
   for (const [companyId, userIds] of recipientsByCompany.entries()) {
     const result = await notifyUsers({
       companyId,
@@ -83,26 +103,30 @@ async function notifyPlatformUsers({
       type: 'app_update',
       module: 'app_update',
       entityType: 'app_update',
-      entityId: version,
-      titleEn: 'INFINITY update available',
-      titleAr: 'تحديث جديد لـ INFINITY',
-      bodyEn: `Version ${version} is now available.`,
-      bodyAr: `الإصدار ${version} متاح الآن.`,
+      entityId: null,
+      titleEn: copy.titleEn,
+      titleAr: copy.titleAr,
+      bodyEn: copy.bodyEn,
+      bodyAr: copy.bodyAr,
       dedupeKey,
       data: {
         type: 'app_update',
         entityType: 'app_update',
         module: 'app_update',
+        category: 'app_update',
         route: '/settings/updates',
         version,
-        platform,
+        build: String(build),
+        channel,
+        androidAvailable: Boolean(manifest.android?.available),
+        windowsAvailable: Boolean(manifest.windows?.available),
       },
       io,
     });
     notified += result.created?.length ?? 0;
   }
 
-  return { platform, notified };
+  return { notified, dedupeKey, version, build, channel };
 }
 
 export async function handleGithubReleaseWebhook({ payload, io }) {
@@ -112,37 +136,34 @@ export async function handleGithubReleaseWebhook({ payload, io }) {
 
   releasesService.clearCache();
 
-  const channel = (process.env.APP_RELEASE_CHANNEL || 'stable').trim() || 'stable';
+  const channel =
+    (process.env.APP_RELEASE_CHANNEL || 'stable').trim() || 'stable';
   const manifest = await releasesService.getLatestRelease(channel);
   if (!manifest?.version) {
     return { handled: true, notified: 0, reason: 'no_manifest' };
   }
 
-  const android = await notifyPlatformUsers({
-    manifest,
-    platform: 'android',
-    io,
-  });
-  const windows = await notifyPlatformUsers({
-    manifest,
-    platform: 'windows',
-    io,
-  });
+  const result = await notifyAppUpdateRelease({ manifest, io });
 
   logger.info('GitHub release webhook processed', {
-    version: manifest.version,
-    android: android.notified,
-    windows: windows.notified,
+    version: result.version,
+    build: result.build,
+    notified: result.notified,
+    dedupeKey: result.dedupeKey,
   });
 
   return {
     handled: true,
-    version: manifest.version,
-    notified: android.notified + windows.notified,
+    version: result.version,
+    build: result.build,
+    notified: result.notified,
+    dedupeKey: result.dedupeKey,
   };
 }
 
 export default {
   verifyGithubSignature,
   handleGithubReleaseWebhook,
+  notifyAppUpdateRelease,
+  buildAppUpdateDedupeKey,
 };

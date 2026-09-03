@@ -33,11 +33,15 @@ const appNotificationSchema = new mongoose.Schema(
     bodyEn: { type: String, required: true },
     entityType: {
       type: String,
-      enum: ['work_order', 'overtime', 'general', null],
+      enum: ['work_order', 'overtime', 'app_update', 'general', null],
       default: null,
     },
+    /**
+     * Related entity id. ObjectId strings for WO/OT; null for app_update
+     * (version/build live in `data`).
+     */
     entityId: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.Mixed,
       default: null,
     },
     /** Structured navigation / event payload for clients. */

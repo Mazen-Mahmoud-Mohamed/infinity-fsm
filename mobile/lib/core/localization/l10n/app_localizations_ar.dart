@@ -4619,11 +4619,11 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsUpdateInstalling => 'جاري تجهيز التثبيت…';
 
   @override
-  String get appUpdateNotificationTitle => 'تحديث جديد لـ INFINITY';
+  String get appUpdateNotificationTitle => 'تحديث جديد متاح';
 
   @override
   String appUpdateNotificationBody(String version) {
-    return 'الإصدار $version متاح الآن.';
+    return 'يتوفر الآن إصدار جديد من INFINITY FSM (v$version).';
   }
 
   @override

@@ -190,16 +190,19 @@ class _FakeAppUpdateRepository implements AppUpdateRepository {
 class _RecordingNotificationService extends AppUpdateNotificationService {
   int showCount = 0;
   String? lastVersion;
+  int? lastBuild;
 
   @override
   Future<void> showUpdateAvailable({
     required String version,
+    required int build,
     required String title,
     required String body,
     required String updateActionLabel,
   }) async {
     showCount += 1;
     lastVersion = version;
+    lastBuild = build;
   }
 }
 
@@ -345,12 +348,61 @@ void main() {
 
       expect(cubit.state.showUpdateBanner, isTrue);
       expect(notificationService.showCount, 1);
+      expect(notificationService.lastVersion, '1.0.1');
+      expect(notificationService.lastBuild, 2);
 
       await cubit.maybeAutoCheck(reason: AppUpdateAutoCheckReason.resumed);
       expect(notificationService.showCount, 1);
 
       await cubit.dismissUpdateBanner();
       expect(cubit.state.showUpdateBanner, isFalse);
+
+      await cubit.close();
+    });
+
+    test('connectivity restore notifies unseen release despite recent auto-check',
+        () async {
+      final notificationService = _RecordingNotificationService();
+      final repository = _FakeAppUpdateRepository(manifest: _manifest());
+      repository.lastAutoCheck = DateTime.now().toUtc();
+      final cubit = _createCubit(
+        repository,
+        notificationService: notificationService,
+      );
+
+      await cubit.initialize();
+      await cubit.maybeAutoCheck(
+        reason: AppUpdateAutoCheckReason.connectivityRestored,
+      );
+
+      expect(notificationService.showCount, 1);
+      expect(repository.lastNotified, 'app-update:v1.0.1:2');
+
+      await cubit.maybeAutoCheck(
+        reason: AppUpdateAutoCheckReason.connectivityRestored,
+      );
+      expect(notificationService.showCount, 1);
+
+      await cubit.close();
+    });
+
+    test('already notified release is not re-notified on connectivity restore',
+        () async {
+      final notificationService = _RecordingNotificationService();
+      final repository = _FakeAppUpdateRepository(manifest: _manifest());
+      repository.lastNotified = 'app-update:v1.0.1:2';
+      final cubit = _createCubit(
+        repository,
+        notificationService: notificationService,
+      );
+
+      await cubit.initialize();
+      await cubit.maybeAutoCheck(
+        reason: AppUpdateAutoCheckReason.connectivityRestored,
+      );
+
+      expect(notificationService.showCount, 0);
+      expect(cubit.state.showUpdateBanner, isTrue);
 
       await cubit.close();
     });

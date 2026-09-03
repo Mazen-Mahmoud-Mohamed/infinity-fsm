@@ -8783,13 +8783,13 @@ abstract class AppLocalizations {
   /// No description provided for @appUpdateNotificationTitle.
   ///
   /// In en, this message translates to:
-  /// **'INFINITY update available'**
+  /// **'New update available'**
   String get appUpdateNotificationTitle;
 
   /// No description provided for @appUpdateNotificationBody.
   ///
   /// In en, this message translates to:
-  /// **'Version {version} is now available.'**
+  /// **'A new INFINITY FSM version is available (v{version}).'**
   String appUpdateNotificationBody(String version);
 
   /// No description provided for @appUpdateBannerMessage.

@@ -1708,8 +1708,8 @@
   "settingsUpdateOfflineCheck": "تعذر التحقق من التحديثات بدون اتصال",
   "settingsUpdateInvalidResponse": "معلومات التحديث غير متاحة",
   "settingsUpdateInstalling": "جاري تجهيز التثبيت…",
-  "appUpdateNotificationTitle": "تحديث جديد لـ INFINITY",
-  "appUpdateNotificationBody": "الإصدار {version} متاح الآن.",
+  "appUpdateNotificationTitle": "تحديث جديد متاح",
+  "appUpdateNotificationBody": "يتوفر الآن إصدار جديد من INFINITY FSM (v{version}).",
   "@appUpdateNotificationBody": {
     "placeholders": {
       "version": {

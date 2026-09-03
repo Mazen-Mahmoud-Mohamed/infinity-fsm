@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/services/window_focus_service.dart';
+import 'package:mobile/features/app_update/domain/utils/app_update_notification_identity.dart';
 
 /// Local update notifications with deep-link payload to Update Center.
 class AppUpdateNotificationService {
@@ -47,6 +48,7 @@ class AppUpdateNotificationService {
 
   Future<void> showUpdateAvailable({
     required String version,
+    required int build,
     required String title,
     required String body,
     required String updateActionLabel,
@@ -57,15 +59,23 @@ class AppUpdateNotificationService {
 
     await initialize();
 
+    final dedupeKey = appUpdateNotificationDedupeKey(
+      version: version,
+      build: build,
+    );
+
     final payload = jsonEncode({
       'type': 'app_update',
       'entityType': 'app_update',
       'module': 'app_update',
+      'category': 'app_update',
       'version': version,
+      'build': build.toString(),
       'route': RoutePaths.settingsUpdates,
+      'dedupeKey': dedupeKey,
     });
 
-    final notificationId = _notificationIdBase + version.hashCode.abs() % 100;
+    final notificationId = _notificationIdBase + dedupeKey.hashCode.abs() % 100;
 
     await _local.show(
       id: notificationId,
@@ -78,6 +88,7 @@ class AppUpdateNotificationService {
           channelDescription: 'Application update availability',
           importance: Importance.high,
           priority: Priority.high,
+          tag: dedupeKey,
           actions: [
             AndroidNotificationAction(
               'update',
@@ -86,7 +97,7 @@ class AppUpdateNotificationService {
             ),
           ],
         ),
-        windows: WindowsNotificationDetails(),
+        windows: const WindowsNotificationDetails(),
       ),
       payload: payload,
     );

@@ -41,6 +41,7 @@ NotificationNavigationIntent resolveNotificationNavigation(
   final type = (data['type'] ??
           data['entityType'] ??
           data['module'] ??
+          data['category'] ??
           data['event'] ??
           '')
       .toString()

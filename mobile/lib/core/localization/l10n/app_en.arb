@@ -1743,8 +1743,8 @@
   "settingsUpdateOfflineCheck": "Unable to check for updates while offline",
   "settingsUpdateInvalidResponse": "Update information is unavailable",
   "settingsUpdateInstalling": "Preparing installation…",
-  "appUpdateNotificationTitle": "INFINITY update available",
-  "appUpdateNotificationBody": "Version {version} is now available.",
+  "appUpdateNotificationTitle": "New update available",
+  "appUpdateNotificationBody": "A new INFINITY FSM version is available (v{version}).",
   "@appUpdateNotificationBody": {
     "placeholders": {
       "version": {

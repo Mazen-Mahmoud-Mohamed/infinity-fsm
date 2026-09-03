@@ -13,17 +13,45 @@ import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/services/window_focus_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
+import 'package:mobile/features/app_update/data/datasources/app_update_local_datasource.dart';
+import 'package:mobile/features/app_update/domain/utils/app_update_notification_identity.dart';
+import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_api_datasource.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 
 /// Top-level background FCM handler (Android).
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Background/terminated display is handled by the OS when a notification
-  // payload is present. Data-only messages are ignored here intentionally.
+  // payload is present. Persist app_update dedupe so reconnect reconciliation
+  // does not show a second local toast for the same release.
+  try {
+    final data = message.data;
+    final type = (data['type'] ??
+            data['entityType'] ??
+            data['module'] ??
+            data['category'] ??
+            '')
+        .toString()
+        .toLowerCase();
+    if (!type.contains('app_update') && type != 'update') {
+      return;
+    }
+    final version = (data['version'] ?? '').toString().trim();
+    final build = int.tryParse((data['build'] ?? '').toString().trim()) ?? 0;
+    if (version.isEmpty) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      'app_update_last_notified_version_v1',
+      appUpdateNotificationDedupeKey(version: version, build: build),
+    );
+  } on Object {
+    // Never throw from the background isolate entrypoint.
+  }
 }
 
 /// Cross-platform push / desktop notification orchestration.
@@ -40,6 +68,8 @@ class PushNotificationService {
     required GoRouter router,
     required String Function() apiBaseUrlProvider,
     required Future<String?> Function() accessTokenProvider,
+    required AppUpdateLocalDataSource appUpdateLocal,
+    required UpdateCenterCubit Function() updateCenterCubitProvider,
     WindowFocusService? windowFocus,
   })  : _api = api,
         _preferences = preferences,
@@ -49,6 +79,8 @@ class PushNotificationService {
         _router = router,
         _apiBaseUrlProvider = apiBaseUrlProvider,
         _accessTokenProvider = accessTokenProvider,
+        _appUpdateLocal = appUpdateLocal,
+        _updateCenterCubitProvider = updateCenterCubitProvider,
         _windowFocus = windowFocus ?? WindowFocusService();
 
   final NotificationsApiDataSource _api;
@@ -59,6 +91,8 @@ class PushNotificationService {
   final GoRouter _router;
   final String Function() _apiBaseUrlProvider;
   final Future<String?> Function() _accessTokenProvider;
+  final AppUpdateLocalDataSource _appUpdateLocal;
+  final UpdateCenterCubit Function() _updateCenterCubitProvider;
   final WindowFocusService _windowFocus;
 
   final FlutterLocalNotificationsPlugin _local =
@@ -266,6 +300,13 @@ class PushNotificationService {
   }
 
   Future<void> _onForegroundMessage(RemoteMessage message) async {
+    final data = Map<String, dynamic>.from(message.data);
+    final appUpdateHandled = await _handleIncomingAppUpdateEvent(data);
+    if (appUpdateHandled.suppressLocalToast) {
+      unawaited(_unreadCubit.refresh());
+      return;
+    }
+
     final notification = message.notification;
     final title = notification?.title ??
         message.data['title']?.toString() ??
@@ -326,37 +367,92 @@ class PushNotificationService {
       return;
     }
 
-    final locale = _appCubit.state.localeCode.startsWith('en') ? 'en' : 'ar';
-    final title = (locale == 'en'
-            ? data['titleEn'] ?? data['title']
-            : data['titleAr'] ?? data['title'])
-        ?.toString() ??
-        'INFINITY';
-    final body = (locale == 'en'
-            ? data['bodyEn'] ?? data['body']
-            : data['bodyAr'] ?? data['body'])
-        ?.toString() ??
-        '';
-
     final payloadMap = _socketPayloadForNavigation(data);
+    unawaited(() async {
+      final appUpdateHandled = await _handleIncomingAppUpdateEvent(payloadMap);
+      if (appUpdateHandled.suppressLocalToast) {
+        unawaited(_unreadCubit.refresh());
+        return;
+      }
 
-    // Android already shows via FCM (system or foreground local). Avoid a
-    // second toast from Socket.IO while keeping realtime unread refresh.
-    final showToast = kIsWeb
-        ? false
-        : Platform.isWindows ||
-            !(Platform.isAndroid && DefaultFirebaseOptions.isConfigured);
+      final locale = _appCubit.state.localeCode.startsWith('en') ? 'en' : 'ar';
+      final title = (locale == 'en'
+              ? data['titleEn'] ?? data['title']
+              : data['titleAr'] ?? data['title'])
+          ?.toString() ??
+          'INFINITY';
+      final body = (locale == 'en'
+              ? data['bodyEn'] ?? data['body']
+              : data['bodyAr'] ?? data['body'])
+          ?.toString() ??
+          '';
 
-    if (showToast) {
-      unawaited(
-        _showLocalNotification(
+      // Android already shows via FCM (system or foreground local). Avoid a
+      // second toast from Socket.IO while keeping realtime unread refresh.
+      final showToast = kIsWeb
+          ? false
+          : Platform.isWindows ||
+              !(Platform.isAndroid && DefaultFirebaseOptions.isConfigured);
+
+      if (showToast) {
+        await _showLocalNotification(
           title: title,
           body: body,
           payload: jsonEncode(payloadMap),
+        );
+      }
+      unawaited(_unreadCubit.refresh());
+    }());
+  }
+
+  /// Marks an app_update event as notified and decides whether local UI toast
+  /// should be suppressed (Auto Update ON owns the flow).
+  Future<({bool isAppUpdate, bool suppressLocalToast})>
+      _handleIncomingAppUpdateEvent(Map<String, dynamic> data) async {
+    if (!_isAppUpdatePayload(data)) {
+      return (isAppUpdate: false, suppressLocalToast: false);
+    }
+
+    final version = (data['version'] ?? '').toString().trim();
+    final build = int.tryParse((data['build'] ?? '').toString().trim()) ?? 0;
+    if (version.isNotEmpty) {
+      final key = appUpdateNotificationDedupeKey(
+        version: version,
+        build: build,
+      );
+      final previous = _appUpdateLocal.readLastNotifiedUpdateVersion();
+      if (!isSameAppUpdateNotification(
+        storedKey: previous,
+        version: version,
+        build: build,
+      )) {
+        await _appUpdateLocal.writeLastNotifiedUpdateVersion(key);
+      }
+    }
+
+    final autoUpdateEnabled = _appUpdateLocal.readAutoUpdateEnabled();
+    if (autoUpdateEnabled) {
+      unawaited(
+        _updateCenterCubitProvider().maybeAutoCheck(
+          reason: AppUpdateAutoCheckReason.connectivityRestored,
         ),
       );
+      return (isAppUpdate: true, suppressLocalToast: true);
     }
-    unawaited(_unreadCubit.refresh());
+
+    return (isAppUpdate: true, suppressLocalToast: false);
+  }
+
+  bool _isAppUpdatePayload(Map<String, dynamic> data) {
+    final type = (data['type'] ??
+            data['entityType'] ??
+            data['module'] ??
+            data['category'] ??
+            data['event'] ??
+            '')
+        .toString()
+        .toLowerCase();
+    return type.contains('app_update') || type == 'update';
   }
 
   Map<String, dynamic> _socketPayloadForNavigation(Map<String, dynamic> data) {
@@ -374,6 +470,11 @@ class PushNotificationService {
           data['overtimeId']?.toString() ??
           '',
       'event': nested['event']?.toString() ?? data['type']?.toString() ?? '',
+      'version': nested['version']?.toString() ?? data['version']?.toString() ?? '',
+      'build': nested['build']?.toString() ?? data['build']?.toString() ?? '',
+      'channel':
+          nested['channel']?.toString() ?? data['channel']?.toString() ?? '',
+      'route': nested['route']?.toString() ?? data['route']?.toString() ?? '',
       ...nested,
     };
   }
@@ -428,6 +529,7 @@ class PushNotificationService {
     Map<String, dynamic> data, {
     required String source,
   }) async {
+    await _handleIncomingAppUpdateEvent(data);
     final intent = resolveNotificationNavigation(data);
     debugPrint('[Push] open ($source) → ${intent.route}');
 

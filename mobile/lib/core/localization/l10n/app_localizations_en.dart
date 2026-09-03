@@ -4649,11 +4649,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsUpdateInstalling => 'Preparing installation…';
 
   @override
-  String get appUpdateNotificationTitle => 'INFINITY update available';
+  String get appUpdateNotificationTitle => 'New update available';
 
   @override
   String appUpdateNotificationBody(String version) {
-    return 'Version $version is now available.';
+    return 'A new INFINITY FSM version is available (v$version).';
   }
 
   @override

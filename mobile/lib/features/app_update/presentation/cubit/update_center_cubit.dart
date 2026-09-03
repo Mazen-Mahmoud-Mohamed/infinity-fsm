@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -13,6 +12,7 @@ import 'package:mobile/features/app_update/data/services/app_update_notification
 import 'package:mobile/features/app_update/domain/entities/app_release_manifest.dart';
 import 'package:mobile/features/app_update/domain/repositories/app_update_repository.dart';
 import 'package:mobile/features/app_update/domain/utils/app_update_localization.dart';
+import 'package:mobile/features/app_update/domain/utils/app_update_notification_identity.dart';
 import 'package:mobile/features/app_update/domain/utils/version_comparator.dart';
 import 'package:mobile/features/app_update/presentation/cubit/update_center_state.dart';
 
@@ -421,6 +421,11 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
   }
 
   Future<bool> _shouldRunAutoCheck(AppUpdateAutoCheckReason reason) async {
+    // Connectivity restoration must always reconcile the latest release so
+    // offline users are not stuck waiting for the 4h throttle.
+    if (reason == AppUpdateAutoCheckReason.connectivityRestored) {
+      return true;
+    }
     if (reason == AppUpdateAutoCheckReason.authenticated &&
         !_sessionAutoCheckAttempted) {
       return true;
@@ -499,7 +504,10 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
     }
 
     if (availability == UpdateAvailability.updateAvailable && notifyIfAvailable) {
-      await _maybeNotifyUpdateAvailable(manifest.version);
+      await _maybeNotifyUpdateAvailable(
+        version: manifest.version,
+        build: manifest.build,
+      );
     }
   }
 
@@ -587,20 +595,32 @@ class UpdateCenterCubit extends Cubit<UpdateCenterState> {
     return true;
   }
 
-  Future<void> _maybeNotifyUpdateAvailable(String version) async {
+  Future<void> _maybeNotifyUpdateAvailable({
+    required String version,
+    required int build,
+  }) async {
     if (state.autoUpdateEnabled || state.autoUpdateOwned) return;
 
     final lastNotified = await _repository.getLastNotifiedUpdateVersion();
-    if (lastNotified == version) return;
+    if (isSameAppUpdateNotification(
+      storedKey: lastNotified,
+      version: version,
+      build: build,
+    )) {
+      return;
+    }
 
     final l10n = appUpdateLocalizations(_localeCodeProvider());
     await _notificationService.showUpdateAvailable(
       version: version,
+      build: build,
       title: l10n.appUpdateNotificationTitle,
       body: l10n.appUpdateNotificationBody(version),
       updateActionLabel: l10n.appUpdateActionUpdate,
     );
-    await _repository.writeLastNotifiedUpdateVersion(version);
+    await _repository.writeLastNotifiedUpdateVersion(
+      appUpdateNotificationDedupeKey(version: version, build: build),
+    );
   }
 
   bool _shouldKeepProgressListener() {
