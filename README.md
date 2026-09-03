@@ -12,6 +12,8 @@ Enterprise Field Service Management for workforce operations — work orders, ov
 
 **INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform developed for **Total-Com Solutions** and maintenance companies with field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android**, **tablets**, and **Windows**.
 
+**Current production client release:** **v1.0.10** (build **11**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
+
 On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop experience** — sidebar navigation, global top bar, desktop page layouts, data tables, and fixed bottom action footers. Mobile and tablet layouts remain **responsive first-class flows**; they are not stretched desktop layouts.
 
 ---
@@ -26,26 +28,27 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 5. [Technician Interface Control](#5-technician-interface-control)
 6. [Overtime Workflow](#6-overtime-workflow)
 7. [Notifications](#7-notifications)
-8. [Offline & Sync](#8-offline--sync)
-9. [Performance Optimizations](#9-performance-optimizations)
-10. [Localization](#10-localization)
-11. [Security](#11-security)
-12. [Technology Stack](#12-technology-stack)
-13. [Project Structure](#13-project-structure)
-14. [Development Setup](#14-development-setup)
-15. [Testing](#15-testing)
-16. [Build & Release](#16-build--release)
-17. [Environment Variables](#17-environment-variables)
-18. [Firebase Integration](#18-firebase-integration)
-19. [Deployment](#19-deployment)
-20. [API Overview](#20-api-overview)
-21. [Performance Notes](#21-performance-notes)
-22. [Important Implementation Notes](#22-important-implementation-notes)
-23. [Recent Updates](#23-recent-updates)
-24. [Troubleshooting](#24-troubleshooting)
-25. [Documentation](#25-documentation)
-26. [License](#26-license)
-27. [Author](#27-author)
+8. [Update Center & Auto Update](#8-update-center--auto-update)
+9. [Offline & Sync](#9-offline--sync)
+10. [Performance Optimizations](#10-performance-optimizations)
+11. [Localization](#11-localization)
+12. [Security](#12-security)
+13. [Technology Stack](#13-technology-stack)
+14. [Project Structure](#14-project-structure)
+15. [Development Setup](#15-development-setup)
+16. [Testing](#16-testing)
+17. [Build & Release](#17-build--release)
+18. [Environment Variables](#18-environment-variables)
+19. [Firebase Integration](#19-firebase-integration)
+20. [Deployment](#20-deployment)
+21. [API Overview](#21-api-overview)
+22. [Performance Notes](#22-performance-notes)
+23. [Important Implementation Notes](#23-important-implementation-notes)
+24. [Recent Updates](#24-recent-updates)
+25. [Troubleshooting](#25-troubleshooting)
+26. [Documentation](#26-documentation)
+27. [License](#27-license)
+28. [Author](#28-author)
 
 ---
 
@@ -69,6 +72,7 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 | **Client** | Flutter · Material 3 · Clean Architecture · Cubit · Repository Pattern |
 | **API** | Node.js · Express · MongoDB · JWT · Socket.IO · Firebase Admin (FCM) |
 | **API version** | `/api/v1` |
+| **Current client** | **v1.0.10+11** · channel **stable** · GitHub Releases primary |
 
 The Windows window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android packaging is unchanged.
 
@@ -87,7 +91,8 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 - Secure refresh-token persistence (`flutter_secure_storage`)
 - Windows-specific Remember Me session policy (DPAPI-backed storage)
 - Access-token refresh via `/auth/refresh`
-- Role- and permission-based access (RBAC)
+- **Log out all devices** (revokes refresh tokens + deactivates push device tokens)
+- Role- and permission-based access (RBAC / dynamic roles)
 
 ### 📊 Dashboard
 
@@ -174,11 +179,12 @@ Backend validation and normalization live in `work-orders.service.js` / `work-or
 - Persisted recipient notifications with deduplication keys
 - Multi-device FCM token registration (`/notifications/device-tokens`)
 - Rich contextual titles/bodies (technician name, job number, customer, site where available)
-- Structured `data` payload for navigation (`workOrderId`, `overtimeId`, `jobNumber`, etc.)
-- **Deep-link navigation** to work-order and overtime admin detail routes
+- Structured `data` payload for navigation (`workOrderId`, `overtimeId`, `jobNumber`, `type=app_update`, etc.)
+- **Deep-link navigation** to work-order, overtime admin detail, and Update Center routes
 - Pending navigation queue until auth/router bootstrap completes
 - Mark-as-read when a notification is opened
 - Idempotent navigation (duplicate tap protection)
+- **App-update notifications** when a GitHub Release is published (see [§8](#8-update-center--auto-update))
 
 See [§7 Notifications](#7-notifications) for platform behavior (Android FCM, Windows Socket.IO, deep links).
 
@@ -201,12 +207,26 @@ See [§7 Notifications](#7-notifications) for platform behavior (Android FCM, Wi
 
 ### ⚙️ Settings
 
-- Language, theme, notification preferences
+- Language, theme, and notification preferences
 - Sync settings (auto sync, interval, Wi‑Fi-only)
 - Overtime media settings + Configuration Testing Lab (local preview; no Cloudinary upload from the lab)
 - **Technician Interface** controls (Admin)
-- Settings reachable from technician main sections when profile/settings is enabled
+- **Update Center** (check / download / install; Auto Update toggle — default **OFF**)
+- Account overview, password change, and **Log out all devices** (revokes refresh tokens and deactivates registered push tokens)
+- About / package **version + build** from the installed application (`package_info_plus`)
+- Storage guidance and update-artifact cleanup (honest status — no fake storage meters)
+- Support contact flows that open real system actions (not placeholder UI)
 - Server Management API base override (admin-protected)
+- Settings reachable from technician main sections when profile/settings is enabled
+
+Placeholder / mock settings tiles that previously appeared as incomplete UI have been removed.
+
+### 🔄 App updates
+
+- **Update Center** — latest release check, download, verify, and install for Android APK and Windows installer
+- **Auto Update** — optional; default OFF; see [§8 Update Center & Auto Update](#8-update-center--auto-update)
+- **GitHub Releases** — primary release source via backend `/releases/latest` and `release-manifest.json`
+- **Release webhook** — GitHub → backend HMAC-verified notify path for `app_update` notifications
 
 ### 🌐 Connectivity & Offline
 
@@ -450,6 +470,7 @@ Example body pattern (placeholders only):
 |-------|---------|
 | `/work-orders/:id` | Work order detail |
 | `/overtime/admin/:id` | Overtime admin detail |
+| `/settings/updates` | Update Center (app-update notifications) |
 
 | State | Android behavior |
 |-------|------------------|
@@ -469,16 +490,87 @@ Client: `PushNotificationService` + `notification_navigation.dart`.
 ### Android push prerequisites
 
 - Firebase project configured for Android package **`com.example.mobile`**
-- `google-services.json` in `mobile/android/app/` (use `google-services.json.example` as template — **do not commit** production secrets)
-- Backend Firebase Admin credentials via environment (see [§18 Firebase Integration](#18-firebase-integration))
+- Production Android APKs receive Firebase client config via **CI secret injection** (see [§19 Firebase Integration](#19-firebase-integration)); local developers may place `google-services.json` under `mobile/android/app/` (**gitignored**)
+- Backend Firebase Admin credentials via environment (see [§18 Environment Variables](#18-environment-variables) / [§19](#19-firebase-integration))
 - `FCM_ENABLED=true` on the API
 - Android 13+ notification permission granted by the user
+- Channels created at push init: `infinity_default` and `infinity_updates` (HIGH importance for update pushes)
 
 Android release builds use **core library desugaring** (`desugar_jdk_libs`) required by `flutter_local_notifications`.
 
+### App-update notifications
+
+| Topic | Behavior |
+|-------|----------|
+| **Trigger** | GitHub Release webhook (`release` event, actions `published` / `released` / `created`) |
+| **Persistence** | One `app_update` notification per active user (dedupe key `app-update:v{version}:{build}`) |
+| **Android** | FCM notification + data (`type=app_update`, route `/settings/updates`) |
+| **Windows** | Socket.IO + local toast **while the app process is running** (no terminated Windows push) |
+| **Reconciliation** | Connectivity / resume / Update Center checks can surface a newer release if a push was missed |
+| **Auto Update ON** | Suppresses competing standard update banner/notification while auto-flow owns the release |
+| **Idempotency** | Duplicate webhook deliveries for the same version+build do not create duplicate rows |
+
 ---
 
-## 8. Offline & Sync
+## 8. Update Center & Auto Update
+
+Settings → **Updates** (`UpdateCenterPage` / `UpdateCenterCubit`). Releases are discovered from the backend **`GET /api/v1/releases/latest?channel=stable`**, which prefers **GitHub Releases** (`release-manifest.json`) with optional **`APP_RELEASE_*`** env fallback.
+
+### Update Center
+
+| Capability | Behavior |
+|------------|----------|
+| **Latest check** | Fetches the stable-channel release manifest from the API |
+| **Version compare** | Semantic version + integer build (`compareAppVersions`) |
+| **Artifacts** | Android **APK** and Windows **Inno Setup installer** when marked available |
+| **Manifest** | Version, build, channel, notes, download URLs, **SHA-256**, **file size** |
+| **Verification** | Downloaded files verified for size and SHA-256 before install |
+| **Cache** | Last successful manifest cached locally for offline display |
+| **Artifacts on disk** | Versioned filenames under the app updates directory |
+| **Stale cleanup** | Startup / post-download cleanup removes installed and older APKs/EXEs so old installers do not accumulate |
+| **Android install** | Opens the **system package installer** — **no silent install** and no bypass of Android security prompts |
+| **Windows install** | Launches the downloaded installer; does **not** overwrite the running executable in-place |
+
+### Auto Update
+
+| Topic | Behavior |
+|-------|----------|
+| **Toggle** | Inside Update Center; preference persisted |
+| **Default** | **OFF** |
+| **When ON** | Detects available updates and drives download → verify → install orchestration (`AppAutoUpdateManager`) |
+| **UI competition** | Suppresses the standard update available banner/notification while auto-update owns the flow |
+| **Background download** | Continues while navigating away from Update Center **as long as the app process remains alive** |
+| **Triggers** | Startup, resume, connectivity restore, and periodic/auto checks where wired |
+| **Deduplication / backoff** | Per version+platform locks and failure backoff avoid duplicate downloads |
+| **Android** | Still uses the system package installer (user confirmation required) |
+| **Windows** | Uses the installer flow without replacing the live EXE mid-run |
+
+> Auto Update does **not** guarantee continued work after the OS fully terminates the app process. Terminated Android devices rely on **FCM** for update *notifications*; download/install still requires a running app (and user confirmation on Android).
+
+### Release notification architecture (backend)
+
+```
+GitHub Release published
+        ↓
+POST /api/v1/releases/webhook/github
+  · HMAC SHA-256 (X-Hub-Signature-256)
+  · Original raw body preserved for verification
+        ↓
+Exact release from payload.release / tag
+  · Prefer release-manifest.json for that tag
+  · May fetch /releases/tags/{tag} if needed
+  · Does not rely on /releases/latest during publish
+  (GitHub /releases/latest can briefly lag)
+        ↓
+notifyUsers → persist app_update + Socket.IO + FCM
+  · Dedupe: app-update:v{version}:{build}
+```
+
+Client discovery (`/releases/latest`) continues to use GitHub’s latest release (with short-lived cache) for Update Center checks after publication has settled.
+
+---
+
+## 9. Offline & Sync
 
 | Concern | Implementation |
 |---------|----------------|
@@ -499,7 +591,7 @@ Attendance and other modules use offline banners / caching patterns where implem
 
 ---
 
-## 9. Performance Optimizations
+## 10. Performance Optimizations
 
 Optimizations below are **present in the current codebase**.
 
@@ -544,7 +636,7 @@ Android on-device frame timings are environment-dependent; use Flutter profile m
 
 ---
 
-## 10. Localization
+## 11. Localization
 
 | Topic | Detail |
 |-------|--------|
@@ -560,24 +652,35 @@ Dashboard charts and overtime Excel exports respect locale / RTL where implement
 
 ---
 
-## 11. Security
+## 12. Security
 
 Verified behavior only:
 
 - JWT access + refresh; passwords hashed with **bcrypt**
-- Role-based permissions on protected backend routes and client gates
+- Role-based permissions on protected backend routes and client gates (dynamic roles + static fallback)
 - Admin settings authorization (`settings:manage` for Technician Interface, etc.)
 - Secure token storage (`flutter_secure_storage`)
 - Remember Me stores **session/refresh tokens** (and remembered email) — **never the password**
 - Logout clears persisted session where applicable (Windows Remember Me policy clears tokens)
+- **Log out all devices** revokes refresh tokens server-side and deactivates registered device push tokens
 - DB-authoritative user validation (`isActive`, `deletedAt`, company, roles)
 - JWT is **not** the sole authorization source after verify
 - Helmet, CORS allow-list, rate limiting
 - Device clock skew checks; GPS accuracy thresholds
 - Client log sanitization for tokens / passwords
-- Secrets via environment only — never commit `.env`, service-account JSON, or `google-services.json`
+- **GitHub Release webhook** authenticated with **HMAC SHA-256** over the original raw request body
+- Secrets via environment / CI only — never commit `.env`, service-account JSON, or `google-services.json`
 
-> **Never commit** Firebase service-account JSON files, private keys, API secrets, database credentials, JWT secrets, or other sensitive credentials to Git. **Never paste credentials into this README.**
+> **Never commit** Firebase service-account JSON files, private keys, API secrets, database credentials, JWT secrets, webhook secrets, FCM tokens, or other sensitive credentials to Git. **Never paste credentials into this README.** Production credentials belong in **Render** and **GitHub Actions** secret stores.
+
+### Secrets inventory (names only)
+
+| Secret / env (name) | Where |
+|---------------------|--------|
+| `MONGODB_URI`, JWT secrets, Cloudinary, `FIREBASE_SERVICE_ACCOUNT_JSON` | Render (API) |
+| `GITHUB_RELEASE_WEBHOOK_SECRET` | Render + matching GitHub webhook secret |
+| `GOOGLE_SERVICES_JSON_BASE64`, Android keystore secrets | GitHub Actions |
+| Optional `GITHUB_RELEASE_TOKEN` | Render (GitHub API rate limits / private repos) |
 
 ### Windows Remember Me (summary)
 
@@ -590,7 +693,7 @@ Verified behavior only:
 
 ---
 
-## 12. Technology Stack
+## 13. Technology Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -614,7 +717,7 @@ Verified behavior only:
 
 ---
 
-## 13. Project Structure
+## 14. Project Structure
 
 ```
 infinity-fsm/
@@ -622,8 +725,8 @@ infinity-fsm/
 │   ├── src/
 │   │   ├── config/
 │   │   ├── modules/
-│   │   │   ├── core/        # auth, rbac, dashboard, users, settings, …
-│   │   │   ├── business/    # attendance, overtime, work-orders, …
+│   │   │   ├── core/        # auth, rbac, dashboard, users, settings, releases, …
+│   │   │   ├── business/    # attendance, overtime, work-orders, inventory, assets, pm, reports
 │   │   │   └── notifications/  # in-app + FCM + device tokens + hooks
 │   │   ├── routes/          # /api/v1
 │   │   ├── shared/          # middleware, utils
@@ -634,30 +737,32 @@ infinity-fsm/
 │   ├── lib/
 │   │   ├── core/            # theme, router, l10n, DI, network, storage, push
 │   │   │   └── widgets/desktop/  # AppDesktopDataTable, sidebar, top bar, …
-│   │   ├── features/        # auth, dashboard, attendance, overtime, notifications, …
+│   │   ├── features/        # auth, dashboard, attendance, overtime, notifications,
+│   │   │                    # work_orders, inventory, assets, pm, reports, users, roles,
+│   │   │                    # settings, app_update, …
 │   │   └── shared/
 │   ├── android/
 │   ├── windows/             # runner title: INFINITY
+│   ├── tool/                # sync/verify firebase_options helpers (CI)
 │   ├── test/
-│   │   └── features/desktop/    # shell, Work Orders geometry, Overtime table tests
-│   ├── scripts/             # optional desktop runtime verification (PowerShell)
 │   └── assets/
+├── .github/workflows/
+│   └── release.yml          # Android APK + Windows installer + GitHub Release
 ├── docs/                    # Architecture, API, RBAC, roadmap, …
 ├── infra/                   # Deployment planning notes
-├── tests/                   # Cross-cutting test assets (planning)
-├── screenshots/
+├── scripts/release/         # resolve-release-version, generate-release-manifest
 ├── installer.iss            # Windows Inno Setup installer
 ├── LICENSE
 └── README.md
 ```
 
-**Architecture (Flutter):** Presentation (pages/widgets + Cubits) → Domain (entities, use cases, repository interfaces) → Data (models, datasources, repositories).
+**Architecture (Flutter):** Presentation (pages/widgets + Cubits) → Domain (entities, use cases, repository interfaces) → Data (models, datasources, repositories). Feature folders under `mobile/lib/features/*`.
 
-**Architecture (Backend):** Routes → Validators → Controllers → Services → Mongoose models.
+**Architecture (Backend):** Routes → Validators → Controllers → Services → Mongoose models. Modules under `backend/src/modules/*`.
 
 ---
 
-## 14. Development Setup
+## 15. Development Setup
 
 ### Requirements
 
@@ -667,8 +772,8 @@ infinity-fsm/
 - MongoDB (local or Atlas) / configured backend
 - Cloudinary account for production media uploads
 - Windows desktop: Visual Studio **Desktop development with C++** workload
-- Android push: Firebase project + `google-services.json` (local file, not committed)
-- Backend push: Firebase Admin service-account credentials via environment (see §17–§18)
+- Android push: Firebase project; production APKs get client config via CI secrets (local optional `google-services.json`, gitignored)
+- Backend push: Firebase Admin service-account credentials via environment (see §18–§19)
 
 ### Backend
 
@@ -716,22 +821,21 @@ Default / production API base is configured in `mobile/lib/core/config/env_confi
 
 ---
 
-## 15. Testing
+## 16. Testing
 
 ### Backend (Jest)
 
 Under `backend/src/__tests__/`, including:
 
 - Overtime calculation, calendar-day split, end-duration policy
-- Dashboard overtime trends
+- Dashboard overtime trends / live-activity / list-projection
 - Overtime Excel export / timeline / approved hours
-- Auth parallel role prefetch
-- Dashboard live-activity / list-projection payload tests
+- Auth parallel role prefetch · **logout-all devices**
 - RBAC
-- **Notification hooks** (copy builders, context fields)
-- **Push delivery** (`notifications.push.test.js`)
-- **Work order customer phones** and multi-assignee/location tests
-- **Technician interface settings**
+- Notification hooks and push delivery
+- Work order customer phones / multi-assignee
+- Technician interface settings
+- **Releases** — GitHub manifest parsing, env fallback, webhook HMAC/raw-body, race-safe webhook resolution
 
 ```bash
 cd backend
@@ -747,12 +851,9 @@ Under `mobile/test/`, including:
 - Overtime offline lifecycle, sync scheduler, reconciliation, forensics
 - Connectivity service
 - Settings / localization / Technician Interface navigation
-- **Technician interface offline local cache**
-- **Push notification navigation** / pending intent mapping
-- **Notifications unread seed**
-- Work orders (customer phones, technician UI, form flows)
-- Attendance areas as covered by existing suites
-- **Desktop UI** — shell layout bounds, Work Orders geometry, Overtime admin desktop table (technician name, Per Diem column, column order)
+- **App Update** — Update Center cubit, artifact verification, stale cleanup, Auto Update locks
+- Push notification navigation / pending intent mapping
+- Work orders, attendance, desktop shell / Work Orders / Overtime table tests
 
 ```bash
 cd mobile
@@ -760,55 +861,81 @@ flutter test
 flutter analyze
 ```
 
-**Latest full-suite result:** **259 / 259** tests passed (after the Windows desktop UI work).
+**Latest full Flutter suite:** **301 / 301** tests passed (local verification).
 
-Recent ConnectivityService interface updates are covered by updated overtime test fakes (lifecycle, forensics, reconciliation, scheduler). Run those suites after connectivity changes.
-
-> Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate. The desktop release build and test suite are the authoritative validation gates for UI changes.
+> Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate. Release CI and the Flutter test suite are the authoritative validation gates for client changes.
 
 ---
 
-## 16. Build & Release
+## 17. Build & Release
 
-### Android
+### Current production client
 
-```bash
-cd mobile
-flutter clean
-flutter pub get
-flutter build apk --release
-# optional Play Store bundle:
-flutter build appbundle --release
+| Field | Value |
+|-------|--------|
+| **Version** | **1.0.10** |
+| **Build** | **11** (`1.0.10+11` in `mobile/pubspec.yaml`) |
+| **Channel** | **stable** |
+| **Distribution** | GitHub Release assets (APK + Windows installer + `release-manifest.json`) |
+
+### Automated release pipeline (primary)
+
+Workflow: [`.github/workflows/release.yml`](./.github/workflows/release.yml)
+
+Triggered by pushing a tag matching `v*.*.*` (or `workflow_dispatch` rebuild of an existing tag).
+
+| Step | What happens |
+|------|----------------|
+| **Resolve version** | Tag `vX.Y.Z` must match `mobile/pubspec.yaml` `version: X.Y.Z+N` |
+| **Android APK** | `flutter build apk --release` with signing secrets |
+| **Firebase (CI)** | Decodes `GOOGLE_SERVICES_JSON_BASE64`, syncs/validates `firebase_options.dart`, cleans secrets from the runner afterward |
+| **Signing check** | Verifies APK certificate SHA-256 against the expected production fingerprint |
+| **Windows** | `flutter build windows --release` + **Inno Setup** (`installer.iss`) |
+| **Manifest** | `scripts/release/generate-release-manifest.mjs` — SHA-256 + sizes for both artifacts |
+| **Publish** | GitHub Release with `app-release.apk`, `INFINITY-Setup-{version}.exe`, `release-manifest.json` |
+
+### Recommended release process
+
+```text
+1. Bump mobile/pubspec.yaml → version: X.Y.Z+N
+2. Commit and push to main
+3. Create and push tag vX.Y.Z  (must match pubspec version)
+4. GitHub Actions builds Android + Windows and publishes the GitHub Release
+5. Backend discovers the release via GitHub (Update Center /releases/latest)
+6. GitHub webhook notifies clients (app_update) using the exact release tag/payload
 ```
 
-Typical APK output:
+```bash
+# Example — after pubspec is already 1.0.10+11 on main:
+git tag v1.0.10
+git push origin v1.0.10
+```
 
-`mobile/build/app/outputs/flutter-apk/app-release.apk`
+Do **not** create a tag whose semver does not match `mobile/pubspec.yaml` — the workflow will fail resolve-version.
 
-### Windows
+### Local / manual builds (optional)
 
 ```bash
 cd mobile
-flutter clean
-flutter pub get
+flutter clean && flutter pub get
+flutter build apk --release
 flutter build windows --release
 ```
 
-Output:
+Typical outputs:
 
-`mobile/build/windows/x64/runner/Release/` (executable name `mobile.exe`; window title **INFINITY**)
+- `mobile/build/app/outputs/flutter-apk/app-release.apk`
+- `mobile/build/windows/x64/runner/Release/` (executable `mobile.exe`; window title **INFINITY**)
 
-Windows builds require Visual Studio C++ tooling, CMake, and NuGet (Flutter downloads NuGet when needed). **`firebase_core`** may download/extract the Firebase C++ SDK during Windows builds — low disk space on `C:` or OneDrive paths can cause extraction failures. See `mobile/windows/FIREBASE_CPP_SDK.md` for optional pre-extracted SDK setup.
+Optional local installer: root `installer.iss` (Inno Setup).
 
-Optional installer: root `installer.iss` (Inno Setup) packages the Windows Release build.
-
-Release APK and Windows builds have been successfully produced in project validation. Build success depends on the local toolchain and environment — do not assume every machine will succeed without the prerequisites above.
+Windows builds require Visual Studio C++ tooling. **`firebase_core`** may download the Firebase C++ SDK during Windows builds — see `mobile/windows/FIREBASE_CPP_SDK.md` if extraction fails (disk space / OneDrive paths).
 
 Do not commit signing keystores, API secrets, `.env`, `google-services.json`, or Firebase service-account JSON files.
 
 ---
 
-## 17. Environment Variables
+## 18. Environment Variables
 
 Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 
@@ -817,8 +944,8 @@ Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 | `NODE_ENV` | `development` / `production` / `test` |
 | `PORT` | API port (default `3000`) |
 | `API_VERSION` | Version segment (default `v1`) |
-| `MONGODB_URI` | MongoDB URI — e.g. `mongodb://localhost:27017/<db>` or Atlas `mongodb+srv://<user>:<password>@<cluster>/...` |
-| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Token secrets (≥ 32 chars) — use strong unique values in production |
+| `MONGODB_URI` | MongoDB URI |
+| `JWT_ACCESS_SECRET` / `JWT_REFRESH_SECRET` | Token secrets (≥ 32 chars) |
 | `JWT_ACCESS_EXPIRY` / `JWT_REFRESH_EXPIRY` | Defaults `15m` / `7d` |
 | `CORS_ORIGINS` | Allowed origins (comma-separated) |
 | `RATE_LIMIT_WINDOW_MS` / `RATE_LIMIT_MAX` / `RATE_LIMIT_AUTH_MAX` | Rate limiting |
@@ -828,87 +955,90 @@ Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 | `FCM_ENABLED` | `true` / `false` — disable push without removing code |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | **Option A:** full service-account JSON as one line (recommended on Render) |
 | `FIREBASE_SERVICE_ACCOUNT_PATH` | **Option B:** absolute path to service-account JSON file (local dev) |
+| `APP_RELEASE_SOURCE` | `auto` (default) · `github` · `env` |
+| `APP_RELEASE_GITHUB_ENABLED` | `true` / `false` |
+| `APP_RELEASE_GITHUB_OWNER` / `APP_RELEASE_GITHUB_REPO` | GitHub repository for releases |
+| `APP_RELEASE_GITHUB_CACHE_TTL_MS` | In-memory GitHub latest cache (default `300000`) |
+| `GITHUB_RELEASE_TOKEN` | Optional GitHub API token |
+| `APP_RELEASE_VERSION` / `APP_RELEASE_BUILD` / … | **Fallback** manifest when GitHub is unavailable |
+| `APP_RELEASE_CHANNEL` | Default `stable` |
+| `GITHUB_RELEASE_WEBHOOK_SECRET` | Shared secret for GitHub Release webhook HMAC |
 | `DEVICE_CLOCK_SKEW_SECONDS` | Clock drift allowance |
 | `ATTENDANCE_GPS_ACCURACY_THRESHOLD_METERS` | Attendance GPS gate |
 | `OVERTIME_MAX_SESSION_HOURS` | Soft review threshold (default `16`) |
 | `OVERTIME_MAX_REQUEST_HOURS` / `OVERTIME_MIN_REQUEST_HOURS` | Request bounds |
 | `OVERTIME_GPS_ACCURACY_THRESHOLD_METERS` | Overtime GPS gate |
 
-**FCM credentials:** provide **either** `FIREBASE_SERVICE_ACCOUNT_JSON` **or** `FIREBASE_SERVICE_ACCOUNT_PATH` — not both required. Push is enabled when `FCM_ENABLED` is not `false` and credentials resolve.
+**FCM credentials:** provide **either** `FIREBASE_SERVICE_ACCOUNT_JSON` **or** `FIREBASE_SERVICE_ACCOUNT_PATH`. Push is enabled when `FCM_ENABLED` is not `false` and credentials resolve.
 
 **Client:** `--dart-define=API_BASE_URL=...` and `--dart-define=ENV=development|production`.
 
-> **Security:** Never commit Firebase service-account JSON files, private keys, API secrets, database credentials, JWT secrets, or other sensitive credentials to Git.
+### GitHub Actions release secrets (names only)
+
+| Secret | Purpose |
+|--------|---------|
+| `GOOGLE_SERVICES_JSON_BASE64` | Base64 `google-services.json` for CI Android builds |
+| `ANDROID_KEYSTORE_BASE64` | Release keystore |
+| `ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD` | Signing |
 
 ---
 
-## 18. Firebase Integration
+## 19. Firebase Integration
 
 | Component | Configuration |
 |-----------|---------------|
-| **Android app ID** | `com.example.mobile` (`mobile/android/app/build.gradle.kts`) |
-| **Android client config** | `mobile/android/app/google-services.json` (from Firebase console; use `google-services.json.example` locally) |
-| **Flutter Firebase options** | `mobile/lib/core/push/firebase_options.dart` (synced from Android config via `mobile/tool/sync_firebase_options.js`) |
-| **Android FCM** | `firebase_core` + `firebase_messaging`; default channel `infinity_default`; app name **INFINITY** |
-| **Backend FCM** | Firebase Admin SDK — `backend/src/modules/notifications/fcm.service.js` |
-| **Windows** | `firebase_core` Windows native dependency for plugin compatibility; **push delivery on Windows uses Socket.IO**, not FCM |
+| **Android app ID** | `com.example.mobile` |
+| **Android client config** | Provided to CI via `GOOGLE_SERVICES_JSON_BASE64` — **not** committed |
+| **Flutter Firebase options** | Generated/validated in CI (`mobile/tool/sync_firebase_options.js`, `verify_firebase_options.js --require-configured`) |
+| **Tracked template** | Placeholder `firebase_options.dart` in git; production values are CI-injected |
+| **Android FCM** | `firebase_core` + `firebase_messaging`; channels `infinity_default` / `infinity_updates` |
+| **Backend FCM** | Firebase Admin SDK — `fcm.service.js` (service-account env only) |
+| **Windows** | `firebase_core` may be present for plugin compatibility; **Windows push uses Socket.IO**, not FCM |
 
-### Backend setup (Render / local)
+### Local Android Firebase (optional)
 
-1. Create a Firebase project and enable Cloud Messaging.
-2. Add an Android app with package name **`com.example.mobile`**.
-3. Download `google-services.json` into `mobile/android/app/` (**gitignored** — do not commit).
-4. Create a Firebase **service account** with FCM permissions.
-5. Configure the backend with **one** of:
-   - `FIREBASE_SERVICE_ACCOUNT_JSON=<paste JSON as single line>` (Render secret), or
-   - `FIREBASE_SERVICE_ACCOUNT_PATH=/absolute/path/to/service-account.json` (local only)
-6. Set `FCM_ENABLED=true` (or `false` to disable push during development).
+1. Add Android app **`com.example.mobile`** in Firebase Console.
+2. Place `google-services.json` in `mobile/android/app/` (**gitignored**).
+3. Optionally run `node mobile/tool/sync_firebase_options.js` for local options.
+4. Backend: set `FIREBASE_SERVICE_ACCOUNT_JSON` or `FIREBASE_SERVICE_ACCOUNT_PATH` and `FCM_ENABLED=true`.
 
-**Do not** commit service-account JSON, private keys, or `google-services.json` contents to the repository or this README.
+**Do not** commit service-account JSON, private keys, or `google-services.json` contents.
 
 ---
 
-## 19. Deployment
+## 20. Deployment
 
 | Component | Current state |
 |-----------|---------------|
-| **Backend API** | Production base URL: `https://infinity-fsm-api.onrender.com/api/v1` (`EnvConfig.productionApiBaseUrl`). Hosted on **Render**. Configure MongoDB, JWT, Cloudinary, CORS, Socket.IO, and Firebase Admin via Render environment secrets. |
-| **Mobile / Desktop** | Distributed as **built artifacts** (Android APK/AAB, Windows Release folder / optional Inno Setup installer) — not a separate hosted web frontend. |
-| **`infra/`** | Planning notes only (Docker/CI planned). No live Docker/CI pipeline configs are required to run the app today. |
-
-Typical backend release flow:
+| **Backend API** | `https://infinity-fsm-api.onrender.com/api/v1` on **Render**. Configure MongoDB, JWT, Cloudinary, CORS, Socket.IO, Firebase Admin, release GitHub settings, and webhook secret via Render env. |
+| **Client artifacts** | **GitHub Releases** (primary) — Android APK + Windows installer + manifest via Actions |
+| **Update discovery** | Backend GitHub Releases integration; optional `APP_RELEASE_*` fallback |
+| **`infra/`** | Planning notes only |
 
 ```
-Local changes
-    ↓
-Tests / validation (npm test · flutter test · flutter analyze)
-    ↓
-Git commit
-    ↓
-GitHub
-    ↓
-Render deployment (manual or connected service — configure in Render dashboard)
-    ↓
-Backend live
+Client release:  pubspec bump → push main → tag vX.Y.Z → GitHub Actions → GitHub Release
+Backend:         push main → Render deploy (service-connected) → live API
+Notify:          GitHub webhook → Render API → FCM / Socket.IO
 ```
 
-Bind the API to the platform port (`PORT`) and keep secrets in the host environment — never in the repository.
+Bind the API to `PORT` (`0.0.0.0` on Render). Keep secrets in the host environment — never in the repository.
 
 ---
 
-## 20. API Overview
+## 21. API Overview
 
 Primary mount: **`/api/v1`**
 
 | Group | Path prefix | Notes |
 |-------|-------------|--------|
 | Health | `/health`, `/health/ready` | Liveness / readiness |
-| Auth | `/auth` | `POST /login`, `POST /refresh`, `POST /logout`, `GET /me` |
+| Auth | `/auth` | Login, refresh, logout, **logout-all**, `/me` |
 | Dashboard | `/dashboard` | Role summary & related stats |
 | Overtime | `/overtime` | Journey, review, export |
 | Attendance | `/attendance` | Clock / history / admin |
 | Work Orders | `/work-orders` | CRUD & workflow |
-| **Notifications** | `/notifications` | In-app inbox, unread count, mark-as-read, device tokens |
+| **Notifications** | `/notifications` | Inbox, unread, mark-as-read, device tokens |
+| **Releases** | `/releases` | `GET /latest` (auth); `POST /webhook/github` (HMAC, no JWT) |
 | Settings | `/settings` | Including technician interface config |
 | Organization | `/organization` | Company / org |
 | Users / Roles | `/users`, `/roles` | Admin RBAC |
@@ -922,7 +1052,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 21. Performance Notes
+## 22. Performance Notes
 
 - Avoid global caching of **real-time** overtime running state
 - Dashboard uses **controlled, short-lived** deduplication (in-flight + ~5s fresh reuse) — not a long-lived stale cache
@@ -932,7 +1062,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 22. Important Implementation Notes
+## 23. Important Implementation Notes
 
 | Topic | Guarantee |
 |-------|-----------|
@@ -943,6 +1073,8 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 | Offline | Overtime actions persisted and retried; reconciliation when server already confirmed a stage |
 | Technician Interface | Company-scoped; Admin/Supervisor navigation unrestricted; **offline cache per company** |
 | Notifications | Persist → Socket.IO → FCM (Android); push failures do not fail business operations |
+| App updates | Manifest verify (SHA-256 + size); Android uses system installer (**no silent install**) |
+| Release webhook | Exact tag/payload resolution; HMAC over raw body; dedupe `app-update:v{version}:{build}` |
 | Maps | OpenStreetMap only |
 | SessionQueryCache | Used to avoid duplicate network fetches where wired |
 | Dashboard loading | Prefer `isRefreshing` / cached summary over full-page loaders when data exists |
@@ -952,54 +1084,56 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 23. Recent Updates
+## 24. Recent Updates
 
-Recent shipped improvements (verify in code before relying on docs alone):
+### App updates & release automation (current)
 
-### Windows desktop UI (current release)
+- **Update Center** with stable-channel discovery, SHA-256 / size verification, versioned artifacts, and stale APK/EXE cleanup
+- **Auto Update** toggle (default OFF) with background download while the process is alive
+- **GitHub Actions** release workflow — Android APK (CI Firebase inject + signing check), Windows Inno Setup installer, `release-manifest.json`, GitHub Release publish
+- **GitHub Release webhook** — HMAC raw-body verification; race-safe exact tag/payload notify path
+- **App-update notifications** — FCM (Android) + Socket.IO (Windows while running); dedupe by version+build
+- **Settings cleanup** — removed placeholder tiles; **Log out all devices**; package-backed version/build; honest storage/update messaging
 
-- **Dedicated Windows desktop shell** — sidebar navigation, global top bar, desktop page layouts
-- **Desktop data tables** — `AppDesktopDataTable` with stable row height and rounded surfaces
-- **Work Orders desktop workspace** — search, status filters, table, fixed bottom **Create Order** / **Refresh**
-- **Work Order create/edit desktop form** — fixed bottom **Close** / **Save**
-- **Overtime Management desktop table** — aligned with Work Orders proportions; technician **display name only** (no email in table cells)
-- **Overtime Per Diem column** — uses existing **`OvertimeSession.isOvernight`** (Yes/No badges)
-- **Overtime Export Excel** — remains in fixed bottom footer on desktop
-- **Attendance admin desktop table** — stable DataTable constraints on Windows
-- **Desktop widget tests** under `mobile/test/features/desktop/`
+### Windows desktop UI
+
+- Dedicated Windows desktop shell — sidebar, global top bar, desktop page layouts
+- Desktop data tables (`AppDesktopDataTable`) with stable row height
+- Work Orders / Overtime / Attendance / Users / Roles desktop surfaces
+- Work Orders and Overtime fixed bottom action footers polished for desktop
 
 ### Earlier improvements
 
-- Work order **customer phone numbers** (optional multi-number support + Call action)
-- **Technician-simplified** work-order detail (permission-aware admin metadata hiding)
-- **Admin-controlled technician interface visibility** with **offline per-company cache**
-- **Notifications module** — in-app center, persistence, unread state, mark-as-read
-- **Firebase Cloud Messaging** on Android + Firebase Admin on backend
-- **Socket.IO** realtime notifications (including Windows while app is running)
-- Professional **notification copy** with technician/customer/site context
-- **Notification deep links**, pending navigation, idempotent tap handling, Windows focus on click
-- Clear overtime wording: **إنهاء العمل في الموقع** vs **إنهاء رحلة العمل الإضافي**
-- Android **core library desugaring** for `flutter_local_notifications`
-- Windows **Firebase C++ SDK** optional pre-extract path (`mobile/windows/FIREBASE_CPP_SDK.md`)
+- Work order **customer phone numbers** + Call action
+- Technician-simplified work-order detail (permission-aware)
+- Admin-controlled technician interface visibility with offline per-company cache
+- Notifications module — in-app center, FCM, Socket.IO, deep links
+- Clear overtime wording: site finished-work vs journey end
+- Android core library desugaring for local notifications
+- Optional Windows Firebase C++ SDK path (`mobile/windows/FIREBASE_CPP_SDK.md`)
 
 ---
 
-## 24. Troubleshooting
+## 25. Troubleshooting
 
 | Symptom | Likely cause / check |
 |---------|----------------------|
-| Android push never arrives | Missing/invalid `google-services.json`; `DefaultFirebaseOptions.isConfigured` false; backend `FCM_ENABLED` or Firebase Admin credentials missing |
-| FCM works but no tap navigation | Auth/router not ready — pending navigation should consume after login; verify `PushNotificationService` |
+| Android push never arrives | CI/local Firebase client not configured; `DefaultFirebaseOptions.isConfigured` false; backend `FCM_ENABLED` or Admin credentials missing; notification permission denied |
+| FCM works but no tap navigation | Auth/router not ready — pending navigation should consume after login |
 | Windows no notifications when app closed | Expected — Windows uses Socket.IO while the process is running, not FCM background push |
+| Update Center says up to date but GitHub has a newer tag | Confirm backend can reach GitHub Releases; check `APP_RELEASE_*` fallback is not pinning an older version; re-check after cache TTL |
+| App-update push shows wrong version | Ensure Render is running webhook code that resolves the webhook tag/payload (not a stale `/releases/latest` only path) |
+| Android install requires confirmation | Expected — system package installer; no silent install |
+| Auto Update did nothing after kill | Expected if the process was terminated; FCM may still notify on Android, but download needs a running app |
 | Windows build fails on Firebase SDK extract | Low `C:` disk space or OneDrive path — see `mobile/windows/FIREBASE_CPP_SDK.md` |
-| Technician sees all tabs offline | Ensure app version with local interface cache; verify prior online sync stored config for the company |
-| Admin changed interface; technician still sees old tabs offline | Expected until connectivity returns and `TechnicianInterfaceCubit.load()` succeeds |
-| Render push skipped | Set `FIREBASE_SERVICE_ACCOUNT_JSON` secret; confirm `FCM_ENABLED=true` |
-| Notification permission denied (Android 13+) | User must grant POST_NOTIFICATIONS in system settings |
+| Technician sees all tabs offline | Ensure prior online sync stored technician interface config for the company |
+| Render push skipped | Set `FIREBASE_SERVICE_ACCOUNT_JSON`; confirm `FCM_ENABLED=true` |
+| Release workflow fails resolve-version | Tag `vX.Y.Z` must match `mobile/pubspec.yaml` version |
+| Webhook returns 401 | Signature secret mismatch or raw-body parsing broken on the deployed API |
 
 ---
 
-## 25. Documentation
+## 26. Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -1018,13 +1152,13 @@ Recent shipped improvements (verify in code before relying on docs alone):
 
 ---
 
-## 26. License
+## 27. License
 
 Released under the [MIT License](./LICENSE).
 
 ---
 
-## 27. Author
+## 28. Author
 
 **Mazen Mahmoud** — Total-Com Solutions
 
