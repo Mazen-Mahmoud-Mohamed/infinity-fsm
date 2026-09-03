@@ -100,6 +100,16 @@ jobs:
             exit 1
           fi
 
+      - name: Validate Firebase Android client secret
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          if [ -z "$GOOGLE_SERVICES_JSON_BASE64" ]; then
+            echo "Missing GOOGLE_SERVICES_JSON_BASE64 secret"
+            echo "Add the base64-encoded contents of mobile/android/app/google-services.json"
+            exit 1
+          fi
+
       - name: Prepare Android release keystore
         env:
           KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
@@ -108,6 +118,42 @@ jobs:
           printf '%s' "$KEYSTORE_B64" | base64 --decode > "$KEYSTORE_PATH"
           chmod 600 "$KEYSTORE_PATH"
           echo "ANDROID_KEYSTORE_PATH=$KEYSTORE_PATH" >> "$GITHUB_ENV"
+
+      - name: Prepare Firebase Android client config
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        run: |
+          set -euo pipefail
+          GS_PATH="mobile/android/app/google-services.json"
+          printf '%s' "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode > "$GS_PATH"
+          chmod 600 "$GS_PATH"
+          if [ ! -s "$GS_PATH" ]; then
+            echo "Decoded google-services.json is empty"
+            exit 1
+          fi
+          # Validate package match without printing secret field values.
+          node -e "
+            const fs = require('fs');
+            let parsed;
+            try {
+              parsed = JSON.parse(fs.readFileSync('mobile/android/app/google-services.json', 'utf8'));
+            } catch (error) {
+              console.error('GOOGLE_SERVICES_JSON_INVALID');
+              process.exit(1);
+            }
+            const ok = (parsed.client || []).some(
+              (c) =>
+                c?.client_info?.android_client_info?.package_name ===
+                'com.example.mobile'
+            );
+            if (!ok) {
+              console.error('GOOGLE_SERVICES_PACKAGE_MISMATCH');
+              process.exit(1);
+            }
+            console.log('google_services_ready=true');
+          "
+          node mobile/tool/sync_firebase_options.js
+          node mobile/tool/verify_firebase_options.js --require-configured
 
       - name: Build Android release APK
         working-directory: mobile
@@ -155,6 +201,13 @@ jobs:
           if [ -n "${ANDROID_KEYSTORE_PATH:-}" ] && [ -f "$ANDROID_KEYSTORE_PATH" ]; then
             rm -f "$ANDROID_KEYSTORE_PATH"
           fi
+
+      - name: Remove Firebase Android client config
+        if: always()
+        run: |
+          rm -f mobile/android/app/google-services.json
+          # Restore tracked placeholder template (do not leave generated secrets on the runner workspace).
+          git checkout -- mobile/lib/core/push/firebase_options.dart
 
       - name: Upload Android artifact
         uses: actions/upload-artifact@v4
