@@ -374,6 +374,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workOrderLocation => 'Location';
 
   @override
+  String get workOrderLocationAddressHint => 'Street address, district, city…';
+
+  @override
+  String get workOrderLocationLink => 'Location Link';
+
+  @override
+  String get workOrderAddLocationLink => 'Add Location Link';
+
+  @override
   String get workOrderLocationUrlHint =>
       'Paste a map or location link (https://…)';
 

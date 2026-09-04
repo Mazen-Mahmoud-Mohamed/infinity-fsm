@@ -419,11 +419,10 @@ class WorkOrdersService {
     const customerAddress = parseCustomerAddress(body.customerAddress);
     const technicianIds = parseTechnicianIdsFromBody(body) || [];
     const assignees = await this._resolveTechnicians(auth.companyId, technicianIds);
+    // Keep address (locationLabel) and map link (locationUrl) independent.
+    // Do not copy the URL into the address field.
     const locationUrl = normalizeLocationUrl(body.locationUrl ?? undefined);
-    const locationLabelRaw = body.locationLabel?.toString?.()?.trim?.() || null;
-    const locationLabel =
-      locationLabelRaw ||
-      (locationUrl !== undefined && locationUrl ? locationUrl : null);
+    const locationLabel = body.locationLabel?.toString?.()?.trim?.() || null;
     const customerPhoneNumbers =
       normalizeCustomerPhoneNumbers(body.customerPhoneNumbers) ?? [];
 
@@ -546,14 +545,8 @@ class WorkOrdersService {
     }
 
     if (body.locationUrl !== undefined) {
-      const locationUrl = normalizeLocationUrl(body.locationUrl);
-      record.locationUrl = locationUrl;
-      if (locationUrl && (body.locationLabel === undefined || !body.locationLabel)) {
-        record.locationLabel = locationUrl;
-      }
-      if (locationUrl === null && body.locationLabel === undefined) {
-        // clearing URL only — keep legacy locationLabel unless also cleared
-      }
+      // Clearing/updating the link must not overwrite a plain-text address.
+      record.locationUrl = normalizeLocationUrl(body.locationUrl);
     }
 
     if (body.description !== undefined) {

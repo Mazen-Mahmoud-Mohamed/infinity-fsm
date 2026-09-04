@@ -25,8 +25,9 @@ class WorkOrderFormState extends Equatable {
     this.jobTitle = '',
     this.customerName = '',
     this.customerPhoneNumbers = const [],
+    this.locationLabel = '',
     this.locationUrl = '',
-    this.legacyLocationLabel = '',
+    this.locationLinkVisible = false,
     this.notes = '',
     this.priority = WorkOrderPriority.medium,
     this.scheduledAt,
@@ -46,9 +47,12 @@ class WorkOrderFormState extends Equatable {
   final String jobTitle;
   final String customerName;
   final List<String> customerPhoneNumbers;
+  /// Plain-text physical address (`locationLabel` in API).
+  final String locationLabel;
+  /// Optional map/location URL (`locationUrl` in API).
   final String locationUrl;
-  /// Non-URL legacy location text (shown as helper; not edited in URL field).
-  final String legacyLocationLabel;
+  /// Whether the optional Location Link editor row is shown.
+  final bool locationLinkVisible;
   final String notes;
   final WorkOrderPriority priority;
   final DateTime? scheduledAt;
@@ -76,8 +80,9 @@ class WorkOrderFormState extends Equatable {
     String? jobTitle,
     String? customerName,
     List<String>? customerPhoneNumbers,
+    String? locationLabel,
     String? locationUrl,
-    String? legacyLocationLabel,
+    bool? locationLinkVisible,
     String? notes,
     WorkOrderPriority? priority,
     DateTime? scheduledAt,
@@ -102,8 +107,9 @@ class WorkOrderFormState extends Equatable {
       customerName: customerName ?? this.customerName,
       customerPhoneNumbers:
           customerPhoneNumbers ?? this.customerPhoneNumbers,
+      locationLabel: locationLabel ?? this.locationLabel,
       locationUrl: locationUrl ?? this.locationUrl,
-      legacyLocationLabel: legacyLocationLabel ?? this.legacyLocationLabel,
+      locationLinkVisible: locationLinkVisible ?? this.locationLinkVisible,
       notes: notes ?? this.notes,
       priority: priority ?? this.priority,
       scheduledAt: clearScheduledAt ? null : (scheduledAt ?? this.scheduledAt),
@@ -129,8 +135,9 @@ class WorkOrderFormState extends Equatable {
         jobTitle,
         customerName,
         customerPhoneNumbers,
+        locationLabel,
         locationUrl,
-        legacyLocationLabel,
+        locationLinkVisible,
         notes,
         priority,
         scheduledAt,
@@ -143,6 +150,35 @@ class WorkOrderFormState extends Equatable {
         message,
         isError,
       ];
+}
+
+/// Splits persisted location fields for the form without destroying data.
+///
+/// Old records may store a map URL in [WorkOrder.locationLabel] with an empty
+/// [WorkOrder.locationUrl]. Those URLs are shown in the link field; plain-text
+/// addresses stay in the address field.
+({String address, String url, bool linkVisible}) splitWorkOrderLocationFields(
+  WorkOrder workOrder,
+) {
+  final rawLabel = (workOrder.locationLabel ?? '').trim();
+  final rawUrl = (workOrder.locationUrl ?? '').trim();
+
+  if (rawUrl.isNotEmpty) {
+    final address = rawLabel.isNotEmpty &&
+            !WorkOrderLocationLauncher.isValidHttpUrl(rawLabel)
+        ? rawLabel
+        : '';
+    return (address: address, url: rawUrl, linkVisible: true);
+  }
+
+  if (rawLabel.isNotEmpty) {
+    if (WorkOrderLocationLauncher.isValidHttpUrl(rawLabel)) {
+      return (address: '', url: rawLabel, linkVisible: true);
+    }
+    return (address: rawLabel, url: '', linkVisible: false);
+  }
+
+  return (address: '', url: '', linkVisible: false);
 }
 
 class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
@@ -197,10 +233,7 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
     final result = await _getById(workOrderId!);
     switch (result) {
       case Success(data: final workOrder):
-        final url = workOrder.effectiveLocationUrl ?? '';
-        final legacyLabel = (workOrder.locationLabel ?? '').trim();
-        final showLegacy = legacyLabel.isNotEmpty &&
-            !WorkOrderLocationLauncher.isValidHttpUrl(legacyLabel);
+        final split = splitWorkOrderLocationFields(workOrder);
         emit(
           state.copyWith(
             status: WorkOrderFormStatus.ready,
@@ -214,8 +247,9 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
             jobTitle: workOrder.jobTitle,
             customerName: workOrder.customerName ?? '',
             customerPhoneNumbers: workOrder.customerPhoneNumbers,
-            locationUrl: url,
-            legacyLocationLabel: showLegacy ? legacyLabel : '',
+            locationLabel: split.address,
+            locationUrl: split.url,
+            locationLinkVisible: split.linkVisible,
             notes: workOrder.notes ?? '',
             priority: workOrder.priority,
             scheduledAt: workOrder.scheduledAt,
@@ -238,21 +272,51 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
   void updateField({
     String? jobTitle,
     String? customerName,
+    String? locationLabel,
     String? locationUrl,
     String? notes,
     WorkOrderPriority? priority,
     DateTime? scheduledAt,
     bool clearScheduledAt = false,
   }) {
+    final showLink = locationUrl != null && locationUrl.trim().isNotEmpty
+        ? true
+        : null;
     emit(
       state.copyWith(
         jobTitle: jobTitle,
         customerName: customerName,
+        locationLabel: locationLabel,
         locationUrl: locationUrl,
+        locationLinkVisible: showLink,
         notes: notes,
         priority: priority,
         scheduledAt: scheduledAt,
         clearScheduledAt: clearScheduledAt,
+      ),
+    );
+  }
+
+  void addLocationLinkRow() {
+    if (state.locationLinkVisible) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        locationLinkVisible: true,
+        clearMessage: true,
+        isError: false,
+      ),
+    );
+  }
+
+  void removeLocationLink() {
+    emit(
+      state.copyWith(
+        locationUrl: '',
+        locationLinkVisible: false,
+        clearMessage: true,
+        isError: false,
       ),
     );
   }
@@ -333,6 +397,9 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
   }
 
   void removePendingAttachment(int index) {
+    if (index < 0 || index >= state.pendingAttachments.length) {
+      return;
+    }
     final next = [...state.pendingAttachments]..removeAt(index);
     emit(state.copyWith(pendingAttachments: next));
   }
@@ -389,7 +456,8 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
     }
 
     final locationUrl = state.locationUrl.trim();
-    if (locationUrl.isNotEmpty &&
+    if (state.locationLinkVisible &&
+        locationUrl.isNotEmpty &&
         !WorkOrderLocationLauncher.isValidHttpUrl(locationUrl)) {
       emit(
         state.copyWith(
@@ -426,18 +494,16 @@ class WorkOrderFormCubit extends Cubit<WorkOrderFormState> {
       }
       return 'm4a';
     }();
+    final address = state.locationLabel.trim();
+    final link = state.locationLinkVisible ? locationUrl : '';
     final input = WorkOrderUpsertInput(
       jobTitle: title,
       customerName: state.customerName.trim().isEmpty
           ? null
           : state.customerName.trim(),
       customerPhoneNumbers: phones,
-      locationUrl: locationUrl.isEmpty ? null : locationUrl,
-      locationLabel: locationUrl.isNotEmpty
-          ? locationUrl
-          : (state.legacyLocationLabel.trim().isEmpty
-              ? null
-              : state.legacyLocationLabel.trim()),
+      locationLabel: address.isEmpty ? null : address,
+      locationUrl: link.isEmpty ? null : link,
       notes: state.notes.trim().isEmpty ? null : state.notes.trim(),
       priority: state.priority,
       scheduledAt: state.scheduledAt,

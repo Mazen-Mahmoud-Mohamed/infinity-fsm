@@ -144,6 +144,7 @@ void main() {
       repo.lastCreateInput!.locationUrl,
       'https://maps.google.com/?q=24,46',
     );
+    expect(repo.lastCreateInput!.locationLabel, isNull);
     expect(repo.lastCreateInput!.description, isNull);
     expect(repo.lastCreateInput!.attachments.length, 2);
     expect(repo.lastCreateInput!.voiceNoteBytes, isNotNull);

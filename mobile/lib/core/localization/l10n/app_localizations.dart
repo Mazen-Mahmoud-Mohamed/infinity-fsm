@@ -788,6 +788,24 @@ abstract class AppLocalizations {
   /// **'Location'**
   String get workOrderLocation;
 
+  /// No description provided for @workOrderLocationAddressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Street address, district, city…'**
+  String get workOrderLocationAddressHint;
+
+  /// No description provided for @workOrderLocationLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Location Link'**
+  String get workOrderLocationLink;
+
+  /// No description provided for @workOrderAddLocationLink.
+  ///
+  /// In en, this message translates to:
+  /// **'Add Location Link'**
+  String get workOrderAddLocationLink;
+
   /// No description provided for @workOrderLocationUrlHint.
   ///
   /// In en, this message translates to:

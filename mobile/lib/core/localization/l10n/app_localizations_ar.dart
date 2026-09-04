@@ -377,6 +377,15 @@ class AppLocalizationsAr extends AppLocalizations {
   String get workOrderLocation => 'الموقع';
 
   @override
+  String get workOrderLocationAddressHint => 'عنوان الشارع، الحي، المدينة…';
+
+  @override
+  String get workOrderLocationLink => 'رابط الموقع';
+
+  @override
+  String get workOrderAddLocationLink => 'إضافة رابط الموقع';
+
+  @override
   String get workOrderLocationUrlHint =>
       'الصق رابط الموقع أو الخريطة (https://…)';
 

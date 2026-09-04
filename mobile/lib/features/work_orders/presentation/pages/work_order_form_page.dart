@@ -78,7 +78,8 @@ class _WorkOrderFormView extends StatefulWidget {
 class _WorkOrderFormViewState extends State<_WorkOrderFormView> {
   final _titleController = TextEditingController();
   final _customerController = TextEditingController();
-  final _locationController = TextEditingController();
+  final _locationAddressController = TextEditingController();
+  final _locationUrlController = TextEditingController();
   final _notesController = TextEditingController();
   final _technicianSearchController = TextEditingController();
 
@@ -89,7 +90,8 @@ class _WorkOrderFormViewState extends State<_WorkOrderFormView> {
   void dispose() {
     _titleController.dispose();
     _customerController.dispose();
-    _locationController.dispose();
+    _locationAddressController.dispose();
+    _locationUrlController.dispose();
     _notesController.dispose();
     _technicianSearchController.dispose();
     super.dispose();
@@ -101,7 +103,8 @@ class _WorkOrderFormViewState extends State<_WorkOrderFormView> {
     }
     _titleController.text = state.jobTitle;
     _customerController.text = state.customerName;
-    _locationController.text = state.locationUrl;
+    _locationAddressController.text = state.locationLabel;
+    _locationUrlController.text = state.locationUrl;
     _notesController.text = state.notes;
     _controllersSynced = true;
   }
@@ -563,44 +566,105 @@ class _WorkOrderFormViewState extends State<_WorkOrderFormView> {
         ),
         const SizedBox(height: AppSpacing.md),
         TextField(
-          controller: _locationController,
+          controller: _locationAddressController,
           decoration: InputDecoration(
             labelText: l10n.workOrderLocation,
-            hintText: l10n.workOrderLocationUrlHint,
-            helperText: state.legacyLocationLabel.isEmpty
-                ? null
-                : state.legacyLocationLabel,
-            errorText: state.isError &&
-                    state.message == 'workOrderLocationUrlInvalid'
-                ? localizeAppMessage(l10n, state.message)
-                : null,
-            suffixIcon: WorkOrderLocationLauncher.isValidHttpUrl(
-                    _locationController.text)
-                ? IconButton(
-                    tooltip: l10n.workOrderOpenLocation,
-                    onPressed: saving
-                        ? null
-                        : () async {
-                            final opened = await WorkOrderLocationLauncher
-                                .openUrl(_locationController.text);
-                            if (!opened && context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(l10n.workOrderCouldNotOpenMaps),
-                                ),
-                              );
-                            }
-                          },
-                    icon: const Icon(Icons.open_in_new),
-                  )
-                : null,
+            hintText: l10n.workOrderLocationAddressHint,
           ),
-          keyboardType: TextInputType.url,
-          onChanged: (value) {
-            context.read<WorkOrderFormCubit>().updateField(locationUrl: value);
-            setState(() {});
-          },
+          textInputAction: TextInputAction.next,
+          maxLines: 2,
+          minLines: 1,
+          enabled: !saving,
+          onChanged: (value) => context
+              .read<WorkOrderFormCubit>()
+              .updateField(locationLabel: value),
         ),
+        const SizedBox(height: AppSpacing.md),
+        Text(
+          l10n.workOrderLocationLink,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        if (state.locationLinkVisible)
+          Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _locationUrlController,
+                    decoration: InputDecoration(
+                      labelText: l10n.workOrderLocationLink,
+                      hintText: l10n.workOrderLocationUrlHint,
+                      errorText: state.isError &&
+                              state.message == 'workOrderLocationUrlInvalid'
+                          ? localizeAppMessage(l10n, state.message)
+                          : null,
+                      suffixIcon: WorkOrderLocationLauncher.isValidHttpUrl(
+                              _locationUrlController.text)
+                          ? IconButton(
+                              tooltip: l10n.workOrderOpenLocation,
+                              onPressed: saving
+                                  ? null
+                                  : () async {
+                                      final opened =
+                                          await WorkOrderLocationLauncher
+                                              .openUrl(
+                                        _locationUrlController.text,
+                                      );
+                                      if (!opened && context.mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              l10n.workOrderCouldNotOpenMaps,
+                                            ),
+                                          ),
+                                        );
+                                      }
+                                    },
+                              icon: const Icon(Icons.open_in_new),
+                            )
+                          : null,
+                    ),
+                    keyboardType: TextInputType.url,
+                    enabled: !saving,
+                    onChanged: (value) {
+                      context
+                          .read<WorkOrderFormCubit>()
+                          .updateField(locationUrl: value);
+                      setState(() {});
+                    },
+                  ),
+                ),
+                IconButton(
+                  tooltip: l10n.workOrderDelete,
+                  onPressed: saving
+                      ? null
+                      : () {
+                          _locationUrlController.clear();
+                          context
+                              .read<WorkOrderFormCubit>()
+                              .removeLocationLink();
+                        },
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          )
+        else
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: TextButton.icon(
+              onPressed: saving
+                  ? null
+                  : () =>
+                      context.read<WorkOrderFormCubit>().addLocationLinkRow(),
+              icon: const Icon(Icons.add),
+              label: Text(l10n.workOrderAddLocationLink),
+            ),
+          ),
         const SizedBox(height: AppSpacing.md),
         TextField(
           controller: _notesController,

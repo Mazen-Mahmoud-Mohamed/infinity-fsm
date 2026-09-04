@@ -88,6 +88,28 @@ describe('WorkOrdersService mapping — locationUrl + multi-assignee', () => {
     expect(mapped.description).toBe('Legacy description');
   });
 
+  it('maps plain locationLabel separately from locationUrl', () => {
+    const mapped = workOrdersService._map(
+      sampleDoc({
+        locationLabel: '123 Tahrir Street, Dokki, Giza',
+        locationUrl: 'https://maps.google.com/?q=30,31',
+      })
+    );
+    expect(mapped.locationLabel).toBe('123 Tahrir Street, Dokki, Giza');
+    expect(mapped.locationUrl).toBe('https://maps.google.com/?q=30,31');
+  });
+
+  it('maps locationUrl-only without requiring locationLabel to equal the URL', () => {
+    const mapped = workOrdersService._map(
+      sampleDoc({
+        locationLabel: null,
+        locationUrl: 'https://maps.google.com/?q=24.7,46.6',
+      })
+    );
+    expect(mapped.locationLabel).toBeNull();
+    expect(mapped.locationUrl).toBe('https://maps.google.com/?q=24.7,46.6');
+  });
+
   it('falls back to single assignee when assignedTechnicianIds is empty', () => {
     const mapped = workOrdersService._map(
       sampleDoc({
