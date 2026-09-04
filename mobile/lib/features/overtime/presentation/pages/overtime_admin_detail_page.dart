@@ -144,140 +144,129 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                 )
               : null;
 
-          final leftSections = <Widget>[
-            if (session.requiresManualReview) ...[
-              _ManualReviewBanner(
-                reason: session.reviewReason,
-                totalDurationMinutes: session.totalDurationMinutes,
-                l10n: l10n,
+          final technicianCard = _SectionCard(
+            title: l10n.overtimeTechnicianInfo,
+            dense: isDesktop,
+            fillHeight: isDesktop,
+            children: [
+              _DetailRow(
+                label: l10n.labelName,
+                value: session.technician?.displayName ?? '-',
+                dense: isDesktop,
               ),
-              const SizedBox(height: AppSpacing.lg),
+              _DetailRow(
+                label: l10n.email,
+                value: session.technician?.email ?? '-',
+                dense: isDesktop,
+              ),
+              _DetailRow(
+                label: l10n.roleLabel,
+                value: localizeRoleLabel(
+                  l10n,
+                  session.technician?.primaryRole,
+                ),
+                dense: isDesktop,
+              ),
             ],
-            _SectionCard(
-              title: l10n.overtimeTechnicianInfo,
-              children: [
-                _DetailRow(
-                  label: l10n.labelName,
-                  value: session.technician?.displayName ?? '-',
-                ),
-                _DetailRow(
-                  label: l10n.email,
-                  value: session.technician?.email ?? '-',
-                ),
-                _DetailRow(
-                  label: l10n.roleLabel,
-                  value: localizeRoleLabel(
-                    l10n,
-                    session.technician?.primaryRole,
-                  ),
-                ),
-              ],
+          );
+
+          final sessionFields = <(String, String)>[
+            (l10n.labelType, overtimeTypeLabel(l10n, session.type)),
+            if (session.type == OvertimeType.travel && session.isOvernight)
+              ('', l10n.overtimeOvernightShort),
+            (
+              l10n.overtimeStartTime,
+              dateFormat.format(session.startAt.toLocal()),
             ),
-            const SizedBox(height: AppSpacing.lg),
-            _SectionCard(
-              title: l10n.overtimeSessionInfo,
-              trailing: OvertimeStatusBadge(status: session.status),
-              children: [
-                _DetailRow(
-                  label: l10n.labelType,
-                  value: overtimeTypeLabel(l10n, session.type),
-                ),
-                if (session.type == OvertimeType.travel && session.isOvernight)
-                  _DetailRow(
-                    // Show only the overnight word with no "yes/no" label.
-                    label: '',
-                    value: l10n.overtimeOvernightShort,
-                  ),
-                _DetailRow(
-                  label: l10n.overtimeStartTime,
-                  value: dateFormat.format(session.startAt.toLocal()),
-                ),
-                _DetailRow(
-                  label: l10n.overtimeEndTime,
-                  value: session.endAt == null
-                      ? '-'
-                      : dateFormat.format(session.endAt!.toLocal()),
-                ),
-                _DetailRow(
-                  label: l10n.overtimeTotalDuration,
-                  value: OvertimeFormatters.durationFromMinutes(
-                    session.totalDurationMinutes,
-                    l10n,
-                  ),
-                ),
-                _DetailRow(
-                  label: l10n.overtimeWorkingDuration,
-                  value: OvertimeFormatters.durationFromMinutes(
-                    session.workingDurationMinutes,
-                    l10n,
-                  ),
-                ),
-                _DetailRow(
-                  label: l10n.overtimeEligible,
-                  value: OvertimeFormatters.durationFromMinutes(
-                    session.eligibleOvertimeMinutes,
-                    l10n,
-                  ),
-                ),
-                if (session.status == OvertimeStatus.approved)
-                  _DetailRow(
-                    label: l10n.overtimeApprovedHours,
-                    value: OvertimeFormatters.hoursValue(
-                      session.effectiveApprovedHours,
-                      l10n,
-                    ),
-                  ),
-                if (session.rejectionReason != null &&
-                    session.rejectionReason!.isNotEmpty)
-                  _DetailRow(
-                    label: l10n.overtimeRejectionReason,
-                    value: session.rejectionReason!,
-                  ),
-                if (session.reviewNotes != null &&
-                    session.reviewNotes!.isNotEmpty)
-                  _DetailRow(
-                    label: l10n.overtimeReviewNotes,
-                    value: session.reviewNotes!,
-                  ),
-                if (session.approvedBy != null)
-                  _DetailRow(
-                    label: l10n.overtimeApprovedBy,
-                    value: session.approvedBy!.displayName,
-                  ),
-                if (session.approvedAt != null)
-                  _DetailRow(
-                    label: l10n.overtimeApprovedAt,
-                    value: dateFormat.format(session.approvedAt!.toLocal()),
-                  ),
-                if (session.rejectedBy != null)
-                  _DetailRow(
-                    label: l10n.overtimeRejectedBy,
-                    value: session.rejectedBy!.displayName,
-                  ),
-                if (session.rejectedAt != null)
-                  _DetailRow(
-                    label: l10n.overtimeRejectedAt,
-                    value: dateFormat.format(session.rejectedAt!.toLocal()),
-                  ),
-              ],
+            (
+              l10n.overtimeEndTime,
+              session.endAt == null
+                  ? '-'
+                  : dateFormat.format(session.endAt!.toLocal()),
             ),
+            (
+              l10n.overtimeTotalDuration,
+              OvertimeFormatters.durationFromMinutes(
+                session.totalDurationMinutes,
+                l10n,
+              ),
+            ),
+            (
+              l10n.overtimeWorkingDuration,
+              OvertimeFormatters.durationFromMinutes(
+                session.workingDurationMinutes,
+                l10n,
+              ),
+            ),
+            (
+              l10n.overtimeEligible,
+              OvertimeFormatters.durationFromMinutes(
+                session.eligibleOvertimeMinutes,
+                l10n,
+              ),
+            ),
+            if (session.status == OvertimeStatus.approved)
+              (
+                l10n.overtimeApprovedHours,
+                OvertimeFormatters.hoursValue(
+                  session.effectiveApprovedHours,
+                  l10n,
+                ),
+              ),
+            if (session.rejectionReason != null &&
+                session.rejectionReason!.isNotEmpty)
+              (l10n.overtimeRejectionReason, session.rejectionReason!),
+            if (session.reviewNotes != null && session.reviewNotes!.isNotEmpty)
+              (l10n.overtimeReviewNotes, session.reviewNotes!),
+            if (session.approvedBy != null)
+              (l10n.overtimeApprovedBy, session.approvedBy!.displayName),
+            if (session.approvedAt != null)
+              (
+                l10n.overtimeApprovedAt,
+                dateFormat.format(session.approvedAt!.toLocal()),
+              ),
+            if (session.rejectedBy != null)
+              (l10n.overtimeRejectedBy, session.rejectedBy!.displayName),
+            if (session.rejectedAt != null)
+              (
+                l10n.overtimeRejectedAt,
+                dateFormat.format(session.rejectedAt!.toLocal()),
+              ),
           ];
 
-          final rightSections = <Widget>[
-            _SectionCard(
-              title: l10n.overtimeJourneyTimeline,
-              children: [
-                OvertimeJourneyProgressStrip(session: session),
-                const SizedBox(height: AppSpacing.md),
-                OvertimeJourneyTimeline(
-                  session: session,
-                  // Desktop places Journey Overview full-width below the split.
-                  includeJourneyOverview: !isDesktop,
-                  focus: isDesktop ? _journeyFocus : null,
-                  desktopCompactPhotos: isDesktop,
-                ),
-              ],
-            ),
+          final sessionCard = _SectionCard(
+            title: l10n.overtimeSessionInfo,
+            dense: isDesktop,
+            fillHeight: isDesktop,
+            trailing: OvertimeStatusBadge(status: session.status),
+            children: [
+              if (isDesktop)
+                _DesktopSessionFieldsGrid(fields: sessionFields)
+              else
+                for (final field in sessionFields)
+                  _DetailRow(
+                    label: field.$1,
+                    value: field.$2,
+                  ),
+            ],
+          );
+
+          final timelineSection = _SectionCard(
+            title: l10n.overtimeJourneyTimeline,
+            children: [
+              OvertimeJourneyProgressStrip(session: session),
+              const SizedBox(height: AppSpacing.md),
+              OvertimeJourneyTimeline(
+                session: session,
+                // Desktop places Journey Overview as its own full-width section.
+                includeJourneyOverview: !isDesktop,
+                focus: isDesktop ? _journeyFocus : null,
+                desktopCompactPhotos: isDesktop,
+              ),
+            ],
+          );
+
+          final legacySections = <Widget>[
             if (!session.isV2Workflow) ...[
               const SizedBox(height: AppSpacing.lg),
               OvertimeLocationSection(
@@ -332,27 +321,42 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
                       ? AppBottomChrome.stickyActions
                       : AppBottomChrome.system,
                   children: [
-                    if (isDesktop)
+                    if (isDesktop) ...[
+                      if (session.requiresManualReview) ...[
+                        _ManualReviewBanner(
+                          reason: session.reviewReason,
+                          totalDurationMinutes: session.totalDurationMinutes,
+                          l10n: l10n,
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                      ],
                       _DesktopOvertimeDetailLayout(
-                        start: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: leftSections,
-                        ),
-                        end: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: rightSections,
-                        ),
-                        footer: OvertimeJourneyOverview(
+                        technicianCard: technicianCard,
+                        sessionCard: sessionCard,
+                        timelineSection: timelineSection,
+                        overviewSection: OvertimeJourneyOverview(
                           session: session,
                           mapHeight: OvertimeJourneyOverview.desktopMapHeight,
-                          topSpacing: 14,
+                          topSpacing: AppSpacing.lg,
                           focus: _journeyFocus,
                         ),
-                      )
-                    else ...[
-                      ...leftSections,
+                      ),
+                      ...legacySections,
+                    ] else ...[
+                      if (session.requiresManualReview) ...[
+                        _ManualReviewBanner(
+                          reason: session.reviewReason,
+                          totalDurationMinutes: session.totalDurationMinutes,
+                          l10n: l10n,
+                        ),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
+                      technicianCard,
                       const SizedBox(height: AppSpacing.lg),
-                      ...rightSections,
+                      sessionCard,
+                      const SizedBox(height: AppSpacing.lg),
+                      timelineSection,
+                      ...legacySections,
                     ],
                     if (reviewActions != null && !pinActionsToViewport) ...[
                       const SizedBox(height: AppSpacing.lg),
@@ -513,6 +517,17 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
 }
 
 const overtimeAdminReviewActionsKey = Key('overtimeAdminReviewActions');
+
+@visibleForTesting
+const overtimeAdminDesktopDetailLayoutKey =
+    Key('overtimeAdminDesktopDetailLayout');
+
+/// Flex pair for the desktop top row: Technician | Session ≈ 35% / 65%.
+@visibleForTesting
+({int startFlex, int endFlex}) overtimeDesktopDetailColumnFlex(double width) {
+  // 7:13 = 35%:65% at every desktop width.
+  return (startFlex: 7, endFlex: 13);
+}
 
 class _OvertimeReviewActions extends StatelessWidget {
   const _OvertimeReviewActions({
@@ -828,18 +843,27 @@ class _SectionCard extends StatelessWidget {
     required this.title,
     required this.children,
     this.trailing,
+    this.dense = false,
+    this.fillHeight = false,
   });
 
   final String title;
   final List<Widget> children;
   final Widget? trailing;
+  final bool dense;
+  final bool fillHeight;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final padding = dense ? AppSpacing.sm + 4 : AppSpacing.md;
+    final titleStyle = dense
+        ? theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700)
+        : theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(AppSpacing.md),
+      height: fillHeight ? double.infinity : null,
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
@@ -854,15 +878,13 @@ class _SectionCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: titleStyle,
                 ),
               ),
               trailing ?? const SizedBox.shrink(),
             ],
           ),
-          const SizedBox(height: AppSpacing.md),
+          SizedBox(height: dense ? AppSpacing.sm : AppSpacing.md),
           ...children,
         ],
       ),
@@ -870,8 +892,52 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
+/// Desktop session fields in a compact 2-column grid (uses the 65% width).
+class _DesktopSessionFieldsGrid extends StatelessWidget {
+  const _DesktopSessionFieldsGrid({required this.fields});
+
+  final List<(String, String)> fields;
+
+  @override
+  Widget build(BuildContext context) {
+    if (fields.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      children: [
+        for (var i = 0; i < fields.length; i += 2)
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: i + 2 < fields.length ? AppSpacing.sm : 0,
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: _CompactSessionField(
+                    label: fields[i].$1,
+                    value: fields[i].$2,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: i + 1 < fields.length
+                      ? _CompactSessionField(
+                          label: fields[i + 1].$1,
+                          value: fields[i + 1].$2,
+                        )
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _CompactSessionField extends StatelessWidget {
+  const _CompactSessionField({required this.label, required this.value});
 
   final String label;
   final String value;
@@ -879,16 +945,61 @@ class _DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label.isNotEmpty)
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        if (label.isNotEmpty) const SizedBox(height: 2),
+        Text(
+          value,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          softWrap: true,
+          textDirection: value.contains('@') ? TextDirection.ltr : null,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  const _DetailRow({
+    required this.label,
+    required this.value,
+    this.dense = false,
+  });
+
+  final String label;
+  final String value;
+  final bool dense;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: EdgeInsets.only(bottom: dense ? AppSpacing.xs : AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 130,
+            width: dense ? 108 : 130,
             child: Text(
               label,
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: (dense
+                      ? theme.textTheme.bodySmall
+                      : theme.textTheme.bodyMedium)
+                  ?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
@@ -896,7 +1007,9 @@ class _DetailRow extends StatelessWidget {
           Expanded(
             child: Text(
               value,
-              style: theme.textTheme.bodyLarge,
+              style: dense
+                  ? theme.textTheme.bodyMedium
+                  : theme.textTheme.bodyLarge,
               softWrap: true,
               textDirection: value.contains('@') ? TextDirection.ltr : null,
             ),
@@ -994,91 +1107,53 @@ class _PhotoTile extends StatelessWidget {
   }
 }
 
-/// Desktop-only shell: shrink-wraps the two-column row to the left column
-/// height (timeline scrolls internally), then places [footer] immediately
-/// below with no empty Expanded whitespace.
-class _DesktopOvertimeDetailLayout extends StatefulWidget {
+/// Desktop Overtime Details composition:
+/// 1) Top row: Technician (~35%) | Session (~65%)
+/// 2) Full-width Journey Timeline
+/// 3) Full-width Journey Overview / map
+class _DesktopOvertimeDetailLayout extends StatelessWidget {
   const _DesktopOvertimeDetailLayout({
-    required this.start,
-    required this.end,
-    required this.footer,
+    required this.technicianCard,
+    required this.sessionCard,
+    required this.timelineSection,
+    required this.overviewSection,
   });
 
-  final Widget start;
-  final Widget end;
-  final Widget footer;
-
-  @override
-  State<_DesktopOvertimeDetailLayout> createState() =>
-      _DesktopOvertimeDetailLayoutState();
-}
-
-class _DesktopOvertimeDetailLayoutState
-    extends State<_DesktopOvertimeDetailLayout> {
-  final GlobalKey _startKey = GlobalKey();
-  double? _startHeight;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureStart());
-  }
-
-  @override
-  void didUpdateWidget(covariant _DesktopOvertimeDetailLayout oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _measureStart());
-  }
-
-  void _measureStart() {
-    final box = _startKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null || !box.hasSize) {
-      return;
-    }
-    final height = box.size.height;
-    if (_startHeight != null && (height - _startHeight!).abs() < 0.5) {
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-    setState(() => _startHeight = height);
-  }
+  final Widget technicianCard;
+  final Widget sessionCard;
+  final Widget timelineSection;
+  final Widget overviewSection;
 
   @override
   Widget build(BuildContext context) {
-    final timelineMaxHeight = _startHeight;
+    final flex = overtimeDesktopDetailColumnFlex(
+      MediaQuery.sizeOf(context).width,
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 3,
-              child: KeyedSubtree(
-                key: _startKey,
-                child: widget.start,
+        IntrinsicHeight(
+          child: Row(
+            key: overtimeAdminDesktopDetailLayoutKey,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: flex.startFlex,
+                child: technicianCard,
               ),
-            ),
-            const SizedBox(width: AppSpacing.lg),
-            Expanded(
-              flex: 2,
-              child: timelineMaxHeight == null
-                  ? widget.end
-                  : SizedBox(
-                      height: timelineMaxHeight,
-                      child: SingleChildScrollView(
-                        primary: false,
-                        child: widget.end,
-                      ),
-                    ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                flex: flex.endFlex,
+                child: sessionCard,
+              ),
+            ],
+          ),
         ),
-        widget.footer,
+        const SizedBox(height: AppSpacing.lg),
+        timelineSection,
+        overviewSection,
       ],
     );
   }

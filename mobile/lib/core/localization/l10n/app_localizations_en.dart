@@ -3167,6 +3167,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overtimeVoicePlaybackFailed => 'Unable to play this recording.';
 
   @override
+  String get overtimeVoiceUnavailable => 'Voice note unavailable';
+
+  @override
   String get overtimeExportExcel => 'Export Excel';
 
   @override

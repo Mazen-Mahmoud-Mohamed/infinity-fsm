@@ -34,6 +34,36 @@ enum OvertimeVoiceSyncBadge {
   uploaded,
 }
 
+/// Playback / availability UI state for [OvertimeVoiceNoteSection].
+enum OvertimeVoiceUiState {
+  loading,
+  ready,
+  playing,
+  paused,
+  unavailable,
+}
+
+/// Returns true when [url] is a usable remote HTTP(S) audio URL.
+bool isOvertimeVoiceRemoteUrlValid(String? url) {
+  if (url == null) return false;
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) return false;
+  if (trimmed.startsWith('local-')) return false;
+  final uri = Uri.tryParse(trimmed);
+  if (uri == null) return false;
+  if (!uri.hasScheme) return false;
+  if (uri.scheme != 'http' && uri.scheme != 'https') return false;
+  if (uri.host.isEmpty) return false;
+  return true;
+}
+
+/// Optional factory hooks for tests (injection without DI framework).
+@visibleForTesting
+AudioPlayer Function()? debugOvertimeAudioPlayerFactory;
+
+@visibleForTesting
+AudioRecorder Function()? debugOvertimeAudioRecorderFactory;
+
 /// Compact voice note controls for a single overtime journey stage.
 ///
 /// [readOnly] — play only (admin / after successful upload).
@@ -41,6 +71,9 @@ enum OvertimeVoiceSyncBadge {
 ///
 /// Recording / playback / upload behavior is unchanged — this widget only
 /// polishes presentation around the existing flows.
+///
+/// Failures (invalid URL, player init, playback) stay inside this widget as
+/// [OvertimeVoiceUiState.unavailable] and must never blank the parent page.
 class OvertimeVoiceNoteSection extends StatefulWidget {
   const OvertimeVoiceNoteSection({
     super.key,
@@ -88,8 +121,8 @@ class OvertimeVoiceNoteSection extends StatefulWidget {
 
 class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     with SingleTickerProviderStateMixin {
-  final AudioRecorder _recorder = AudioRecorder();
-  final AudioPlayer _player = AudioPlayer();
+  AudioRecorder? _recorder;
+  AudioPlayer? _player;
 
   bool _recording = false;
   bool _playing = false;
@@ -97,6 +130,8 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
   bool _hitMaxLimit = false;
   bool _justFinished = false;
   bool _sourceReady = false;
+  bool _disposed = false;
+  OvertimeVoiceUiState _uiState = OvertimeVoiceUiState.ready;
   double _elapsedSeconds = 0;
   Duration _position = Duration.zero;
   Duration _playerDuration = Duration.zero;
@@ -113,16 +148,11 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
   bool get _actionsLocked =>
       !widget.enabled ||
       _busy ||
+      _uiState == OvertimeVoiceUiState.unavailable ||
       widget.syncBadge == OvertimeVoiceSyncBadge.uploading;
 
   bool get _hasAudio {
-    final url = widget.remoteUrl;
-    if (url != null &&
-        url.isNotEmpty &&
-        !url.startsWith('local-') &&
-        (url.startsWith('http://') || url.startsWith('https://'))) {
-      return true;
-    }
+    if (isOvertimeVoiceRemoteUrlValid(widget.remoteUrl)) return true;
     if (_bytes != null && _bytes!.isNotEmpty) return true;
     if (widget.localBytes != null && widget.localBytes!.isNotEmpty) return true;
     if (_localPath != null && _localPath!.isNotEmpty) return true;
@@ -148,12 +178,22 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     if (widget.syncBadge != OvertimeVoiceSyncBadge.none) {
       return widget.syncBadge;
     }
-    final url = widget.remoteUrl;
-    if (url != null &&
-        (url.startsWith('http://') || url.startsWith('https://'))) {
+    if (isOvertimeVoiceRemoteUrlValid(widget.remoteUrl)) {
       return OvertimeVoiceSyncBadge.uploaded;
     }
     return OvertimeVoiceSyncBadge.none;
+  }
+
+  OvertimeVoiceUiState get _resolvedUiState {
+    if (_uiState == OvertimeVoiceUiState.unavailable) {
+      return OvertimeVoiceUiState.unavailable;
+    }
+    if (_busy && !_playing && !_recording) {
+      return OvertimeVoiceUiState.loading;
+    }
+    if (_playing) return OvertimeVoiceUiState.playing;
+    if (_hasAudio) return OvertimeVoiceUiState.paused;
+    return OvertimeVoiceUiState.ready;
   }
 
   @override
@@ -165,29 +205,113 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     );
-    _playerStateSub = _player.playerStateStream.listen((state) {
-      if (!mounted) return;
-      final playing = state.playing;
-      if (playing != _playing) {
-        setState(() => _playing = playing);
-      }
-      if (state.processingState == ProcessingState.completed) {
-        setState(() {
-          _playing = false;
-          _position = Duration.zero;
-        });
-        unawaited(_player.seek(Duration.zero));
-        unawaited(_player.pause());
-      }
+    // Read-only admin cards with a non-usable remote URL → unavailable UI,
+    // never attempt player construction for a known-bad source.
+    if (widget.readOnly &&
+        !_hasLocalPlayableSource() &&
+        widget.remoteUrl != null &&
+        widget.remoteUrl!.trim().isNotEmpty &&
+        !isOvertimeVoiceRemoteUrlValid(widget.remoteUrl)) {
+      _uiState = OvertimeVoiceUiState.unavailable;
+    }
+  }
+
+  bool _hasLocalPlayableSource() {
+    if (_bytes != null && _bytes!.isNotEmpty) return true;
+    if (widget.localBytes != null && widget.localBytes!.isNotEmpty) return true;
+    if (_localPath != null && _localPath!.isNotEmpty) return true;
+    return false;
+  }
+
+  AudioPlayer? _ensurePlayer() {
+    if (_disposed || _uiState == OvertimeVoiceUiState.unavailable) {
+      return null;
+    }
+    if (_player != null) return _player;
+    try {
+      final factory = debugOvertimeAudioPlayerFactory;
+      final player = factory != null ? factory() : AudioPlayer();
+      _player = player;
+      _playerStateSub = player.playerStateStream.listen(
+        (state) {
+          if (!mounted || _disposed) return;
+          final playing = state.playing;
+          if (playing != _playing) {
+            setState(() => _playing = playing);
+          }
+          if (state.processingState == ProcessingState.completed) {
+            setState(() {
+              _playing = false;
+              _position = Duration.zero;
+            });
+            unawaited(_safePlayerOp(() => player.seek(Duration.zero)));
+            unawaited(_safePlayerOp(player.pause));
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          _markUnavailable(error, stackTrace);
+        },
+      );
+      _positionSub = player.positionStream.listen(
+        (pos) {
+          if (!mounted || _disposed) return;
+          setState(() => _position = pos);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          _markUnavailable(error, stackTrace);
+        },
+      );
+      _durationSub = player.durationStream.listen(
+        (dur) {
+          if (!mounted || _disposed || dur == null) return;
+          setState(() => _playerDuration = dur);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          _markUnavailable(error, stackTrace);
+        },
+      );
+      return player;
+    } on Object catch (error, stackTrace) {
+      _markUnavailable(error, stackTrace);
+      return null;
+    }
+  }
+
+  AudioRecorder? _ensureRecorder() {
+    if (_disposed || widget.readOnly) return null;
+    if (_recorder != null) return _recorder;
+    try {
+      final factory = debugOvertimeAudioRecorderFactory;
+      _recorder = factory != null ? factory() : AudioRecorder();
+      return _recorder;
+    } on Object catch (error, stackTrace) {
+      _markUnavailable(error, stackTrace);
+      return null;
+    }
+  }
+
+  void _markUnavailable(Object error, StackTrace stackTrace) {
+    _logVoicePlaybackError(error, stackTrace);
+    if (_disposed) return;
+    _sourceReady = false;
+    if (!mounted) {
+      _uiState = OvertimeVoiceUiState.unavailable;
+      return;
+    }
+    setState(() {
+      _uiState = OvertimeVoiceUiState.unavailable;
+      _playing = false;
+      _busy = false;
+      _recording = false;
     });
-    _positionSub = _player.positionStream.listen((pos) {
-      if (!mounted) return;
-      setState(() => _position = pos);
-    });
-    _durationSub = _player.durationStream.listen((dur) {
-      if (!mounted || dur == null) return;
-      setState(() => _playerDuration = dur);
-    });
+  }
+
+  Future<void> _safePlayerOp(Future<void> Function() op) async {
+    try {
+      await op();
+    } on Object {
+      // Best-effort; never escape to the parent page.
+    }
   }
 
   @override
@@ -211,6 +335,19 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
       _durationSeconds = widget.durationSeconds;
     }
 
+    if (widget.readOnly &&
+        !_hasLocalPlayableSource() &&
+        widget.remoteUrl != null &&
+        widget.remoteUrl!.trim().isNotEmpty &&
+        !isOvertimeVoiceRemoteUrlValid(widget.remoteUrl)) {
+      _uiState = OvertimeVoiceUiState.unavailable;
+    } else if (_uiState == OvertimeVoiceUiState.unavailable &&
+        (isOvertimeVoiceRemoteUrlValid(widget.remoteUrl) ||
+            _hasLocalPlayableSource())) {
+      // New valid source arrived — allow retry.
+      _uiState = OvertimeVoiceUiState.ready;
+    }
+
     // Parent cleared the draft (e.g. after advancing a stage). Drop local UI
     // state so the active recorder looks empty — without deleting files.
     if (!widget.readOnly &&
@@ -228,12 +365,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     required String? remoteUrl,
     required List<int>? localBytes,
   }) {
-    if (remoteUrl != null &&
-        remoteUrl.isNotEmpty &&
-        !remoteUrl.startsWith('local-') &&
-        (remoteUrl.startsWith('http://') || remoteUrl.startsWith('https://'))) {
-      return true;
-    }
+    if (isOvertimeVoiceRemoteUrlValid(remoteUrl)) return true;
     return localBytes != null && localBytes.isNotEmpty;
   }
 
@@ -247,12 +379,11 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
         ..stop()
         ..value = 0;
     }
-    try {
-      await _player.stop();
-    } on Object {
-      // Best-effort; UI reset must continue.
+    final player = _player;
+    if (player != null) {
+      await _safePlayerOp(player.stop);
     }
-    if (!mounted) return;
+    if (!mounted || _disposed) return;
     setState(() {
       _localPath = null;
       _bytes = null;
@@ -267,18 +398,42 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
       _position = Duration.zero;
       _playerDuration = Duration.zero;
       _recordingMaxSeconds = null;
+      if (_uiState != OvertimeVoiceUiState.unavailable) {
+        _uiState = OvertimeVoiceUiState.ready;
+      }
     });
   }
 
   @override
   void dispose() {
+    _disposed = true;
     _tick?.cancel();
     unawaited(_positionSub?.cancel() ?? Future<void>.value());
     unawaited(_durationSub?.cancel() ?? Future<void>.value());
     unawaited(_playerStateSub?.cancel() ?? Future<void>.value());
     _pulseController.dispose();
-    unawaited(_recorder.dispose());
-    unawaited(_player.dispose());
+    final recorder = _recorder;
+    final player = _player;
+    _recorder = null;
+    _player = null;
+    if (recorder != null) {
+      unawaited(() async {
+        try {
+          await recorder.dispose();
+        } on Object {
+          // Ignore dispose races.
+        }
+      }());
+    }
+    if (player != null) {
+      unawaited(() async {
+        try {
+          await player.dispose();
+        } on Object {
+          // Ignore dispose races.
+        }
+      }());
+    }
     super.dispose();
   }
 
@@ -299,18 +454,30 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
       return;
     }
 
-    await _player.stop();
+    final recorder = _ensureRecorder();
+    if (recorder == null) return;
+
+    final player = _ensurePlayer();
+    if (player != null) {
+      await _safePlayerOp(player.stop);
+    }
     final dir = await getTemporaryDirectory();
     final path = p.join(
       dir.path,
       'ot_voice_${DateTime.now().millisecondsSinceEpoch}.m4a',
     );
 
-    await _recorder.start(
-      OvertimeVoiceRecordConfig.resolve(widget.voiceRecordingQuality),
-      path: path,
-    );
+    try {
+      await recorder.start(
+        OvertimeVoiceRecordConfig.resolve(widget.voiceRecordingQuality),
+        path: path,
+      );
+    } on Object catch (error, stackTrace) {
+      _markUnavailable(error, stackTrace);
+      return;
+    }
 
+    if (!mounted || _disposed) return;
     setState(() {
       _recording = true;
       _recordingMaxSeconds = widget.maxDurationSeconds;
@@ -328,7 +495,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
 
     _tick?.cancel();
     _tick = Timer.periodic(const Duration(seconds: 1), (timer) async {
-      if (!mounted || !_recording) {
+      if (!mounted || !_recording || _disposed) {
         timer.cancel();
         return;
       }
@@ -346,8 +513,15 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     _pulseController
       ..stop()
       ..reset();
-    final path = await _recorder.stop();
-    if (!mounted) return;
+    final recorder = _recorder;
+    String? path;
+    try {
+      path = await recorder?.stop();
+    } on Object catch (error, stackTrace) {
+      _markUnavailable(error, stackTrace);
+      return;
+    }
+    if (!mounted || _disposed) return;
 
     setState(() {
       _recording = false;
@@ -390,7 +564,10 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
 
   Future<void> _deleteRecording() async {
     if (widget.readOnly || _actionsLocked) return;
-    await _player.stop();
+    final player = _player;
+    if (player != null) {
+      await _safePlayerOp(player.stop);
+    }
     final path = _localPath;
     if (path != null) {
       try {
@@ -402,6 +579,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
         // Best-effort cleanup.
       }
     }
+    if (!mounted || _disposed) return;
     setState(() {
       _localPath = null;
       _bytes = null;
@@ -427,34 +605,52 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     if (_actionsLocked || _recording) return;
     if (_playing) {
       _debugVoiceLog('pause requested');
-      await _player.pause();
+      final player = _player;
+      if (player != null) {
+        await _safePlayerOp(player.pause);
+      }
+      return;
+    }
+
+    if (widget.readOnly &&
+        !_hasLocalPlayableSource() &&
+        !isOvertimeVoiceRemoteUrlValid(widget.remoteUrl)) {
+      _markUnavailable(
+        StateError('Invalid voice note URL: ${widget.remoteUrl}'),
+        StackTrace.current,
+      );
       return;
     }
 
     setState(() => _busy = true);
     try {
+      final player = _ensurePlayer();
+      if (player == null) {
+        return;
+      }
       if (!_sourceReady) {
         final remote = widget.remoteUrl;
-        if (remote != null &&
-            remote.isNotEmpty &&
-            (remote.startsWith('http://') || remote.startsWith('https://'))) {
+        if (isOvertimeVoiceRemoteUrlValid(remote)) {
           _debugVoiceLog('setUrl remote=$remote');
-          await _player.setUrl(remote);
+          await player.setUrl(remote!.trim());
           _debugVoiceLog(
-            'setUrl completed state=${_player.playerState} '
-            'duration=${_player.duration}',
+            'setUrl completed state=${player.playerState} '
+            'duration=${player.duration}',
           );
         } else if (_localPath != null && await File(_localPath!).exists()) {
           _debugVoiceLog('setFilePath local=$_localPath');
-          await _player.setFilePath(_localPath!);
+          await player.setFilePath(_localPath!);
           _debugVoiceLog(
-            'setFilePath completed state=${_player.playerState} '
-            'duration=${_player.duration}',
+            'setFilePath completed state=${player.playerState} '
+            'duration=${player.duration}',
           );
         } else {
           final bytes = _bytes ?? widget.localBytes;
           if (bytes == null || bytes.isEmpty) {
-            setState(() => _busy = false);
+            _markUnavailable(
+              StateError('No playable voice note source'),
+              StackTrace.current,
+            );
             return;
           }
           final dir = await getTemporaryDirectory();
@@ -465,32 +661,33 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
           await File(path).writeAsBytes(bytes, flush: true);
           _localPath = path;
           _debugVoiceLog('setFilePath fromBytes=$path bytes=${bytes.length}');
-          await _player.setFilePath(path);
+          await player.setFilePath(path);
           _debugVoiceLog(
-            'setFilePath(fromBytes) completed state=${_player.playerState}',
+            'setFilePath(fromBytes) completed state=${player.playerState}',
           );
         }
         _sourceReady = true;
       }
+      if (_disposed || !mounted) return;
       _debugVoiceLog(
-        'play() state=${_player.playerState} position=${_player.position}',
+        'play() state=${player.playerState} position=${player.position}',
       );
-      await _player.play();
+      await player.play();
       _debugVoiceLog(
-        'play() returned state=${_player.playerState} '
-        'playing=${_player.playing}',
+        'play() returned state=${player.playerState} '
+        'playing=${player.playing}',
       );
     } on Object catch (error, stackTrace) {
       _sourceReady = false;
-      _logVoicePlaybackError(error, stackTrace);
-      if (mounted) {
+      _markUnavailable(error, stackTrace);
+      if (mounted && !_disposed) {
         final l10n = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(l10n.overtimeVoicePlaybackFailed)),
         );
       }
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted && !_disposed) setState(() => _busy = false);
     }
   }
 
@@ -507,7 +704,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
     final remote = widget.remoteUrl;
     final message =
         '[OvertimeVoice] playback failed url=$remote local=$_localPath '
-        'state=${_player.playerState} error=$error';
+        'state=${_player?.playerState} error=$error';
     try {
       getIt<LoggerService>().error(message, error, stackTrace);
     } on Object {
@@ -518,10 +715,12 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
   }
 
   Future<void> _seekRelative(double value) async {
+    final player = _player;
+    if (player == null) return;
     final totalMs = (_totalSeconds * 1000).round().clamp(0, 3600000);
     if (totalMs <= 0) return;
     final target = Duration(milliseconds: (value * totalMs).round());
-    await _player.seek(target);
+    await _safePlayerOp(() => player.seek(target));
   }
 
   String _formatDuration(double? seconds) {
@@ -546,6 +745,7 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
         : (isDesktop ? AppSpacing.lg : AppSpacing.md);
     const iconSize = 24.0;
     const minTap = 48.0;
+    final uiState = _resolvedUiState;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 220),
@@ -588,7 +788,13 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
                 duration: const Duration(milliseconds: 200),
                 switchInCurve: Curves.easeOutCubic,
                 switchOutCurve: Curves.easeInCubic,
-                child: _recording
+                child: uiState == OvertimeVoiceUiState.unavailable
+                    ? _UnavailablePanel(
+                        key: const ValueKey('unavailable'),
+                        message: l10n.overtimeVoiceUnavailable,
+                        theme: theme,
+                      )
+                    : _recording
                     ? _RecordingPanel(
                         key: const ValueKey('recording'),
                         elapsedLabel: _formatDuration(_elapsedSeconds),
@@ -693,6 +899,39 @@ class _OvertimeVoiceNoteSectionState extends State<OvertimeVoiceNoteSection>
           ),
         ),
       ),
+    );
+  }
+}
+
+class _UnavailablePanel extends StatelessWidget {
+  const _UnavailablePanel({
+    super.key,
+    required this.message,
+    required this.theme,
+  });
+
+  final String message;
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          Icons.mic_off_outlined,
+          size: 20,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: AppSpacing.sm),
+        Expanded(
+          child: Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1130,71 +1369,66 @@ class _PlayerPanel extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.lg),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final tight = constraints.maxWidth < 280;
-            return Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: tight ? AppSpacing.sm : AppSpacing.md,
-              runSpacing: AppSpacing.md,
-              children: [
-                if (!readOnly)
-                  _ControlButton(
-                    icon: Icons.delete_outline_rounded,
-                    label: l10n.overtimeVoiceDelete,
-                    onPressed: locked || busy ? null : onDelete,
-                    minTap: minTap,
-                    iconSize: iconSize,
-                    color: theme.colorScheme.error,
-                  ),
-                if (!readOnly)
-                  _ControlButton(
-                    icon: Icons.mic_none_rounded,
-                    label: l10n.overtimeVoiceRerecord,
-                    onPressed: locked || busy ? null : onRerecord,
-                    minTap: minTap,
-                    iconSize: iconSize,
-                    filled: true,
-                  ),
-                Semantics(
-                  button: true,
-                  label: playLabel,
-                  child: Tooltip(
-                    message: playLabel,
-                    child: Material(
-                      color: theme.colorScheme.primaryContainer,
-                      shape: const CircleBorder(),
-                      elevation: 0,
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: locked || busy ? null : onTogglePlay,
-                        child: SizedBox(
-                          width: minTap,
-                          height: minTap,
-                          child: busy
-                              ? Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                )
-                              : Icon(
-                                  playing
-                                      ? Icons.pause_rounded
-                                      : Icons.play_arrow_rounded,
-                                  size: iconSize,
-                                  color: theme.colorScheme.onPrimaryContainer,
-                                ),
-                        ),
-                      ),
+        Wrap(
+          alignment: WrapAlignment.center,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          spacing: AppSpacing.md,
+          runSpacing: AppSpacing.md,
+          children: [
+            if (!readOnly)
+              _ControlButton(
+                icon: Icons.delete_outline_rounded,
+                label: l10n.overtimeVoiceDelete,
+                onPressed: locked || busy ? null : onDelete,
+                minTap: minTap,
+                iconSize: iconSize,
+                color: theme.colorScheme.error,
+              ),
+            if (!readOnly)
+              _ControlButton(
+                icon: Icons.mic_none_rounded,
+                label: l10n.overtimeVoiceRerecord,
+                onPressed: locked || busy ? null : onRerecord,
+                minTap: minTap,
+                iconSize: iconSize,
+                filled: true,
+              ),
+            Semantics(
+              button: true,
+              label: playLabel,
+              child: Tooltip(
+                message: playLabel,
+                child: Material(
+                  color: theme.colorScheme.primaryContainer,
+                  shape: const CircleBorder(),
+                  elevation: 0,
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: locked || busy ? null : onTogglePlay,
+                    child: SizedBox(
+                      width: minTap,
+                      height: minTap,
+                      child: busy
+                          ? Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: theme.colorScheme.primary,
+                              ),
+                            )
+                          : Icon(
+                              playing
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: iconSize,
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
                     ),
                   ),
                 ),
-              ],
-            );
-          },
+              ),
+            ),
+          ],
         ),
         Focus(
           descendantsAreFocusable: true,

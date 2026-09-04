@@ -1181,6 +1181,7 @@
   "overtimeVoiceWaitingSync": "Waiting for synchronization",
   "overtimeVoiceUploading": "Uploading voice note…",
   "overtimeVoicePlaybackFailed": "Unable to play this recording.",
+  "overtimeVoiceUnavailable": "Voice note unavailable",
   "overtimeExportExcel": "Export Excel",
   "overtimeExportDenied": "Only administrators and supervisors can export overtime reports.",
   "overtimeExportFiltersHint": "Optional filters for the Excel report. Leave blank to export all accessible sessions.",

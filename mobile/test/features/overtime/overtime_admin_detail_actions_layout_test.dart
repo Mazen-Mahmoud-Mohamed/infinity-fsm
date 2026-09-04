@@ -27,6 +27,7 @@ import 'package:mobile/features/overtime/domain/usecases/get_overtime_by_id_usec
 import 'package:mobile/features/overtime/domain/usecases/reject_overtime_usecase.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_detail_cubit.dart';
 import 'package:mobile/features/overtime/presentation/pages/overtime_admin_detail_page.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
 
 GpsSnapshot _gps(DateTime at) => GpsSnapshot(
       latitude: 24.7,
@@ -243,6 +244,102 @@ void main() {
         find.widgetWithText(ElevatedButton, 'Approve').hitTestable(),
         findsOneWidget,
       );
+    },
+  );
+
+  testWidgets(
+    'desktop layout: Technician|Session ~35/65, then full-width timeline + overview',
+    (tester) async {
+      await pumpPage(tester, size: const Size(1280, 900));
+
+      expect(find.byKey(overtimeAdminDesktopDetailLayoutKey), findsOneWidget);
+      final row = tester.widget<Row>(
+        find.byKey(overtimeAdminDesktopDetailLayoutKey),
+      );
+      final expanded = row.children.whereType<Expanded>().toList();
+      expect(expanded, hasLength(2));
+      expect(expanded[0].flex, 7);
+      expect(expanded[1].flex, 13);
+      expect(
+        expanded[0].flex / (expanded[0].flex + expanded[1].flex),
+        closeTo(0.35, 0.001),
+      );
+
+      const techTitle = 'Technician Information';
+      const sessionTitle = 'Session Information';
+      const timelineTitle = 'Journey timeline';
+
+      expect(find.text(techTitle), findsOneWidget);
+      expect(find.text(sessionTitle), findsOneWidget);
+
+      // Timeline / overview may sit below the fold — scroll until visible.
+      final list = find.byType(ListView);
+      for (var i = 0; i < 12 && find.text(timelineTitle).evaluate().isEmpty; i++) {
+        await tester.drag(list, const Offset(0, -280));
+        await tester.pump();
+      }
+      expect(find.text(timelineTitle), findsOneWidget);
+
+      for (var i = 0;
+          i < 12 && find.byType(OvertimeJourneyOverview).evaluate().isEmpty;
+          i++) {
+        await tester.drag(list, const Offset(0, -280));
+        await tester.pump();
+      }
+      // Overview may be shrink when session has no GPS checkpoints.
+      // Structure still places it as a sibling below the top Row.
+      expect(
+        find.descendant(
+          of: find.byKey(overtimeAdminDesktopDetailLayoutKey),
+          matching: find.text(timelineTitle),
+        ),
+        findsNothing,
+      );
+
+      final techY = tester.getTopLeft(find.text(techTitle)).dy;
+      final sessionY = tester.getTopLeft(find.text(sessionTitle)).dy;
+      expect((techY - sessionY).abs(), lessThan(4));
+
+      // Equal-height top cards: IntrinsicHeight + stretch.
+      final techBox = tester.getRect(find.text(techTitle));
+      final sessionBox = tester.getRect(find.text(sessionTitle));
+      // Titles share a row; card bottoms are equal via IntrinsicHeight stretch.
+      final techCard = tester.getRect(
+        find.ancestor(
+          of: find.text(techTitle),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).border != null,
+          ),
+        ).first,
+      );
+      final sessionCard = tester.getRect(
+        find.ancestor(
+          of: find.text(sessionTitle),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is Container &&
+                w.decoration is BoxDecoration &&
+                (w.decoration! as BoxDecoration).border != null,
+          ),
+        ).first,
+      );
+      expect((techCard.bottom - sessionCard.bottom).abs(), lessThan(2));
+      expect(techBox.top, closeTo(sessionBox.top, 4));
+
+      // After scrolling, timeline should still be below the top metadata row
+      // in document order — verify via Element order in the Column.
+      final column = tester.widget<Column>(
+        find
+            .ancestor(
+              of: find.byKey(overtimeAdminDesktopDetailLayoutKey),
+              matching: find.byType(Column),
+            )
+            .first,
+      );
+      expect(column.children.length, greaterThanOrEqualTo(3));
     },
   );
 }

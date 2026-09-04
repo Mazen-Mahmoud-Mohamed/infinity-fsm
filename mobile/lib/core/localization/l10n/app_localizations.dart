@@ -6068,6 +6068,12 @@ abstract class AppLocalizations {
   /// **'Unable to play this recording.'**
   String get overtimeVoicePlaybackFailed;
 
+  /// No description provided for @overtimeVoiceUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note unavailable'**
+  String get overtimeVoiceUnavailable;
+
   /// No description provided for @overtimeExportExcel.
   ///
   /// In en, this message translates to:
