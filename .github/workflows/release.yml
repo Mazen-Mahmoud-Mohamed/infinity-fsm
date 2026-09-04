@@ -278,6 +278,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Full history + tags so previous-release → current-release notes are accurate.
+          fetch-depth: 0
 
       - name: Download Android artifact
         uses: actions/download-artifact@v4
@@ -291,18 +294,80 @@ jobs:
           name: windows-installer
           path: dist/releases
 
-      - name: Generate release manifest
+      - name: Generate release notes
+        id: release_notes
         run: |
+          set -euo pipefail
           VERSION="${{ needs.resolve-version.outputs.version }}"
           BUILD="${{ needs.resolve-version.outputs.build }}"
+          TAG="${{ env.RELEASE_TAG }}"
+          NOTES_PATH="dist/releases/RELEASE_NOTES.md"
+          mkdir -p dist/releases
+
+          # Only claim verification that this workflow actually performed successfully
+          # (publish runs only after Android + Windows build jobs succeed).
+          node scripts/release/generate-release-notes.mjs \
+            --tag "$TAG" \
+            --version "$VERSION" \
+            --build "$BUILD" \
+            --channel stable \
+            --output "$NOTES_PATH" \
+            --check "Android signing secrets validated" \
+            --check "Firebase Android client configuration verified" \
+            --check "Android release APK built" \
+            --check "Android APK certificate SHA-256 verified against expected signing certificate" \
+            --check "Windows release build completed" \
+            --check "Windows installer (Inno Setup) built" \
+            --check "Release packaging jobs succeeded (resolve-version, build-android, build-windows)"
+
+          if [ ! -s "$NOTES_PATH" ]; then
+            echo "Release notes file is missing or empty"
+            exit 1
+          fi
+
+          echo "notes_path=$NOTES_PATH" >> "$GITHUB_OUTPUT"
+          echo "Generated release notes preview:"
+          sed -n '1,80p' "$NOTES_PATH"
+
+      - name: Generate release manifest
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.resolve-version.outputs.version }}"
+          BUILD="${{ needs.resolve-version.outputs.build }}"
+          NOTES_PATH="dist/releases/RELEASE_NOTES.md"
+
           node scripts/release/generate-release-manifest.mjs \
             --version "$VERSION" \
             --build "$BUILD" \
             --channel stable \
-            --notes "INFINITY FSM v${VERSION} automated release. Build: ${BUILD}." \
+            --notes-file "$NOTES_PATH" \
             --android mobile/build/app/outputs/flutter-apk/app-release.apk \
             --windows "dist/releases/INFINITY-Setup-$VERSION.exe" \
             --output dist/releases/release-manifest.json
+
+          node -e "
+            const fs = require('fs');
+            const notes = fs.readFileSync('dist/releases/RELEASE_NOTES.md', 'utf8').trim();
+            const manifest = JSON.parse(
+              fs.readFileSync('dist/releases/release-manifest.json', 'utf8'),
+            );
+            if (!manifest.releaseNotes || !String(manifest.releaseNotes).trim()) {
+              console.error('release-manifest.json releaseNotes is empty');
+              process.exit(1);
+            }
+            if (String(manifest.releaseNotes).trim() !== notes) {
+              console.error('release-manifest.json releaseNotes does not match RELEASE_NOTES.md');
+              process.exit(1);
+            }
+            // Ensure multi-line Markdown round-trips through JSON safely.
+            const encoded = JSON.stringify(manifest);
+            const decoded = JSON.parse(encoded);
+            if (decoded.releaseNotes !== manifest.releaseNotes) {
+              console.error('releaseNotes JSON round-trip failed');
+              process.exit(1);
+            }
+            console.log('release_notes_manifest_ok=true');
+          "
 
       - name: Remove stale release assets before re-upload
         if: github.event_name == 'workflow_dispatch'
@@ -337,16 +402,7 @@ jobs:
         with:
           tag_name: ${{ env.RELEASE_TAG }}
           name: INFINITY FSM v${{ needs.resolve-version.outputs.version }}
-          body: |
-            INFINITY FSM v${{ needs.resolve-version.outputs.version }}
-
-            Build: ${{ needs.resolve-version.outputs.build }}
-            Release channel: stable
-
-            Automated release assets:
-            - Android APK (`app-release.apk`)
-            - Windows installer (`INFINITY-Setup-${{ needs.resolve-version.outputs.version }}.exe`)
-            - Release manifest (`release-manifest.json`)
+          body_path: dist/releases/RELEASE_NOTES.md
           files: |
             mobile/build/app/outputs/flutter-apk/app-release.apk
             dist/releases/INFINITY-Setup-${{ needs.resolve-version.outputs.version }}.exe

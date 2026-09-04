@@ -72,6 +72,12 @@ async function main() {
     releaseNotes = args.notes.toString().trim();
   }
 
+  if (!releaseNotes) {
+    throw new Error(
+      'Release notes are required (--notes-file or --notes). Refusing empty releaseNotes for Update Center.',
+    );
+  }
+
   const manifest = {
     version,
     build,
