@@ -308,6 +308,11 @@ class AppUpdateRepositoryImpl implements AppUpdateRepository {
   Future<void> writeAutoUpdateInstallAttemptedLock(String lock) async {
     await _local.writeAutoUpdateInstallAttemptedLock(lock);
   }
+
+  @override
+  Future<void> clearAutoUpdateInstallAttemptedLock() async {
+    await _local.clearAutoUpdateInstallAttemptedLock();
+  }
 }
 
 class AppUpdateCheckException implements Exception {

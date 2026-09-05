@@ -81,5 +81,7 @@ abstract class AppUpdateRepository {
 
   Future<void> writeAutoUpdateInstallAttemptedLock(String lock);
 
+  Future<void> clearAutoUpdateInstallAttemptedLock();
+
   String get currentPlatformKey;
 }

@@ -1,9 +1,7 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
-import 'package:mobile/features/app_update/data/repositories/app_update_repository_impl.dart';
 import 'package:mobile/features/app_update/data/services/app_update_download_service.dart';
 import 'package:mobile/features/app_update/data/services/app_update_install_service.dart';
 import 'package:mobile/features/app_update/domain/entities/app_release_manifest.dart';
@@ -255,7 +253,6 @@ class AppAutoUpdateManager {
       return;
     }
 
-    await _repository.writeAutoUpdateInstallAttemptedLock(installLock);
     callbacks.onState(
       UpdateCenterStatus.installing,
       downloadedPath: path,
@@ -268,12 +265,27 @@ class AppAutoUpdateManager {
         filePath: path,
         platformKey: platformKey,
       );
+      // Installer session accepted / OS UI may be showing. Lock prevents
+      // repeatedly launching PackageInstaller for the same version.
+      await _repository.writeAutoUpdateInstallAttemptedLock(installLock);
       callbacks.onState(
         UpdateCenterStatus.downloadReady,
         downloadedPath: path,
         autoUpdateOwned: true,
       );
     } on AppUpdateInstallException catch (error) {
+      if (error.retryable) {
+        // Permission (or similar) — allow resume after Settings without backoff.
+        await _repository.clearAutoUpdateInstallAttemptedLock();
+        callbacks.onState(
+          UpdateCenterStatus.downloadReady,
+          downloadedPath: path,
+          errorCode: error.code,
+          autoUpdateOwned: true,
+        );
+        return;
+      }
+      await _repository.writeAutoUpdateInstallAttemptedLock(installLock);
       await _recordFailure(version, platformKey);
       callbacks.onState(
         UpdateCenterStatus.downloadReady,
@@ -282,6 +294,7 @@ class AppAutoUpdateManager {
         autoUpdateOwned: true,
       );
     } on Object {
+      await _repository.writeAutoUpdateInstallAttemptedLock(installLock);
       await _recordFailure(version, platformKey);
       callbacks.onState(
         UpdateCenterStatus.downloadReady,

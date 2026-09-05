@@ -141,4 +141,8 @@ class AppUpdateLocalDataSource {
   Future<void> writeAutoUpdateInstallAttemptedLock(String lock) async {
     await _preferences.setString(_autoUpdateInstallAttemptedLockKey, lock);
   }
+
+  Future<void> clearAutoUpdateInstallAttemptedLock() async {
+    await _preferences.remove(_autoUpdateInstallAttemptedLockKey);
+  }
 }

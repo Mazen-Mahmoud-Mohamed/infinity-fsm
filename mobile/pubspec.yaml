@@ -47,7 +47,6 @@ dependencies:
   path: ^1.9.1
   package_info_plus: ^8.3.0
   crypto: ^3.0.6
-  open_filex: ^4.7.0
   firebase_core: ^4.14.0
   firebase_messaging: ^16.6.0
   flutter_local_notifications: ^22.3.0
