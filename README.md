@@ -12,7 +12,7 @@ Enterprise Field Service Management for workforce operations — work orders, ov
 
 **INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform developed for **Total-Com Solutions** and maintenance companies with field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android**, **tablets**, and **Windows**.
 
-**Current production client release:** **v1.0.10** (build **11**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
+**Current production client release:** **v1.0.12** (build **13**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
 
 On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop experience** — sidebar navigation, global top bar, desktop page layouts, data tables, and fixed bottom action footers. Mobile and tablet layouts remain **responsive first-class flows**; they are not stretched desktop layouts.
 
@@ -56,7 +56,7 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 
 **INFINITY** helps organizations run field operations from a single full-stack platform:
 
-- Create, assign, and complete **work orders** with customer/site context
+- Create, assign, and complete **work orders** with customer context and optional location address/link
 - Capture multi-stage **overtime journeys** (photos, voice, notes, GPS)
 - Track **attendance** with GPS evidence
 - Deliver **realtime and push notifications** to technicians and managers
@@ -72,7 +72,7 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 | **Client** | Flutter · Material 3 · Clean Architecture · Cubit · Repository Pattern |
 | **API** | Node.js · Express · MongoDB · JWT · Socket.IO · Firebase Admin (FCM) |
 | **API version** | `/api/v1` |
-| **Current client** | **v1.0.10+11** · channel **stable** · GitHub Releases primary |
+| **Current client** | **v1.0.12+13** · channel **stable** · GitHub Releases primary |
 
 The Windows window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android packaging is unchanged.
 
@@ -134,11 +134,27 @@ Mobile/tablet admin overtime continues to use responsive session cards (`AppResp
 - Status flow: `PENDING` → `ASSIGNED` → `ACCEPTED` / `REJECTED` → `IN_PROGRESS` → `COMPLETED` / `CANCELLED`
 - Priorities: `LOW` · `MEDIUM` · `HIGH` · `CRITICAL`
 - **Multiple technician assignees** (`assignedTechnicianIds`) with a primary assignee
-- Scheduled date/time, customer information, location label, and optional location URL
+- Scheduled date/time and customer information
+- **Location model** — plain-text address + optional map URL (see below)
 - **Customer phone numbers** (optional, zero or more per work order)
 - Notes, voice notes, attachments, and execution photos (before / during / after where supported)
 - Timeline-oriented detail flows
 - Technician execution workflow with permission-aware UI (admin vs technician views)
+
+#### Work Order location (address + optional link)
+
+| Field | Purpose |
+|-------|---------|
+| **`locationLabel`** | Normal text address (street / site description) |
+| **`locationUrl`** | Optional HTTP/HTTPS map or location link |
+
+| Behavior | Detail |
+|----------|--------|
+| **Create / edit** | Address and optional “location link” are separate form fields; removing the link does not clear the address |
+| **Technician overview** | Address text is shown when a human-readable label is available |
+| **Location action** | Open-location button appears **only** when a valid `http`/`https` URL exists (`hasOpenableLocationUrl`) |
+| **Legacy data** | Older records that stored a URL in `locationLabel` with an empty `locationUrl` are split for editing so the URL is not silently lost |
+| **Validation** | Backend accepts independent label + URL; URL must be valid `http(s)` when provided |
 
 #### Desktop Work Orders (Windows)
 
@@ -226,6 +242,7 @@ Placeholder / mock settings tiles that previously appeared as incomplete UI have
 - **Update Center** — latest release check, download, verify, and install for Android APK and Windows installer
 - **Auto Update** — optional; default OFF; see [§8 Update Center & Auto Update](#8-update-center--auto-update)
 - **GitHub Releases** — primary release source via backend `/releases/latest` and `release-manifest.json`
+- **Automated release notes** — short user-facing GitHub Release body (and matching `releaseNotes` in the manifest)
 - **Release webhook** — GitHub → backend HMAC-verified notify path for `app_update` notifications
 
 ### 🌐 Connectivity & Offline
@@ -310,7 +327,8 @@ Technician work-order detail **hides administrative metadata** when the user lac
 
 - Title, job number, status, priority, scheduled date/time
 - Customer name and **customer phone numbers** (with Call action)
-- Location label and open-location action
+- **Location address** text when a human-readable label is available
+- **Open Location** action only when a valid HTTP/HTTPS location URL exists
 - Notes, voice note, attachments, execution photos
 - Primary workflow actions (accept, start, complete, etc.)
 
@@ -523,7 +541,7 @@ Settings → **Updates** (`UpdateCenterPage` / `UpdateCenterCubit`). Releases ar
 | **Latest check** | Fetches the stable-channel release manifest from the API |
 | **Version compare** | Semantic version + integer build (`compareAppVersions`) |
 | **Artifacts** | Android **APK** and Windows **Inno Setup installer** when marked available |
-| **Manifest** | Version, build, channel, notes, download URLs, **SHA-256**, **file size** |
+| **Manifest** | Version, build, channel, **userNotes**, download URLs, **SHA-256**, **file size** |
 | **Verification** | Downloaded files verified for size and SHA-256 before install |
 | **Cache** | Last successful manifest cached locally for offline display |
 | **Artifacts on disk** | Versioned filenames under the app updates directory |
@@ -749,13 +767,14 @@ infinity-fsm/
 ├── .github/workflows/
 │   └── release.yml          # Android APK + Windows installer + GitHub Release
 ├── docs/                    # Architecture, API, RBAC, roadmap, …
+│   └── releases/            # Optional per-version release-notes overrides
 ├── infra/                   # Deployment planning notes
-├── scripts/release/         # resolve-release-version, generate-release-manifest
+├── scripts/release/         # Version resolve, release notes, release-manifest
+├── tests/                   # Shared / auxiliary test assets (where present)
 ├── installer.iss            # Windows Inno Setup installer
 ├── LICENSE
 └── README.md
 ```
-
 **Architecture (Flutter):** Presentation (pages/widgets + Cubits) → Domain (entities, use cases, repository interfaces) → Data (models, datasources, repositories). Feature folders under `mobile/lib/features/*`.
 
 **Architecture (Backend):** Routes → Validators → Controllers → Services → Mongoose models. Modules under `backend/src/modules/*`.
@@ -861,7 +880,7 @@ flutter test
 flutter analyze
 ```
 
-**Latest full Flutter suite:** **301 / 301** tests passed (local verification).
+**Latest full Flutter suite:** **353 / 353** tests passed (local verification).
 
 > Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate. Release CI and the Flutter test suite are the authoritative validation gates for client changes.
 
@@ -873,8 +892,8 @@ flutter analyze
 
 | Field | Value |
 |-------|--------|
-| **Version** | **1.0.10** |
-| **Build** | **11** (`1.0.10+11` in `mobile/pubspec.yaml`) |
+| **Version** | **1.0.12** |
+| **Build** | **13** (`1.0.12+13` in `mobile/pubspec.yaml`) |
 | **Channel** | **stable** |
 | **Distribution** | GitHub Release assets (APK + Windows installer + `release-manifest.json`) |
 
@@ -891,8 +910,12 @@ Triggered by pushing a tag matching `v*.*.*` (or `workflow_dispatch` rebuild of 
 | **Firebase (CI)** | Decodes `GOOGLE_SERVICES_JSON_BASE64`, syncs/validates `firebase_options.dart`, cleans secrets from the runner afterward |
 | **Signing check** | Verifies APK certificate SHA-256 against the expected production fingerprint |
 | **Windows** | `flutter build windows --release` + **Inno Setup** (`installer.iss`) |
-| **Manifest** | `scripts/release/generate-release-manifest.mjs` — SHA-256 + sizes for both artifacts |
+| **Release notes** | `scripts/release/generate-release-notes.mjs` — short **user-facing** notes from commits since the previous `v*.*.*` tag (CI/test/infra commits omitted) |
+| **Manual notes override** | Optional `docs/releases/vX.Y.Z.md` replaces generated notes when present |
+| **Manifest** | `scripts/release/generate-release-manifest.mjs` — SHA-256 + sizes; `releaseNotes` matches the GitHub Release body |
 | **Publish** | GitHub Release with `app-release.apk`, `INFINITY-Setup-{version}.exe`, `release-manifest.json` |
+
+Empty or boilerplate-only release notes fail the publish job. See [docs/releases/README.md](./docs/releases/README.md).
 
 ### Recommended release process
 
@@ -900,15 +923,15 @@ Triggered by pushing a tag matching `v*.*.*` (or `workflow_dispatch` rebuild of 
 1. Bump mobile/pubspec.yaml → version: X.Y.Z+N
 2. Commit and push to main
 3. Create and push tag vX.Y.Z  (must match pubspec version)
-4. GitHub Actions builds Android + Windows and publishes the GitHub Release
+4. GitHub Actions builds Android + Windows, generates release notes, and publishes the GitHub Release
 5. Backend discovers the release via GitHub (Update Center /releases/latest)
 6. GitHub webhook notifies clients (app_update) using the exact release tag/payload
 ```
 
 ```bash
-# Example — after pubspec is already 1.0.10+11 on main:
-git tag v1.0.10
-git push origin v1.0.10
+# Example — after pubspec is already 1.0.12+13 on main:
+git tag v1.0.12
+git push origin v1.0.12
 ```
 
 Do **not** create a tag whose semver does not match `mobile/pubspec.yaml` — the workflow will fail resolve-version.
@@ -1074,6 +1097,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 | Technician Interface | Company-scoped; Admin/Supervisor navigation unrestricted; **offline cache per company** |
 | Notifications | Persist → Socket.IO → FCM (Android); push failures do not fail business operations |
 | App updates | Manifest verify (SHA-256 + size); Android uses system installer (**no silent install**) |
+| Work Order location | Address (`locationLabel`) + optional URL (`locationUrl`); open-location only for valid `http(s)` |
 | Release webhook | Exact tag/payload resolution; HMAC over raw body; dedupe `app-update:v{version}:{build}` |
 | Maps | OpenStreetMap only |
 | SessionQueryCache | Used to avoid duplicate network fetches where wired |
@@ -1086,7 +1110,12 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ## 24. Recent Updates
 
-### App updates & release automation (current)
+### v1.0.12 (current)
+
+- **Work Order location** — separate plain-text address (`locationLabel`) and optional map/location URL (`locationUrl`); Location action only when a valid HTTP/HTTPS link exists; legacy URL-in-label records handled safely on edit
+- **Release notes automation** — GitHub Releases publish short user-facing notes from the previous tag; optional override via `docs/releases/vX.Y.Z.md`; same notes stored in `release-manifest.json` for Update Center
+
+### App updates & release automation
 
 - **Update Center** with stable-channel discovery, SHA-256 / size verification, versioned artifacts, and stale APK/EXE cleanup
 - **Auto Update** toggle (default OFF) with background download while the process is alive
@@ -1147,6 +1176,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 | [Module Registry](./docs/MODULE_REGISTRY.md) | Module catalog |
 | [Roadmap](./docs/ROADMAP.md) | Delivery phases |
 | [Future Improvements](./docs/FUTURE_IMPROVEMENTS.md) | Post-MVP ideas |
+| [Release notes overrides](./docs/releases/README.md) | Optional manual GitHub Release notes |
 
 > Prefer this README for **current shipped behavior**. Some docs may still describe planned phases; when in doubt, trust `mobile/` and `backend/src/`.
 
