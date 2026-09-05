@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates Markdown release notes for INFINITY FSM GitHub Releases.
+ * Generates short, user-facing Markdown release notes for INFINITY FSM.
  *
  * Usage:
  *   node scripts/release/generate-release-notes.mjs \
@@ -8,9 +8,7 @@
  *     --version 1.0.12 \
  *     --build 13 \
  *     --channel stable \
- *     --output dist/releases/RELEASE_NOTES.md \
- *     --check "Android release APK built and certificate verified" \
- *     --check "Windows release installer built"
+ *     --output dist/releases/RELEASE_NOTES.md
  *
  * Optional:
  *   --previous-tag v1.0.11
@@ -24,6 +22,35 @@ import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const INFRASTRUCTURE_SCOPES = new Set([
+  'release',
+  'ci',
+  'build',
+  'workflow',
+  'workflows',
+  'github',
+  'deps',
+  'dep',
+  'webhook',
+  'scripts',
+  'pipeline',
+]);
+
+const INFRASTRUCTURE_PATH_PREFIXES = [
+  '.github/',
+  'scripts/',
+  'docs/releases/',
+  'installer.',
+];
+
+const USER_FACING_PATH_HINTS = [
+  'mobile/lib/',
+  'backend/src/modules/',
+  'mobile/lib/core/localization/',
+];
+
+const MAX_BULLETS = 5;
+
 export function parseArgs(argv) {
   const args = {
     check: [],
@@ -34,6 +61,7 @@ export function parseArgs(argv) {
     const key = token.slice(2);
     const next = argv[i + 1];
     if (key === 'check') {
+      // Accepted for backward compatibility; never included in public notes.
       if (!next || next.startsWith('--')) {
         throw new Error('--check requires a value');
       }
@@ -133,6 +161,23 @@ export function readCommitsBetween(previousTag, currentTag, cwd = process.cwd())
     .filter((item) => item.hash && item.subject);
 }
 
+export function listCommitFiles(hash, cwd = process.cwd()) {
+  if (!hash || hash.length < 7) return [];
+  try {
+    const raw = runGit(
+      ['show', '--name-only', '--pretty=format:', '--no-renames', hash],
+      { cwd },
+    );
+    if (!raw) return [];
+    return raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
 export function parseCommitsFile(raw) {
   return String(raw || '')
     .split(/\r?\n/)
@@ -149,98 +194,41 @@ export function parseCommitsFile(raw) {
     .filter((item) => item.hash && item.subject);
 }
 
-/**
- * Classify a conventional-commit subject into a release section.
- * Returns null when the commit should be omitted from user-facing notes.
- */
-export function classifyCommit(subject) {
-  const text = String(subject || '').trim();
-  if (!text) return null;
+function isInfrastructureScope(scope) {
+  if (!scope) return false;
+  const parts = scope.toLowerCase().split(/[/,]+/);
+  return parts.some((part) => INFRASTRUCTURE_SCOPES.has(part.trim()));
+}
 
-  const match = text.match(
-    /^(feat|fix|perf|refactor|docs|test|chore|ci|build|style)(?:\(([^)]+)\))?!?:\s*(.+)$/i,
-  );
+export function isInfrastructureOnlyPaths(files) {
+  if (!files?.length) return false;
+  return files.every((file) => {
+    const normalized = file.replace(/\\/g, '/');
+    return INFRASTRUCTURE_PATH_PREFIXES.some(
+      (prefix) =>
+        normalized.startsWith(prefix) ||
+        normalized.includes('/scripts/release/') ||
+        /\/docs\/releases\//.test(normalized),
+    );
+  });
+}
 
-  if (!match) {
-    if (/^(release|bump version|merge )/i.test(text)) return null;
-    return { section: 'technical', summary: cleanSummary(text) };
-  }
-
-  const type = match[1].toLowerCase();
-  const scope = (match[2] || '').toLowerCase();
-  const description = cleanSummary(match[3]);
-
-  if (!description) return null;
-
-  if (
-    type === 'chore' &&
-    (scope === 'release' || /^bump version/i.test(description))
-  ) {
-    return null;
-  }
-
-  if (type === 'feat') {
+export function hasUserFacingPaths(files) {
+  if (!files?.length) return false;
+  return files.some((file) => {
+    const normalized = file.replace(/\\/g, '/');
     if (
-      scope.includes('update') ||
-      scope.includes('ux') ||
-      scope.includes('ui')
+      normalized.includes('/__tests__/') ||
+      normalized.includes('_test.dart') ||
+      normalized.endsWith('.test.js') ||
+      normalized.endsWith('.test.mjs') ||
+      normalized.startsWith('scripts/') ||
+      normalized.startsWith('.github/')
     ) {
-      return { section: 'improvements', summary: description };
+      return false;
     }
-    return { section: 'whatsNew', summary: description };
-  }
-
-  if (type === 'fix') {
-    if (scope === 'ci' || scope === 'release' || scope === 'webhook') {
-      return { section: 'technical', summary: description };
-    }
-    return { section: 'bugFixes', summary: description };
-  }
-
-  if (type === 'perf') {
-    return { section: 'improvements', summary: description };
-  }
-
-  if (type === 'refactor') {
-    return { section: 'technical', summary: description };
-  }
-
-  if (type === 'docs') {
-    if (
-      scope.includes('readme') ||
-      scope.includes('release') ||
-      scope.includes('update')
-    ) {
-      return { section: 'technical', summary: description };
-    }
-    return null;
-  }
-
-  if (type === 'test') {
-    return { section: 'testing', summary: description };
-  }
-
-  if (type === 'ci' || type === 'build') {
-    return { section: 'technical', summary: description };
-  }
-
-  if (type === 'chore') {
-    if (
-      scope === 'ci' ||
-      scope === 'deps' ||
-      scope === 'release' ||
-      scope === 'webhook'
-    ) {
-      return { section: 'technical', summary: description };
-    }
-    return null;
-  }
-
-  if (type === 'style') {
-    return null;
-  }
-
-  return { section: 'technical', summary: description };
+    return USER_FACING_PATH_HINTS.some((hint) => normalized.includes(hint));
+  });
 }
 
 function cleanSummary(raw) {
@@ -248,6 +236,99 @@ function cleanSummary(raw) {
     .replace(/\s+/g, ' ')
     .replace(/\.\s*$/, '')
     .trim();
+}
+
+export function toUserFacingSentence(raw) {
+  const cleaned = cleanSummary(raw);
+  if (!cleaned) return '';
+  const sentence = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  return /[.!?]$/.test(sentence) ? sentence : `${sentence}.`;
+}
+
+/**
+ * Expand known product features into short user-facing bullets.
+ * Only expands when the commit subject clearly describes that feature.
+ */
+export function expandUserFacingBullets(type, scope, description) {
+  const text = `${scope} ${description}`.toLowerCase();
+
+  if (
+    /work[-_]?order/.test(text) &&
+    /address/.test(text) &&
+    /location/.test(text)
+  ) {
+    return [
+      'Work Order Location is now a normal address field.',
+      'An optional location/map link can be added separately.',
+      'Technicians only see the Location button when a valid location link exists.',
+    ];
+  }
+
+  return [toUserFacingSentence(description)];
+}
+
+/**
+ * Classify a conventional-commit subject into a user-facing release section.
+ * Returns null when the commit should be omitted from public notes.
+ */
+export function classifyCommit(subject, { files = null } = {}) {
+  const text = String(subject || '').trim();
+  if (!text) return null;
+
+  if (files?.length && isInfrastructureOnlyPaths(files)) {
+    return null;
+  }
+
+  const match = text.match(
+    /^(feat|fix|perf|refactor|docs|test|chore|ci|build|style)(?:\(([^)]+)\))?!?:\s*(.+)$/i,
+  );
+
+  if (!match) {
+    if (/^(release|bump version|merge )/i.test(text)) return null;
+    if (files?.length && !hasUserFacingPaths(files)) return null;
+    if (files?.length && hasUserFacingPaths(files)) {
+      return {
+        section: 'whatsNew',
+        bullets: [toUserFacingSentence(text)],
+      };
+    }
+    return null;
+  }
+
+  const type = match[1].toLowerCase();
+  const scope = (match[2] || '').toLowerCase();
+  const description = cleanSummary(match[3]);
+
+  if (!description) return null;
+  if (isInfrastructureScope(scope)) return null;
+
+  if (
+    type === 'ci' ||
+    type === 'test' ||
+    type === 'style' ||
+    type === 'refactor' ||
+    type === 'docs' ||
+    type === 'build' ||
+    type === 'chore'
+  ) {
+    return null;
+  }
+
+  if (type === 'feat' || type === 'perf') {
+    return {
+      section: 'whatsNew',
+      bullets: expandUserFacingBullets(type, scope, description),
+    };
+  }
+
+  if (type === 'fix') {
+    return {
+      section: 'fixes',
+      bullets: expandUserFacingBullets(type, scope, description),
+    };
+  }
+
+  return null;
 }
 
 function uniqueSummaries(items) {
@@ -262,27 +343,28 @@ function uniqueSummaries(items) {
   return result;
 }
 
-export function groupCommits(commits) {
+export function groupCommits(commits, { cwd = null, resolveFiles = null } = {}) {
   const groups = {
     whatsNew: [],
-    improvements: [],
-    bugFixes: [],
-    technical: [],
-    testing: [],
+    fixes: [],
   };
 
   for (const commit of commits) {
-    const classified = classifyCommit(commit.subject);
+    let files = commit.files ?? null;
+    if (!files && resolveFiles) {
+      files = resolveFiles(commit.hash);
+    } else if (!files && cwd && commit.hash && /^[0-9a-f]{7,}$/i.test(commit.hash)) {
+      files = listCommitFiles(commit.hash, cwd);
+    }
+
+    const classified = classifyCommit(commit.subject, { files });
     if (!classified) continue;
-    groups[classified.section].push(classified.summary);
+    groups[classified.section].push(...classified.bullets);
   }
 
   return {
-    whatsNew: uniqueSummaries(groups.whatsNew),
-    improvements: uniqueSummaries(groups.improvements),
-    bugFixes: uniqueSummaries(groups.bugFixes),
-    technical: uniqueSummaries(groups.technical),
-    testing: uniqueSummaries(groups.testing),
+    whatsNew: uniqueSummaries(groups.whatsNew).slice(0, MAX_BULLETS),
+    fixes: uniqueSummaries(groups.fixes).slice(0, MAX_BULLETS),
   };
 }
 
@@ -296,29 +378,21 @@ export function isGenericOnlyNotes(markdown) {
   const text = String(markdown || '').trim();
   if (!text) return true;
 
-  const withoutHeader = text
-    .replace(/^#\s+INFINITY FSM v[\d.]+\s*$/gim, '')
+  const withoutMeta = text
+    .replace(/^#?\s*INFINITY FSM v[\d.]+\s*$/gim, '')
     .replace(/^\s*Build:\s*\d+\s*$/gim, '')
     .replace(/^\s*Release channel:\s*\S+\s*$/gim, '')
-    .replace(/^##\s+Release Assets[\s\S]*$/gim, '')
+    .replace(/^##\s+Testing & Verification[\s\S]*?(?=^## |\Z)/gim, '')
+    .replace(/^##\s+Release Assets[\s\S]*?(?=^## |\Z)/gim, '')
+    .replace(/^##\s+Technical Changes[\s\S]*?(?=^## |\Z)/gim, '')
     .replace(/Automated release assets:?/gi, '')
-    .replace(/^- .*$/gm, (line) => {
-      if (/Android APK|Windows installer|Release manifest/i.test(line)) {
-        return '';
-      }
-      return line;
-    })
+    .replace(/INFINITY FSM v[\d.]+ automated release\.?/gi, '')
+    .replace(/^- .*(Android APK|Windows installer|Release manifest).*$/gim, '')
+    .replace(/^##\s+.+$/gm, '')
     .replace(/\n{2,}/g, '\n')
     .trim();
 
-  if (!withoutHeader) return true;
-
-  const stripped = withoutHeader
-    .replace(/INFINITY FSM v[\d.]+ automated release\.?/gi, '')
-    .replace(/Build:\s*\d+/gi, '')
-    .trim();
-
-  return stripped.length < 24;
+  return withoutMeta.length < 12;
 }
 
 export function assertMeaningfulReleaseNotes(markdown) {
@@ -336,15 +410,22 @@ export function assertMeaningfulReleaseNotes(markdown) {
       'Release notes must include a "Build: N" line for Update Center fallback parsing',
     );
   }
+  if (
+    /^##\s+Testing & Verification\b/im.test(text) ||
+    /^##\s+Release Assets\b/im.test(text) ||
+    /^##\s+Technical Changes\b/im.test(text)
+  ) {
+    throw new Error(
+      'Public release notes must not include Testing, Release Assets, or Technical Changes sections',
+    );
+  }
 }
 
 export function buildReleaseNotesMarkdown({
   version,
   build,
   channel = 'stable',
-  previousTag = null,
   groups,
-  verificationChecks = [],
   noProductChanges = false,
 }) {
   const header = [
@@ -358,41 +439,23 @@ export function buildReleaseNotesMarkdown({
   const sections = [];
 
   if (noProductChanges) {
-    const range = previousTag
-      ? `between ${previousTag} and v${version}`
-      : `for v${version} (first release tag in history)`;
     sections.push(
-      `## What's New\n- No user-facing product changes were detected ${range}; this release packages the current build for distribution.\n`,
+      `## What's New\n- Maintenance and internal improvements.\n`,
     );
   } else {
-    sections.push(renderSection("What's New", groups.whatsNew));
-    sections.push(renderSection('Improvements', groups.improvements));
-    sections.push(renderSection('Bug Fixes', groups.bugFixes));
-    sections.push(renderSection('Technical Changes', groups.technical));
-  }
-
-  const testingBullets = [
-    ...verificationChecks,
-    ...groups.testing.map((item) => `Related verification commit: ${item}`),
-  ];
-  if (!testingBullets.length) {
-    testingBullets.push(
-      'Release packaging checks completed in CI for this tag (see workflow job results).',
+    const whatsNew = [...(groups.whatsNew || [])];
+    // Fold leftover "improvements" if older callers still pass them.
+    if (groups.improvements?.length) {
+      whatsNew.push(...groups.improvements);
+    }
+    sections.push(renderSection("What's New", uniqueSummaries(whatsNew)));
+    sections.push(
+      renderSection(
+        'Fixes',
+        uniqueSummaries(groups.fixes || groups.bugFixes || []),
+      ),
     );
   }
-  sections.push(
-    renderSection('Testing & Verification', uniqueSummaries(testingBullets)),
-  );
-
-  sections.push(
-    [
-      '## Release Assets',
-      `- Android APK (\`app-release.apk\`)`,
-      `- Windows installer (\`INFINITY-Setup-${version}.exe\`)`,
-      '- Release manifest (`release-manifest.json`)',
-      '',
-    ].join('\n'),
-  );
 
   return `${header.join('\n')}\n${sections.filter(Boolean).join('\n')}`.trim() + '\n';
 }
@@ -465,21 +528,17 @@ export async function generateReleaseNotes(options) {
     commits = readCommitsBetween(previousTag, tag, cwd);
   }
 
-  const groups = groupCommits(commits);
-  const hasProductContent =
-    groups.whatsNew.length +
-      groups.improvements.length +
-      groups.bugFixes.length +
-      groups.technical.length >
-    0;
+  const groups = groupCommits(commits, {
+    cwd: options.commitsFile ? null : cwd,
+    resolveFiles: options.resolveFiles || null,
+  });
+  const hasProductContent = groups.whatsNew.length + groups.fixes.length > 0;
 
   const markdown = buildReleaseNotesMarkdown({
     version,
     build,
     channel,
-    previousTag,
     groups,
-    verificationChecks: options.checks || [],
     noProductChanges: !hasProductContent,
   });
 
@@ -510,7 +569,6 @@ async function main() {
     previousTag: args['previous-tag'],
     overrideFile: args['override-file'],
     commitsFile: args['commits-file'],
-    checks: args.check || [],
     cwd: process.cwd(),
   });
 

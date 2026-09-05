@@ -18,56 +18,93 @@ import {
   isGenericOnlyNotes,
   assertMeaningfulReleaseNotes,
   generateReleaseNotes,
+  expandUserFacingBullets,
 } from './generate-release-notes.mjs';
 
 describe('classifyCommit', () => {
-  it('maps feat to What\'s New', () => {
-    assert.deepEqual(classifyCommit('feat(work-orders): add location link'), {
-      section: 'whatsNew',
-      summary: 'add location link',
-    });
+  it('maps user-facing feat commits to What\'s New', () => {
+    const result = classifyCommit('feat(work-orders): add optional map pin');
+    assert.equal(result.section, 'whatsNew');
+    assert.ok(result.bullets[0].startsWith('Add optional map pin'));
   });
 
-  it('maps feat(update/ui/ux) to Improvements', () => {
-    assert.equal(
-      classifyCommit('feat(update): improve installer UX').section,
-      'improvements',
+  it('expands Work Order address/location features into short product bullets', () => {
+    const result = classifyCommit(
+      'feat(work-orders): support address and optional location link',
     );
-    assert.equal(classifyCommit('feat(ui): polish dialogs').section, 'improvements');
+    assert.equal(result.section, 'whatsNew');
+    assert.deepEqual(result.bullets, [
+      'Work Order Location is now a normal address field.',
+      'An optional location/map link can be added separately.',
+      'Technicians only see the Location button when a valid location link exists.',
+    ]);
   });
 
-  it('maps fix to Bug Fixes and scoped ci fix to Technical', () => {
+  it('maps fix commits to Fixes', () => {
     assert.equal(
       classifyCommit('fix(work-orders): restore detail body').section,
-      'bugFixes',
+      'fixes',
     );
-    assert.equal(classifyCommit('fix(ci): repair release workflow').section, 'technical');
   });
 
-  it('omits release version bumps and style-only commits', () => {
+  it('omits release infrastructure, CI, tests, style, and version bumps', () => {
+    assert.equal(
+      classifyCommit('feat(release): automate meaningful release notes'),
+      null,
+    );
+    assert.equal(classifyCommit('fix(ci): repair release workflow'), null);
+    assert.equal(classifyCommit('test(work-orders): cover location fields'), null);
+    assert.equal(classifyCommit('ci: tweak workflow'), null);
     assert.equal(classifyCommit('chore(release): bump version to 1.0.12'), null);
     assert.equal(classifyCommit('style: reformat imports'), null);
+    assert.equal(classifyCommit('refactor(api): rename helper'), null);
+    assert.equal(classifyCommit('docs(readme): update release docs'), null);
   });
 
-  it('maps test commits to testing section', () => {
+  it('omits commits that only touch infrastructure paths', () => {
     assert.equal(
-      classifyCommit('test(work-orders): cover location fields').section,
-      'testing',
+      classifyCommit('feat(mobile): something', {
+        files: [
+          'scripts/release/generate-release-notes.mjs',
+          '.github/workflows/release.yml',
+        ],
+      }),
+      null,
     );
   });
 });
 
-describe('groupCommits', () => {
-  it('groups and deduplicates summaries', () => {
-    const groups = groupCommits([
-      { hash: 'a', subject: 'feat(wo): add address field' },
-      { hash: 'b', subject: 'feat(wo): add address field' },
-      { hash: 'c', subject: 'fix(wo): clear stale cache' },
-      { hash: 'd', subject: 'chore(release): bump version' },
+describe('expandUserFacingBullets', () => {
+  it('returns a single concise sentence for ordinary changes', () => {
+    assert.deepEqual(expandUserFacingBullets('feat', 'attendance', 'show overtime tip'), [
+      'Show overtime tip.',
     ]);
-    assert.deepEqual(groups.whatsNew, ['add address field']);
-    assert.deepEqual(groups.bugFixes, ['clear stale cache']);
-    assert.equal(groups.technical.length, 0);
+  });
+});
+
+describe('groupCommits', () => {
+  it('keeps only user-facing bullets and ignores infrastructure commits', () => {
+    const groups = groupCommits([
+      {
+        hash: 'a',
+        subject: 'feat(work-orders): support address and optional location link',
+      },
+      {
+        hash: 'b',
+        subject: 'feat(release): automate meaningful release notes',
+      },
+      { hash: 'c', subject: 'fix(ci): harden release asset upload' },
+      { hash: 'd', subject: 'test(work-orders): cover location fields' },
+      { hash: 'e', subject: 'chore(release): bump version to 1.0.12' },
+      { hash: 'f', subject: 'fix(notifications): clear stale badge count' },
+    ]);
+
+    assert.deepEqual(groups.whatsNew, [
+      'Work Order Location is now a normal address field.',
+      'An optional location/map link can be added separately.',
+      'Technicians only see the Location button when a valid location link exists.',
+    ]);
+    assert.deepEqual(groups.fixes, ['Clear stale badge count.']);
   });
 });
 
@@ -96,52 +133,42 @@ describe('parseCommitsFile', () => {
 });
 
 describe('buildReleaseNotesMarkdown', () => {
-  it('omits empty sections and always includes testing + assets', () => {
+  it('generates short What\'s New / Fixes notes without CI or asset sections', () => {
     const md = buildReleaseNotesMarkdown({
       version: '1.0.12',
       build: 13,
       channel: 'stable',
-      previousTag: 'v1.0.11',
       groups: {
-        whatsNew: ['Added location address field'],
-        improvements: [],
-        bugFixes: ['Fixed blank detail body'],
-        technical: [],
-        testing: [],
+        whatsNew: [
+          'Work Order Location is now a normal address field.',
+          'An optional location/map link can be added separately.',
+        ],
+        fixes: ['Fixed blank detail body.'],
       },
-      verificationChecks: [
-        'Android release APK built and certificate verified',
-        'Windows release installer built',
-      ],
     });
 
     assert.match(md, /# INFINITY FSM v1\.0\.12/);
     assert.match(md, /^Build: 13$/m);
     assert.match(md, /## What's New/);
-    assert.match(md, /## Bug Fixes/);
-    assert.doesNotMatch(md, /## Improvements/);
+    assert.match(md, /## Fixes/);
+    assert.doesNotMatch(md, /## Testing & Verification/);
+    assert.doesNotMatch(md, /## Release Assets/);
     assert.doesNotMatch(md, /## Technical Changes/);
-    assert.match(md, /## Testing & Verification/);
-    assert.match(md, /Android release APK built/);
-    assert.match(md, /## Release Assets/);
+    assert.doesNotMatch(md, /Android signing secrets/);
+    assert.doesNotMatch(md, /release-manifest\.json/);
   });
 
-  it('uses explicit no-change fallback when requested', () => {
+  it('uses the short maintenance fallback when there are no product changes', () => {
     const md = buildReleaseNotesMarkdown({
       version: '1.0.12',
       build: 13,
-      previousTag: 'v1.0.11',
-      groups: {
-        whatsNew: [],
-        improvements: [],
-        bugFixes: [],
-        technical: [],
-        testing: [],
-      },
-      verificationChecks: ['Release packaging checks completed'],
+      groups: { whatsNew: [], fixes: [] },
       noProductChanges: true,
     });
-    assert.match(md, /No user-facing product changes were detected between v1\.0\.11 and v1\.0\.12/);
+    assert.match(md, /## What's New/);
+    assert.match(md, /Maintenance and internal improvements\./);
+    assert.doesNotMatch(md, /Testing & Verification/);
+    assert.doesNotMatch(md, /Release Assets/);
   });
 });
 
@@ -161,20 +188,14 @@ Automated release assets:
     );
   });
 
-  it('accepts meaningful notes with Build line', () => {
+  it('accepts short meaningful notes with Build line', () => {
     const md = `# INFINITY FSM v1.0.12
 
 Build: 13
 Release channel: stable
 
 ## What's New
-- Added separate Work Order location address
-
-## Testing & Verification
-- Android release APK built
-
-## Release Assets
-- Android APK
+- Work Order Location is now a normal address field.
 `;
     assert.equal(isGenericOnlyNotes(md), false);
     assert.doesNotThrow(() => assertMeaningfulReleaseNotes(md));
@@ -191,19 +212,38 @@ Release channel: stable
       /Build: N/,
     );
   });
+
+  it('rejects notes that still include CI/asset sections', () => {
+    assert.throws(
+      () =>
+        assertMeaningfulReleaseNotes(`# INFINITY FSM v1.0.12
+
+Build: 13
+Release channel: stable
+
+## What's New
+- A real product change.
+
+## Testing & Verification
+- Android release APK built
+`),
+      /must not include Testing/,
+    );
+  });
 });
 
 describe('generateReleaseNotes integration', () => {
-  it('builds notes from a commits file and writes JSON-safe markdown', async () => {
+  it('A/B/C/D/E/F: user-facing notes only; ignores release/CI/test commits', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'inf-rn-'));
     const commitsPath = path.join(dir, 'commits.txt');
     await writeFile(
       commitsPath,
       [
         '111|feat(work-orders): support address and optional location link|',
-        '222|fix(ci): harden release asset upload|',
-        '333|test(work-orders): cover location fields|',
-        '444|chore(release): bump version to 1.0.12|',
+        '222|feat(release): automate meaningful release notes|',
+        '333|fix(ci): harden release asset upload|',
+        '444|test(work-orders): cover location fields|',
+        '555|chore(release): bump version to 1.0.12|',
       ].join('\n'),
       'utf8',
     );
@@ -215,25 +255,31 @@ describe('generateReleaseNotes integration', () => {
       previousTag: 'v1.0.11',
       commitsFile: commitsPath,
       checks: [
-        'Android release APK built and certificate verified',
-        'Windows release installer built',
-        'Release manifest generated with SHA256 checksums',
+        'Android signing secrets validated',
+        'Firebase Android client configuration verified',
+        'Android release APK built',
       ],
       cwd: dir,
     });
 
     assert.equal(result.source, 'git-history');
-    assert.match(result.markdown, /support address and optional location link/i);
-    assert.match(result.markdown, /harden release asset upload/i);
-    assert.match(result.markdown, /Android release APK built/);
-    assert.equal(isGenericOnlyNotes(result.markdown), false);
+    assert.match(result.markdown, /Work Order Location is now a normal address field/);
+    assert.match(result.markdown, /optional location\/map link/i);
+    assert.doesNotMatch(result.markdown, /automate meaningful release notes/i);
+    assert.doesNotMatch(result.markdown, /harden release asset upload/i);
+    assert.doesNotMatch(result.markdown, /cover location fields/i);
+    assert.doesNotMatch(result.markdown, /## Testing & Verification/);
+    assert.doesNotMatch(result.markdown, /## Release Assets/);
+    assert.doesNotMatch(result.markdown, /## Technical Changes/);
+    assert.doesNotMatch(result.markdown, /Android signing secrets/);
+    assert.doesNotMatch(result.markdown, /Firebase Android client/);
 
     const encoded = JSON.stringify({ releaseNotes: result.markdown });
     const decoded = JSON.parse(encoded);
     assert.equal(decoded.releaseNotes, result.markdown);
   });
 
-  it('uses manual override when docs/releases/vX.Y.Z.md exists', async () => {
+  it('H: manual override remains authoritative and is not appended with CI sections', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'inf-rn-ov-'));
     const overrideDir = path.join(dir, 'docs', 'releases');
     await mkdir(overrideDir, { recursive: true });
@@ -245,14 +291,8 @@ describe('generateReleaseNotes integration', () => {
         'Build: 13',
         'Release channel: stable',
         '',
-        '## What\'s New',
+        "## What's New",
         '- Manually authored release note for QA',
-        '',
-        '## Testing & Verification',
-        '- Manual override used',
-        '',
-        '## Release Assets',
-        '- Android APK',
       ].join('\n'),
       'utf8',
     );
@@ -266,14 +306,20 @@ describe('generateReleaseNotes integration', () => {
 
     assert.equal(result.usedManualOverride, true);
     assert.match(result.markdown, /Manually authored release note for QA/);
+    assert.doesNotMatch(result.markdown, /## Testing & Verification/);
+    assert.doesNotMatch(result.markdown, /## Release Assets/);
   });
 
-  it('falls back when no product commits are classified', async () => {
+  it('G: empty/no-user-facing-change release gets the short maintenance fallback', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'inf-rn-empty-'));
     const commitsPath = path.join(dir, 'commits.txt');
     await writeFile(
       commitsPath,
-      'aaa|chore(release): bump version to 1.0.12|\n',
+      [
+        'aaa|chore(release): bump version to 1.0.12|',
+        'bbb|feat(release): automate meaningful release notes|',
+        'ccc|ci: tweak packaging|',
+      ].join('\n'),
       'utf8',
     );
 
@@ -288,7 +334,68 @@ describe('generateReleaseNotes integration', () => {
     });
 
     assert.equal(result.source, 'no-change-fallback');
-    assert.match(result.markdown, /No user-facing product changes were detected/);
+    assert.match(result.markdown, /Maintenance and internal improvements\./);
+    assert.doesNotMatch(result.markdown, /Windows release installer/);
     assert.doesNotThrow(() => assertMeaningfulReleaseNotes(result.markdown));
+  });
+
+  it('I: release-manifest.json receives the exact same short notes', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'inf-rn-manifest-'));
+    const commitsPath = path.join(dir, 'commits.txt');
+    const notesPath = path.join(dir, 'RELEASE_NOTES.md');
+    const manifestPath = path.join(dir, 'release-manifest.json');
+    const androidStub = path.join(dir, 'app-release.apk');
+    const windowsStub = path.join(dir, 'INFINITY-Setup-1.0.12.exe');
+
+    await writeFile(
+      commitsPath,
+      '111|feat(work-orders): support address and optional location link|\n',
+      'utf8',
+    );
+    await writeFile(androidStub, 'apk');
+    await writeFile(windowsStub, 'exe');
+
+    const result = await generateReleaseNotes({
+      version: '1.0.12',
+      build: 13,
+      tag: 'v1.0.12',
+      previousTag: 'v1.0.11',
+      commitsFile: commitsPath,
+      cwd: dir,
+    });
+    await writeFile(notesPath, result.markdown, 'utf8');
+
+    const { spawnSync } = await import('node:child_process');
+    const manifestScript = path.resolve(
+      'scripts/release/generate-release-manifest.mjs',
+    );
+    const run = spawnSync(
+      process.execPath,
+      [
+        manifestScript,
+        '--version',
+        '1.0.12',
+        '--build',
+        '13',
+        '--channel',
+        'stable',
+        '--notes-file',
+        notesPath,
+        '--android',
+        androidStub,
+        '--windows',
+        windowsStub,
+        '--output',
+        manifestPath,
+      ],
+      { encoding: 'utf8' },
+    );
+    assert.equal(run.status, 0, run.stderr || run.stdout);
+
+    const { readFile } = await import('node:fs/promises');
+    const manifest = JSON.parse(await readFile(manifestPath, 'utf8'));
+    assert.equal(manifest.releaseNotes, result.markdown.trim());
+    assert.doesNotMatch(manifest.releaseNotes, /## Testing & Verification/);
+    assert.doesNotMatch(manifest.releaseNotes, /## Release Assets/);
   });
 });

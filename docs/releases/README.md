@@ -1,6 +1,6 @@
 # Manual release notes overrides
 
-Automated GitHub Releases generate notes from commits between the previous `vX.Y.Z` tag and the current tag.
+Automated GitHub Releases generate short, user-facing notes from commits between the previous `vX.Y.Z` tag and the current tag.
 
 To override the generated notes for a specific version, add a Markdown file named after that version:
 
@@ -13,6 +13,18 @@ When that file exists at release time, it is used as the authoritative release b
 Guidelines:
 
 - Include a `Build: N` line (required for Update Center fallback parsing when synthesizing from the GitHub release body).
-- Prefer the same section structure as automated notes: What's New, Improvements, Bug Fixes, Technical Changes, Testing & Verification, Release Assets.
+- Keep notes short and user-facing. Prefer:
+
+```markdown
+## What's New
+
+- Concise product change.
+
+## Fixes
+
+- Concise bug fix.
+```
+
+- Do not include Testing & Verification, Release Assets, CI details, or technical implementation notes.
 - Do not invent changes that are not in the release.
 - Overrides are optional; omit the file to keep automatic generation.

@@ -304,21 +304,14 @@ jobs:
           NOTES_PATH="dist/releases/RELEASE_NOTES.md"
           mkdir -p dist/releases
 
-          # Only claim verification that this workflow actually performed successfully
-          # (publish runs only after Android + Windows build jobs succeed).
+          # Public notes are short and user-facing only (no CI/test/asset sections).
+          # Existing Android/Windows verification jobs remain unchanged above.
           node scripts/release/generate-release-notes.mjs \
             --tag "$TAG" \
             --version "$VERSION" \
             --build "$BUILD" \
             --channel stable \
-            --output "$NOTES_PATH" \
-            --check "Android signing secrets validated" \
-            --check "Firebase Android client configuration verified" \
-            --check "Android release APK built" \
-            --check "Android APK certificate SHA-256 verified against expected signing certificate" \
-            --check "Windows release build completed" \
-            --check "Windows installer (Inno Setup) built" \
-            --check "Release packaging jobs succeeded (resolve-version, build-android, build-windows)"
+            --output "$NOTES_PATH"
 
           if [ ! -s "$NOTES_PATH" ]; then
             echo "Release notes file is missing or empty"
