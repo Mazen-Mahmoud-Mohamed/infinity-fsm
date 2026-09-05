@@ -194,6 +194,11 @@ class _FakeAppUpdateRepository implements AppUpdateRepository {
   Future<void> writeAutoUpdateInstallAttemptedLock(String lock) async {
     installAttemptedLock = lock;
   }
+
+  @override
+  Future<void> clearAutoUpdateInstallAttemptedLock() async {
+    installAttemptedLock = null;
+  }
 }
 
 class _RecordingNotificationService extends AppUpdateNotificationService {
