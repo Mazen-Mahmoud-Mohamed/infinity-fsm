@@ -14,7 +14,6 @@ ar = ar.replaceAll('وقت إضافي', 'عمل إضافي');
 
 const arReplacements = [
   ['"navDashboard": "الرئيسية"', '"navDashboard": "لوحة التحكم"'],
-  ['"navAttendance": "الوقت"', '"navAttendance": "الحضور"'],
   ['"navWorkOrders": "المهام"', '"navWorkOrders": "أوامر العمل"'],
   ['"navOvertime": "إضافي"', '"navOvertime": "العمل الإضافي"'],
   ['"orgTitle": "الهيكل التنظيمي"', '"orgTitle": "المؤسسة"'],
@@ -31,7 +30,6 @@ for (const [from, to] of arReplacements) {
 
 const enReplacements = [
   ['"navDashboard": "Home"', '"navDashboard": "Dashboard"'],
-  ['"navAttendance": "Time"', '"navAttendance": "Attendance"'],
   ['"navWorkOrders": "Tasks"', '"navWorkOrders": "Work Orders"'],
   ['"navOvertime": "OT"', '"navOvertime": "Overtime"'],
   ['"workOrderJobTitle": "Job title"', '"workOrderJobTitle": "Work order title"'],

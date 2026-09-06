@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import User from '../organization/models/user.model.js';
 import Team from '../organization/models/team.model.js';
-import Attendance from '../../business/attendance/models/attendance.model.js';
 import OvertimeRecord from '../../business/overtime/models/overtimeRecord.model.js';
 import WorkOrder from '../../business/work-orders/models/workOrder.model.js';
 import MaintenanceSchedule from '../../business/preventive-maintenance/models/maintenanceSchedule.model.js';
@@ -409,11 +408,6 @@ class DashboardService {
   }
 
   async _buildAdminSummary({ companyId, from, to, period }) {
-    const todayKey = dateKey(new Date());
-    const attendancePeriodMatch = {
-      companyId,
-      createdAt: { $gte: from, $lte: to },
-    };
     const overtimeBase = {
       companyId,
       startAt: { $gte: from, $lte: to },
@@ -433,7 +427,6 @@ class DashboardService {
     // Semantics of every metric below are unchanged.
     const [
       userFacetRows,
-      attendanceFacetRows,
       otRunningRows,
       overtimeFacetRows,
       woFacetRows,
@@ -449,53 +442,6 @@ class DashboardService {
           $facet: {
             total: [{ $count: 'n' }],
             active: [{ $match: { isActive: true } }, { $count: 'n' }],
-          },
-        },
-      ]),
-      Attendance.aggregate([
-        {
-          $facet: {
-            currentlyWorking: [
-              {
-                $match: {
-                  companyId,
-                  status: { $in: ['CLOCKED_IN', 'ON_BREAK'] },
-                  date: todayKey,
-                },
-              },
-              { $count: 'n' },
-            ],
-            period: [
-              { $match: attendancePeriodMatch },
-              {
-                $group: {
-                  _id: null,
-                  totalMinutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
-                  records: { $sum: 1 },
-                  users: { $addToSet: '$userId' },
-                },
-              },
-            ],
-            present: [
-              {
-                $match: {
-                  ...attendancePeriodMatch,
-                  status: { $in: ['CLOCKED_IN', 'ON_BREAK', 'CLOCKED_OUT'] },
-                },
-              },
-              { $group: { _id: '$userId' } },
-            ],
-            byDay: [
-              { $match: attendancePeriodMatch },
-              {
-                $group: {
-                  _id: {
-                    $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
-                  },
-                  minutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
-                },
-              },
-            ],
           },
         },
       ]),
@@ -676,12 +622,6 @@ class DashboardService {
     ]);
 
     const userFacet = userFacetRows[0] || { total: [], active: [] };
-    const attendanceFacet = attendanceFacetRows[0] || {
-      currentlyWorking: [],
-      period: [],
-      present: [],
-      byDay: [],
-    };
     const overtimeFacet = overtimeFacetRows[0] || {
       totals: [],
       top: [],
@@ -697,26 +637,8 @@ class DashboardService {
 
     const totalEmployees = userFacet.total[0]?.n || 0;
     const activeEmployees = userFacet.active[0]?.n || 0;
-    // Previously a duplicate User.countDocuments(active) — same value.
-    const expectedWorkDays = activeEmployees;
-    const currentlyWorking = attendanceFacet.currentlyWorking[0]?.n || 0;
     const onOvertime = otRunningRows[0]?.onOvertime || 0;
     const onTravelOvertime = otRunningRows[0]?.onTravelOvertime || 0;
-
-    const att = attendanceFacet.period[0] || {
-      totalMinutes: 0,
-      records: 0,
-      users: [],
-    };
-    const presentCount = (attendanceFacet.present || []).length;
-    const expected = Math.max(expectedWorkDays, 1);
-    const daySpan = Math.max(
-      1,
-      Math.ceil((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000)) + 1
-    );
-    const attendanceRate = Math.round(
-      (presentCount / (expected * Math.min(daySpan, 31))) * 1000
-    ) / 10;
 
     const otRow = overtimeFacet.totals[0] || {
       minutes: 0,
@@ -762,7 +684,6 @@ class DashboardService {
     const trends = this._mapTrendCharts({
       from,
       to,
-      attendanceRows: attendanceFacet.byDay || [],
       overtimeRecords: overtimeFacet.forTrends || [],
       woRows: woFacet.byDay || [],
       pmRows: pmFacet.byDay || [],
@@ -772,17 +693,8 @@ class DashboardService {
       kpis: {
         totalEmployees,
         activeEmployees,
-        employeesCurrentlyWorking: currentlyWorking,
         employeesOnOvertime: onOvertime,
         employeesOnTravelOvertime: onTravelOvertime,
-      },
-      attendance: {
-        totalWorkingHours: toHours(att.totalMinutes),
-        averageWorkingHours:
-          att.users?.length > 0
-            ? toHours(att.totalMinutes / att.users.length)
-            : 0,
-        attendanceRate: Math.min(100, Math.max(0, attendanceRate || 0)),
       },
       overtime: {
         // totalOvertimeHours = total OT minutes across all statuses.
@@ -858,11 +770,6 @@ class DashboardService {
 
   async _buildSupervisorSummary({ companyId, memberIds, from, to }) {
     const ids = memberIds || [];
-    const attendanceBase = {
-      companyId,
-      userId: { $in: ids },
-      createdAt: { $gte: from, $lte: to },
-    };
     const overtimeBase = {
       companyId,
       userId: { $in: ids },
@@ -890,8 +797,6 @@ class DashboardService {
     };
 
     const [
-      currentlyWorking,
-      attendanceAgg,
       overtimeAgg,
       woByStatus,
       pmByStatus,
@@ -899,22 +804,6 @@ class DashboardService {
       liveActivity,
       trends,
     ] = await Promise.all([
-      Attendance.countDocuments({
-        companyId,
-        userId: { $in: ids },
-        status: { $in: ['CLOCKED_IN', 'ON_BREAK'] },
-        date: dateKey(new Date()),
-      }),
-      Attendance.aggregate([
-        { $match: attendanceBase },
-        {
-          $group: {
-            _id: null,
-            totalMinutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
-            users: { $addToSet: '$userId' },
-          },
-        },
-      ]),
       OvertimeRecord.aggregate([
         { $match: overtimeBase },
         {
@@ -950,7 +839,6 @@ class DashboardService {
       this._buildTrends({ companyId, userIds: ids, from, to }),
     ]);
 
-    const att = attendanceAgg[0] || { totalMinutes: 0, users: [] };
     const otNormal = overtimeAgg.find((r) => r._id === 'NORMAL')?.minutes || 0;
     const otTravel = overtimeAgg.find((r) => r._id === 'TRAVEL')?.minutes || 0;
     const otApprovedNormal =
@@ -965,11 +853,6 @@ class DashboardService {
     const completed = woMap.COMPLETED || 0;
 
     return {
-      teamAttendance: {
-        currentlyWorking,
-        totalWorkingHours: toHours(att.totalMinutes),
-        membersPresent: att.users?.length || 0,
-      },
       teamOvertime: {
         totalOvertimeHours: toHours(otTotal),
         approvedOvertimeHours: toHours(otApprovedTotal),
@@ -992,41 +875,19 @@ class DashboardService {
       teamPerformance: {
         completionRate:
           woTotal > 0 ? Math.round((completed / woTotal) * 1000) / 10 : 0,
-        averageWorkingHours:
-          ids.length > 0 ? toHours(att.totalMinutes / ids.length) : 0,
       },
       charts: trends,
     };
   }
 
   async _buildTechnicianSummary({ companyId, userId, from, to }) {
-    const todayKey = dateKey(new Date());
     const [
-      todayAttendance,
-      attendanceAgg,
       overtimeAgg,
       woByStatus,
       pmByStatus,
       completedWithDuration,
       trends,
     ] = await Promise.all([
-      Attendance.findOne({ companyId, userId, date: todayKey }).lean(),
-      Attendance.aggregate([
-        {
-          $match: {
-            companyId,
-            userId,
-            createdAt: { $gte: from, $lte: to },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalMinutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
-            days: { $sum: 1 },
-          },
-        },
-      ]),
       OvertimeRecord.aggregate([
         {
           $match: {
@@ -1104,7 +965,6 @@ class DashboardService {
       this._buildTrends({ companyId, userIds: [userId], from, to }),
     ]);
 
-    const att = attendanceAgg[0] || { totalMinutes: 0, days: 0 };
     const otNormal = overtimeAgg.find((r) => r._id === 'NORMAL')?.minutes || 0;
     const otTravel = overtimeAgg.find((r) => r._id === 'TRAVEL')?.minutes || 0;
     const otApprovedNormal =
@@ -1115,27 +975,9 @@ class DashboardService {
     const otApprovedTotal = otApprovedNormal + otApprovedTravel;
     const woMap = Object.fromEntries(woByStatus.map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmByStatus || []).map((r) => [r._id, r.count]));
-    const daySpan = Math.max(
-      1,
-      Math.ceil((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000)) + 1
-    );
-    const attendanceRate =
-      Math.round(((att.days || 0) / Math.min(daySpan, 31)) * 1000) / 10;
     const avgCompletion = completedWithDuration[0];
 
-    const gps =
-      todayAttendance?.clockOut?.gps ||
-      todayAttendance?.clockIn?.gps ||
-      null;
-
     return {
-      attendance: {
-        todayStatus: todayAttendance?.status || 'NOT_STARTED',
-        checkInAt: todayAttendance?.clockIn?.recordedAt?.toISOString?.() || null,
-        checkOutAt: todayAttendance?.clockOut?.recordedAt?.toISOString?.() || null,
-        totalWorkingHours: toHours(att.totalMinutes),
-        todayWorkingHours: toHours(todayAttendance?.workingMinutes || 0),
-      },
       overtime: {
         totalOvertimeHours: toHours(otTotal),
         approvedOvertimeHours: toHours(otApprovedTotal),
@@ -1153,19 +995,7 @@ class DashboardService {
         assignedTasks: (pmMap.SCHEDULED || 0) + (pmMap.OVERDUE || 0),
         completedTasks: pmMap.COMPLETED || 0,
       },
-      location: {
-        latitude: gps?.latitude ?? null,
-        longitude: gps?.longitude ?? null,
-        lastKnownAddress:
-          gps?.fullAddress || gps?.address || gps?.city || null,
-        lastSynchronization:
-          todayAttendance?.updatedAt?.toISOString?.() ||
-          todayAttendance?.clockIn?.recordedAt?.toISOString?.() ||
-          null,
-      },
       performance: {
-        attendanceRate: Math.min(100, Math.max(0, attendanceRate || 0)),
-        monthlyWorkingHours: toHours(att.totalMinutes),
         monthlyOvertimeHours: toHours(otTotal),
         monthlyTravelOtHours: toHours(otTravel),
         completedJobs: woMap.COMPLETED || 0,
@@ -1214,7 +1044,6 @@ class DashboardService {
     const buckets = buildTrendBuckets(from, to);
     if (buckets.length === 0) {
       return {
-        attendance: [],
         overtime: [],
         workOrders: [],
         preventiveMaintenance: [],
@@ -1226,24 +1055,7 @@ class DashboardService {
       ? { assignedTechnicianId: { $in: userIds } }
       : {};
 
-    const [attendanceRows, overtimeRecords, woRows, pmRows] = await Promise.all([
-      Attendance.aggregate([
-        {
-          $match: {
-            companyId,
-            ...userFilter,
-            createdAt: { $gte: from, $lte: to },
-          },
-        },
-        {
-          $group: {
-            _id: {
-              $dateToString: { format: '%Y-%m-%d', date: '$createdAt' },
-            },
-            minutes: { $sum: { $ifNull: ['$workingMinutes', 0] } },
-          },
-        },
-      ]),
+    const [overtimeRecords, woRows, pmRows] = await Promise.all([
       OvertimeRecord.find({
         companyId,
         ...userFilter,
@@ -1326,7 +1138,6 @@ class DashboardService {
     return this._mapTrendCharts({
       from,
       to,
-      attendanceRows,
       overtimeRecords,
       woRows,
       pmRows,
@@ -1337,20 +1148,16 @@ class DashboardService {
    * Build chart series from already-fetched daily/OT rows.
    * Shared by admin fan-out consolidation and role-scoped `_buildTrends`.
    */
-  _mapTrendCharts({ from, to, attendanceRows, overtimeRecords, woRows, pmRows }) {
+  _mapTrendCharts({ from, to, overtimeRecords, woRows, pmRows }) {
     const buckets = buildTrendBuckets(from, to);
     if (buckets.length === 0) {
       return {
-        attendance: [],
         overtime: [],
         workOrders: [],
         preventiveMaintenance: [],
       };
     }
 
-    const attMap = Object.fromEntries(
-      (attendanceRows || []).map((r) => [r._id, toHours(r.minutes)])
-    );
     const otMinutesMap = buildOvertimeTrendDayMap(overtimeRecords || []);
     const otMap = Object.fromEntries(
       Object.entries(otMinutesMap).map(([key, minutes]) => [key, toHours(minutes)])
@@ -1379,7 +1186,6 @@ class DashboardService {
     };
 
     return {
-      attendance: buckets.map((b) => mapBucket(b, attMap, true)),
       overtime: buckets.map((b) => mapBucket(b, otMap, true)),
       workOrders: buckets.map((b) => mapBucket(b, woMap, false)),
       preventiveMaintenance: buckets.map((b) => mapBucket(b, pmMap, false)),

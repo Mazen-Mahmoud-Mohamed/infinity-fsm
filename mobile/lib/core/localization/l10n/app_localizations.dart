@@ -236,12 +236,6 @@ abstract class AppLocalizations {
   /// **'Quick actions'**
   String get quickActions;
 
-  /// No description provided for @attendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance'**
-  String get attendance;
-
   /// No description provided for @overtime.
   ///
   /// In en, this message translates to:
@@ -499,12 +493,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No records match the selected filters.'**
   String get reportsCenterEmpty;
-
-  /// No description provided for @reportsCenterEmptyAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'No attendance records found for the selected filters.'**
-  String get reportsCenterEmptyAttendance;
 
   /// No description provided for @reportsCenterEmptyOvertime.
   ///
@@ -3050,12 +3038,6 @@ abstract class AppLocalizations {
   /// **'Operations overview'**
   String get dashboardOverview;
 
-  /// No description provided for @dashboardTodayAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Today\'s attendance'**
-  String get dashboardTodayAttendance;
-
   /// No description provided for @dashboardTodayWorkOrders.
   ///
   /// In en, this message translates to:
@@ -3176,12 +3158,6 @@ abstract class AppLocalizations {
   /// **'Key metrics'**
   String get dashboardSectionKpis;
 
-  /// No description provided for @dashboardSectionAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance'**
-  String get dashboardSectionAttendance;
-
   /// No description provided for @dashboardSectionOvertime.
   ///
   /// In en, this message translates to:
@@ -3229,12 +3205,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Team overview'**
   String get dashboardSectionTeamOverview;
-
-  /// No description provided for @dashboardSectionTeamAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Team attendance'**
-  String get dashboardSectionTeamAttendance;
 
   /// No description provided for @dashboardSectionTeamOvertime.
   ///
@@ -3325,12 +3295,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Average working hours'**
   String get dashboardKpiAverageWorkingHours;
-
-  /// No description provided for @dashboardKpiAttendanceRate.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance rate'**
-  String get dashboardKpiAttendanceRate;
 
   /// No description provided for @dashboardKpiOtHours.
   ///
@@ -3595,12 +3559,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{value}%'**
   String dashboardPercentValue(String value);
-
-  /// No description provided for @dashboardChartAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance trend'**
-  String get dashboardChartAttendance;
 
   /// No description provided for @dashboardChartOvertime.
   ///
@@ -4751,7 +4709,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsPrivacyBody.
   ///
   /// In en, this message translates to:
-  /// **'INFINITY processes field service data to support operations for Total-Com Solutions. Personal data is used only for authentication, attendance, and work execution.'**
+  /// **'INFINITY processes field service data to support operations for Total-Com Solutions. Personal data is used only for authentication, overtime, and work execution.'**
   String get settingsPrivacyBody;
 
   /// No description provided for @settingsTermsBody.
@@ -5366,41 +5324,11 @@ abstract class AppLocalizations {
   /// **'Location accuracy is too low. Move to an open area and try again.'**
   String get gpsAccuracyTooLow;
 
-  /// No description provided for @attendanceUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance updated successfully.'**
-  String get attendanceUpdated;
-
-  /// No description provided for @attendanceLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading attendance...'**
-  String get attendanceLoading;
-
-  /// No description provided for @attendanceHistoryLoading.
+  /// No description provided for @historyLoading.
   ///
   /// In en, this message translates to:
   /// **'Loading history...'**
-  String get attendanceHistoryLoading;
-
-  /// No description provided for @attendanceHistoryEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No attendance history yet'**
-  String get attendanceHistoryEmpty;
-
-  /// No description provided for @attendanceTimeline.
-  ///
-  /// In en, this message translates to:
-  /// **'Timeline'**
-  String get attendanceTimeline;
-
-  /// No description provided for @attendanceHistoryTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'History'**
-  String get attendanceHistoryTooltip;
+  String get historyLoading;
 
   /// No description provided for @overtimeEnded.
   ///
@@ -5557,246 +5485,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No running overtime session found to end.'**
   String get overtimeTechnicianNoRunningSession;
-
-  /// No description provided for @attendanceClockIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Clock In'**
-  String get attendanceClockIn;
-
-  /// No description provided for @attendanceClockOut.
-  ///
-  /// In en, this message translates to:
-  /// **'Clock Out'**
-  String get attendanceClockOut;
-
-  /// No description provided for @attendanceStartBreak.
-  ///
-  /// In en, this message translates to:
-  /// **'Start Break'**
-  String get attendanceStartBreak;
-
-  /// No description provided for @attendanceEndBreak.
-  ///
-  /// In en, this message translates to:
-  /// **'End Break'**
-  String get attendanceEndBreak;
-
-  /// No description provided for @attendanceShiftCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'You have completed your shift for today.'**
-  String get attendanceShiftCompleted;
-
-  /// No description provided for @attendanceTodayStatus.
-  ///
-  /// In en, this message translates to:
-  /// **'Today\'s Status'**
-  String get attendanceTodayStatus;
-
-  /// No description provided for @attendanceWorkingHours.
-  ///
-  /// In en, this message translates to:
-  /// **'Working hours'**
-  String get attendanceWorkingHours;
-
-  /// No description provided for @attendanceBreaks.
-  ///
-  /// In en, this message translates to:
-  /// **'Breaks'**
-  String get attendanceBreaks;
-
-  /// No description provided for @attendanceTimelineEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No attendance activity recorded yet today.'**
-  String get attendanceTimelineEmpty;
-
-  /// No description provided for @attendanceEventClockedIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Clocked in'**
-  String get attendanceEventClockedIn;
-
-  /// No description provided for @attendanceEventClockedOut.
-  ///
-  /// In en, this message translates to:
-  /// **'Clocked out'**
-  String get attendanceEventClockedOut;
-
-  /// No description provided for @attendanceEventBreakStarted.
-  ///
-  /// In en, this message translates to:
-  /// **'Break started'**
-  String get attendanceEventBreakStarted;
-
-  /// No description provided for @attendanceEventBreakEnded.
-  ///
-  /// In en, this message translates to:
-  /// **'Break ended'**
-  String get attendanceEventBreakEnded;
-
-  /// No description provided for @attendanceSyncedOffline.
-  ///
-  /// In en, this message translates to:
-  /// **'Synced from offline record'**
-  String get attendanceSyncedOffline;
-
-  /// No description provided for @attendanceHistoryTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance History'**
-  String get attendanceHistoryTitle;
-
-  /// No description provided for @attendanceStatusNotStarted.
-  ///
-  /// In en, this message translates to:
-  /// **'Not started'**
-  String get attendanceStatusNotStarted;
-
-  /// No description provided for @attendanceStatusWorking.
-  ///
-  /// In en, this message translates to:
-  /// **'Working'**
-  String get attendanceStatusWorking;
-
-  /// No description provided for @attendanceStatusOnBreak.
-  ///
-  /// In en, this message translates to:
-  /// **'On break'**
-  String get attendanceStatusOnBreak;
-
-  /// No description provided for @attendanceStatusClockedOut.
-  ///
-  /// In en, this message translates to:
-  /// **'Clocked out'**
-  String get attendanceStatusClockedOut;
-
-  /// No description provided for @attendanceStatusPresent.
-  ///
-  /// In en, this message translates to:
-  /// **'Present'**
-  String get attendanceStatusPresent;
-
-  /// No description provided for @attendanceStatusCheckedOut.
-  ///
-  /// In en, this message translates to:
-  /// **'Checked out'**
-  String get attendanceStatusCheckedOut;
-
-  /// No description provided for @attendanceManagement.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance Management'**
-  String get attendanceManagement;
-
-  /// No description provided for @attendanceManageTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage attendance'**
-  String get attendanceManageTooltip;
-
-  /// No description provided for @attendanceSearchEmployee.
-  ///
-  /// In en, this message translates to:
-  /// **'Search employee name or email'**
-  String get attendanceSearchEmployee;
-
-  /// No description provided for @attendanceAdminEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'No attendance records found.'**
-  String get attendanceAdminEmpty;
-
-  /// No description provided for @attendanceAdminLoadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load attendance records.'**
-  String get attendanceAdminLoadFailed;
-
-  /// No description provided for @attendanceDetails.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance details'**
-  String get attendanceDetails;
-
-  /// No description provided for @attendanceDetailsLoading.
-  ///
-  /// In en, this message translates to:
-  /// **'Loading attendance details...'**
-  String get attendanceDetailsLoading;
-
-  /// No description provided for @attendanceDetailsLoadFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to load attendance details.'**
-  String get attendanceDetailsLoadFailed;
-
-  /// No description provided for @attendanceEmployeeInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Employee information'**
-  String get attendanceEmployeeInfo;
-
-  /// No description provided for @attendanceSessionInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Session information'**
-  String get attendanceSessionInfo;
-
-  /// No description provided for @attendanceDeviceInfo.
-  ///
-  /// In en, this message translates to:
-  /// **'Device information'**
-  String get attendanceDeviceInfo;
-
-  /// No description provided for @attendanceLocation.
-  ///
-  /// In en, this message translates to:
-  /// **'Location'**
-  String get attendanceLocation;
-
-  /// No description provided for @attendanceDevice.
-  ///
-  /// In en, this message translates to:
-  /// **'Device'**
-  String get attendanceDevice;
-
-  /// No description provided for @attendanceSyncSource.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync source'**
-  String get attendanceSyncSource;
-
-  /// No description provided for @attendanceLastUpdated.
-  ///
-  /// In en, this message translates to:
-  /// **'Last updated'**
-  String get attendanceLastUpdated;
-
-  /// No description provided for @attendanceSelfie.
-  ///
-  /// In en, this message translates to:
-  /// **'Selfie'**
-  String get attendanceSelfie;
-
-  /// No description provided for @attendanceDate.
-  ///
-  /// In en, this message translates to:
-  /// **'Date'**
-  String get attendanceDate;
-
-  /// No description provided for @attendanceOvertimeHours.
-  ///
-  /// In en, this message translates to:
-  /// **'Overtime hours'**
-  String get attendanceOvertimeHours;
-
-  /// No description provided for @attendanceRoleAll.
-  ///
-  /// In en, this message translates to:
-  /// **'All roles'**
-  String get attendanceRoleAll;
 
   /// No description provided for @overtimeStartTitle.
   ///
@@ -6626,24 +6314,6 @@ abstract class AppLocalizations {
   /// **'Internet is required for the first sign-in.'**
   String get firstSignInRequiresInternet;
 
-  /// No description provided for @attendanceOfflineCachedData.
-  ///
-  /// In en, this message translates to:
-  /// **'Offline mode — showing cached attendance data.'**
-  String get attendanceOfflineCachedData;
-
-  /// No description provided for @attendancePendingSync.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 attendance record pending sync.} other{{count} attendance records pending sync.}}'**
-  String attendancePendingSync(int count);
-
-  /// No description provided for @attendancePendingOfflineRecords.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, =1{1 pending offline record} other{{count} pending offline records}}'**
-  String attendancePendingOfflineRecords(int count);
-
   /// No description provided for @profileLoading.
   ///
   /// In en, this message translates to:
@@ -6859,12 +6529,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Roles & Permissions'**
   String get permGroupRoles;
-
-  /// No description provided for @permGroupAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance'**
-  String get permGroupAttendance;
 
   /// No description provided for @permGroupOvertime.
   ///
@@ -7808,60 +7472,6 @@ abstract class AppLocalizations {
   /// **'Unexpected network error. Please try again.'**
   String get errorUnexpectedNetworkError;
 
-  /// No description provided for @attendanceAlreadyClockedIn.
-  ///
-  /// In en, this message translates to:
-  /// **'You have already clocked in today.'**
-  String get attendanceAlreadyClockedIn;
-
-  /// No description provided for @attendanceMustClockInBeforeOut.
-  ///
-  /// In en, this message translates to:
-  /// **'You must clock in before clocking out.'**
-  String get attendanceMustClockInBeforeOut;
-
-  /// No description provided for @attendanceEndBreakBeforeOut.
-  ///
-  /// In en, this message translates to:
-  /// **'End your current break before clocking out.'**
-  String get attendanceEndBreakBeforeOut;
-
-  /// No description provided for @attendanceAlreadyClockedOut.
-  ///
-  /// In en, this message translates to:
-  /// **'You have already clocked out today.'**
-  String get attendanceAlreadyClockedOut;
-
-  /// No description provided for @attendanceMustClockInBeforeBreak.
-  ///
-  /// In en, this message translates to:
-  /// **'You must clock in before starting a break.'**
-  String get attendanceMustClockInBeforeBreak;
-
-  /// No description provided for @attendanceBreakAlreadyInProgress.
-  ///
-  /// In en, this message translates to:
-  /// **'A break is already in progress.'**
-  String get attendanceBreakAlreadyInProgress;
-
-  /// No description provided for @attendanceNoActiveBreak.
-  ///
-  /// In en, this message translates to:
-  /// **'There is no active break to end.'**
-  String get attendanceNoActiveBreak;
-
-  /// No description provided for @attendanceGpsAccuracyExceeded.
-  ///
-  /// In en, this message translates to:
-  /// **'Location accuracy ({accuracy}m) exceeds the allowed threshold ({threshold}m). Move to an open area and try again.'**
-  String attendanceGpsAccuracyExceeded(String accuracy, String threshold);
-
-  /// No description provided for @attendanceWebOfflinePhotoRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Photo attendance requires an internet connection on web. Please reconnect and try again.'**
-  String get attendanceWebOfflinePhotoRequired;
-
   /// No description provided for @locationServicesDisabled.
   ///
   /// In en, this message translates to:
@@ -7871,7 +7481,7 @@ abstract class AppLocalizations {
   /// No description provided for @locationPermissionRequired.
   ///
   /// In en, this message translates to:
-  /// **'Location permission is required to clock in or out.'**
+  /// **'Location permission is required to start or stop overtime.'**
   String get locationPermissionRequired;
 
   /// No description provided for @locationPermissionDeniedForever.
@@ -8108,12 +7718,6 @@ abstract class AppLocalizations {
   /// **'Dashboard'**
   String get navDashboard;
 
-  /// No description provided for @navAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance'**
-  String get navAttendance;
-
   /// No description provided for @navWorkOrders.
   ///
   /// In en, this message translates to:
@@ -8161,12 +7765,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Account activity'**
   String get eventAuthGeneric;
-
-  /// No description provided for @eventAttendanceGeneric.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance update'**
-  String get eventAttendanceGeneric;
 
   /// No description provided for @eventOvertimeGeneric.
   ///
@@ -9026,12 +8624,6 @@ abstract class AppLocalizations {
   /// **'No feature flags configured'**
   String get settingsNoFeatureFlags;
 
-  /// No description provided for @settingsNotifAttendance.
-  ///
-  /// In en, this message translates to:
-  /// **'Attendance notifications'**
-  String get settingsNotifAttendance;
-
   /// No description provided for @settingsNotifTasks.
   ///
   /// In en, this message translates to:
@@ -9242,12 +8834,6 @@ abstract class AppLocalizations {
   /// **'Permissions for managing roles and assigning access rights.'**
   String get permGroupRolesDesc;
 
-  /// No description provided for @permGroupAttendanceDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Permissions for reviewing and managing employee attendance records.'**
-  String get permGroupAttendanceDesc;
-
   /// No description provided for @permGroupOvertimeDesc.
   ///
   /// In en, this message translates to:
@@ -9449,7 +9035,7 @@ abstract class AppLocalizations {
   /// No description provided for @permSettingsManageHolidaysDesc.
   ///
   /// In en, this message translates to:
-  /// **'Allows defining company holidays that affect attendance and overtime.'**
+  /// **'Allows defining company holidays that affect overtime.'**
   String get permSettingsManageHolidaysDesc;
 
   /// No description provided for @permAuditView.
@@ -9559,90 +9145,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Allows creating, editing, and assigning roles and their permission sets.'**
   String get permRolesManageDesc;
-
-  /// No description provided for @permAttendanceViewOwn.
-  ///
-  /// In en, this message translates to:
-  /// **'View own attendance'**
-  String get permAttendanceViewOwn;
-
-  /// No description provided for @permAttendanceViewOwnDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows reviewing only personal attendance records.'**
-  String get permAttendanceViewOwnDesc;
-
-  /// No description provided for @permAttendanceViewTeam.
-  ///
-  /// In en, this message translates to:
-  /// **'View team attendance'**
-  String get permAttendanceViewTeam;
-
-  /// No description provided for @permAttendanceViewTeamDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows viewing attendance records for members of the assigned team.'**
-  String get permAttendanceViewTeamDesc;
-
-  /// No description provided for @permAttendanceViewAll.
-  ///
-  /// In en, this message translates to:
-  /// **'View all attendance'**
-  String get permAttendanceViewAll;
-
-  /// No description provided for @permAttendanceViewAllDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows viewing every attendance record across the organization.'**
-  String get permAttendanceViewAllDesc;
-
-  /// No description provided for @permAttendanceManageOwn.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage own attendance'**
-  String get permAttendanceManageOwn;
-
-  /// No description provided for @permAttendanceManageOwnDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows creating and updating only personal attendance punches.'**
-  String get permAttendanceManageOwnDesc;
-
-  /// No description provided for @permAttendanceView.
-  ///
-  /// In en, this message translates to:
-  /// **'View attendance'**
-  String get permAttendanceView;
-
-  /// No description provided for @permAttendanceViewDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows opening attendance screens for records within the granted access scope.'**
-  String get permAttendanceViewDesc;
-
-  /// No description provided for @permAttendanceUpdate.
-  ///
-  /// In en, this message translates to:
-  /// **'Manage attendance'**
-  String get permAttendanceUpdate;
-
-  /// No description provided for @permAttendanceUpdateDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows creating, editing, approving, and managing attendance records.'**
-  String get permAttendanceUpdateDesc;
-
-  /// No description provided for @permAttendanceApprove.
-  ///
-  /// In en, this message translates to:
-  /// **'Approve attendance'**
-  String get permAttendanceApprove;
-
-  /// No description provided for @permAttendanceApproveDesc.
-  ///
-  /// In en, this message translates to:
-  /// **'Allows approving attendance records before they are finalized.'**
-  String get permAttendanceApproveDesc;
 
   /// No description provided for @permOvertimeViewOwn.
   ///

@@ -14,7 +14,6 @@ Suggested filenames (referenced by the root README):
 | `dashboard-dark.png` | Executive dashboard (dark) |
 | `notifications.png` | Notification center |
 | `reports-center.png` | Reports Center hub |
-| `attendance.png` | Attendance |
 | `overtime.png` | Overtime tracking |
 | `voice-notes.png` | Stage-based voice notes |
 | `work-orders.png` | Work orders list / detail |

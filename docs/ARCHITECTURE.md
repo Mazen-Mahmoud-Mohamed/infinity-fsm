@@ -45,7 +45,7 @@
 
 ## 1. Executive Summary
 
-**Infinity FSM** is an enterprise Field Service Management platform designed for multi-year scalability. Overtime Tracking is the **first business module** shipped in MVP, but the platform core is built to support Attendance, Work Orders, Customers, Assets, Inventory, Vehicles, Scheduling, Maintenance, Payroll Integration, and Analytics — without restructuring the foundation.
+**Infinity FSM** is an enterprise Field Service Management platform designed for multi-year scalability. Overtime Tracking is the **first business module** shipped in MVP, but the platform core is built to support Work Orders, Customers, Assets, Inventory, Vehicles, Scheduling, Maintenance, Payroll Integration, and Analytics — without restructuring the foundation. Employee presence / clock attendance is handled externally by the company's fingerprint / biometric system and is **not** an Infinity module.
 
 ### Product Positioning
 
@@ -138,7 +138,6 @@ Modules **must not** directly access another module's Mongoose models. Cross-mod
 | Work Orders | `SCHEMA_READY` | Optional link from overtime |
 | Organization | `BETA` | Full hierarchy |
 | Vehicles | `SCHEMA_READY` | Schema + assignment only |
-| Attendance | `PLANNED` | — |
 | Customers | `PLANNED` | Via Work Orders schema |
 | Assets | `PLANNED` | — |
 | Inventory | `PLANNED` | — |
@@ -238,7 +237,6 @@ backend/src/modules/
     ├── overtime/            # MVP — full implementation
     ├── work-orders/         # SCHEMA_READY — optional MVP link
     ├── vehicles/            # SCHEMA_READY — assignment tracking
-    ├── attendance/          # PLANNED
     ├── customers/           # PLANNED
     ├── assets/              # PLANNED
     ├── inventory/           # PLANNED

@@ -14,8 +14,6 @@ String notificationCategoryLabel(
   switch (category) {
     case NotificationCategory.all:
       return l10n.notificationsFilterAll;
-    case NotificationCategory.attendance:
-      return l10n.attendance;
     case NotificationCategory.overtime:
       return l10n.overtime;
     case NotificationCategory.workOrders:
@@ -43,8 +41,6 @@ IconData notificationCategoryIcon(NotificationCategory category) {
   switch (category) {
     case NotificationCategory.all:
       return Icons.notifications_outlined;
-    case NotificationCategory.attendance:
-      return Icons.fingerprint_outlined;
     case NotificationCategory.overtime:
       return Icons.more_time_outlined;
     case NotificationCategory.workOrders:

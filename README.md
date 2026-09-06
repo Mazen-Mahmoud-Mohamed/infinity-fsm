@@ -1,6 +1,6 @@
 # INFINITY
 
-Enterprise Field Service Management for workforce operations — work orders, overtime journeys, attendance, notifications, and administration.
+Enterprise Field Service Management for workforce operations — work orders, overtime journeys, notifications, and administration.
 
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=for-the-badge&logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-0175C2?style=for-the-badge&logo=dart&logoColor=white)
@@ -58,14 +58,13 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 
 - Create, assign, and complete **work orders** with customer context and optional location address/link
 - Capture multi-stage **overtime journeys** (photos, voice, notes, GPS)
-- Track **attendance** with GPS evidence
 - Deliver **realtime and push notifications** to technicians and managers
 - Give admins and supervisors role-based dashboards, review tools, and **technician interface control**
 - Manage inventory, assets, preventive maintenance, and service reports where enabled
 
 | Topic | Detail |
 |-------|--------|
-| **Problem** | Field teams need one system for attendance, overtime evidence, work orders, stock/assets, PM, and admin analytics — not disconnected tools. |
+| **Problem** | Field teams need one system for overtime evidence, work orders, stock/assets, PM, and admin analytics — not disconnected tools. |
 | **Users** | **Admin**, **Supervisor**, **Technician** |
 | **Platforms** | **Android** (phones/tablets) · **Windows** desktop |
 | **Locales** | Arabic **RTL** · English **LTR** |
@@ -96,7 +95,7 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 
 ### 📊 Dashboard
 
-- Workforce metrics and attendance information
+- Workforce metrics
 - Overtime analytics and trends (eligible hours per calendar day)
 - Role-based dashboard sections
 - Period filters: Today · This Week · This Month · This Year · Custom
@@ -204,14 +203,7 @@ Backend validation and normalization live in `work-orders.service.js` / `work-or
 
 See [§7 Notifications](#7-notifications) for platform behavior (Android FCM, Windows Socket.IO, deep links).
 
-### 🕐 Attendance
-
-- Attendance dashboard (clock in/out, breaks where implemented)
-- Shared `AttendanceCubit` (single status / today fetch and poll)
-- Attendance sync with connectivity awareness
-- GPS accuracy gates on the backend
-- **Desktop admin table** (`AttendanceAdminDesktopTable`) for reviewing sessions on wide viewports
-- **`AppDesktopDataTable`** uses matching **min/max row height (52 px)** so desktop DataTable rendering stays stable on Windows
+> **Note:** Attendance is **not** part of Infinity. Employee presence is handled by the company's external fingerprint / biometric system. In-app time capture with GPS evidence lives entirely in **Overtime**.
 
 ### 📦 Inventory · Assets · PM · Reports
 
@@ -276,7 +268,6 @@ Activated at **`AppBreakpoints.tabletMax` (900 px+)** on Windows (and wide deskt
 | **Work Orders** | Full-width table, search, status filters, **Create Order** + **Refresh** in fixed bottom footer |
 | **Work Order create/edit** | Desktop form layout with fixed bottom **Close** / **Save** |
 | **Overtime Management** | Table with technician search, status filters, **Export Excel** in fixed bottom footer |
-| **Attendance (admin)** | Desktop data table for session review |
 | **Users / Roles** | Desktop tables for list management |
 | **Notifications** | Desktop list view |
 | **Dashboard, Inventory, Assets, PM, Reports, Settings, Profile** | Desktop-aware page layouts and spacing |
@@ -291,7 +282,7 @@ Mobile/tablet code paths are unchanged for modules that branch on `AppBreakpoint
 |------|--------|
 | **Admin** | Full permissions: users, roles, settings (including Technician Interface), inventory, assets, PM, reports, media policy, exports, organization |
 | **Supervisor** | Team oversight, overtime review/export, operational dashboards, work orders and related manage scopes; settings **view** (not full `settings:manage`) |
-| **Technician** | Own attendance, overtime capture, assigned work orders, and view scopes for inventory/assets/PM/reports; uses **operational home** (not the executive admin dashboard) |
+| **Technician** | Own overtime capture, assigned work orders, and view scopes for inventory/assets/PM/reports; uses **operational home** (not the executive admin dashboard) |
 
 **Technician Interface** configuration affects **technician operational navigation only**. It does **not** remove Admin or Supervisor access, menus, or routes.
 
@@ -308,7 +299,6 @@ The technician app is intentionally **simplified** for field execution. Technici
 | Overtime / work journeys | **العمل** | `overtime` |
 | Work Orders | **أوامر العمل** | `workOrders` |
 | Profile | **أنا** | `profile` |
-| Attendance | **الحضور** | `attendance` |
 
 Only enabled sections appear in technician bottom navigation / rail. Disabled sections are removed from normal navigation; existing route guards redirect deep links according to authorization rules (notification deep links still target entity routes when permitted).
 
@@ -346,7 +336,6 @@ Company-scoped setting key: `technician_interface`.
 |---------|--------------|---------------|
 | **Overtime** | Visible in technician nav | Hidden; deep links redirected |
 | **Work Orders** | Visible | Hidden; deep links redirected |
-| **Attendance** | Visible | Hidden; deep links redirected |
 | **Profile** | Visible | Hidden; deep links redirected |
 
 Defaults are all **enabled**.
@@ -605,7 +594,7 @@ Client discovery (`/releases/latest`) continues to use GitHub’s latest release
 | **Single-flight** | Sync cubits avoid overlapping sync cycles (follow-up when needed) |
 | **Restore sync** | Connectivity restore triggers sync when API becomes reachable |
 
-Attendance and other modules use offline banners / caching patterns where implemented. **Overtime** has the most complete offline business-data path. **Technician interface visibility** is offline-resilient via local config cache; the app is **not** fully offline-capable for all business modules.
+Other modules use offline banners / caching patterns where implemented. **Overtime** has the most complete offline business-data path. **Technician interface visibility** is offline-resilient via local config cache; the app is **not** fully offline-capable for all business modules.
 
 ---
 
@@ -634,8 +623,8 @@ Optimizations below are **present in the current codebase**.
 
 ### 🚀 Flutter
 
-- Shared `AttendanceCubit` (lazy singleton — no duplicate pollers)
-- Overtime / attendance timer rebuild isolation (`BlocSelector`)
+- Shared cubits registered as lazy singletons (no duplicate pollers)
+- Overtime timer rebuild isolation (`BlocSelector`)
 - Image decode hints (`memCacheWidth`) on key photo paths
 - Connectivity health-probe reuse (5s when API was online)
 
@@ -744,7 +733,7 @@ infinity-fsm/
 │   │   ├── config/
 │   │   ├── modules/
 │   │   │   ├── core/        # auth, rbac, dashboard, users, settings, releases, …
-│   │   │   ├── business/    # attendance, overtime, work-orders, inventory, assets, pm, reports
+│   │   │   ├── business/    # overtime, work-orders, inventory, assets, pm, reports
 │   │   │   └── notifications/  # in-app + FCM + device tokens + hooks
 │   │   ├── routes/          # /api/v1
 │   │   ├── shared/          # middleware, utils
@@ -755,7 +744,7 @@ infinity-fsm/
 │   ├── lib/
 │   │   ├── core/            # theme, router, l10n, DI, network, storage, push
 │   │   │   └── widgets/desktop/  # AppDesktopDataTable, sidebar, top bar, …
-│   │   ├── features/        # auth, dashboard, attendance, overtime, notifications,
+│   │   ├── features/        # auth, dashboard, overtime, notifications,
 │   │   │                    # work_orders, inventory, assets, pm, reports, users, roles,
 │   │   │                    # settings, app_update, …
 │   │   └── shared/
@@ -872,7 +861,7 @@ Under `mobile/test/`, including:
 - Settings / localization / Technician Interface navigation
 - **App Update** — Update Center cubit, artifact verification, stale cleanup, Auto Update locks
 - Push notification navigation / pending intent mapping
-- Work orders, attendance, desktop shell / Work Orders / Overtime table tests
+- Work orders, desktop shell / Work Orders / Overtime table tests
 
 ```bash
 cd mobile
@@ -987,7 +976,6 @@ Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 | `APP_RELEASE_CHANNEL` | Default `stable` |
 | `GITHUB_RELEASE_WEBHOOK_SECRET` | Shared secret for GitHub Release webhook HMAC |
 | `DEVICE_CLOCK_SKEW_SECONDS` | Clock drift allowance |
-| `ATTENDANCE_GPS_ACCURACY_THRESHOLD_METERS` | Attendance GPS gate |
 | `OVERTIME_MAX_SESSION_HOURS` | Soft review threshold (default `16`) |
 | `OVERTIME_MAX_REQUEST_HOURS` / `OVERTIME_MIN_REQUEST_HOURS` | Request bounds |
 | `OVERTIME_GPS_ACCURACY_THRESHOLD_METERS` | Overtime GPS gate |
@@ -1058,7 +1046,6 @@ Primary mount: **`/api/v1`**
 | Auth | `/auth` | Login, refresh, logout, **logout-all**, `/me` |
 | Dashboard | `/dashboard` | Role summary & related stats |
 | Overtime | `/overtime` | Journey, review, export |
-| Attendance | `/attendance` | Clock / history / admin |
 | Work Orders | `/work-orders` | CRUD & workflow |
 | **Notifications** | `/notifications` | Inbox, unread, mark-as-read, device tokens |
 | **Releases** | `/releases` | `GET /latest` (auth); `POST /webhook/github` (HMAC, no JWT) |
@@ -1128,7 +1115,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 - Dedicated Windows desktop shell — sidebar, global top bar, desktop page layouts
 - Desktop data tables (`AppDesktopDataTable`) with stable row height
-- Work Orders / Overtime / Attendance / Users / Roles desktop surfaces
+- Work Orders / Overtime / Users / Roles desktop surfaces
 - Work Orders and Overtime fixed bottom action footers polished for desktop
 
 ### Earlier improvements

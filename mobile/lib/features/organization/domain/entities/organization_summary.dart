@@ -9,7 +9,6 @@ class OrganizationSummary extends Equatable {
     required this.positions,
     this.assets = 0,
     this.workOrders = 0,
-    this.attendance = 0,
     this.overtime = 0,
   });
 
@@ -20,7 +19,6 @@ class OrganizationSummary extends Equatable {
   final int positions;
   final int assets;
   final int workOrders;
-  final int attendance;
   final int overtime;
 
   @override
@@ -32,7 +30,6 @@ class OrganizationSummary extends Equatable {
         positions,
         assets,
         workOrders,
-        attendance,
         overtime,
       ];
 }

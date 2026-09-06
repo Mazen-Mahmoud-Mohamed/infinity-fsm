@@ -10,7 +10,7 @@ import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 import 'package:mobile/features/overtime/data/trace/overtime_offline_trace.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';

@@ -4,10 +4,6 @@ class RoutePaths {
   static const String splash = '/';
   static const String login = '/login';
   static const String dashboard = '/dashboard';
-  static const String attendance = '/attendance';
-  static const String attendanceHistory = '/attendance/history';
-  static const String attendanceAdmin = '/attendance/admin';
-  static String attendanceAdminDetail(String id) => '/attendance/admin/$id';
   static const String overtime = '/overtime';
   static const String overtimeHistory = '/overtime/history';
   static const String overtimeAdmin = '/overtime/admin';

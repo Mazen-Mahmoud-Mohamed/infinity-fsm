@@ -16,20 +16,17 @@ class DashboardChartPoint extends Equatable {
 
 class DashboardCharts extends Equatable {
   const DashboardCharts({
-    this.attendance = const [],
     this.overtime = const [],
     this.workOrders = const [],
     this.preventiveMaintenance = const [],
   });
 
-  final List<DashboardChartPoint> attendance;
   final List<DashboardChartPoint> overtime;
   final List<DashboardChartPoint> workOrders;
   final List<DashboardChartPoint> preventiveMaintenance;
 
   @override
-  List<Object?> get props =>
-      [attendance, overtime, workOrders, preventiveMaintenance];
+  List<Object?> get props => [overtime, workOrders, preventiveMaintenance];
 }
 
 class DashboardKpis extends Equatable {
@@ -54,37 +51,6 @@ class DashboardKpis extends Equatable {
         employeesCurrentlyWorking,
         employeesOnOvertime,
         employeesOnTravelOvertime,
-      ];
-}
-
-class DashboardAttendanceSummary extends Equatable {
-  const DashboardAttendanceSummary({
-    this.totalWorkingHours = 0,
-    this.averageWorkingHours = 0,
-    this.attendanceRate = 0,
-    this.todayStatus,
-    this.checkInAt,
-    this.checkOutAt,
-    this.todayWorkingHours = 0,
-  });
-
-  final double totalWorkingHours;
-  final double averageWorkingHours;
-  final double attendanceRate;
-  final String? todayStatus;
-  final DateTime? checkInAt;
-  final DateTime? checkOutAt;
-  final double todayWorkingHours;
-
-  @override
-  List<Object?> get props => [
-        totalWorkingHours,
-        averageWorkingHours,
-        attendanceRate,
-        todayStatus,
-        checkInAt,
-        checkOutAt,
-        todayWorkingHours,
       ];
 }
 
@@ -298,22 +264,6 @@ class DashboardNotificationItem extends Equatable {
   List<Object?> get props => [id, title, body, createdAt];
 }
 
-class DashboardTeamAttendance extends Equatable {
-  const DashboardTeamAttendance({
-    this.currentlyWorking = 0,
-    this.totalWorkingHours = 0,
-    this.membersPresent = 0,
-  });
-
-  final int currentlyWorking;
-  final double totalWorkingHours;
-  final int membersPresent;
-
-  @override
-  List<Object?> get props =>
-      [currentlyWorking, totalWorkingHours, membersPresent];
-}
-
 class DashboardTeamOvertime extends Equatable {
   const DashboardTeamOvertime({
     this.totalOvertimeHours = 0,
@@ -424,7 +374,6 @@ class DashboardLocationSummary extends Equatable {
 
 class DashboardPerformanceSummary extends Equatable {
   const DashboardPerformanceSummary({
-    this.attendanceRate = 0,
     this.monthlyWorkingHours = 0,
     this.monthlyOvertimeHours = 0,
     this.monthlyTravelOtHours = 0,
@@ -432,7 +381,6 @@ class DashboardPerformanceSummary extends Equatable {
     this.averageCompletionHours = 0,
   });
 
-  final double attendanceRate;
   final double monthlyWorkingHours;
   final double monthlyOvertimeHours;
   final double monthlyTravelOtHours;
@@ -441,7 +389,6 @@ class DashboardPerformanceSummary extends Equatable {
 
   @override
   List<Object?> get props => [
-        attendanceRate,
         monthlyWorkingHours,
         monthlyOvertimeHours,
         monthlyTravelOtHours,
@@ -458,7 +405,6 @@ class RoleDashboardSummary extends Equatable {
     required this.to,
     this.teamSize,
     this.kpis,
-    this.attendance,
     this.overtime,
     this.workOrders,
     this.preventiveMaintenance,
@@ -466,7 +412,6 @@ class RoleDashboardSummary extends Equatable {
     this.assets,
     this.liveActivity = const [],
     this.notifications = const [],
-    this.teamAttendance,
     this.teamOvertime,
     this.teamWorkOrders,
     this.teamPm,
@@ -485,7 +430,6 @@ class RoleDashboardSummary extends Equatable {
   final DateTime to;
   final int? teamSize;
   final DashboardKpis? kpis;
-  final DashboardAttendanceSummary? attendance;
   final DashboardOvertimeSummary? overtime;
   final DashboardWorkOrdersSummary? workOrders;
   final DashboardPmSummary? preventiveMaintenance;
@@ -493,7 +437,6 @@ class RoleDashboardSummary extends Equatable {
   final DashboardAssetsSummary? assets;
   final List<DashboardLiveActivityItem> liveActivity;
   final List<DashboardNotificationItem> notifications;
-  final DashboardTeamAttendance? teamAttendance;
   final DashboardTeamOvertime? teamOvertime;
   final DashboardTeamWorkOrders? teamWorkOrders;
   final DashboardTeamPm? teamPm;
@@ -513,7 +456,6 @@ class RoleDashboardSummary extends Equatable {
         to,
         teamSize,
         kpis,
-        attendance,
         overtime,
         workOrders,
         preventiveMaintenance,
@@ -521,7 +463,6 @@ class RoleDashboardSummary extends Equatable {
         assets,
         liveActivity,
         notifications,
-        teamAttendance,
         teamOvertime,
         teamWorkOrders,
         teamPm,

@@ -13,7 +13,7 @@ import 'package:mobile/core/services/overtime_session_reminder_service.dart';
 import 'package:mobile/core/services/selfie_capture_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 import 'package:mobile/features/overtime/data/datasources/overtime_local_datasource.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';

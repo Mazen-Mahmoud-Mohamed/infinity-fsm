@@ -22,20 +22,3 @@ export const gpsSchema = new Schema(
   },
   { _id: false }
 );
-
-export const actionRecordSchema = new Schema(
-  {
-    at: { type: Date, required: true },
-    gps: { type: gpsSchema, required: true },
-    selfieUrl: { type: String, required: true },
-    deviceId: { type: String, required: true },
-    clientEventId: { type: String, required: true },
-    clientRecordedAt: { type: Date, default: null },
-    source: {
-      type: String,
-      enum: ['ONLINE', 'OFFLINE_SYNC'],
-      default: 'ONLINE',
-    },
-  },
-  { _id: false }
-);

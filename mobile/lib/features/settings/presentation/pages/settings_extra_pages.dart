@@ -17,7 +17,6 @@ import 'package:mobile/core/services/biometric_auth_service.dart';
 import 'package:mobile/core/services/sync_configuration_service.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/settings/presentation/pages/server_management_page.dart';
@@ -165,9 +164,8 @@ class SyncSettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final app = context.watch<AppCubit>();
-    final attendance = context.watch<AttendanceSyncCubit>().state;
     final overtime = context.watch<OvertimeSyncCubit>().state;
-    final pending = attendance.pendingCount + overtime.pendingCount;
+    final pending = overtime.pendingCount;
 
     final body = SettingsPageBody(
       embedded: embedded,
@@ -176,13 +174,6 @@ class SyncSettingsPage extends StatelessWidget {
           title: l10n.settingsSyncTitle,
           child: Column(
             children: [
-              SettingsInfoRow(
-                label: l10n.settingsLastSuccessfulSync,
-                value: attendance.lastSyncedAt == null
-                    ? l10n.settingsNotAvailable
-                    : AppFormatters.mediumDateTime(context)
-                        .format(attendance.lastSyncedAt!),
-              ),
               SettingsInfoRow(
                 label: l10n.settingsPendingUploads,
                 value: '$pending',
@@ -241,11 +232,8 @@ class SyncSettingsPage extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               FilledButton.icon(
                 onPressed: () async {
-                  final attendance =
-                      context.read<AttendanceSyncCubit>();
                   final overtime = context.read<OvertimeSyncCubit>();
                   final messenger = ScaffoldMessenger.of(context);
-                  await attendance.syncNow();
                   await overtime.syncNow(force: true);
                   messenger.showSnackBar(
                     SnackBar(content: Text(l10n.settingsManualSyncDone)),

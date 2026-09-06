@@ -95,7 +95,6 @@ List<Widget> _admin({
   bool showQuickActions = false,
 }) {
   final kpis = summary.kpis;
-  final attendance = summary.attendance;
   final overtime = summary.overtime;
   final workOrders = summary.workOrders;
   final pm = summary.preventiveMaintenance;
@@ -116,18 +115,6 @@ List<Widget> _admin({
           label: l10n.dashboardKpiCurrentlyWorking,
           value: '${kpis.employeesCurrentlyWorking}',
           icon: Icons.work_outline,
-          onTap: () => context.go(RoutePaths.attendance),
-        ),
-      if (attendance != null)
-        DashboardKpiItemData(
-          label: l10n.dashboardKpiTotalWorkingHours,
-          value: formatDashboardHours(
-            attendance.totalWorkingHours,
-            l10n,
-            context,
-          ),
-          icon: Icons.schedule_outlined,
-          onTap: () => context.go(RoutePaths.attendance),
         ),
       if (overtime != null)
         DashboardKpiItemData(
@@ -151,34 +138,16 @@ List<Widget> _admin({
           icon: Icons.more_time_outlined,
           onTap: () => context.go(RoutePaths.overtime),
         ),
-      if (attendance != null)
-        DashboardKpiItemData(
-          label: l10n.dashboardKpiAttendanceRate,
-          value: formatDashboardPercent(
-            attendance.attendanceRate,
-            l10n,
-            context,
-          ),
-          icon: Icons.percent_outlined,
-          onTap: () => context.go(RoutePaths.attendance),
-        ),
     ],
   );
 
   final mainColumn = <Widget>[
-    if (kpis != null || attendance != null)
+    if (kpis != null)
       DashboardWorkforceOverview(
-        totalEmployees: kpis?.totalEmployees ?? 0,
-        activeEmployees: kpis?.activeEmployees ?? 0,
-        currentlyWorking: kpis?.employeesCurrentlyWorking ?? 0,
-        averageWorkingHoursLabel: attendance == null
-            ? '—'
-            : formatDashboardHours(
-                attendance.averageWorkingHours,
-                l10n,
-                context,
-              ),
-        onTap: () => context.go(RoutePaths.attendance),
+        totalEmployees: kpis.totalEmployees,
+        activeEmployees: kpis.activeEmployees,
+        currentlyWorking: kpis.employeesCurrentlyWorking,
+        averageWorkingHoursLabel: '—',
       ),
     if (overtime != null)
       ...buildDashboardOvertimeItems(
@@ -324,7 +293,6 @@ List<Widget> _supervisor({
   PermissionChecker? permissions,
   bool showQuickActions = false,
 }) {
-  final attendance = summary.teamAttendance;
   final overtime = summary.teamOvertime;
   final workOrders = summary.teamWorkOrders;
   final pm = summary.teamPm;
@@ -334,13 +302,6 @@ List<Widget> _supervisor({
 
   final hero = DashboardHeroMetrics(
       metrics: [
-        if (attendance != null)
-          DashboardMetric(
-            label: l10n.dashboardKpiCurrentlyWorking,
-            value: '${attendance.currentlyWorking}',
-            icon: Icons.work_outline,
-            onTap: () => context.go(RoutePaths.attendance),
-          ),
         if (workOrders != null)
           DashboardMetric(
             label: l10n.dashboardKpiWoInProgress,
@@ -371,28 +332,8 @@ List<Widget> _supervisor({
 
   cards.add(
     DashboardMetricGroupCard(
-      title: l10n.dashboardSectionTeamAttendance,
+      title: l10n.dashboardSectionTeamOvertime,
       metrics: [
-        if (attendance != null) ...[
-          DashboardMetric(
-            label: l10n.dashboardKpiTotalWorkingHours,
-            value: formatDashboardHours(attendance.totalWorkingHours, l10n, context),
-            icon: Icons.schedule_outlined,
-            onTap: () => context.go(RoutePaths.attendance),
-          ),
-          DashboardMetric(
-            label: l10n.dashboardKpiCurrentlyWorking,
-            value: '${attendance.currentlyWorking}',
-            icon: Icons.badge_outlined,
-            onTap: () => context.go(RoutePaths.attendance),
-          ),
-          DashboardMetric(
-            label: l10n.dashboardKpiActiveEmployees,
-            value: '${attendance.membersPresent}',
-            icon: Icons.groups_outlined,
-            onTap: () => context.go(RoutePaths.attendance),
-          ),
-        ],
         if (overtime != null)
           DashboardMetric(
             label: l10n.dashboardKpiTotalApprovedHours,
@@ -410,7 +351,6 @@ List<Widget> _supervisor({
             label: l10n.dashboardKpiAverageWorkingHours,
             value: formatDashboardHours(performance.averageWorkingHours, l10n, context),
             icon: Icons.av_timer_outlined,
-            onTap: () => context.go(RoutePaths.attendance),
           ),
       ],
     ),
@@ -506,7 +446,6 @@ List<Widget> _technician({
   PermissionChecker? permissions,
   bool showQuickActions = false,
 }) {
-  final attendance = summary.attendance;
   final overtime = summary.overtime;
   final work = summary.work;
   final pm = summary.preventiveMaintenance;
@@ -528,20 +467,6 @@ List<Widget> _technician({
             label: l10n.dashboardKpiWoCompleted,
             value: '${work.completed}',
             icon: Icons.check_circle_outline,
-          ),
-        if (attendance != null)
-          DashboardMetric(
-            label: l10n.dashboardKpiTotalWorkingHours,
-            value: formatDashboardHours(attendance.totalWorkingHours, l10n, context),
-            icon: Icons.schedule_outlined,
-            onTap: () => context.go(RoutePaths.attendance),
-          ),
-        if (performance != null)
-          DashboardMetric(
-            label: l10n.dashboardKpiAttendanceRate,
-            value: formatDashboardPercent(performance.attendanceRate, l10n, context),
-            icon: Icons.percent_outlined,
-            onTap: () => context.go(RoutePaths.attendance),
           ),
       ],
     );
@@ -680,7 +605,6 @@ List<Widget> _trendChartsSection({
     );
   }
 
-  addIfTrend(l10n.dashboardChartAttendance, charts.attendance);
   addIfTrend(l10n.dashboardChartWorkOrders, charts.workOrders);
   addIfTrend(
     l10n.dashboardChartOvertime,

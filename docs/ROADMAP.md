@@ -276,7 +276,6 @@ See [MODULE_REGISTRY.md](./MODULE_REGISTRY.md) and [FUTURE_IMPROVEMENTS.md](./FU
 |--------|-----------------|----------|
 | Work Orders (full UI) | 4 weeks | High |
 | Vehicles (full UI) | 2 weeks | Medium |
-| Attendance | 4 weeks | High |
 | Web Admin Dashboard | 6 weeks | High |
 | Payroll Integration | 3 weeks | High |
 | Scheduling | 6 weeks | Medium |

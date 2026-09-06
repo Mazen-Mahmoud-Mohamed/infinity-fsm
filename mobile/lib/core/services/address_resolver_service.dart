@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:geocoding/geocoding.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 
 /// Structured reverse-geocoded address.
 class ResolvedAddress {
@@ -33,7 +33,7 @@ class ResolvedAddress {
 
 /// Resolves human-readable address fields from GPS using platform geocoding.
 ///
-/// Never throws for attendance/overtime — coordinates are always preserved.
+/// Never throws for overtime — coordinates are always preserved.
 class AddressResolverService {
   /// Backward-compatible string resolve used by work orders and overtime UI.
   Future<String> resolve(GpsSnapshot gps) async {

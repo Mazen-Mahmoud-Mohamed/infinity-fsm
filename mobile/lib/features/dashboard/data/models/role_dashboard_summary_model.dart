@@ -74,7 +74,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
     required super.to,
     super.teamSize,
     super.kpis,
-    super.attendance,
     super.overtime,
     super.workOrders,
     super.preventiveMaintenance,
@@ -82,7 +81,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
     super.assets,
     super.liveActivity,
     super.notifications,
-    super.teamAttendance,
     super.teamOvertime,
     super.teamWorkOrders,
     super.teamPm,
@@ -107,7 +105,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
       to: to,
       teamSize: json['teamSize'] == null ? null : _asInt(json['teamSize']),
       kpis: _mapKpis(_asMap(json['kpis'])),
-      attendance: _mapAttendance(_asMap(json['attendance'])),
       overtime: _mapOvertime(_asMap(json['overtime'])),
       workOrders: _mapWorkOrders(_asMap(json['workOrders'])),
       preventiveMaintenance: _mapPm(_asMap(json['preventiveMaintenance'])),
@@ -115,7 +112,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
       assets: _mapAssets(_asMap(json['assets'])),
       liveActivity: _mapLiveActivity(json['liveActivity']),
       notifications: _mapNotifications(json['notifications']),
-      teamAttendance: _mapTeamAttendance(_asMap(json['teamAttendance'])),
       teamOvertime: _mapTeamOvertime(_asMap(json['teamOvertime'])),
       teamWorkOrders: _mapTeamWorkOrders(_asMap(json['teamWorkOrders'])),
       teamPm: _mapTeamPm(_asMap(json['teamPm'])),
@@ -138,19 +134,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
       employeesCurrentlyWorking: _asInt(json['employeesCurrentlyWorking']),
       employeesOnOvertime: _asInt(json['employeesOnOvertime']),
       employeesOnTravelOvertime: _asInt(json['employeesOnTravelOvertime']),
-    );
-  }
-
-  static DashboardAttendanceSummary? _mapAttendance(Map<String, dynamic>? json) {
-    if (json == null) return null;
-    return DashboardAttendanceSummary(
-      totalWorkingHours: _asDouble(json['totalWorkingHours']),
-      averageWorkingHours: _asDouble(json['averageWorkingHours']),
-      attendanceRate: _asDouble(json['attendanceRate']),
-      todayStatus: json['todayStatus']?.toString(),
-      checkInAt: _asDate(json['checkInAt']),
-      checkOutAt: _asDate(json['checkOutAt']),
-      todayWorkingHours: _asDouble(json['todayWorkingHours']),
     );
   }
 
@@ -268,17 +251,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
         .toList();
   }
 
-  static DashboardTeamAttendance? _mapTeamAttendance(
-    Map<String, dynamic>? json,
-  ) {
-    if (json == null) return null;
-    return DashboardTeamAttendance(
-      currentlyWorking: _asInt(json['currentlyWorking']),
-      totalWorkingHours: _asDouble(json['totalWorkingHours']),
-      membersPresent: _asInt(json['membersPresent']),
-    );
-  }
-
   static DashboardTeamOvertime? _mapTeamOvertime(Map<String, dynamic>? json) {
     if (json == null) return null;
     return DashboardTeamOvertime(
@@ -353,7 +325,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
   ) {
     if (json == null) return null;
     return DashboardPerformanceSummary(
-      attendanceRate: _asDouble(json['attendanceRate']),
       monthlyWorkingHours: _asDouble(json['monthlyWorkingHours']),
       monthlyOvertimeHours: _asDouble(json['monthlyOvertimeHours']),
       monthlyTravelOtHours: _asDouble(json['monthlyTravelOtHours']),
@@ -365,7 +336,6 @@ class RoleDashboardSummaryModel extends RoleDashboardSummary {
   static DashboardCharts _mapCharts(Map<String, dynamic>? json) {
     if (json == null) return const DashboardCharts();
     return DashboardCharts(
-      attendance: _mapPoints(json['attendance']),
       overtime: _mapPoints(json['overtime']),
       workOrders: _mapPoints(json['workOrders']),
       preventiveMaintenance: _mapPoints(json['preventiveMaintenance']),

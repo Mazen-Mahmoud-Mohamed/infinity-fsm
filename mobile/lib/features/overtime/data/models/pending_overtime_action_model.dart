@@ -1,7 +1,7 @@
 import 'dart:convert';
 
-import 'package:mobile/features/attendance/data/mappers/attendance_json_helpers.dart';
-import 'package:mobile/features/attendance/data/models/gps_snapshot_model.dart';
+import 'package:mobile/core/utils/json_helpers.dart';
+import 'package:mobile/core/geo/gps_snapshot_model.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/entities/pending_overtime_action.dart';
 

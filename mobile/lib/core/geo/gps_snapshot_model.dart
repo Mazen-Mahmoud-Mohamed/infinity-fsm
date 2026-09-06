@@ -1,5 +1,5 @@
-import 'package:mobile/features/attendance/data/mappers/attendance_json_helpers.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
+import 'package:mobile/core/utils/json_helpers.dart';
 
 class GpsSnapshotModel extends GpsSnapshot {
   const GpsSnapshotModel({

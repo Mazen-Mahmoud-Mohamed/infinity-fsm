@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/gps_service.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:mobile/features/work_orders/domain/usecases/accept_work_order_usecase.dart';

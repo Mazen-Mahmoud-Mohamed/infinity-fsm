@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/foundation.dart' show compute;
 import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
-import 'package:mobile/core/constants/attendance_constants.dart';
+import 'package:mobile/core/constants/capture_constants.dart';
 
 /// Thrown when the camera is closed without capturing a live photo.
 class LivePhotoRequiredException implements Exception {
@@ -83,14 +83,14 @@ Uint8List _drawWatermark(_WatermarkParams params) {
     }
 
     return Uint8List.fromList(
-      img.encodeJpg(decoded, quality: AttendanceConstants.selfieImageQuality),
+      img.encodeJpg(decoded, quality: CaptureConstants.selfieImageQuality),
     );
   } on Object {
     return params.bytes;
   }
 }
 
-/// Captures mandatory live photos for attendance and overtime.
+/// Captures mandatory live photos for overtime.
 ///
 /// Gallery selection is intentionally disabled — cancelling the camera
 /// must abort the parent operation.
@@ -120,8 +120,8 @@ class SelfieCaptureService {
       final file = await _picker.pickImage(
         source: ImageSource.camera,
         preferredCameraDevice: preferredCamera,
-        imageQuality: AttendanceConstants.selfieImageQuality,
-        maxWidth: AttendanceConstants.selfieMaxWidth,
+        imageQuality: CaptureConstants.selfieImageQuality,
+        maxWidth: CaptureConstants.selfieMaxWidth,
       );
 
       if (file == null) {
@@ -153,6 +153,6 @@ class SelfieCaptureService {
     }
   }
 
-  /// Backward-compatible alias used by attendance/overtime cubits.
+  /// Backward-compatible alias used by the overtime cubit.
   Future<Uint8List> captureSelfie() => captureLivePhoto();
 }

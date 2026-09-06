@@ -47,7 +47,6 @@ These modules form the stable foundation. They are always enabled.
 | **Overtime** | `IN_DEV` | Full implementation | ✅ | ✅ | ✅ |
 | **Work Orders** | `SCHEMA_READY` | Optional link from overtime | ✅ | Documented | ❌ |
 | **Vehicles** | `SCHEMA_READY` | Assignment tracking only | ✅ | Documented | ❌ |
-| **Attendance** | `PLANNED` | — | ❌ | ❌ | ❌ |
 | **Customers** | `PLANNED` | Via Work Orders schema | ✅ | ❌ | ❌ |
 | **Assets** | `PLANNED` | — | ❌ | ❌ | ❌ |
 | **Inventory** | `PLANNED` | — | ❌ | ❌ | ❌ |
@@ -140,11 +139,13 @@ Every module registering with the platform must provide:
     │              Reports & Dashboard                  │
     └──────────────────────────────────────────────────┘
          │
-    ┌────▼────┐  ┌──────────┐  ┌───────────┐  ┌─────────┐
-    │Attendance│  │Scheduling│  │Inventory  │  │Payroll  │
-    │ (future) │  │ (future) │  │ (future)  │  │(future) │
-    └─────────┘  └──────────┘  └───────────┘  └─────────┘
+    ┌────▼────┐  ┌───────────┐  ┌─────────┐
+    │Scheduling│  │Inventory  │  │Payroll  │
+    │ (future) │  │ (future)  │  │(future) │
+    └─────────┘  └───────────┘  └─────────┘
 ```
+
+> **Note:** Employee presence / clock attendance is handled by the company's external fingerprint system. Infinity does **not** include an Attendance module.
 
 **Dependency rules:**
 - Business modules depend on Platform Core — never the reverse.

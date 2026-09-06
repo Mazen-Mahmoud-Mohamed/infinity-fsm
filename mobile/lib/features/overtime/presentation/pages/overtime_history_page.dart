@@ -104,7 +104,7 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
           builder: (context, state) {
             if (state.status == OvertimeHistoryStatus.loading &&
                 state.items.isEmpty) {
-              return AppLoader(message: l10n.attendanceHistoryLoading);
+              return AppLoader(message: l10n.historyLoading);
             }
 
             if (state.status == OvertimeHistoryStatus.failure &&

@@ -11,7 +11,11 @@ describe('RBAC permissions', () => {
 
   it('grants technician no management permissions by default', () => {
     const permissions = getPermissionsForRoles([ROLES.TECHNICIAN]);
-    expect(permissions).toEqual([]);
+    expect(permissions).not.toContain('organization:manage_users');
+    expect(permissions).not.toContain('settings:manage');
+    expect(permissions).not.toContain('audit:view');
+    expect(permissions).toContain('overtime:view_own');
+    expect(permissions).toContain('dashboard:view');
   });
 
   it('grants supervisor limited view permissions', () => {

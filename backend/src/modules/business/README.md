@@ -9,8 +9,11 @@ Pluggable domain modules. Enabled per company via `companies.enabledModules[]`.
 | **Overtime** | IN_DEV | Full | `overtime/` |
 | **Work Orders** | SCHEMA_READY | Optional link | `work-orders/` |
 | **Vehicles** | SCHEMA_READY | Assignment only | `vehicles/` |
-| **Attendance** | PLANNED | — | `attendance/` |
 | **Customers** | PLANNED | — | `customers/` |
+
+**Attendance** is not a business module in this backend. Presence / clock data
+comes from the company fingerprint (biometric) system outside Infinity FSM.
+Do not re-add an `attendance/` module unless product requirements change.
 
 ## Rules
 

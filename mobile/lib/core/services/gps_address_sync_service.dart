@@ -6,7 +6,7 @@ import 'package:mobile/core/network/dio_client.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 
 /// Queues GPS points that still need reverse-geocoded address after sync.
 class GpsAddressSyncService {
@@ -24,27 +24,6 @@ class GpsAddressSyncService {
   final PreferencesService _preferences;
   final ConnectivityService _connectivity;
   final AddressResolverService _addressResolver;
-
-  Future<void> enqueueAttendance({
-    required String clientEventId,
-    required GpsSnapshot gps,
-  }) async {
-    if (!gps.needsAddressResolution) {
-      return;
-    }
-    await _enqueue({
-      'kind': 'attendance',
-      'clientEventId': clientEventId,
-      'latitude': gps.latitude,
-      'longitude': gps.longitude,
-      'accuracy': gps.accuracy,
-      'recordedAt': gps.recordedAt.toIso8601String(),
-      'heading': gps.heading,
-      'speed': gps.speed,
-      'provider': gps.provider,
-      'retryCount': 0,
-    });
-  }
 
   Future<void> enqueueOvertime({
     required String sessionId,
@@ -106,21 +85,7 @@ class GpsAddressSyncService {
         final enriched = _addressResolver.apply(gps, resolved);
         final kind = item['kind']?.toString();
 
-        if (kind == 'attendance') {
-          await _dio.post<Map<String, dynamic>>(
-            ApiConstants.attendanceGpsAddress,
-            data: {
-              'clientEventId': item['clientEventId'],
-              'fullAddress': enriched.fullAddress,
-              'street': enriched.street,
-              'area': enriched.area,
-              'city': enriched.city,
-              'country': enriched.country,
-              'addressResolvedAt':
-                  enriched.addressResolvedAt?.toIso8601String(),
-            },
-          );
-        } else if (kind == 'overtime') {
+        if (kind == 'overtime') {
           final sessionId = item['sessionId']?.toString();
           if (sessionId == null || sessionId.isEmpty) {
             continue;
@@ -152,14 +117,11 @@ class GpsAddressSyncService {
 
   Future<void> _enqueue(Map<String, dynamic> item) async {
     final queue = _readQueue();
-    final key = item['kind'] == 'attendance'
-        ? 'attendance:${item['clientEventId']}'
-        : 'overtime:${item['sessionId']}:${item['point']}';
+    final key = 'overtime:${item['sessionId']}:${item['point']}';
 
     queue.removeWhere((existing) {
-      final existingKey = existing['kind'] == 'attendance'
-          ? 'attendance:${existing['clientEventId']}'
-          : 'overtime:${existing['sessionId']}:${existing['point']}';
+      final existingKey =
+          'overtime:${existing['sessionId']}:${existing['point']}';
       return existingKey == key;
     });
     queue.add(item);

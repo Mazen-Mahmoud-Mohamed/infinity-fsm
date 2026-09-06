@@ -186,14 +186,6 @@ export const updateTechnicianInterfaceSettingsValidator = [
 
     .withMessage('workOrders must be a boolean'),
 
-  body('attendance')
-
-    .optional()
-
-    .isBoolean()
-
-    .withMessage('attendance must be a boolean'),
-
   body('profile')
 
     .optional()

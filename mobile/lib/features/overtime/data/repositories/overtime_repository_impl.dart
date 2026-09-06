@@ -5,7 +5,7 @@ import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/services/gps_address_sync_service.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 import 'package:mobile/features/overtime/data/datasources/overtime_local_datasource.dart';
 import 'package:mobile/features/overtime/data/datasources/overtime_remote_datasource.dart';
 import 'package:mobile/features/overtime/data/models/overtime_session_model.dart';

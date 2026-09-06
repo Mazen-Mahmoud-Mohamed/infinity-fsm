@@ -14,8 +14,6 @@ import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/core/push/push_notification_service.dart';
 import 'package:mobile/features/app_update/data/services/app_update_notification_service.dart';
 import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
@@ -36,9 +34,6 @@ class InfinityApp extends StatelessWidget {
       providers: [
         BlocProvider<AppCubit>.value(value: getIt<AppCubit>()),
         BlocProvider<AuthCubit>.value(value: getIt<AuthCubit>()),
-        BlocProvider<AttendanceSyncCubit>.value(
-          value: getIt<AttendanceSyncCubit>(),
-        ),
         BlocProvider<OvertimeSyncCubit>.value(
           value: getIt<OvertimeSyncCubit>(),
         ),
@@ -61,7 +56,7 @@ class InfinityApp extends StatelessWidget {
   }
 }
 
-/// Ensures overtime/attendance sync is armed when Auth is already authenticated
+/// Ensures overtime sync is armed when Auth is already authenticated
 /// (BlocListener does not fire for the initial state).
 class _InfinityAppAuthSyncBootstrap extends StatefulWidget {
   const _InfinityAppAuthSyncBootstrap({required this.child});
@@ -84,7 +79,6 @@ class _InfinityAppAuthSyncBootstrapState
       }
       if (context.read<AuthCubit>().state.status == AuthStatus.authenticated) {
         context.read<OvertimeSyncCubit>().resumeAuthenticatedSync();
-        context.read<AttendanceSyncCubit>().resumeAuthenticatedSync();
         getIt<PushNotificationService>().onAuthenticated();
       }
     });
@@ -220,17 +214,13 @@ class _InfinityAppShell extends StatelessWidget {
               previous.status != current.status,
           listener: (context, state) {
             final unread = context.read<NotificationsUnreadCubit>();
-            final attendanceSync = context.read<AttendanceSyncCubit>();
             final overtimeSync = context.read<OvertimeSyncCubit>();
             if (state.status == AuthStatus.authenticated) {
               unread.refresh();
-              attendanceSync.resumeAuthenticatedSync();
               overtimeSync.resumeAuthenticatedSync();
               getIt<PushNotificationService>().onAuthenticated();
             } else if (state.status == AuthStatus.unauthenticated) {
               unread.clear();
-              getIt<AttendanceCubit>().resetForLogout();
-              attendanceSync.pauseAuthenticatedSync();
               overtimeSync.pauseAuthenticatedSync();
               getIt<PushNotificationService>().onLoggedOut();
             }

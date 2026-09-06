@@ -74,8 +74,6 @@ class RbacLabels {
       case 'roles':
       case 'rbac':
         return l10n.permGroupRoles;
-      case 'attendance':
-        return l10n.permGroupAttendance;
       case 'overtime':
         return l10n.permGroupOvertime;
       case 'inventory':
@@ -117,8 +115,6 @@ class RbacLabels {
       case 'roles':
       case 'rbac':
         return l10n.permGroupRolesDesc;
-      case 'attendance':
-        return l10n.permGroupAttendanceDesc;
       case 'overtime':
         return l10n.permGroupOvertimeDesc;
       case 'inventory':
@@ -229,23 +225,6 @@ class RbacLabels {
         return (l10n.permRolesDelete, l10n.permRolesDeleteDesc);
       case 'roles:manage':
         return (l10n.permRolesManage, l10n.permRolesManageDesc);
-      case 'attendance:view_own':
-        return (l10n.permAttendanceViewOwn, l10n.permAttendanceViewOwnDesc);
-      case 'attendance:view_team':
-        return (l10n.permAttendanceViewTeam, l10n.permAttendanceViewTeamDesc);
-      case 'attendance:view_all':
-        return (l10n.permAttendanceViewAll, l10n.permAttendanceViewAllDesc);
-      case 'attendance:manage_own':
-        return (
-          l10n.permAttendanceManageOwn,
-          l10n.permAttendanceManageOwnDesc,
-        );
-      case 'attendance:view':
-        return (l10n.permAttendanceView, l10n.permAttendanceViewDesc);
-      case 'attendance:update':
-        return (l10n.permAttendanceUpdate, l10n.permAttendanceUpdateDesc);
-      case 'attendance:approve':
-        return (l10n.permAttendanceApprove, l10n.permAttendanceApproveDesc);
       case 'overtime:view_own':
         return (l10n.permOvertimeViewOwn, l10n.permOvertimeViewOwnDesc);
       case 'overtime:view_team':

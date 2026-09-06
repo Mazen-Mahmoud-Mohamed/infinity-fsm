@@ -36,7 +36,6 @@ class TechnicianInterfaceLocalDataSource {
         : TechnicianInterfaceConfigModel(
             overtime: config.overtime,
             workOrders: config.workOrders,
-            attendance: config.attendance,
             profile: config.profile,
           );
     await _preferences.setString(

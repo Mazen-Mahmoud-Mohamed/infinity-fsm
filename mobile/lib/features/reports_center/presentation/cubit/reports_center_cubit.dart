@@ -4,8 +4,6 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/domain/usecases/assets_usecases.dart';
-import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
-import 'package:mobile/features/attendance/domain/usecases/list_admin_attendance_usecase.dart';
 import 'package:mobile/features/auth/domain/services/permission_checker.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/utils/dashboard_period_range.dart';
@@ -149,7 +147,6 @@ class ReportsCenterState extends Equatable {
 class ReportsCenterCubit extends Cubit<ReportsCenterState> {
   ReportsCenterCubit({
     required PermissionChecker permissions,
-    required ListAdminAttendanceUseCase listAttendance,
     required ListAdminOvertimeUseCase listOvertime,
     required ListWorkOrdersUseCase listWorkOrders,
     required ListMyWorkOrdersUseCase listMyWorkOrders,
@@ -159,7 +156,6 @@ class ReportsCenterCubit extends Cubit<ReportsCenterState> {
     required ListServiceReportsUseCase listServiceReports,
     required ListManagedUsersUseCase listUsers,
   })  : _permissions = permissions,
-        _listAttendance = listAttendance,
         _listOvertime = listOvertime,
         _listWorkOrders = listWorkOrders,
         _listMyWorkOrders = listMyWorkOrders,
@@ -173,7 +169,6 @@ class ReportsCenterCubit extends Cubit<ReportsCenterState> {
   static const int _pageSize = 20;
 
   final PermissionChecker _permissions;
-  final ListAdminAttendanceUseCase _listAttendance;
   final ListAdminOvertimeUseCase _listOvertime;
   final ListWorkOrdersUseCase _listWorkOrders;
   final ListMyWorkOrdersUseCase _listMyWorkOrders;
@@ -377,8 +372,6 @@ class ReportsCenterCubit extends Cubit<ReportsCenterState> {
   Future<Result<_Page>> _fetchPage({required int page}) async {
     final search = state.search.trim().isEmpty ? null : state.search.trim();
     switch (state.module) {
-      case ReportsCenterModule.attendance:
-        return _fetchAttendance(page: page, search: search);
       case ReportsCenterModule.overtime:
         return _fetchOvertime(page: page, search: search);
       case ReportsCenterModule.workOrders:
@@ -392,48 +385,6 @@ class ReportsCenterCubit extends Cubit<ReportsCenterState> {
       case ReportsCenterModule.serviceReports:
         return _fetchServiceReports(page: page, search: search);
     }
-  }
-
-  Future<Result<_Page>> _fetchAttendance({
-    required int page,
-    required String? search,
-  }) async {
-    final status = _attendanceStatus(state.statusKey);
-    final result = await _listAttendance(
-      page: page,
-      limit: _pageSize,
-      status: status,
-      search: search,
-      startDate: state.rangeFrom,
-      endDate: state.rangeTo,
-      userId: state.employeeId,
-    );
-    return switch (result) {
-      Success(data: final data) => Success(
-          _Page(
-            rows: [
-              for (final item in data.items)
-                ReportListRow(
-                  id: item.id,
-                  module: ReportsCenterModule.attendance,
-                  title: item.employee?.displayName ??
-                      item.userId ??
-                      item.id,
-                  subtitle: item.date,
-                  statusLabel: item.status.name,
-                  date: item.createdAt ??
-                      DateTime.tryParse(item.date),
-                  meta: '${item.workingMinutes} min',
-                  route: RoutePaths.attendanceAdminDetail(item.id),
-                ),
-            ],
-            page: data.page,
-            hasMore: data.hasMore,
-          ),
-        ),
-      Failure(message: final message, code: final code) =>
-        Failure(message, code: code),
-    };
   }
 
   Future<Result<_Page>> _fetchOvertime({
@@ -659,14 +610,6 @@ class ReportsCenterCubit extends Cubit<ReportsCenterState> {
       Failure(message: final message, code: final code) =>
         Failure(message, code: code),
     };
-  }
-
-  AttendanceStatus? _attendanceStatus(String? key) {
-    if (key == null) return null;
-    for (final value in AttendanceStatus.values) {
-      if (value.name == key) return value;
-    }
-    return null;
   }
 
   OvertimeStatus? _overtimeStatus(String? key) {

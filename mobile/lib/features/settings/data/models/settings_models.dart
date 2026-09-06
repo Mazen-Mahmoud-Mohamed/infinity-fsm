@@ -190,7 +190,6 @@ class TechnicianInterfaceConfigModel extends TechnicianInterfaceConfig {
   const TechnicianInterfaceConfigModel({
     super.overtime,
     super.workOrders,
-    super.attendance,
     super.profile,
   });
 
@@ -203,7 +202,6 @@ class TechnicianInterfaceConfigModel extends TechnicianInterfaceConfig {
     return TechnicianInterfaceConfigModel(
       overtime: readFlag('overtime', true),
       workOrders: readFlag('workOrders', true),
-      attendance: readFlag('attendance', true),
       profile: readFlag('profile', true),
     );
   }
@@ -211,7 +209,6 @@ class TechnicianInterfaceConfigModel extends TechnicianInterfaceConfig {
   Map<String, dynamic> toJson() => {
         'overtime': overtime,
         'workOrders': workOrders,
-        'attendance': attendance,
         'profile': profile,
       };
 }

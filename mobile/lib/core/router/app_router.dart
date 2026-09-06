@@ -12,10 +12,6 @@ import 'package:mobile/features/assets/presentation/pages/asset_form_page.dart';
 import 'package:mobile/features/assets/presentation/pages/asset_history_page.dart';
 import 'package:mobile/features/assets/presentation/pages/assets_list_page.dart';
 import 'package:mobile/features/assets/presentation/pages/assets_page.dart';
-import 'package:mobile/features/attendance/presentation/pages/attendance_admin_detail_page.dart';
-import 'package:mobile/features/attendance/presentation/pages/attendance_admin_page.dart';
-import 'package:mobile/features/attendance/presentation/pages/attendance_dashboard_page.dart';
-import 'package:mobile/features/attendance/presentation/pages/attendance_history_page.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/auth/presentation/pages/login_page.dart';
 import 'package:mobile/features/dashboard/presentation/pages/dashboard_page.dart';
@@ -139,41 +135,14 @@ GoRouter createAppRouter({
           return MainNavigationShell(navigationShell: navigationShell);
         },
         // Branch indexes must match MainNavigationShell rail destinations:
-        // 0 Dashboard, 1 Attendance, 2 Work Orders, 3 Overtime, 4 Profile,
-        // 5 Inventory, 6 Assets, 7 PM, 8 Reports, 9 Users, 10 Roles, 11 Settings
+        // 0 Dashboard, 1 Work Orders, 2 Overtime, 3 Profile,
+        // 4 Inventory, 5 Assets, 6 PM, 7 Reports, 8 Users, 9 Roles, 10 Settings
         branches: [
           StatefulShellBranch(
             routes: [
               GoRoute(
                 path: RoutePaths.dashboard,
                 builder: (context, state) => const DashboardPage(),
-              ),
-            ],
-          ),
-          StatefulShellBranch(
-            routes: [
-              GoRoute(
-                path: RoutePaths.attendance,
-                builder: (context, state) => const AttendanceDashboardPage(),
-                routes: [
-                  GoRoute(
-                    path: 'history',
-                    builder: (context, state) =>
-                        const AttendanceHistoryPage(),
-                  ),
-                  GoRoute(
-                    path: 'admin',
-                    builder: (context, state) => const AttendanceAdminPage(),
-                    routes: [
-                      GoRoute(
-                        path: ':id',
-                        builder: (context, state) => AttendanceAdminDetailPage(
-                          attendanceId: state.pathParameters['id']!,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
               ),
             ],
           ),

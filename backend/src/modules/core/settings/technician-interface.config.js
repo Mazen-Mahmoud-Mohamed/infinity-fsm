@@ -3,7 +3,6 @@ export const TECHNICIAN_INTERFACE_KEY = 'technician_interface';
 export const TECHNICIAN_INTERFACE_DEFAULTS = Object.freeze({
   overtime: true,
   workOrders: true,
-  attendance: true,
   profile: true,
 });
 
@@ -24,10 +23,6 @@ export function normalizeTechnicianInterface(value) {
       typeof source.workOrders === 'boolean'
         ? source.workOrders
         : TECHNICIAN_INTERFACE_DEFAULTS.workOrders,
-    attendance:
-      typeof source.attendance === 'boolean'
-        ? source.attendance
-        : TECHNICIAN_INTERFACE_DEFAULTS.attendance,
     profile:
       typeof source.profile === 'boolean'
         ? source.profile
@@ -36,10 +31,5 @@ export function normalizeTechnicianInterface(value) {
 }
 
 export function hasAnyTechnicianSectionEnabled(config) {
-  return (
-    config.overtime ||
-    config.workOrders ||
-    config.attendance ||
-    config.profile
-  );
+  return config.overtime || config.workOrders || config.profile;
 }

@@ -2,14 +2,14 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 import 'package:mobile/core/constants/api_constants.dart';
-import 'package:mobile/core/constants/attendance_constants.dart';
+import 'package:mobile/core/constants/capture_constants.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
 import 'package:mobile/core/network/dio_client.dart';
 import 'package:mobile/core/services/connectivity_service.dart';
 import 'package:mobile/core/services/monotonic_clock_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 
-/// Result of device clock validation before attendance/overtime.
+/// Result of device clock validation before an overtime capture.
 class DeviceTimeCheckResult {
   const DeviceTimeCheckResult.ok({this.trustedUtc})
       : isValid = true,
@@ -36,7 +36,7 @@ class DeviceTimeGuardService {
     required PreferencesService preferences,
     required ConnectivityService connectivity,
     required MonotonicClockService monotonicClock,
-    this.maxSkew = AttendanceConstants.maxDeviceClockSkew,
+    this.maxSkew = CaptureConstants.maxDeviceClockSkew,
   })  : _dio = dioClient,
         _preferences = preferences,
         _connectivity = connectivity,
@@ -53,8 +53,8 @@ class DeviceTimeGuardService {
   static const _onlineTimeCacheTtl = Duration(seconds: 45);
 
   Future<DeviceTimeCheckResult> validate({
-    DateTime? lastAttendanceAt,
-    String module = 'attendance',
+    DateTime? lastCaptureAt,
+    String module = 'overtime',
   }) async {
     final cached = _cachedTrustedUtc;
     final cachedAt = _cachedTrustedAt;
@@ -70,7 +70,7 @@ class DeviceTimeGuardService {
       return _validateOnline(module: module);
     }
     return _validateOffline(
-      lastAttendanceAt: lastAttendanceAt,
+      lastCaptureAt: lastCaptureAt,
       module: module,
     );
   }
@@ -130,22 +130,21 @@ class DeviceTimeGuardService {
   }
 
   Future<DeviceTimeCheckResult> _validateOffline({
-    DateTime? lastAttendanceAt,
+    DateTime? lastCaptureAt,
     required String module,
   }) async {
     final deviceUtc = DateTime.now().toUtc();
     final lastServerMs =
         _preferences.getInt(StorageKeys.lastSyncedServerUtcMs);
     final lastMonoMs = _preferences.getInt(StorageKeys.lastSyncedMonoMs);
-    final lastAttendanceMs =
-        _preferences.getInt(StorageKeys.lastAttendanceUtcMs);
+    final lastCaptureMs = _preferences.getInt(StorageKeys.lastCaptureUtcMs);
 
     final lastServer = lastServerMs != null
         ? DateTime.fromMillisecondsSinceEpoch(lastServerMs, isUtc: true)
         : null;
-    final lastAttendance = lastAttendanceAt ??
-        (lastAttendanceMs != null
-            ? DateTime.fromMillisecondsSinceEpoch(lastAttendanceMs, isUtc: true)
+    final lastCapture = lastCaptureAt ??
+        (lastCaptureMs != null
+            ? DateTime.fromMillisecondsSinceEpoch(lastCaptureMs, isUtc: true)
             : null);
 
     // Without a prior successful server sync, never trust the device clock.
@@ -203,7 +202,7 @@ class DeviceTimeGuardService {
       return const DeviceTimeCheckResult.rejected('deviceTimeIncorrect');
     }
 
-    // Extra safety: wall clock rolled before last attendance / last server time.
+    // Extra safety: wall clock rolled before last capture / last server time.
     if (deviceUtc.isBefore(lastServer.subtract(maxSkew))) {
       await _queueSecurityEvent(
         type: 'device_clock_rollback',
@@ -217,15 +216,15 @@ class DeviceTimeGuardService {
       return const DeviceTimeCheckResult.rejected('deviceTimeIncorrect');
     }
 
-    if (lastAttendance != null &&
-        deviceUtc.isBefore(lastAttendance.subtract(maxSkew))) {
+    if (lastCapture != null &&
+        deviceUtc.isBefore(lastCapture.subtract(maxSkew))) {
       await _queueSecurityEvent(
-        type: 'device_clock_before_attendance',
+        type: 'device_clock_before_capture',
         module: module,
         metadata: {
           'mode': 'offline',
           'deviceUtc': deviceUtc.toIso8601String(),
-          'lastAttendanceUtc': lastAttendance.toUtc().toIso8601String(),
+          'lastCaptureUtc': lastCapture.toUtc().toIso8601String(),
         },
       );
       return const DeviceTimeCheckResult.rejected('deviceTimeIncorrect');
@@ -234,9 +233,9 @@ class DeviceTimeGuardService {
     return DeviceTimeCheckResult.ok(trustedUtc: trustedNow);
   }
 
-  Future<void> rememberSuccessfulAttendance(DateTime at) async {
+  Future<void> rememberSuccessfulCapture(DateTime at) async {
     await _preferences.setInt(
-      StorageKeys.lastAttendanceUtcMs,
+      StorageKeys.lastCaptureUtcMs,
       at.toUtc().millisecondsSinceEpoch,
     );
   }

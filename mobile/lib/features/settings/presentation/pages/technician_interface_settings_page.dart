@@ -47,7 +47,6 @@ class _TechnicianInterfaceSettingsPageState
     final input = switch (field) {
       'overtime' => TechnicianInterfaceConfigUpdate(overtime: value),
       'workOrders' => TechnicianInterfaceConfigUpdate(workOrders: value),
-      'attendance' => TechnicianInterfaceConfigUpdate(attendance: value),
       'profile' => TechnicianInterfaceConfigUpdate(profile: value),
       _ => const TechnicianInterfaceConfigUpdate(),
     };
@@ -148,15 +147,6 @@ class _TechnicianInterfaceSettingsPageState
                     value: config.workOrders,
                     onChanged: canManage && !isSaving
                         ? (value) => _toggle(field: 'workOrders', value: value)
-                        : null,
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(l10n.attendance),
-                    value: config.attendance,
-                    onChanged: canManage && !isSaving
-                        ? (value) => _toggle(field: 'attendance', value: value)
                         : null,
                   ),
                   const Divider(height: 1),

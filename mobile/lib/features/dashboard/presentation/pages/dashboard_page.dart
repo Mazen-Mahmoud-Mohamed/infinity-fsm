@@ -13,7 +13,6 @@ import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_shell_body.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_sidebar.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_top_bar.dart';
-import 'package:mobile/features/attendance/presentation/widgets/attendance_summary_card.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/domain/entities/role_dashboard_summary.dart';
 import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard_cubit.dart';
@@ -211,10 +210,6 @@ class _DashboardScrollBody extends StatelessWidget {
           ),
         ),
       ],
-      if (isTechnician) ...[
-        SizedBox(height: sectionGap),
-        const AttendanceSummaryCard(),
-      ],
       if (summary != null) ...[
         SizedBox(height: sectionGap),
         ...buildRoleDashboardSections(
@@ -259,8 +254,8 @@ class _DashboardScrollBody extends StatelessWidget {
 
 /// Primary navigation shell used by [StatefulShellRoute] in the app router.
 ///
-/// Phones use a bottom [NavigationBar] (first five branches for management,
-/// four operational branches for technicians).
+/// Phones use a bottom [NavigationBar] (first four branches for management,
+/// three operational branches for technicians).
 /// Tablet/desktop use a [NavigationRail] for primary modules.
 class MainNavigationShell extends StatelessWidget {
   const MainNavigationShell({super.key, required this.navigationShell});
@@ -269,28 +264,26 @@ class MainNavigationShell extends StatelessWidget {
 
   /// Shell branch indexes (must match [createAppRouter] branch order).
   static const int _branchDashboard = 0;
-  static const int _branchAttendance = 1;
-  static const int _branchWorkOrders = 2;
-  static const int _branchOvertime = 3;
-  static const int _branchProfile = 4;
-  static const int _branchInventory = 5;
-  static const int _branchAssets = 6;
-  static const int _branchPm = 7;
-  static const int _branchReports = 8;
-  static const int _branchUsers = 9;
-  static const int _branchRoles = 10;
-  static const int _branchSettings = 11;
+  static const int _branchWorkOrders = 1;
+  static const int _branchOvertime = 2;
+  static const int _branchProfile = 3;
+  static const int _branchInventory = 4;
+  static const int _branchAssets = 5;
+  static const int _branchPm = 6;
+  static const int _branchReports = 7;
+  static const int _branchUsers = 8;
+  static const int _branchRoles = 9;
+  static const int _branchSettings = 10;
 
-  /// Management phone bottom bar: Dashboard → Attendance → WO → OT → Profile.
+  /// Management phone bottom bar: Dashboard → WO → OT → Profile.
   static const List<int> _managementPhoneBranches = [
     _branchDashboard,
-    _branchAttendance,
     _branchWorkOrders,
     _branchOvertime,
     _branchProfile,
   ];
 
-  /// Technician phone bottom bar order reference: WO → Attendance → OT → Profile.
+  /// Technician phone bottom bar order reference: WO → OT → Profile.
   /// Filtered at runtime via [TechnicianInterfaceNavigation.filteredPhoneBranches].
   /// Desktop extended rail width (+28 vs previous 220). Tablet [minWidth] unchanged.
   static const double _desktopExtendedRailWidth = 248;
@@ -343,12 +336,6 @@ class MainNavigationShell extends StatelessWidget {
           icon: Icons.dashboard_outlined,
           selectedIcon: Icons.dashboard,
           label: l10n.dashboard,
-          extended: extended,
-        ),
-      _branchAttendance => _railDestination(
-          icon: Icons.access_time_outlined,
-          selectedIcon: Icons.access_time,
-          label: l10n.attendance,
           extended: extended,
         ),
       _branchWorkOrders => _railDestination(
@@ -434,11 +421,6 @@ class MainNavigationShell extends StatelessWidget {
           selectedIcon: const Icon(Icons.dashboard),
           label: compact ? l10n.navDashboard : l10n.dashboard,
         ),
-      _branchAttendance => NavigationDestination(
-          icon: const Icon(Icons.access_time_outlined),
-          selectedIcon: const Icon(Icons.access_time),
-          label: compact ? l10n.navAttendance : l10n.attendance,
-        ),
       _branchWorkOrders => NavigationDestination(
           icon: const Icon(Icons.assignment_outlined),
           selectedIcon: const Icon(Icons.assignment),
@@ -505,7 +487,6 @@ class MainNavigationShell extends StatelessWidget {
           ]
         : const [
             _branchDashboard,
-            _branchAttendance,
             _branchWorkOrders,
             _branchOvertime,
             _branchProfile,

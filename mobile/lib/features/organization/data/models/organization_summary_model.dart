@@ -9,7 +9,6 @@ class OrganizationSummaryModel extends OrganizationSummary {
     required super.positions,
     super.assets,
     super.workOrders,
-    super.attendance,
     super.overtime,
   });
 
@@ -33,7 +32,6 @@ class OrganizationSummaryModel extends OrganizationSummary {
       positions: readInt('positions'),
       assets: readInt('assets'),
       workOrders: readInt('workOrders'),
-      attendance: readInt('attendance'),
       overtime: readInt('overtime'),
     );
   }
@@ -47,7 +45,6 @@ class OrganizationSummaryModel extends OrganizationSummary {
       'positions': positions,
       'assets': assets,
       'workOrders': workOrders,
-      'attendance': attendance,
       'overtime': overtime,
     };
   }

@@ -121,7 +121,6 @@ Dashboard uses this for online/offline technician counts.
 | `work_order:assigned` | Work Orders | SCHEMA_READY |
 | `work_order:completed` | Work Orders | SCHEMA_READY |
 | `vehicle:assigned` | Vehicles | SCHEMA_READY |
-| `attendance:clock_in` | Attendance | PLANNED |
 | `schedule:updated` | Scheduling | PLANNED |
 
 ---

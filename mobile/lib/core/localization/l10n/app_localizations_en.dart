@@ -78,9 +78,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get quickActions => 'Quick actions';
 
   @override
-  String get attendance => 'Attendance';
-
-  @override
   String get overtime => 'Overtime';
 
   @override
@@ -218,10 +215,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get reportsCenterEmpty => 'No records match the selected filters.';
-
-  @override
-  String get reportsCenterEmptyAttendance =>
-      'No attendance records found for the selected filters.';
 
   @override
   String get reportsCenterEmptyOvertime =>
@@ -1528,9 +1521,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardOverview => 'Operations overview';
 
   @override
-  String get dashboardTodayAttendance => 'Today\'s attendance';
-
-  @override
   String get dashboardTodayWorkOrders => 'Today\'s work orders';
 
   @override
@@ -1595,9 +1585,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardSectionKpis => 'Key metrics';
 
   @override
-  String get dashboardSectionAttendance => 'Attendance';
-
-  @override
   String get dashboardSectionOvertime => 'Overtime';
 
   @override
@@ -1620,9 +1607,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardSectionTeamOverview => 'Team overview';
-
-  @override
-  String get dashboardSectionTeamAttendance => 'Team attendance';
 
   @override
   String get dashboardSectionTeamOvertime => 'Team overtime';
@@ -1668,9 +1652,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardKpiAverageWorkingHours => 'Average working hours';
-
-  @override
-  String get dashboardKpiAttendanceRate => 'Attendance rate';
 
   @override
   String get dashboardKpiOtHours => 'Overtime hours';
@@ -1809,9 +1790,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String dashboardPercentValue(String value) {
     return '$value%';
   }
-
-  @override
-  String get dashboardChartAttendance => 'Attendance trend';
 
   @override
   String get dashboardChartOvertime => 'Overtime trend';
@@ -2478,7 +2456,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPrivacyBody =>
-      'INFINITY processes field service data to support operations for Total-Com Solutions. Personal data is used only for authentication, attendance, and work execution.';
+      'INFINITY processes field service data to support operations for Total-Com Solutions. Personal data is used only for authentication, overtime, and work execution.';
 
   @override
   String get settingsTermsBody =>
@@ -2799,22 +2777,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Location accuracy is too low. Move to an open area and try again.';
 
   @override
-  String get attendanceUpdated => 'Attendance updated successfully.';
-
-  @override
-  String get attendanceLoading => 'Loading attendance...';
-
-  @override
-  String get attendanceHistoryLoading => 'Loading history...';
-
-  @override
-  String get attendanceHistoryEmpty => 'No attendance history yet';
-
-  @override
-  String get attendanceTimeline => 'Timeline';
-
-  @override
-  String get attendanceHistoryTooltip => 'History';
+  String get historyLoading => 'Loading history...';
 
   @override
   String get overtimeEnded =>
@@ -2899,129 +2862,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overtimeTechnicianNoRunningSession =>
       'No running overtime session found to end.';
-
-  @override
-  String get attendanceClockIn => 'Clock In';
-
-  @override
-  String get attendanceClockOut => 'Clock Out';
-
-  @override
-  String get attendanceStartBreak => 'Start Break';
-
-  @override
-  String get attendanceEndBreak => 'End Break';
-
-  @override
-  String get attendanceShiftCompleted =>
-      'You have completed your shift for today.';
-
-  @override
-  String get attendanceTodayStatus => 'Today\'s Status';
-
-  @override
-  String get attendanceWorkingHours => 'Working hours';
-
-  @override
-  String get attendanceBreaks => 'Breaks';
-
-  @override
-  String get attendanceTimelineEmpty =>
-      'No attendance activity recorded yet today.';
-
-  @override
-  String get attendanceEventClockedIn => 'Clocked in';
-
-  @override
-  String get attendanceEventClockedOut => 'Clocked out';
-
-  @override
-  String get attendanceEventBreakStarted => 'Break started';
-
-  @override
-  String get attendanceEventBreakEnded => 'Break ended';
-
-  @override
-  String get attendanceSyncedOffline => 'Synced from offline record';
-
-  @override
-  String get attendanceHistoryTitle => 'Attendance History';
-
-  @override
-  String get attendanceStatusNotStarted => 'Not started';
-
-  @override
-  String get attendanceStatusWorking => 'Working';
-
-  @override
-  String get attendanceStatusOnBreak => 'On break';
-
-  @override
-  String get attendanceStatusClockedOut => 'Clocked out';
-
-  @override
-  String get attendanceStatusPresent => 'Present';
-
-  @override
-  String get attendanceStatusCheckedOut => 'Checked out';
-
-  @override
-  String get attendanceManagement => 'Attendance Management';
-
-  @override
-  String get attendanceManageTooltip => 'Manage attendance';
-
-  @override
-  String get attendanceSearchEmployee => 'Search employee name or email';
-
-  @override
-  String get attendanceAdminEmpty => 'No attendance records found.';
-
-  @override
-  String get attendanceAdminLoadFailed => 'Failed to load attendance records.';
-
-  @override
-  String get attendanceDetails => 'Attendance details';
-
-  @override
-  String get attendanceDetailsLoading => 'Loading attendance details...';
-
-  @override
-  String get attendanceDetailsLoadFailed =>
-      'Failed to load attendance details.';
-
-  @override
-  String get attendanceEmployeeInfo => 'Employee information';
-
-  @override
-  String get attendanceSessionInfo => 'Session information';
-
-  @override
-  String get attendanceDeviceInfo => 'Device information';
-
-  @override
-  String get attendanceLocation => 'Location';
-
-  @override
-  String get attendanceDevice => 'Device';
-
-  @override
-  String get attendanceSyncSource => 'Sync source';
-
-  @override
-  String get attendanceLastUpdated => 'Last updated';
-
-  @override
-  String get attendanceSelfie => 'Selfie';
-
-  @override
-  String get attendanceDate => 'Date';
-
-  @override
-  String get attendanceOvertimeHours => 'Overtime hours';
-
-  @override
-  String get attendanceRoleAll => 'All roles';
 
   @override
   String get overtimeStartTitle => 'Start overtime journey';
@@ -3467,32 +3307,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Internet is required for the first sign-in.';
 
   @override
-  String get attendanceOfflineCachedData =>
-      'Offline mode — showing cached attendance data.';
-
-  @override
-  String attendancePendingSync(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count attendance records pending sync.',
-      one: '1 attendance record pending sync.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String attendancePendingOfflineRecords(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count pending offline records',
-      one: '1 pending offline record',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get profileLoading => 'Loading profile...';
 
   @override
@@ -3599,9 +3413,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permGroupRoles => 'Roles & Permissions';
-
-  @override
-  String get permGroupAttendance => 'Attendance';
 
   @override
   String get permGroupOvertime => 'Overtime';
@@ -4095,47 +3906,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'Unexpected network error. Please try again.';
 
   @override
-  String get attendanceAlreadyClockedIn => 'You have already clocked in today.';
-
-  @override
-  String get attendanceMustClockInBeforeOut =>
-      'You must clock in before clocking out.';
-
-  @override
-  String get attendanceEndBreakBeforeOut =>
-      'End your current break before clocking out.';
-
-  @override
-  String get attendanceAlreadyClockedOut =>
-      'You have already clocked out today.';
-
-  @override
-  String get attendanceMustClockInBeforeBreak =>
-      'You must clock in before starting a break.';
-
-  @override
-  String get attendanceBreakAlreadyInProgress =>
-      'A break is already in progress.';
-
-  @override
-  String get attendanceNoActiveBreak => 'There is no active break to end.';
-
-  @override
-  String attendanceGpsAccuracyExceeded(String accuracy, String threshold) {
-    return 'Location accuracy (${accuracy}m) exceeds the allowed threshold (${threshold}m). Move to an open area and try again.';
-  }
-
-  @override
-  String get attendanceWebOfflinePhotoRequired =>
-      'Photo attendance requires an internet connection on web. Please reconnect and try again.';
-
-  @override
   String get locationServicesDisabled =>
       'Location services are disabled. Enable GPS to continue.';
 
   @override
   String get locationPermissionRequired =>
-      'Location permission is required to clock in or out.';
+      'Location permission is required to start or stop overtime.';
 
   @override
   String get locationPermissionDeniedForever =>
@@ -4298,9 +4074,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navDashboard => 'Dashboard';
 
   @override
-  String get navAttendance => 'Attendance';
-
-  @override
   String get navWorkOrders => 'Work Orders';
 
   @override
@@ -4323,9 +4096,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventAuthGeneric => 'Account activity';
-
-  @override
-  String get eventAttendanceGeneric => 'Attendance update';
 
   @override
   String get eventOvertimeGeneric => 'Overtime update';
@@ -4783,9 +4553,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsNoFeatureFlags => 'No feature flags configured';
 
   @override
-  String get settingsNotifAttendance => 'Attendance notifications';
-
-  @override
   String get settingsNotifTasks => 'Work order notifications';
 
   @override
@@ -4895,10 +4662,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get permGroupRolesDesc =>
       'Permissions for managing roles and assigning access rights.';
-
-  @override
-  String get permGroupAttendanceDesc =>
-      'Permissions for reviewing and managing employee attendance records.';
 
   @override
   String get permGroupOvertimeDesc =>
@@ -5023,7 +4786,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get permSettingsManageHolidaysDesc =>
-      'Allows defining company holidays that affect attendance and overtime.';
+      'Allows defining company holidays that affect overtime.';
 
   @override
   String get permAuditView => 'View audit log';
@@ -5087,55 +4850,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get permRolesManageDesc =>
       'Allows creating, editing, and assigning roles and their permission sets.';
-
-  @override
-  String get permAttendanceViewOwn => 'View own attendance';
-
-  @override
-  String get permAttendanceViewOwnDesc =>
-      'Allows reviewing only personal attendance records.';
-
-  @override
-  String get permAttendanceViewTeam => 'View team attendance';
-
-  @override
-  String get permAttendanceViewTeamDesc =>
-      'Allows viewing attendance records for members of the assigned team.';
-
-  @override
-  String get permAttendanceViewAll => 'View all attendance';
-
-  @override
-  String get permAttendanceViewAllDesc =>
-      'Allows viewing every attendance record across the organization.';
-
-  @override
-  String get permAttendanceManageOwn => 'Manage own attendance';
-
-  @override
-  String get permAttendanceManageOwnDesc =>
-      'Allows creating and updating only personal attendance punches.';
-
-  @override
-  String get permAttendanceView => 'View attendance';
-
-  @override
-  String get permAttendanceViewDesc =>
-      'Allows opening attendance screens for records within the granted access scope.';
-
-  @override
-  String get permAttendanceUpdate => 'Manage attendance';
-
-  @override
-  String get permAttendanceUpdateDesc =>
-      'Allows creating, editing, approving, and managing attendance records.';
-
-  @override
-  String get permAttendanceApprove => 'Approve attendance';
-
-  @override
-  String get permAttendanceApproveDesc =>
-      'Allows approving attendance records before they are finalized.';
 
   @override
   String get permOvertimeViewOwn => 'View own overtime';

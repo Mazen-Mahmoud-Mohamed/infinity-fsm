@@ -2,7 +2,6 @@ import { Router } from 'express';
 import mongoose from 'mongoose';
 import authRoutes from '../../modules/core/auth/auth.routes.js';
 import organizationRoutes from '../../modules/core/organization/organization.routes.js';
-import attendanceRoutes from '../../modules/business/attendance/attendance.routes.js';
 import overtimeRoutes from '../../modules/business/overtime/overtime.routes.js';
 import workOrderRoutes from '../../modules/business/work-orders/work-orders.routes.js';
 import inventoryRoutes from '../../modules/business/inventory/inventory.routes.js';
@@ -63,7 +62,6 @@ router.get('/health/ready', (_req, res) => {
 
 router.use('/auth', authRoutes);
 router.use('/organization', organizationRoutes);
-router.use('/attendance', attendanceRoutes);
 router.use('/overtime', overtimeRoutes);
 router.use('/work-orders', workOrderRoutes);
 router.use('/inventory', inventoryRoutes);

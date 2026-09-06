@@ -4,15 +4,13 @@ import 'package:mobile/features/settings/domain/entities/settings_entities.dart'
 class TechnicianInterfaceNavigation {
   TechnicianInterfaceNavigation._();
 
-  static const int branchAttendance = 1;
-  static const int branchWorkOrders = 2;
-  static const int branchOvertime = 3;
-  static const int branchProfile = 4;
+  static const int branchWorkOrders = 1;
+  static const int branchOvertime = 2;
+  static const int branchProfile = 3;
 
   /// Technician phone bottom bar order (operational home first).
   static const List<int> technicianPhoneOrder = [
     branchWorkOrders,
-    branchAttendance,
     branchOvertime,
     branchProfile,
   ];
@@ -23,7 +21,6 @@ class TechnicianInterfaceNavigation {
   ) {
     return switch (branchIndex) {
       branchWorkOrders => config.workOrders,
-      branchAttendance => config.attendance,
       branchOvertime => config.overtime,
       branchProfile => config.profile,
       _ => true,
@@ -44,7 +41,6 @@ class TechnicianInterfaceNavigation {
   static String? routeForBranch(int branchIndex) {
     return switch (branchIndex) {
       branchWorkOrders => '/work-orders',
-      branchAttendance => '/attendance',
       branchOvertime => '/overtime',
       branchProfile => '/profile',
       _ => null,
@@ -63,9 +59,6 @@ class TechnicianInterfaceNavigation {
   ) {
     if (location.startsWith('/work-orders')) {
       return config.workOrders;
-    }
-    if (location.startsWith('/attendance')) {
-      return config.attendance;
     }
     if (location.startsWith('/overtime')) {
       return config.overtime;

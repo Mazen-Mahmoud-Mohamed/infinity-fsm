@@ -4,7 +4,7 @@ Node.js + Express + MongoDB + Socket.IO.
 
 ## Status
 
-Architecture v2.0 — folder structure scaffolded. No application code.
+Architecture v2.0 — production backend for Infinity FSM.
 
 ## Module Architecture
 
@@ -24,12 +24,17 @@ backend/src/modules/
 │   └── maps/
 └── business/               # Pluggable business modules
     ├── overtime/           # MVP — full implementation
-    ├── work-orders/        # SCHEMA_READY
-    ├── vehicles/           # SCHEMA_READY
-    ├── attendance/         # PLANNED
-    ├── customers/          # PLANNED
+    ├── work-orders/
+    ├── inventory/
+    ├── assets/
+    ├── preventive-maintenance/
+    ├── service-reports/
     └── ...
 ```
+
+**Attendance** is not a backend module. Employee time presence is handled by the
+external fingerprint / biometric attendance system; this API does not mount
+`/attendance` routes or store clock-in/out records.
 
 ## Tech Stack
 

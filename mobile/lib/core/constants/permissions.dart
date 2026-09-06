@@ -28,11 +28,6 @@ class Permissions {
   static const String organizationManageDepartments =
       'organization:manage_departments';
 
-  static const String attendanceViewOwn = 'attendance:view_own';
-  static const String attendanceViewTeam = 'attendance:view_team';
-  static const String attendanceViewAll = 'attendance:view_all';
-  static const String attendanceManageOwn = 'attendance:manage_own';
-
   static const String inventoryView = 'inventory:view';
   static const String inventoryCreate = 'inventory:create';
   static const String inventoryUpdate = 'inventory:update';

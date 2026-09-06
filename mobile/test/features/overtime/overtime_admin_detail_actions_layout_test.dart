@@ -8,7 +8,7 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/services/auth_session_service.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/domain/repositories/auth_repository.dart';
 import 'package:mobile/features/auth/domain/usecases/get_current_user_usecase.dart';

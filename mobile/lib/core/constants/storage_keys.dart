@@ -22,7 +22,7 @@ class StorageKeys {
   static const String lastSyncedServerUtcMs = 'last_synced_server_utc_ms';
   static const String lastSyncedDeviceUtcMs = 'last_synced_device_utc_ms';
   static const String lastSyncedMonoMs = 'last_synced_mono_ms';
-  static const String lastAttendanceUtcMs = 'last_attendance_utc_ms';
+  static const String lastCaptureUtcMs = 'last_capture_utc_ms';
   static const String securityEventQueue = 'security_event_queue';
   static const String pendingGpsAddressQueue = 'pending_gps_address_queue';
 

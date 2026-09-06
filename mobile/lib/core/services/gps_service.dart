@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:geolocator/geolocator.dart';
-import 'package:mobile/core/constants/attendance_constants.dart';
+import 'package:mobile/core/constants/capture_constants.dart';
 
 enum LocationFailureReason {
   serviceDisabled,
@@ -43,7 +43,7 @@ class GpsReading {
   final DateTime recordedAt;
 
   bool get isAccurateEnough =>
-      accuracy <= AttendanceConstants.gpsAccuracyThresholdMeters;
+      accuracy <= CaptureConstants.gpsAccuracyThresholdMeters;
 }
 
 class GpsService {
@@ -78,7 +78,7 @@ class GpsService {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          timeLimit: AttendanceConstants.gpsTimeout,
+          timeLimit: CaptureConstants.gpsTimeout,
         ),
       );
 

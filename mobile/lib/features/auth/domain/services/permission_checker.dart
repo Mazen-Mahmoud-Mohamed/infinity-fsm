@@ -200,17 +200,4 @@ class PermissionChecker {
     return hasPermission(Permissions.dashboardView);
   }
 
-  bool canViewAllAttendance() {
-    return hasPermission(Permissions.attendanceViewAll);
-  }
-
-  bool canViewTeamAttendance() {
-    return hasPermission(Permissions.attendanceViewTeam);
-  }
-
-  bool canViewAttendance() {
-    return hasPermission(Permissions.attendanceViewOwn) ||
-        canViewTeamAttendance() ||
-        canViewAllAttendance();
-  }
 }

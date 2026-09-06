@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 
 /// Four-stage journey workflow (v2). Legacy sessions use start/end only (v1).
 enum OvertimeWorkflowVersion {

@@ -6,7 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
-import 'package:mobile/features/attendance/domain/entities/gps_snapshot.dart';
+import 'package:mobile/core/geo/gps_snapshot.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_maps_launcher.dart';
 
 enum _MapPointKind { start, end }

@@ -28,11 +28,10 @@ Post-MVP enhancements organized by module and priority. Items already schema-rea
 
 | Module | Description | Priority | Dependencies |
 |--------|-------------|----------|--------------|
-| **Attendance** | Clock in/out, integrate with overtime calculation | High | Organization |
 | **Customers** | Customer CRUD, link to work orders | High | Work Orders |
 | **Assets** | Equipment tracking, assign to technicians | Medium | Organization |
 | **Inventory** | Parts and materials tracking | Medium | Work Orders |
-| **Scheduling** | Shift and job scheduling | Medium | Work Orders, Attendance |
+| **Scheduling** | Shift and job scheduling | Medium | Work Orders |
 | **Maintenance** | Preventive maintenance schedules | Low | Assets |
 | **Payroll Integration** | Export approved hours to payroll systems | High | Overtime, Reports |
 | **Analytics** | Advanced BI dashboards, trend analysis | Medium | All modules |

@@ -1,6 +1,5 @@
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
-import 'package:mobile/features/attendance/domain/entities/attendance_status.dart';
 import 'package:mobile/features/inventory/domain/entities/spare_part.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/pm/domain/entities/pm_entities.dart';
@@ -10,8 +9,6 @@ import 'package:mobile/features/work_orders/domain/entities/work_order_status.da
 
 String reportsModuleLabel(AppLocalizations l10n, ReportsCenterModule module) {
   switch (module) {
-    case ReportsCenterModule.attendance:
-      return l10n.attendance;
     case ReportsCenterModule.overtime:
       return l10n.overtime;
     case ReportsCenterModule.workOrders:
@@ -32,8 +29,6 @@ String reportsModuleEmptyLabel(
   ReportsCenterModule module,
 ) {
   switch (module) {
-    case ReportsCenterModule.attendance:
-      return l10n.reportsCenterEmptyAttendance;
     case ReportsCenterModule.overtime:
       return l10n.reportsCenterEmptyOvertime;
     case ReportsCenterModule.workOrders:
@@ -54,11 +49,6 @@ List<({String key, String label})> reportsStatusOptions(
   ReportsCenterModule module,
 ) {
   switch (module) {
-    case ReportsCenterModule.attendance:
-      return [
-        for (final s in AttendanceStatus.values)
-          (key: s.name, label: _attendanceLabel(l10n, s)),
-      ];
     case ReportsCenterModule.overtime:
       return [
         for (final s in OvertimeStatus.values)
@@ -106,19 +96,6 @@ String reportsSortLabel(AppLocalizations l10n, ReportsSort sort) {
       return l10n.reportsCenterSortStatusAsc;
     case ReportsSort.statusDesc:
       return l10n.reportsCenterSortStatusDesc;
-  }
-}
-
-String _attendanceLabel(AppLocalizations l10n, AttendanceStatus s) {
-  switch (s) {
-    case AttendanceStatus.notStarted:
-      return l10n.attendanceStatusNotStarted;
-    case AttendanceStatus.clockedIn:
-      return l10n.attendanceStatusWorking;
-    case AttendanceStatus.onBreak:
-      return l10n.attendanceStatusOnBreak;
-    case AttendanceStatus.clockedOut:
-      return l10n.attendanceStatusClockedOut;
   }
 }
 

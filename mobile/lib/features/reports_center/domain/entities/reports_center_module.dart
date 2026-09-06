@@ -1,7 +1,6 @@
 import 'package:mobile/features/auth/domain/services/permission_checker.dart';
 
 enum ReportsCenterModule {
-  attendance,
   overtime,
   workOrders,
   assets,
@@ -13,9 +12,6 @@ enum ReportsCenterModule {
 extension ReportsCenterModuleX on ReportsCenterModule {
   bool isAllowed(PermissionChecker permissions) {
     switch (this) {
-      case ReportsCenterModule.attendance:
-        return permissions.canViewAllAttendance() ||
-            permissions.canViewTeamAttendance();
       case ReportsCenterModule.overtime:
         return permissions.canViewAllOvertime() ||
             permissions.canApproveOvertime();
@@ -33,10 +29,10 @@ extension ReportsCenterModuleX on ReportsCenterModule {
   }
 
   /// Backend list APIs that accept a date range.
-  bool get supportsDateRange => this == ReportsCenterModule.attendance;
+  bool get supportsDateRange => false;
 
   /// Backend list APIs that accept an employee/user filter.
-  bool get supportsEmployeeFilter => this == ReportsCenterModule.attendance;
+  bool get supportsEmployeeFilter => false;
 }
 
 enum ReportsSort {

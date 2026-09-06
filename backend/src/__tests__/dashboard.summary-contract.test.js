@@ -54,14 +54,8 @@ describe('dashboard admin summary response contract', () => {
       kpis: {
         totalEmployees: 0,
         activeEmployees: 0,
-        employeesCurrentlyWorking: 0,
         employeesOnOvertime: 0,
         employeesOnTravelOvertime: 0,
-      },
-      attendance: {
-        totalWorkingHours: 0,
-        averageWorkingHours: 0,
-        attendanceRate: 0,
       },
       overtime: {
         totalOvertimeHours: 0,
@@ -103,7 +97,6 @@ describe('dashboard admin summary response contract', () => {
       liveActivity: [],
       notifications: [],
       charts: {
-        attendance: [],
         overtime: [],
         workOrders: [],
         preventiveMaintenance: [],
@@ -114,7 +107,6 @@ describe('dashboard admin summary response contract', () => {
     const requiredTop = Object.keys(shape).sort();
     expect(requiredTop).toEqual([
       'assets',
-      'attendance',
       'charts',
       'from',
       'inventory',
@@ -130,7 +122,6 @@ describe('dashboard admin summary response contract', () => {
     ]);
     expect(Object.keys(shape.kpis).sort()).toEqual([
       'activeEmployees',
-      'employeesCurrentlyWorking',
       'employeesOnOvertime',
       'employeesOnTravelOvertime',
       'totalEmployees',
@@ -150,20 +141,18 @@ describe('dashboard admin summary response contract', () => {
     ]);
   });
 
-  it('mapTrendCharts returns four chart series with label/value points', () => {
+  it('mapTrendCharts returns three chart series with label/value points', () => {
     const from = new Date();
     const to = new Date();
     const charts = dashboardService._mapTrendCharts({
       from,
       to,
-      attendanceRows: [],
       overtimeRecords: [],
       woRows: [],
       pmRows: [],
     });
 
     expect(Object.keys(charts).sort()).toEqual([
-      'attendance',
       'overtime',
       'preventiveMaintenance',
       'workOrders',
@@ -232,7 +221,6 @@ describe('dashboard admin summary live parity (optional)', () => {
           viewRole: summary.viewRole,
           period: summary.period,
           kpis: summary.kpis,
-          attendance: summary.attendance,
           overtime: {
             ...summary.overtime,
             // Names are stable; keep full overtime block.

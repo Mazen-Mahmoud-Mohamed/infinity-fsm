@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 
-/// Shared list/admin card shell matching Overtime / Attendance management cards.
+/// Shared list/admin card shell matching Overtime management cards.
 ///
 /// Uses [ColorScheme.surface] + outline so cards stay visible in dark mode
 /// (never [ColorScheme.surfaceContainerLowest], which can match the scaffold).

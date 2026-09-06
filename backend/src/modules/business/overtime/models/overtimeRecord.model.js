@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { gpsSchema } from '../../attendance/models/shared.schemas.js';
+import { gpsSchema } from '../../../../shared/schemas/gps.schema.js';
 
 const { Schema } = mongoose;
 

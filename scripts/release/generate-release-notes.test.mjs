@@ -76,7 +76,7 @@ describe('classifyCommit', () => {
 
 describe('expandUserFacingBullets', () => {
   it('returns a single concise sentence for ordinary changes', () => {
-    assert.deepEqual(expandUserFacingBullets('feat', 'attendance', 'show overtime tip'), [
+    assert.deepEqual(expandUserFacingBullets('feat', 'overtime', 'show overtime tip'), [
       'Show overtime tip.',
     ]);
   });

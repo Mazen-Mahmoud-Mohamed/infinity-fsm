@@ -59,7 +59,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: true,
         workOrders: true,
-        attendance: false,
         profile: false,
       );
 
@@ -68,7 +67,6 @@ void main() {
 
       expect(restored?.overtime, config.overtime);
       expect(restored?.workOrders, config.workOrders);
-      expect(restored?.attendance, config.attendance);
       expect(restored?.profile, config.profile);
     });
 
@@ -77,7 +75,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: true,
         workOrders: true,
-        attendance: false,
         profile: false,
       );
 
@@ -91,15 +88,13 @@ void main() {
         TechnicianInterfaceNavigation.branchWorkOrders,
         TechnicianInterfaceNavigation.branchOvertime,
       ]);
-      expect(branches, isNot(contains(TechnicianInterfaceNavigation.branchAttendance)));
       expect(branches, isNot(contains(TechnicianInterfaceNavigation.branchProfile)));
     });
 
     test('stores JSON under company-scoped key', () async {
       const companyId = 'company-42';
-      const config = const TechnicianInterfaceConfig(
+      const config = TechnicianInterfaceConfig(
         workOrders: true,
-        attendance: true,
         overtime: false,
         profile: false,
       );

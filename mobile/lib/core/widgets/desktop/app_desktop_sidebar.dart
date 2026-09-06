@@ -208,12 +208,12 @@ List<AppDesktopSidebarSection> buildDesktopSidebarSections({
   required List<int> railBranches,
 }) {
   int? sectionOf(int branch) {
-    if (branch == 0 || branch == 1 || branch == 2 || branch == 3 || branch == 4) {
+    if (branch == 0 || branch == 1 || branch == 2 || branch == 3) {
       return 0; // operations / home
     }
-    if (branch == 5 || branch == 6 || branch == 7) return 1; // management modules
-    if (branch == 8) return 2; // reports
-    if (branch == 9 || branch == 10 || branch == 11) return 3; // admin
+    if (branch == 4 || branch == 5 || branch == 6) return 1; // management modules
+    if (branch == 7) return 2; // reports
+    if (branch == 8 || branch == 9 || branch == 10) return 3; // admin
     return null;
   }
 
@@ -227,65 +227,59 @@ List<AppDesktopSidebarSection> buildDesktopSidebarSections({
         ),
       1 => AppDesktopSidebarItem(
           branchIndex: branch,
-          icon: Icons.access_time_outlined,
-          selectedIcon: Icons.access_time,
-          label: l10n.attendance,
-        ),
-      2 => AppDesktopSidebarItem(
-          branchIndex: branch,
           icon: Icons.assignment_outlined,
           selectedIcon: Icons.assignment,
           label: l10n.workOrders,
         ),
-      3 => AppDesktopSidebarItem(
+      2 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.more_time_outlined,
           selectedIcon: Icons.more_time,
           label: operational ? l10n.overtimeTechnicianTitle : l10n.overtime,
         ),
-      4 => AppDesktopSidebarItem(
+      3 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.person_outline,
           selectedIcon: Icons.person,
           label: l10n.profile,
         ),
-      5 => AppDesktopSidebarItem(
+      4 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.inventory_2_outlined,
           selectedIcon: Icons.inventory_2,
           label: l10n.inventory,
         ),
-      6 => AppDesktopSidebarItem(
+      5 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.precision_manufacturing_outlined,
           selectedIcon: Icons.precision_manufacturing,
           label: l10n.assets,
         ),
-      7 => AppDesktopSidebarItem(
+      6 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.build_circle_outlined,
           selectedIcon: Icons.build_circle,
           label: l10n.assetsStatusMaintenance,
         ),
-      8 => AppDesktopSidebarItem(
+      7 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.analytics_outlined,
           selectedIcon: Icons.analytics,
           label: l10n.reportsCenter,
         ),
-      9 => AppDesktopSidebarItem(
+      8 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.manage_accounts_outlined,
           selectedIcon: Icons.manage_accounts,
           label: l10n.usersTitle,
         ),
-      10 => AppDesktopSidebarItem(
+      9 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.admin_panel_settings_outlined,
           selectedIcon: Icons.admin_panel_settings,
           label: l10n.rolesTitle,
         ),
-      11 => AppDesktopSidebarItem(
+      10 => AppDesktopSidebarItem(
           branchIndex: branch,
           icon: Icons.settings_outlined,
           selectedIcon: Icons.settings,

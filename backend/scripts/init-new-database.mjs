@@ -149,7 +149,7 @@ async function initSystemAndUsers() {
   const company = await Company.create({
     name: 'Infinity Tech',
     slug: 'infinity-tech',
-    enabledModules: ['overtime', 'attendance', 'work_orders'],
+    enabledModules: ['overtime', 'work_orders'],
   });
 
   const branch = await Branch.create({

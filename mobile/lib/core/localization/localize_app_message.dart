@@ -12,14 +12,6 @@ String localizeAppMessage(
     return l10n.errorGeneric;
   }
 
-  if (key.startsWith('attendanceGpsAccuracyExceeded:')) {
-    final parts = key.split(':');
-    if (parts.length >= 3) {
-      return l10n.attendanceGpsAccuracyExceeded(parts[1], parts[2]);
-    }
-    return l10n.gpsAccuracyTooLow;
-  }
-
   switch (key) {
     case 'livePhotoRequired':
     case 'LIVE_PHOTO_REQUIRED':
@@ -76,8 +68,6 @@ String localizeAppMessage(
       return l10n.errorAvatarRequired;
     case 'UPLOAD_FAILED':
       return l10n.errorUploadFailed;
-    case 'attendanceUpdated':
-      return l10n.attendanceUpdated;
     case 'overtimeEnded':
       return l10n.overtimeEnded;
     case 'normalOvertimeStarted':
@@ -178,22 +168,6 @@ String localizeAppMessage(
       return l10n.errorRequestFailed;
     case 'errorUnexpectedNetworkError':
       return l10n.errorUnexpectedNetworkError;
-    case 'attendanceAlreadyClockedIn':
-      return l10n.attendanceAlreadyClockedIn;
-    case 'attendanceMustClockInBeforeOut':
-      return l10n.attendanceMustClockInBeforeOut;
-    case 'attendanceEndBreakBeforeOut':
-      return l10n.attendanceEndBreakBeforeOut;
-    case 'attendanceAlreadyClockedOut':
-      return l10n.attendanceAlreadyClockedOut;
-    case 'attendanceMustClockInBeforeBreak':
-      return l10n.attendanceMustClockInBeforeBreak;
-    case 'attendanceBreakAlreadyInProgress':
-      return l10n.attendanceBreakAlreadyInProgress;
-    case 'attendanceNoActiveBreak':
-      return l10n.attendanceNoActiveBreak;
-    case 'attendanceWebOfflinePhotoRequired':
-      return l10n.attendanceWebOfflinePhotoRequired;
     case 'locationServicesDisabled':
       return l10n.locationServicesDisabled;
     case 'locationPermissionRequired':
@@ -296,22 +270,6 @@ String localizeAppMessage(
       return l10n.errorNoInternet;
     case 'Request failed':
       return l10n.errorRequestFailed;
-    case 'You have already clocked in today.':
-      return l10n.attendanceAlreadyClockedIn;
-    case 'You must clock in before clocking out.':
-      return l10n.attendanceMustClockInBeforeOut;
-    case 'End your current break before clocking out.':
-      return l10n.attendanceEndBreakBeforeOut;
-    case 'You have already clocked out today.':
-      return l10n.attendanceAlreadyClockedOut;
-    case 'You must clock in before starting a break.':
-      return l10n.attendanceMustClockInBeforeBreak;
-    case 'A break is already in progress.':
-      return l10n.attendanceBreakAlreadyInProgress;
-    case 'There is no active break to end.':
-      return l10n.attendanceNoActiveBreak;
-    case 'Photo attendance requires an internet connection on web. Please reconnect and try again.':
-      return l10n.attendanceWebOfflinePhotoRequired;
     case 'Location services are disabled. Enable GPS to continue.':
       return l10n.locationServicesDisabled;
     case 'Location permission is required to clock in or out.':

@@ -61,8 +61,6 @@ String localizeAuditEvent(AppLocalizations l10n, String? action) {
   switch (module) {
     case 'auth':
       return l10n.eventAuthGeneric;
-    case 'attendance':
-      return l10n.eventAttendanceGeneric;
     case 'overtime':
       return l10n.eventOvertimeGeneric;
     case 'work_order':
@@ -102,8 +100,6 @@ String localizeAuditModule(AppLocalizations l10n, String? module) {
   switch ((module ?? '').trim().toLowerCase()) {
     case 'auth':
       return l10n.eventAuthGeneric;
-    case 'attendance':
-      return l10n.eventAttendanceGeneric;
     case 'overtime':
       return l10n.eventOvertimeGeneric;
     case 'work_order':

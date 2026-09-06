@@ -116,13 +116,6 @@ const config = Object.freeze({
     serviceAccountPath: optionalEnv('FIREBASE_SERVICE_ACCOUNT_PATH'),
   }),
 
-  attendance: Object.freeze({
-    gpsAccuracyThresholdMeters: parseInt(
-      optionalEnv('ATTENDANCE_GPS_ACCURACY_THRESHOLD_METERS', '100'),
-      10
-    ),
-  }),
-
   overtime: Object.freeze({
     maxRequestHours: parseFloat(optionalEnv('OVERTIME_MAX_REQUEST_HOURS', '16')),
     minRequestHours: parseFloat(optionalEnv('OVERTIME_MIN_REQUEST_HOURS', '0.5')),

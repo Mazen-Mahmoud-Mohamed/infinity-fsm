@@ -10,7 +10,6 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/domain/entities/current_user.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
@@ -48,8 +47,7 @@ class _ServerManagementPageState extends State<ServerManagementPage> {
     _cubit = getIt<ServerManagementCubit>();
     _urlController = TextEditingController();
     final user = getIt<AuthCubit>().state.user;
-    final pending = getIt<AttendanceSyncCubit>().state.pendingCount +
-        getIt<OvertimeSyncCubit>().state.pendingCount;
+    final pending = getIt<OvertimeSyncCubit>().state.pendingCount;
     _cubit.configureContext(
       userRole: user?.primaryRole,
       userDisplayName: user?.fullName,

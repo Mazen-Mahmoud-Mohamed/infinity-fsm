@@ -78,8 +78,8 @@ void main() {
         ),
         DashboardLiveActivityItem(
           id: 'a2',
-          action: 'Clock in',
-          module: 'attendance',
+          action: 'Work order assigned',
+          module: 'workOrders',
           createdAt: DateTime.utc(2026, 8, 20),
         ),
       ],

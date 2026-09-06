@@ -140,7 +140,6 @@ class SettingsRemoteDataSource {
       data: {
         if (input.overtime != null) 'overtime': input.overtime,
         if (input.workOrders != null) 'workOrders': input.workOrders,
-        if (input.attendance != null) 'attendance': input.attendance,
         if (input.profile != null) 'profile': input.profile,
       },
     );

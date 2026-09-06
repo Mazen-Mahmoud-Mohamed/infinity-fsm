@@ -78,9 +78,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get quickActions => 'إجراءات سريعة';
 
   @override
-  String get attendance => 'الحضور';
-
-  @override
   String get overtime => 'العمل الإضافي';
 
   @override
@@ -222,10 +219,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get reportsCenterEmpty =>
       'لا توجد سجلات مطابقة لعوامل التصفية المحددة.';
-
-  @override
-  String get reportsCenterEmptyAttendance =>
-      'لا توجد سجلات حضور مطابقة لعوامل التصفية المحددة.';
 
   @override
   String get reportsCenterEmptyOvertime =>
@@ -1528,9 +1521,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardOverview => 'نظرة تشغيلية';
 
   @override
-  String get dashboardTodayAttendance => 'حضور اليوم';
-
-  @override
   String get dashboardTodayWorkOrders => 'أوامر العمل اليوم';
 
   @override
@@ -1595,9 +1585,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get dashboardSectionKpis => 'المؤشرات الرئيسية';
 
   @override
-  String get dashboardSectionAttendance => 'الحضور';
-
-  @override
   String get dashboardSectionOvertime => 'العمل الإضافي';
 
   @override
@@ -1620,9 +1607,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dashboardSectionTeamOverview => 'نظرة على الفريق';
-
-  @override
-  String get dashboardSectionTeamAttendance => 'حضور الفريق';
 
   @override
   String get dashboardSectionTeamOvertime => 'عمل إضافي للفريق';
@@ -1668,9 +1652,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get dashboardKpiAverageWorkingHours => 'متوسط ساعات العمل';
-
-  @override
-  String get dashboardKpiAttendanceRate => 'نسبة الحضور';
 
   @override
   String get dashboardKpiOtHours => 'ساعات العمل الإضافي';
@@ -1809,9 +1790,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String dashboardPercentValue(String value) {
     return '$value%';
   }
-
-  @override
-  String get dashboardChartAttendance => 'اتجاه الحضور';
 
   @override
   String get dashboardChartOvertime => 'اتجاه العمل الإضافي';
@@ -2477,7 +2455,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get settingsPrivacyBody =>
-      'يعالج INFINITY بيانات الخدمة الميدانية لدعم عمليات Total-Com Solutions. تُستخدم البيانات الشخصية فقط للمصادقة والحضور وتنفيذ العمل.';
+      'يعالج INFINITY بيانات الخدمة الميدانية لدعم عمليات Total-Com Solutions. تُستخدم البيانات الشخصية فقط للمصادقة والعمل الإضافي وتنفيذ العمل.';
 
   @override
   String get settingsTermsBody =>
@@ -2796,22 +2774,7 @@ class AppLocalizationsAr extends AppLocalizations {
       'دقة الموقع منخفضة جداً. انتقل إلى منطقة مفتوحة ثم أعد المحاولة.';
 
   @override
-  String get attendanceUpdated => 'تم تحديث الحضور بنجاح.';
-
-  @override
-  String get attendanceLoading => 'جاري تحميل الحضور...';
-
-  @override
-  String get attendanceHistoryLoading => 'جاري تحميل السجل...';
-
-  @override
-  String get attendanceHistoryEmpty => 'لا يوجد سجل حضور بعد';
-
-  @override
-  String get attendanceTimeline => 'الجدول الزمني';
-
-  @override
-  String get attendanceHistoryTooltip => 'السجل';
+  String get historyLoading => 'جاري تحميل السجل...';
 
   @override
   String get overtimeEnded =>
@@ -2895,126 +2858,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get overtimeTechnicianNoRunningSession =>
       'لا توجد جلسة عمل قيد التشغيل لإنهائها.';
-
-  @override
-  String get attendanceClockIn => 'تسجيل حضور';
-
-  @override
-  String get attendanceClockOut => 'تسجيل انصراف';
-
-  @override
-  String get attendanceStartBreak => 'بدء استراحة';
-
-  @override
-  String get attendanceEndBreak => 'إنهاء استراحة';
-
-  @override
-  String get attendanceShiftCompleted => 'لقد أكملت ورديتك لليوم.';
-
-  @override
-  String get attendanceTodayStatus => 'حالة اليوم';
-
-  @override
-  String get attendanceWorkingHours => 'ساعات العمل';
-
-  @override
-  String get attendanceBreaks => 'الاستراحات';
-
-  @override
-  String get attendanceTimelineEmpty => 'لا يوجد نشاط حضور مسجل اليوم بعد.';
-
-  @override
-  String get attendanceEventClockedIn => 'تم تسجيل الحضور';
-
-  @override
-  String get attendanceEventClockedOut => 'تم تسجيل الانصراف';
-
-  @override
-  String get attendanceEventBreakStarted => 'بدأت الاستراحة';
-
-  @override
-  String get attendanceEventBreakEnded => 'انتهت الاستراحة';
-
-  @override
-  String get attendanceSyncedOffline => 'تمت المزامنة من سجل دون اتصال';
-
-  @override
-  String get attendanceHistoryTitle => 'سجل الحضور';
-
-  @override
-  String get attendanceStatusNotStarted => 'لم يبدأ';
-
-  @override
-  String get attendanceStatusWorking => 'يعمل';
-
-  @override
-  String get attendanceStatusOnBreak => 'في استراحة';
-
-  @override
-  String get attendanceStatusClockedOut => 'انتهى الدوام';
-
-  @override
-  String get attendanceStatusPresent => 'حاضر';
-
-  @override
-  String get attendanceStatusCheckedOut => 'تم الانصراف';
-
-  @override
-  String get attendanceManagement => 'إدارة الحضور';
-
-  @override
-  String get attendanceManageTooltip => 'إدارة الحضور';
-
-  @override
-  String get attendanceSearchEmployee => 'البحث باسم الموظف أو البريد';
-
-  @override
-  String get attendanceAdminEmpty => 'لا توجد سجلات حضور.';
-
-  @override
-  String get attendanceAdminLoadFailed => 'فشل تحميل سجلات الحضور.';
-
-  @override
-  String get attendanceDetails => 'تفاصيل الحضور';
-
-  @override
-  String get attendanceDetailsLoading => 'جاري تحميل تفاصيل الحضور...';
-
-  @override
-  String get attendanceDetailsLoadFailed => 'فشل تحميل تفاصيل الحضور.';
-
-  @override
-  String get attendanceEmployeeInfo => 'معلومات الموظف';
-
-  @override
-  String get attendanceSessionInfo => 'معلومات الجلسة';
-
-  @override
-  String get attendanceDeviceInfo => 'معلومات الجهاز';
-
-  @override
-  String get attendanceLocation => 'الموقع';
-
-  @override
-  String get attendanceDevice => 'الجهاز';
-
-  @override
-  String get attendanceSyncSource => 'مصدر المزامنة';
-
-  @override
-  String get attendanceLastUpdated => 'آخر تحديث';
-
-  @override
-  String get attendanceSelfie => 'صورة سيلفي';
-
-  @override
-  String get attendanceDate => 'التاريخ';
-
-  @override
-  String get attendanceOvertimeHours => 'ساعات العمل الإضافي';
-
-  @override
-  String get attendanceRoleAll => 'كل الأدوار';
 
   @override
   String get overtimeStartTitle => 'بدء رحلة العمل الإضافي';
@@ -3458,32 +3301,6 @@ class AppLocalizationsAr extends AppLocalizations {
       'يلزم الاتصال بالإنترنت لتسجيل الدخول لأول مرة.';
 
   @override
-  String get attendanceOfflineCachedData =>
-      'وضع دون اتصال — عرض بيانات الحضور المخزنة.';
-
-  @override
-  String attendancePendingSync(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count سجلات حضور بانتظار المزامنة.',
-      one: 'سجل حضور واحد بانتظار المزامنة.',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String attendancePendingOfflineRecords(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count سجلات بانتظار المزامنة دون اتصال',
-      one: 'سجل واحد بانتظار المزامنة دون اتصال',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String get profileLoading => 'جاري تحميل الملف الشخصي...';
 
   @override
@@ -3590,9 +3407,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get permGroupRoles => 'الأدوار والصلاحيات';
-
-  @override
-  String get permGroupAttendance => 'الحضور';
 
   @override
   String get permGroupOvertime => 'العمل الإضافي';
@@ -4082,48 +3896,12 @@ class AppLocalizationsAr extends AppLocalizations {
       'خطأ غير متوقع في الشبكة. يرجى المحاولة مرة أخرى.';
 
   @override
-  String get attendanceAlreadyClockedIn =>
-      'لقد قمت بتسجيل الحضور اليوم بالفعل.';
-
-  @override
-  String get attendanceMustClockInBeforeOut =>
-      'يجب تسجيل الحضور قبل تسجيل الانصراف.';
-
-  @override
-  String get attendanceEndBreakBeforeOut =>
-      'أنهِ الاستراحة الحالية قبل تسجيل الانصراف.';
-
-  @override
-  String get attendanceAlreadyClockedOut =>
-      'لقد قمت بتسجيل الانصراف اليوم بالفعل.';
-
-  @override
-  String get attendanceMustClockInBeforeBreak =>
-      'يجب تسجيل الحضور قبل بدء الاستراحة.';
-
-  @override
-  String get attendanceBreakAlreadyInProgress =>
-      'هناك استراحة قيد التقدم بالفعل.';
-
-  @override
-  String get attendanceNoActiveBreak => 'لا توجد استراحة نشطة لإنهائها.';
-
-  @override
-  String attendanceGpsAccuracyExceeded(String accuracy, String threshold) {
-    return 'دقة الموقع ($accuracyم) تتجاوز الحد المسموح ($thresholdم). انتقل إلى منطقة مفتوحة وحاول مرة أخرى.';
-  }
-
-  @override
-  String get attendanceWebOfflinePhotoRequired =>
-      'حضور الصور يتطلب اتصالًا بالإنترنت على الويب. أعد الاتصال وحاول مرة أخرى.';
-
-  @override
   String get locationServicesDisabled =>
       'خدمات الموقع معطلة. فعّل GPS للمتابعة.';
 
   @override
   String get locationPermissionRequired =>
-      'إذن الموقع مطلوب لتسجيل الحضور أو الانصراف.';
+      'إذن الموقع مطلوب لبدء العمل الإضافي أو إيقافه.';
 
   @override
   String get locationPermissionDeniedForever =>
@@ -4271,9 +4049,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get navDashboard => 'لوحة التحكم';
 
   @override
-  String get navAttendance => 'الحضور';
-
-  @override
   String get navWorkOrders => 'أوامر العمل';
 
   @override
@@ -4296,9 +4071,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get eventAuthGeneric => 'نشاط الحساب';
-
-  @override
-  String get eventAttendanceGeneric => 'تحديث الحضور';
 
   @override
   String get eventOvertimeGeneric => 'تحديث العمل الإضافي';
@@ -4753,9 +4525,6 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsNoFeatureFlags => 'لا توجد أعلام ميزات';
 
   @override
-  String get settingsNotifAttendance => 'إشعارات الحضور';
-
-  @override
   String get settingsNotifTasks => 'إشعارات أوامر العمل';
 
   @override
@@ -4864,10 +4633,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get permGroupRolesDesc =>
       'الصلاحيات الخاصة بإدارة الأدوار وتوزيع الصلاحيات.';
-
-  @override
-  String get permGroupAttendanceDesc =>
-      'الصلاحيات الخاصة بإدارة ومراجعة سجلات حضور الموظفين.';
 
   @override
   String get permGroupOvertimeDesc =>
@@ -4992,7 +4757,7 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get permSettingsManageHolidaysDesc =>
-      'يسمح بتعريف عطل الشركة التي تؤثر على الحضور والعمل الإضافي.';
+      'يسمح بتعريف عطل الشركة التي تؤثر على العمل الإضافي.';
 
   @override
   String get permAuditView => 'عرض سجل التدقيق';
@@ -5056,55 +4821,6 @@ class AppLocalizationsAr extends AppLocalizations {
   @override
   String get permRolesManageDesc =>
       'يسمح بإنشاء وتعديل وتعيين الأدوار ومجموعات صلاحياتها.';
-
-  @override
-  String get permAttendanceViewOwn => 'عرض الحضور الخاص';
-
-  @override
-  String get permAttendanceViewOwnDesc =>
-      'يسمح بمراجعة سجلات حضوره الشخصي فقط.';
-
-  @override
-  String get permAttendanceViewTeam => 'عرض حضور الفريق';
-
-  @override
-  String get permAttendanceViewTeamDesc =>
-      'يسمح بالاطلاع على سجلات حضور أعضاء الفريق التابع له.';
-
-  @override
-  String get permAttendanceViewAll => 'عرض كل الحضور';
-
-  @override
-  String get permAttendanceViewAllDesc =>
-      'يسمح بعرض جميع سجلات الحضور داخل المؤسسة.';
-
-  @override
-  String get permAttendanceManageOwn => 'إدارة الحضور الخاص';
-
-  @override
-  String get permAttendanceManageOwnDesc =>
-      'يسمح بإنشاء وتعديل سجلات الحضور الشخصية للمستخدم فقط.';
-
-  @override
-  String get permAttendanceView => 'عرض الحضور';
-
-  @override
-  String get permAttendanceViewDesc =>
-      'يسمح بفتح شاشات الحضور للسجلات ضمن نطاق صلاحية المستخدم.';
-
-  @override
-  String get permAttendanceUpdate => 'إدارة الحضور';
-
-  @override
-  String get permAttendanceUpdateDesc =>
-      'يسمح بإنشاء وتعديل واعتماد وإدارة سجلات الحضور.';
-
-  @override
-  String get permAttendanceApprove => 'اعتماد الحضور';
-
-  @override
-  String get permAttendanceApproveDesc =>
-      'يسمح باعتماد سجلات الحضور قبل تثبيتها بشكل نهائي.';
 
   @override
   String get permOvertimeViewOwn => 'عرض العمل الإضافي الخاص';

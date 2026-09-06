@@ -78,7 +78,6 @@ Scaffold _sectionScaffold({required String titleKey}) {
           return Text(switch (titleKey) {
             'overtime' => l10n.overtime,
             'workOrders' => l10n.workOrders,
-            'attendance' => l10n.attendance,
             'profile' => l10n.profile,
             _ => titleKey,
           });
@@ -190,10 +189,6 @@ void main() {
 
     testWidgets('work orders page app bar includes Settings', (tester) async {
       await expectSettingsOnSection(tester: tester, titleKey: 'workOrders');
-    });
-
-    testWidgets('attendance page app bar includes Settings', (tester) async {
-      await expectSettingsOnSection(tester: tester, titleKey: 'attendance');
     });
 
     testWidgets('profile page app bar includes Settings', (tester) async {

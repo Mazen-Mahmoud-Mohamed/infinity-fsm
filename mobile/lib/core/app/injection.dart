@@ -36,25 +36,6 @@ import 'package:mobile/features/app_update/data/services/app_update_install_serv
 import 'package:mobile/features/app_update/data/services/app_update_notification_service.dart';
 import 'package:mobile/features/app_update/domain/repositories/app_update_repository.dart';
 import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
-import 'package:mobile/features/attendance/data/datasources/attendance_local_datasource.dart';
-import 'package:mobile/features/attendance/data/datasources/attendance_remote_datasource.dart';
-import 'package:mobile/features/attendance/data/repositories/attendance_repository_impl.dart';
-import 'package:mobile/features/attendance/domain/repositories/attendance_repository.dart';
-import 'package:mobile/features/attendance/domain/usecases/clock_in_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/clock_out_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/end_break_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/get_admin_attendance_detail_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/get_attendance_history_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/get_attendance_status_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/get_attendance_today_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/list_admin_attendance_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/start_break_usecase.dart';
-import 'package:mobile/features/attendance/domain/usecases/sync_pending_attendance_usecase.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_admin_cubit.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_admin_detail_cubit.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_cubit.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_history_cubit.dart';
-import 'package:mobile/features/attendance/presentation/cubit/attendance_sync_cubit.dart';
 import 'package:mobile/features/auth/data/datasources/auth_local_datasource.dart';
 import 'package:mobile/features/auth/data/datasources/auth_remote_datasource.dart';
 import 'package:mobile/features/auth/data/repositories/auth_repository_impl.dart';
@@ -372,107 +353,6 @@ Future<void> configureDependencies() async {
       preferences: getIt<PreferencesService>(),
       connectivity: getIt<ConnectivityService>(),
       addressResolver: getIt<AddressResolverService>(),
-    ),
-  );
-
-  getIt.registerLazySingleton<AttendanceRemoteDataSource>(
-    () => AttendanceRemoteDataSource(getIt<DioClient>()),
-  );
-
-  getIt.registerLazySingleton<AttendanceLocalDataSource>(
-    () => AttendanceLocalDataSource(getIt<PreferencesService>()),
-  );
-
-  getIt.registerLazySingleton<AttendanceRepository>(
-    () => AttendanceRepositoryImpl(
-      remote: getIt<AttendanceRemoteDataSource>(),
-      local: getIt<AttendanceLocalDataSource>(),
-      connectivity: getIt<ConnectivityService>(),
-      addressResolver: getIt<AddressResolverService>(),
-      gpsAddressSync: getIt<GpsAddressSyncService>(),
-    ),
-  );
-
-  getIt.registerLazySingleton(
-    () => GetAttendanceStatusUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => GetAttendanceTodayUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => GetAttendanceHistoryUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => ListAdminAttendanceUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => GetAdminAttendanceDetailUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => ClockInUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => ClockOutUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => StartBreakUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => EndBreakUseCase(getIt<AttendanceRepository>()),
-  );
-  getIt.registerLazySingleton(
-    () => SyncPendingAttendanceUseCase(getIt<AttendanceRepository>()),
-  );
-
-  getIt.registerLazySingleton<AttendanceCubit>(
-    () => AttendanceCubit(
-      getStatusUseCase: getIt<GetAttendanceStatusUseCase>(),
-      getTodayUseCase: getIt<GetAttendanceTodayUseCase>(),
-      clockInUseCase: getIt<ClockInUseCase>(),
-      clockOutUseCase: getIt<ClockOutUseCase>(),
-      startBreakUseCase: getIt<StartBreakUseCase>(),
-      endBreakUseCase: getIt<EndBreakUseCase>(),
-      syncPendingUseCase: getIt<SyncPendingAttendanceUseCase>(),
-      gpsService: getIt<GpsService>(),
-      selfieCaptureService: getIt<SelfieCaptureService>(),
-      addressResolverService: getIt<AddressResolverService>(),
-      deviceTimeGuard: getIt<DeviceTimeGuardService>(),
-      gpsAddressSync: getIt<GpsAddressSyncService>(),
-      preferencesService: getIt<PreferencesService>(),
-      sessionQueryCache: getIt<SessionQueryCache>(),
-      localDataSource: getIt<AttendanceLocalDataSource>(),
-    ),
-  );
-
-  getIt.registerFactory<AttendanceHistoryCubit>(
-    () => AttendanceHistoryCubit(
-      useCase: getIt<GetAttendanceHistoryUseCase>(),
-      sessionQueryCache: getIt<SessionQueryCache>(),
-      localDataSource: getIt<AttendanceLocalDataSource>(),
-    ),
-  );
-
-  getIt.registerFactory<AttendanceAdminCubit>(
-    () => AttendanceAdminCubit(
-      listAdmin: getIt<ListAdminAttendanceUseCase>(),
-      sessionQueryCache: getIt<SessionQueryCache>(),
-    ),
-  );
-
-  getIt.registerFactoryParam<AttendanceAdminDetailCubit, String, void>(
-    (attendanceId, _) => AttendanceAdminDetailCubit(
-      getDetail: getIt<GetAdminAttendanceDetailUseCase>(),
-      attendanceId: attendanceId,
-    ),
-  );
-
-  getIt.registerLazySingleton<AttendanceSyncCubit>(
-    () => AttendanceSyncCubit(
-      syncUseCase: getIt<SyncPendingAttendanceUseCase>(),
-      repository: getIt<AttendanceRepository>(),
-      connectivity: getIt<ConnectivityService>(),
-      gpsAddressSync: getIt<GpsAddressSyncService>(),
-      syncConfiguration: getIt<SyncConfigurationService>(),
     ),
   );
 
@@ -1511,7 +1391,6 @@ Future<void> configureDependencies() async {
   getIt.registerFactoryParam<ReportsCenterCubit, PermissionChecker, void>(
     (permissions, _) => ReportsCenterCubit(
       permissions: permissions,
-      listAttendance: getIt<ListAdminAttendanceUseCase>(),
       listOvertime: getIt<ListAdminOvertimeUseCase>(),
       listWorkOrders: getIt<ListWorkOrdersUseCase>(),
       listMyWorkOrders: getIt<ListMyWorkOrdersUseCase>(),

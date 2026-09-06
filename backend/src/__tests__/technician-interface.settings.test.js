@@ -27,7 +27,6 @@ describe('technician-interface.config', () => {
     ).toEqual({
       overtime: false,
       workOrders: true,
-      attendance: true,
       profile: true,
     });
   });
@@ -36,7 +35,6 @@ describe('technician-interface.config', () => {
     const config = normalizeTechnicianInterface({
       overtime: false,
       workOrders: false,
-      attendance: false,
       profile: false,
     });
     expect(hasAnyTechnicianSectionEnabled(config)).toBe(false);
@@ -106,7 +104,7 @@ describe('SettingsService technician interface authorization', () => {
     ).rejects.toBeInstanceOf(ForbiddenError);
   });
 
-  it('persists all four flags via admin update', async () => {
+  it('persists all three flags via admin update', async () => {
     const upsertSpy = jest
       .spyOn(settingsService, '_upsertSetting')
       .mockResolvedValue({});
@@ -116,14 +114,12 @@ describe('SettingsService technician interface authorization', () => {
     jest.spyOn(settingsService, 'resolveTechnicianInterface').mockResolvedValue({
       overtime: true,
       workOrders: true,
-      attendance: true,
       profile: true,
     });
 
     const payload = {
       overtime: false,
       workOrders: true,
-      attendance: false,
       profile: true,
     };
 
@@ -154,7 +150,6 @@ describe('SettingsService technician interface authorization', () => {
       .mockResolvedValue({
         overtime: false,
         workOrders: true,
-        attendance: false,
         profile: false,
       });
 
@@ -163,7 +158,6 @@ describe('SettingsService technician interface authorization', () => {
     expect(result).toEqual({
       overtime: false,
       workOrders: true,
-      attendance: false,
       profile: false,
     });
     expect(resolveSpy).toHaveBeenCalledWith('company-1');

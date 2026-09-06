@@ -270,51 +270,44 @@ class TechnicianInterfaceConfig extends Equatable {
   const TechnicianInterfaceConfig({
     this.overtime = true,
     this.workOrders = true,
-    this.attendance = true,
     this.profile = true,
   });
 
   final bool overtime;
   final bool workOrders;
-  final bool attendance;
   final bool profile;
 
   static const TechnicianInterfaceConfig defaults = TechnicianInterfaceConfig();
 
-  bool get hasAnyEnabled =>
-      overtime || workOrders || attendance || profile;
+  bool get hasAnyEnabled => overtime || workOrders || profile;
 
   TechnicianInterfaceConfig copyWith({
     bool? overtime,
     bool? workOrders,
-    bool? attendance,
     bool? profile,
   }) {
     return TechnicianInterfaceConfig(
       overtime: overtime ?? this.overtime,
       workOrders: workOrders ?? this.workOrders,
-      attendance: attendance ?? this.attendance,
       profile: profile ?? this.profile,
     );
   }
 
   @override
-  List<Object?> get props => [overtime, workOrders, attendance, profile];
+  List<Object?> get props => [overtime, workOrders, profile];
 }
 
 class TechnicianInterfaceConfigUpdate extends Equatable {
   const TechnicianInterfaceConfigUpdate({
     this.overtime,
     this.workOrders,
-    this.attendance,
     this.profile,
   });
 
   final bool? overtime;
   final bool? workOrders;
-  final bool? attendance;
   final bool? profile;
 
   @override
-  List<Object?> get props => [overtime, workOrders, attendance, profile];
+  List<Object?> get props => [overtime, workOrders, profile];
 }

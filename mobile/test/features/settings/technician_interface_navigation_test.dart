@@ -6,13 +6,12 @@ import 'package:mobile/features/settings/domain/services/technician_interface_na
 
 void main() {
   group('TechnicianInterfaceNavigation', () {
-    test('all enabled keeps four phone branches in order', () {
+    test('all enabled keeps three phone branches in order', () {
       const config = TechnicianInterfaceConfig.defaults;
       expect(
         TechnicianInterfaceNavigation.filteredPhoneBranches(config),
         [
           TechnicianInterfaceNavigation.branchWorkOrders,
-          TechnicianInterfaceNavigation.branchAttendance,
           TechnicianInterfaceNavigation.branchOvertime,
           TechnicianInterfaceNavigation.branchProfile,
         ],
@@ -23,7 +22,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: true,
         workOrders: false,
-        attendance: false,
         profile: false,
       );
       expect(
@@ -40,7 +38,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: false,
         workOrders: true,
-        attendance: false,
         profile: false,
       );
       expect(
@@ -53,28 +50,10 @@ void main() {
       );
     });
 
-    test('only attendance enabled', () {
-      const config = TechnicianInterfaceConfig(
-        overtime: false,
-        workOrders: false,
-        attendance: true,
-        profile: false,
-      );
-      expect(
-        TechnicianInterfaceNavigation.filteredPhoneBranches(config),
-        [TechnicianInterfaceNavigation.branchAttendance],
-      );
-      expect(
-        resolveTechnicianHomeRoute(config),
-        RoutePaths.attendance,
-      );
-    });
-
     test('only profile enabled', () {
       const config = TechnicianInterfaceConfig(
         overtime: false,
         workOrders: false,
-        attendance: false,
         profile: true,
       );
       expect(
@@ -91,7 +70,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: true,
         workOrders: true,
-        attendance: false,
         profile: false,
       );
       expect(
@@ -103,32 +81,30 @@ void main() {
       );
     });
 
-    test('attendance + profile enabled preserves order', () {
+    test('overtime + profile enabled preserves order', () {
       const config = TechnicianInterfaceConfig(
-        overtime: false,
+        overtime: true,
         workOrders: false,
-        attendance: true,
         profile: true,
       );
       expect(
         TechnicianInterfaceNavigation.filteredPhoneBranches(config),
         [
-          TechnicianInterfaceNavigation.branchAttendance,
+          TechnicianInterfaceNavigation.branchOvertime,
           TechnicianInterfaceNavigation.branchProfile,
         ],
       );
     });
 
-    test('three enabled / one disabled', () {
+    test('two enabled / one disabled', () {
       const config = TechnicianInterfaceConfig(
         overtime: true,
         workOrders: true,
-        attendance: true,
         profile: false,
       );
       expect(
         TechnicianInterfaceNavigation.filteredPhoneBranches(config).length,
-        3,
+        2,
       );
       expect(
         TechnicianInterfaceNavigation.filteredPhoneBranches(config),
@@ -140,7 +116,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: false,
         workOrders: false,
-        attendance: false,
         profile: false,
       );
       expect(config.hasAnyEnabled, isFalse);
@@ -154,7 +129,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: false,
         workOrders: true,
-        attendance: false,
         profile: false,
       );
 
@@ -178,7 +152,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: false,
         workOrders: false,
-        attendance: false,
         profile: false,
       );
 
@@ -195,7 +168,6 @@ void main() {
       const config = TechnicianInterfaceConfig(
         overtime: false,
         workOrders: true,
-        attendance: false,
         profile: false,
       );
 

@@ -24,7 +24,6 @@ class AppState extends Equatable {
     this.localePreference = 'system',
     this.notificationPushEnabled = true,
     this.notificationEmailEnabled = true,
-    this.notifAttendance = true,
     this.notifTasks = true,
     this.notifOvertime = true,
     this.notifSync = true,
@@ -47,7 +46,6 @@ class AppState extends Equatable {
   final String localePreference;
   final bool notificationPushEnabled;
   final bool notificationEmailEnabled;
-  final bool notifAttendance;
   final bool notifTasks;
   final bool notifOvertime;
   final bool notifSync;
@@ -72,7 +70,6 @@ class AppState extends Equatable {
     String? localePreference,
     bool? notificationPushEnabled,
     bool? notificationEmailEnabled,
-    bool? notifAttendance,
     bool? notifTasks,
     bool? notifOvertime,
     bool? notifSync,
@@ -98,7 +95,6 @@ class AppState extends Equatable {
           notificationPushEnabled ?? this.notificationPushEnabled,
       notificationEmailEnabled:
           notificationEmailEnabled ?? this.notificationEmailEnabled,
-      notifAttendance: notifAttendance ?? this.notifAttendance,
       notifTasks: notifTasks ?? this.notifTasks,
       notifOvertime: notifOvertime ?? this.notifOvertime,
       notifSync: notifSync ?? this.notifSync,
@@ -124,7 +120,6 @@ class AppState extends Equatable {
         localePreference,
         notificationPushEnabled,
         notificationEmailEnabled,
-        notifAttendance,
         notifTasks,
         notifOvertime,
         notifSync,
@@ -203,7 +198,6 @@ class AppCubit extends Cubit<AppState> {
 
   static const _pushKey = 'notif_push_enabled';
   static const _emailKey = 'notif_email_enabled';
-  static const _notifAttendanceKey = 'notif_attendance';
   static const _notifTasksKey = 'notif_tasks';
   static const _notifOvertimeKey = 'notif_overtime';
   static const _notifSyncKey = 'notif_sync';
@@ -246,7 +240,6 @@ class AppCubit extends Cubit<AppState> {
           localePreference: localePreference,
           notificationPushEnabled: _preferences.getBool(_pushKey) ?? true,
           notificationEmailEnabled: _preferences.getBool(_emailKey) ?? true,
-          notifAttendance: _preferences.getBool(_notifAttendanceKey) ?? true,
           notifTasks: _preferences.getBool(_notifTasksKey) ?? true,
           notifOvertime: _preferences.getBool(_notifOvertimeKey) ?? true,
           notifSync: _preferences.getBool(_notifSyncKey) ?? true,
@@ -305,7 +298,6 @@ class AppCubit extends Cubit<AppState> {
   Future<void> setNotificationPreferences({
     bool? pushEnabled,
     bool? emailEnabled,
-    bool? attendance,
     bool? tasks,
     bool? overtime,
     bool? sync,
@@ -316,9 +308,6 @@ class AppCubit extends Cubit<AppState> {
     }
     if (emailEnabled != null) {
       await _preferences.setBool(_emailKey, emailEnabled);
-    }
-    if (attendance != null) {
-      await _preferences.setBool(_notifAttendanceKey, attendance);
     }
     if (tasks != null) {
       await _preferences.setBool(_notifTasksKey, tasks);
@@ -336,7 +325,6 @@ class AppCubit extends Cubit<AppState> {
       state.copyWith(
         notificationPushEnabled: pushEnabled,
         notificationEmailEnabled: emailEnabled,
-        notifAttendance: attendance,
         notifTasks: tasks,
         notifOvertime: overtime,
         notifSync: sync,
@@ -394,7 +382,6 @@ class AppCubit extends Cubit<AppState> {
     await setNotificationPreferences(
       pushEnabled: true,
       emailEnabled: true,
-      attendance: true,
       tasks: true,
       overtime: true,
       sync: true,

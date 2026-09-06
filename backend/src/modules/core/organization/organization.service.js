@@ -68,7 +68,6 @@ class OrganizationService {
       positions,
       assets: 0,
       workOrders,
-      attendance: 0,
       overtime: 0,
     };
   }

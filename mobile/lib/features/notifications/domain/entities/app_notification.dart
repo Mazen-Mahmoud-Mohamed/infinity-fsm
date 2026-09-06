@@ -4,7 +4,6 @@ import 'package:equatable/equatable.dart';
 /// Read state is stored locally until a dedicated notifications API exists.
 enum NotificationCategory {
   all,
-  attendance,
   overtime,
   workOrders,
   inventory,
@@ -62,8 +61,6 @@ class AppNotification extends Equatable {
 
   static NotificationCategory categoryFromModule(String module) {
     switch (module.trim().toLowerCase()) {
-      case 'attendance':
-        return NotificationCategory.attendance;
       case 'overtime':
         return NotificationCategory.overtime;
       case 'work_orders':
