@@ -89,7 +89,6 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
       buildWhen: (previous, current) =>
           previous.status != current.status ||
           previous.workOrder != current.workOrder ||
-          previous.action != current.action ||
           previous.deleted != current.deleted,
       builder: (context, state) {
         final workOrder = state.workOrder;
@@ -106,14 +105,22 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
 
         final bottomBar = workOrder == null
             ? null
-            : _PrimaryActionBar(
-                l10n: l10n,
-                state: state,
-                permissions: permissions,
-                currentUserId: currentUserId,
-                completionNotesDraft: _completionNotesDraft,
-                onAssign: () => _assignTechnician(context, l10n),
-                isDesktop: isDesktop,
+            : BlocBuilder<WorkOrderDetailCubit, WorkOrderDetailState>(
+                buildWhen: (previous, current) =>
+                    previous.action != current.action ||
+                    previous.workOrder != current.workOrder ||
+                    previous.status != current.status,
+                builder: (context, actionState) {
+                  return _PrimaryActionBar(
+                    l10n: l10n,
+                    state: actionState,
+                    permissions: permissions,
+                    currentUserId: currentUserId,
+                    completionNotesDraft: _completionNotesDraft,
+                    onAssign: () => _assignTechnician(context, l10n),
+                    isDesktop: isDesktop,
+                  );
+                },
               );
 
         return PopScope(
@@ -142,28 +149,41 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                     workOrder != null &&
                     workOrder.status != WorkOrderStatus.completed &&
                     workOrder.status != WorkOrderStatus.cancelled)
-                  IconButton(
-                    tooltip: l10n.workOrderEdit,
-                    onPressed: state.isBusy
-                        ? null
-                        : () async {
-                            final updated = await context.push<bool>(
-                              RoutePaths.workOrderFormEdit(workOrder.id),
-                            );
-                            if (updated == true && context.mounted) {
-                              await context
-                                  .read<WorkOrderDetailCubit>()
-                                  .load(silent: true);
-                            }
-                          },
-                    icon: const Icon(Icons.edit_outlined),
+                  BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState,
+                      bool>(
+                    selector: (s) => s.isBusy,
+                    builder: (context, busy) {
+                      return IconButton(
+                        tooltip: l10n.workOrderEdit,
+                        onPressed: busy
+                            ? null
+                            : () async {
+                                final updated = await context.push<bool>(
+                                  RoutePaths.workOrderFormEdit(workOrder.id),
+                                );
+                                if (updated == true && context.mounted) {
+                                  await context
+                                      .read<WorkOrderDetailCubit>()
+                                      .load(silent: true);
+                                }
+                              },
+                        icon: const Icon(Icons.edit_outlined),
+                      );
+                    },
                   ),
                 if (workOrder != null)
-                  _OverflowMenu(
-                    l10n: l10n,
-                    state: state,
-                    permissions: permissions,
-                    onAssign: () => _assignTechnician(context, l10n),
+                  BlocBuilder<WorkOrderDetailCubit, WorkOrderDetailState>(
+                    buildWhen: (previous, current) =>
+                        previous.action != current.action ||
+                        previous.workOrder != current.workOrder,
+                    builder: (context, menuState) {
+                      return _OverflowMenu(
+                        l10n: l10n,
+                        state: menuState,
+                        permissions: permissions,
+                        onAssign: () => _assignTechnician(context, l10n),
+                      );
+                    },
                   ),
               ],
             ),
@@ -226,7 +246,6 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                           const SizedBox(height: AppSpacing.md),
                                           WorkOrderExecutionPanel(
                                             workOrder: workOrder,
-                                            state: state,
                                             canExecute: canExecute,
                                             showAdminDetails: showAdminDetails,
                                             completionNotesDraft:
@@ -245,7 +264,6 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                         children: [
                                           WorkOrderExecutionPanel(
                                             workOrder: workOrder,
-                                            state: state,
                                             canExecute: canExecute,
                                             showAdminDetails: showAdminDetails,
                                             column: WorkOrderExecutionColumn
@@ -312,7 +330,6 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                                     const SizedBox(height: AppSpacing.md),
                                     WorkOrderExecutionPanel(
                                       workOrder: workOrder,
-                                      state: state,
                                       canExecute: canExecute,
                                       showAdminDetails: showAdminDetails,
                                       completionNotesDraft:

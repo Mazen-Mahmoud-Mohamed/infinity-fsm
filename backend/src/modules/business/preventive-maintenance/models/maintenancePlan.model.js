@@ -141,6 +141,8 @@ maintenancePlanSchema.index(
 
 maintenancePlanSchema.index({ companyId: 1, status: 1, nextDueDate: 1 });
 maintenancePlanSchema.index({ companyId: 1, name: 1, deletedAt: 1 });
+// Dashboard technician scope: plans assigned to a user (or $in of ids).
+maintenancePlanSchema.index({ companyId: 1, assignedTechnicianId: 1 });
 
 const MaintenancePlan = mongoose.model('MaintenancePlan', maintenancePlanSchema);
 

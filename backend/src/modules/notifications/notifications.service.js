@@ -3,6 +3,10 @@ import User from '../core/organization/models/user.model.js';
 import { listActiveTokensForUsers } from './deviceToken.service.js';
 import { sendFcmToTokens } from './fcm.service.js';
 import logger from '../../shared/utils/logger.util.js';
+import { mapWithConcurrency } from '../../shared/utils/concurrency.util.js';
+
+/** Max concurrent per-recipient FCM sends after a shared token lookup. */
+const FCM_DELIVERY_CONCURRENCY = 8;
 
 /**
  * Create recipient notifications + deliver via Socket.IO and FCM.
@@ -38,56 +42,93 @@ export async function notifyUsers({
     return { created: [], skipped: true };
   }
 
-  const created = [];
+  const notificationData = {
+    ...data,
+    type: data.type || entityType || module,
+    entityId: data.entityId || (entityId ? String(entityId) : ''),
+    event: data.event || type,
+  };
+
+  const docsToInsert = [];
+  const recipientDedupes = [];
 
   for (const recipientUserId of recipients) {
     const recipientDedupe = `${dedupeKey}:${recipientUserId}`;
+    recipientDedupes.push(recipientDedupe);
+    docsToInsert.push({
+      companyId,
+      recipientUserId,
+      type,
+      module,
+      titleAr,
+      titleEn,
+      bodyAr,
+      bodyEn,
+      entityType,
+      entityId,
+      data: notificationData,
+      actorId,
+      actorName,
+      isRead: false,
+      dedupeKey: recipientDedupe,
+    });
+  }
+
+  let existingKeys = new Set();
+  try {
+    const existing = await AppNotification.find({
+      companyId,
+      dedupeKey: { $in: recipientDedupes },
+    })
+      .select('dedupeKey')
+      .lean();
+    existingKeys = new Set(existing.map((row) => row.dedupeKey));
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to preload notification dedupe keys');
+  }
+
+  const freshDocs = docsToInsert.filter(
+    (doc) => !existingKeys.has(doc.dedupeKey)
+  );
+
+  const created = [];
+  if (freshDocs.length) {
     try {
-      const existing = await AppNotification.findOne({
-        companyId,
-        recipientUserId,
-        dedupeKey: recipientDedupe,
-      }).lean();
-
-      if (existing) {
-        continue;
-      }
-
-      const doc = await AppNotification.create({
-        companyId,
-        recipientUserId,
-        type,
-        module,
-        titleAr,
-        titleEn,
-        bodyAr,
-        bodyEn,
-        entityType,
-        entityId,
-        data: {
-          ...data,
-          type: data.type || entityType || module,
-          entityId: data.entityId || (entityId ? String(entityId) : ''),
-          event: data.event || type,
-        },
-        actorId,
-        actorName,
-        isRead: false,
-        dedupeKey: recipientDedupe,
+      const inserted = await AppNotification.insertMany(freshDocs, {
+        ordered: false,
       });
-
-      created.push(doc.toObject());
-    } catch (error) {
-      if (error?.code === 11000) {
-        // Concurrent duplicate insert — treat as already delivered.
-        continue;
+      for (const doc of inserted) {
+        created.push(typeof doc.toObject === 'function' ? doc.toObject() : doc);
       }
-      logger.error({ err: error }, 'Failed to persist notification');
+    } catch (error) {
+      const insertedDocs = extractInsertedDocs(error);
+      for (const doc of insertedDocs) {
+        created.push(typeof doc.toObject === 'function' ? doc.toObject() : doc);
+      }
+
+      const writeErrors = Array.isArray(error?.writeErrors)
+        ? error.writeErrors
+        : [];
+      const unexpected = writeErrors.filter((err) => err?.code !== 11000);
+      if (unexpected.length) {
+        logger.error(
+          { err: error, unexpectedCount: unexpected.length },
+          'Failed to persist some notifications'
+        );
+      } else if (!insertedDocs.length && error?.code !== 11000) {
+        // Non-bulk failure (or empty insert with unexpected error).
+        const isDuplicate =
+          error?.code === 11000 ||
+          writeErrors.every((err) => err?.code === 11000);
+        if (!isDuplicate) {
+          logger.error({ err: error }, 'Failed to persist notification batch');
+        }
+      }
     }
   }
 
-  for (const doc of created) {
-    deliverSideEffects(doc, io).catch((error) => {
+  if (created.length) {
+    deliverCreatedNotifications(created, io).catch((error) => {
       logger.error({ err: error }, 'Notification delivery side effect failed');
     });
   }
@@ -95,27 +136,83 @@ export async function notifyUsers({
   return { created, skipped: false };
 }
 
-async function deliverSideEffects(doc, io) {
-  const payload = mapNotification(doc, 'ar');
+function extractInsertedDocs(error) {
+  if (Array.isArray(error?.insertedDocs)) {
+    return error.insertedDocs;
+  }
+  if (Array.isArray(error?.mongoose?.results)) {
+    return error.mongoose.results.filter(Boolean);
+  }
+  return [];
+}
 
+/**
+ * Socket emits are targeted per user room. FCM uses one token query then
+ * bounded per-recipient sends (payload includes per-notification ids).
+ */
+async function deliverCreatedNotifications(created, io) {
+  for (const doc of created) {
+    emitSocketNotification(doc, io);
+  }
+
+  const userIds = [
+    ...new Set(
+      created
+        .map((doc) => doc.recipientUserId?.toString?.() ?? String(doc.recipientUserId || ''))
+        .filter(Boolean)
+    ),
+  ];
+
+  let tokens = [];
   try {
-    if (io) {
-      io.to(`user:${doc.recipientUserId.toString()}`).emit('notification:new', {
-        ...payload,
-        titleAr: doc.titleAr,
-        titleEn: doc.titleEn,
-        bodyAr: doc.bodyAr,
-        bodyEn: doc.bodyEn,
-      });
+    tokens = await listActiveTokensForUsers(userIds);
+  } catch (error) {
+    logger.error({ err: error }, 'FCM token lookup failed');
+    return;
+  }
+
+  if (!tokens.length) {
+    return;
+  }
+
+  /** @type {Map<string, typeof tokens>} */
+  const tokensByUser = new Map();
+  for (const token of tokens) {
+    const userId = token.userId?.toString?.() ?? String(token.userId || '');
+    if (!userId) continue;
+    if (!tokensByUser.has(userId)) {
+      tokensByUser.set(userId, []);
     }
+    tokensByUser.get(userId).push(token);
+  }
+
+  await mapWithConcurrency(created, FCM_DELIVERY_CONCURRENCY, async (doc) => {
+    const recipientId =
+      doc.recipientUserId?.toString?.() ?? String(doc.recipientUserId || '');
+    const userTokens = tokensByUser.get(recipientId) || [];
+    if (!userTokens.length) return;
+    await sendFcmForNotification(doc, userTokens);
+  });
+}
+
+function emitSocketNotification(doc, io) {
+  try {
+    if (!io) return;
+    const payload = mapNotification(doc, 'ar');
+    io.to(`user:${doc.recipientUserId.toString()}`).emit('notification:new', {
+      ...payload,
+      titleAr: doc.titleAr,
+      titleEn: doc.titleEn,
+      bodyAr: doc.bodyAr,
+      bodyEn: doc.bodyEn,
+    });
   } catch (error) {
     logger.warn({ err: error }, 'Socket notification emit failed');
   }
+}
 
+async function sendFcmForNotification(doc, tokens) {
   try {
-    const tokens = await listActiveTokensForUsers([doc.recipientUserId]);
-    if (!tokens.length) return;
-
     const byLocale = { ar: [], en: [] };
     for (const token of tokens) {
       const locale = token.locale === 'en' ? 'en' : 'ar';
@@ -167,6 +264,13 @@ async function deliverSideEffects(doc, io) {
   }
 }
 
+/**
+ * List recipient notifications for the authenticated user.
+ *
+ * Backend path is AppNotification-only (company + recipient scoped). There is
+ * no dashboard-summary fallback here — that legacy fallback lives only in the
+ * Flutter client when the dedicated API is unavailable.
+ */
 export async function listNotifications(user, auth, { page = 1, limit = 50 } = {}) {
   const pageNum = Math.max(1, Number(page) || 1);
   const limitNum = Math.min(100, Math.max(1, Number(limit) || 50));
@@ -292,3 +396,5 @@ export default {
   markAllAsRead,
   findManagementRecipientIds,
 };
+
+export { mapWithConcurrency };

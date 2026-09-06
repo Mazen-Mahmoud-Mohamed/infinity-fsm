@@ -1,8 +1,12 @@
 import crypto from 'node:crypto';
 import User from '../organization/models/user.model.js';
 import { notifyUsers } from '../../notifications/notifications.service.js';
+import { mapWithConcurrency } from '../../../shared/utils/concurrency.util.js';
 import logger from '../../../shared/utils/logger.util.js';
 import releasesService from './releases.service.js';
+
+/** Bound parallel company fanouts during release notifications. */
+const RELEASE_COMPANY_FANOUT_CONCURRENCY = 3;
 
 function readWebhookSecret() {
   return (process.env.GITHUB_RELEASE_WEBHOOK_SECRET || '').trim();
@@ -51,24 +55,41 @@ export function buildAppUpdateDedupeKey(version, build) {
 /**
  * Active users grouped by company — covers Android FCM token holders and
  * Windows Socket.IO recipients without requiring a Windows push token.
+ *
+ * Returns Map(companyId string → userId string[]). Only `_id` + `companyId`
+ * are loaded; grouping happens in MongoDB so Node does not hold full User docs.
  */
 export async function listActiveRecipientsByCompany() {
-  const users = await User.find({
-    isActive: true,
-    deletedAt: null,
-  })
-    .select('_id companyId')
-    .lean();
+  const rows = await User.aggregate([
+    {
+      $match: {
+        isActive: true,
+        deletedAt: null,
+        companyId: { $ne: null },
+      },
+    },
+    { $project: { _id: 1, companyId: 1 } },
+    {
+      $group: {
+        _id: '$companyId',
+        userIds: { $addToSet: '$_id' },
+      },
+    },
+  ]);
 
+  /** @type {Map<string, string[]>} */
   const byCompany = new Map();
-  for (const user of users) {
-    const companyId = user.companyId?.toString?.();
-    const userId = user._id?.toString?.();
-    if (!companyId || !userId) continue;
-    if (!byCompany.has(companyId)) {
-      byCompany.set(companyId, new Set());
+  for (const row of rows) {
+    const companyId = row._id?.toString?.() ?? String(row._id || '');
+    if (!companyId) continue;
+    const userIds = [];
+    for (const id of row.userIds || []) {
+      const userId = id?.toString?.() ?? String(id || '');
+      if (userId) userIds.push(userId);
     }
-    byCompany.get(companyId).add(userId);
+    if (userIds.length) {
+      byCompany.set(companyId, userIds);
+    }
   }
   return byCompany;
 }
@@ -98,37 +119,42 @@ export async function notifyAppUpdateRelease({ manifest, io }) {
   const dedupeKey = buildAppUpdateDedupeKey(version, build);
   const copy = buildNotificationCopy(version);
   const recipientsByCompany = await listActiveRecipientsByCompany();
+  const companies = [...recipientsByCompany.entries()];
 
   let notified = 0;
-  for (const [companyId, userIds] of recipientsByCompany.entries()) {
-    const result = await notifyUsers({
-      companyId,
-      recipientUserIds: [...userIds],
-      type: 'app_update',
-      module: 'app_update',
-      entityType: 'app_update',
-      entityId: null,
-      titleEn: copy.titleEn,
-      titleAr: copy.titleAr,
-      bodyEn: copy.bodyEn,
-      bodyAr: copy.bodyAr,
-      dedupeKey,
-      data: {
+  await mapWithConcurrency(
+    companies,
+    RELEASE_COMPANY_FANOUT_CONCURRENCY,
+    async ([companyId, userIds]) => {
+      const result = await notifyUsers({
+        companyId,
+        recipientUserIds: userIds,
         type: 'app_update',
-        entityType: 'app_update',
         module: 'app_update',
-        category: 'app_update',
-        route: '/settings/updates',
-        version,
-        build: String(build),
-        channel,
-        androidAvailable: Boolean(manifest.android?.available),
-        windowsAvailable: Boolean(manifest.windows?.available),
-      },
-      io,
-    });
-    notified += result.created?.length ?? 0;
-  }
+        entityType: 'app_update',
+        entityId: null,
+        titleEn: copy.titleEn,
+        titleAr: copy.titleAr,
+        bodyEn: copy.bodyEn,
+        bodyAr: copy.bodyAr,
+        dedupeKey,
+        data: {
+          type: 'app_update',
+          entityType: 'app_update',
+          module: 'app_update',
+          category: 'app_update',
+          route: '/settings/updates',
+          version,
+          build: String(build),
+          channel,
+          androidAvailable: Boolean(manifest.android?.available),
+          windowsAvailable: Boolean(manifest.windows?.available),
+        },
+        io,
+      });
+      notified += result.created?.length ?? 0;
+    }
+  );
 
   return { notified, dedupeKey, version, build, channel };
 }

@@ -9,7 +9,6 @@ import 'package:mobile/features/work_orders/data/models/work_order_model.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_status.dart';
-import 'package:mobile/features/work_orders/presentation/cubit/work_order_detail_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_execution_panel.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_photo_gallery.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_section_card.dart';
@@ -157,11 +156,6 @@ Future<List<Object>> _pumpDesktop(
   };
   addTearDown(() => FlutterError.onError = old);
 
-  final state = WorkOrderDetailState(
-    status: WorkOrderDetailStatus.success,
-    workOrder: wo,
-  );
-
   await tester.pumpWidget(
     MaterialApp(
       theme: AppTheme.dark(),
@@ -188,7 +182,6 @@ Future<List<Object>> _pumpDesktop(
                         Text(wo.jobTitle),
                         WorkOrderExecutionPanel(
                           workOrder: wo,
-                          state: state,
                           canExecute: false,
                           showAdminDetails: true,
                           column: WorkOrderExecutionColumn.main,
@@ -199,7 +192,6 @@ Future<List<Object>> _pumpDesktop(
                       children: [
                         WorkOrderExecutionPanel(
                           workOrder: wo,
-                          state: state,
                           canExecute: false,
                           showAdminDetails: true,
                           column: WorkOrderExecutionColumn.sidebar,

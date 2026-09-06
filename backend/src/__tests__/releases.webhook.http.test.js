@@ -267,13 +267,9 @@ describe('GitHub release webhook createApp integration', () => {
       '../modules/core/organization/models/user.model.js',
       () => ({
         default: {
-          find: jest.fn().mockReturnValue({
-            select: jest.fn().mockReturnValue({
-              lean: jest.fn().mockResolvedValue([
-                { _id: 'user-1', companyId: 'company-1' },
-              ]),
-            }),
-          }),
+          aggregate: jest.fn().mockResolvedValue([
+            { _id: 'company-1', userIds: ['user-1'] },
+          ]),
         },
       })
     );

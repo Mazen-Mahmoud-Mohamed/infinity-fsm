@@ -176,6 +176,8 @@ userSchema.index(
   }
 );
 userSchema.index({ companyId: 1, status: 1, deletedAt: 1 });
+// Multikey: role membership lookups (equality / $in) scoped by tenant.
+userSchema.index({ companyId: 1, roles: 1 });
 
 userSchema.virtual('fullName').get(function fullName() {
   return `${this.firstName} ${this.lastName}`;

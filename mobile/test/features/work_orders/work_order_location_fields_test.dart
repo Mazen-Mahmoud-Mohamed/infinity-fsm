@@ -12,7 +12,6 @@ import 'package:mobile/features/work_orders/domain/repositories/work_order_repos
 import 'package:mobile/features/work_orders/domain/usecases/create_work_order_usecase.dart';
 import 'package:mobile/features/work_orders/domain/usecases/get_work_order_by_id_usecase.dart';
 import 'package:mobile/features/work_orders/domain/usecases/update_work_order_usecase.dart';
-import 'package:mobile/features/work_orders/presentation/cubit/work_order_detail_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/cubit/work_order_form_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_execution_panel.dart';
 
@@ -133,10 +132,6 @@ Future<void> _pumpTechnicianPanel(
         body: SingleChildScrollView(
           child: WorkOrderExecutionPanel(
             workOrder: workOrder,
-            state: WorkOrderDetailState(
-              status: WorkOrderDetailStatus.success,
-              workOrder: workOrder,
-            ),
             canExecute: true,
             showAdminDetails: false,
           ),

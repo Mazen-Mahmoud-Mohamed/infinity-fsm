@@ -1,6 +1,8 @@
-import {
+import dashboardService, {
   buildOvertimeTrendDayMap,
   overtimeRecordTrendMinutes,
+  mergeOvertimeTrendFacetToDayMap,
+  resolveTrendWindow,
 } from '../modules/core/dashboard/dashboard.service.js';
 import {
   calculateOvertimeDurations,
@@ -149,5 +151,136 @@ describe('dashboard overtime trend day aggregation', () => {
     ];
 
     expect(buildOvertimeTrendDayMap(records)).toEqual({});
+  });
+});
+
+describe('dashboard overtime trend window + merge', () => {
+  it('caps chart buckets at 31 days for long/custom periods', () => {
+    const from = at(2026, 1, 1, 0, 0);
+    const to = at(2026, 12, 31, 23, 59);
+    const { buckets, trendFrom, trendTo } = resolveTrendWindow(from, to);
+
+    expect(buckets.length).toBe(31);
+    expect(buckets[0].key).toBe('2026-12-01');
+    expect(buckets[buckets.length - 1].key).toBe('2026-12-31');
+    expect(trendFrom).toEqual(buckets[0].from);
+    expect(trendTo).toEqual(buckets[buckets.length - 1].to);
+  });
+
+  it('preserves short-period bucket count (today / week)', () => {
+    const from = at(2026, 8, 10, 0, 0);
+    const to = at(2026, 8, 12, 23, 59);
+    const { buckets } = resolveTrendWindow(from, to);
+
+    expect(buckets.length).toBe(3);
+    expect(buckets.map((b) => b.key)).toEqual([
+      '2026-08-10',
+      '2026-08-11',
+      '2026-08-12',
+    ]);
+  });
+
+  it('returns chart series with Flutter-compatible point shape when empty', () => {
+    const from = at(2026, 8, 12, 0, 0);
+    const to = at(2026, 8, 12, 23, 59);
+    const charts = dashboardService._mapTrendCharts({
+      from,
+      to,
+      otMinutesMap: {},
+      woRows: [],
+      pmRows: [],
+    });
+
+    expect(charts.overtime).toHaveLength(1);
+    expect(charts.overtime[0]).toEqual({ label: '8/12', value: 0 });
+    expect(charts.workOrders[0]).toEqual({ label: '8/12', value: 0 });
+    expect(charts.preventiveMaintenance[0]).toEqual({
+      label: '8/12',
+      value: 0,
+    });
+  });
+
+  it('merges Mongo same-day groups with Node multi-day allocation', () => {
+    const multiDay = [
+      {
+        startAt: at(2026, 8, 12, 22, 0),
+        endAt: at(2026, 8, 13, 2, 0),
+        eligibleOvertimeMinutes: 240,
+      },
+    ];
+    const merged = mergeOvertimeTrendFacetToDayMap({
+      sameDay: [{ _id: '2026-08-12', minutes: 120 }],
+      multiDay,
+    });
+
+    expect(merged['2026-08-12']).toBe(120 + 120);
+    expect(merged['2026-08-13']).toBe(120);
+    expect(sumMinutes(merged)).toBe(120 + totalTrendMinutes(multiDay));
+  });
+
+  it('handles empty aggregation facet (no overtime in window)', () => {
+    expect(mergeOvertimeTrendFacetToDayMap(undefined)).toEqual({});
+    expect(mergeOvertimeTrendFacetToDayMap({ sameDay: [], multiDay: [] })).toEqual(
+      {}
+    );
+  });
+
+  it('_mapTrendCharts response shape matches Flutter chart DTO', () => {
+    const from = at(2026, 8, 11, 0, 0);
+    const to = at(2026, 8, 12, 23, 59);
+    const records = [
+      {
+        startAt: at(2026, 8, 12, 10, 0),
+        endAt: at(2026, 8, 12, 14, 0),
+        approvedHours: 4,
+      },
+    ];
+    const fromRecords = dashboardService._mapTrendCharts({
+      from,
+      to,
+      overtimeRecords: records,
+      woRows: [{ _id: '2026-08-12', count: 2 }],
+      pmRows: [],
+    });
+    const fromMap = dashboardService._mapTrendCharts({
+      from,
+      to,
+      otMinutesMap: buildOvertimeTrendDayMap(records),
+      woRows: [{ _id: '2026-08-12', count: 2 }],
+      pmRows: [],
+    });
+
+    expect(fromMap).toEqual(fromRecords);
+    expect(fromMap.overtime).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label: expect.any(String), value: 4 }),
+      ])
+    );
+    expect(fromMap.workOrders.find((p) => p.value === 2)).toBeTruthy();
+  });
+
+  it('scopes multi-user day minutes additively (technician filter contract)', () => {
+    const records = [
+      {
+        startAt: at(2026, 8, 12, 8, 0),
+        endAt: at(2026, 8, 12, 10, 0),
+        eligibleOvertimeMinutes: 120,
+      },
+      {
+        startAt: at(2026, 8, 12, 18, 0),
+        endAt: at(2026, 8, 12, 20, 0),
+        eligibleOvertimeMinutes: 90,
+      },
+    ];
+    const merged = mergeOvertimeTrendFacetToDayMap({
+      sameDay: [
+        { _id: '2026-08-12', minutes: 120 },
+        { _id: '2026-08-12', minutes: 90 },
+      ],
+      multiDay: [],
+    });
+
+    expect(merged['2026-08-12']).toBe(210);
+    expect(sumMinutes(merged)).toBe(totalTrendMinutes(records));
   });
 });

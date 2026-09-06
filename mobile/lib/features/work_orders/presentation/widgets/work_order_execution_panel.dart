@@ -32,7 +32,6 @@ class WorkOrderExecutionPanel extends StatelessWidget {
   const WorkOrderExecutionPanel({
     super.key,
     required this.workOrder,
-    required this.state,
     required this.canExecute,
     this.completionNotesDraft = '',
     this.onCompletionNotesChanged,
@@ -42,7 +41,6 @@ class WorkOrderExecutionPanel extends StatelessWidget {
   });
 
   final WorkOrder workOrder;
-  final WorkOrderDetailState state;
   final bool canExecute;
   final String completionNotesDraft;
   final ValueChanged<String>? onCompletionNotesChanged;
@@ -52,8 +50,7 @@ class WorkOrderExecutionPanel extends StatelessWidget {
   bool get _isAccepted => workOrder.status == WorkOrderStatus.accepted;
   bool get _isInProgress => workOrder.status == WorkOrderStatus.inProgress;
   bool get _isCompleted => workOrder.status == WorkOrderStatus.completed;
-  bool get _isEditable =>
-      canExecute && (_isAccepted || _isInProgress) && !state.isBusy;
+  bool get _isEditable => canExecute && (_isAccepted || _isInProgress);
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +87,6 @@ class WorkOrderExecutionPanel extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _BeforeWorkSection(
             workOrder: workOrder,
-            state: state,
             canEdit: _isEditable && (_isAccepted || _isInProgress),
           ),
         ],
@@ -98,13 +94,11 @@ class WorkOrderExecutionPanel extends StatelessWidget {
           const SizedBox(height: AppSpacing.sm),
           _InProgressSection(
             workOrder: workOrder,
-            state: state,
             canEdit: _isEditable && _isInProgress,
           ),
           const SizedBox(height: AppSpacing.sm),
           _CompleteWorkSection(
             workOrder: workOrder,
-            state: state,
             canEdit: _isEditable && _isInProgress,
             completionNotesDraft: completionNotesDraft,
             onCompletionNotesChanged: onCompletionNotesChanged,
@@ -437,12 +431,10 @@ class _AttachmentsSection extends StatelessWidget {
 class _BeforeWorkSection extends StatelessWidget {
   const _BeforeWorkSection({
     required this.workOrder,
-    required this.state,
     required this.canEdit,
   });
 
   final WorkOrder workOrder;
-  final WorkOrderDetailState state;
   final bool canEdit;
 
   @override
@@ -461,25 +453,35 @@ class _BeforeWorkSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          WorkOrderPhotoGallery(
-            title: l10n.workOrderBeforePhotos,
-            heroPrefix: 'wo-before',
-            photos: workOrder.beforePhotos,
-            isBusy: state.isBusy,
-            canRemove: canEdit,
-            onAdd: canEdit
-                ? () => pickAndUploadPhotos(
-                      context,
-                      category: WorkOrderPhotoCategory.before,
-                    )
-                : null,
-            onRemove: canEdit
-                ? (photo) => context.read<WorkOrderDetailCubit>().removePhoto(
-                      category: WorkOrderPhotoCategory.before,
-                      url: photo.url,
-                    )
-                : null,
-          ),
+          if (canEdit)
+            BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState,
+                List<WorkOrderAttachment>>(
+              selector: (state) =>
+                  state.workOrder?.beforePhotos ?? const [],
+              builder: (context, photos) {
+                return WorkOrderPhotoGallery(
+                  title: l10n.workOrderBeforePhotos,
+                  heroPrefix: 'wo-before',
+                  photos: photos,
+                  canRemove: true,
+                  onAdd: () => pickAndUploadPhotos(
+                    context,
+                    category: WorkOrderPhotoCategory.before,
+                  ),
+                  onRemove: (photo) =>
+                      context.read<WorkOrderDetailCubit>().removePhoto(
+                            category: WorkOrderPhotoCategory.before,
+                            url: photo.url,
+                          ),
+                );
+              },
+            )
+          else
+            WorkOrderPhotoGallery(
+              title: l10n.workOrderBeforePhotos,
+              heroPrefix: 'wo-before',
+              photos: workOrder.beforePhotos,
+            ),
           if (hasNotes) ...[
             const SizedBox(height: AppSpacing.md),
             _SavedNoteBlock(
@@ -489,17 +491,26 @@ class _BeforeWorkSection extends StatelessWidget {
           ],
           if (canEdit) ...[
             const SizedBox(height: AppSpacing.sm),
-            _ExpandableNoteField(
-              key: ValueKey('before-notes-${workOrder.beforeNotes}'),
-              title: l10n.workOrderBeforeNotes,
-              hint: l10n.workOrderBeforeNotesHint,
-              initialText: workOrder.beforeNotes ?? '',
-              isSaving: state.action == WorkOrderAction.beforeWork,
-              enabled: !state.isBusy,
-              onSave: (text) =>
-                  context.read<WorkOrderDetailCubit>().saveBeforeWork(
-                        beforeNotes: text.isEmpty ? null : text,
-                      ),
+            BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState,
+                ({bool saving, bool busy})>(
+              selector: (state) => (
+                saving: state.action == WorkOrderAction.beforeWork,
+                busy: state.isBusy,
+              ),
+              builder: (context, slice) {
+                return _ExpandableNoteField(
+                  key: ValueKey('before-notes-${workOrder.beforeNotes}'),
+                  title: l10n.workOrderBeforeNotes,
+                  hint: l10n.workOrderBeforeNotesHint,
+                  initialText: workOrder.beforeNotes ?? '',
+                  isSaving: slice.saving,
+                  enabled: !slice.busy,
+                  onSave: (text) =>
+                      context.read<WorkOrderDetailCubit>().saveBeforeWork(
+                            beforeNotes: text.isEmpty ? null : text,
+                          ),
+                );
+              },
             ),
           ],
         ],
@@ -511,12 +522,10 @@ class _BeforeWorkSection extends StatelessWidget {
 class _InProgressSection extends StatelessWidget {
   const _InProgressSection({
     required this.workOrder,
-    required this.state,
     required this.canEdit,
   });
 
   final WorkOrder workOrder;
-  final WorkOrderDetailState state;
   final bool canEdit;
 
   @override
@@ -532,25 +541,35 @@ class _InProgressSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          WorkOrderPhotoGallery(
-            title: l10n.workOrderProgressPhotos,
-            heroPrefix: 'wo-progress',
-            photos: workOrder.progressPhotos,
-            isBusy: state.isBusy,
-            canRemove: canEdit,
-            onAdd: canEdit
-                ? () => pickAndUploadPhotos(
-                      context,
-                      category: WorkOrderPhotoCategory.progress,
-                    )
-                : null,
-            onRemove: canEdit
-                ? (photo) => context.read<WorkOrderDetailCubit>().removePhoto(
-                      category: WorkOrderPhotoCategory.progress,
-                      url: photo.url,
-                    )
-                : null,
-          ),
+          if (canEdit)
+            BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState,
+                List<WorkOrderAttachment>>(
+              selector: (state) =>
+                  state.workOrder?.progressPhotos ?? const [],
+              builder: (context, photos) {
+                return WorkOrderPhotoGallery(
+                  title: l10n.workOrderProgressPhotos,
+                  heroPrefix: 'wo-progress',
+                  photos: photos,
+                  canRemove: true,
+                  onAdd: () => pickAndUploadPhotos(
+                    context,
+                    category: WorkOrderPhotoCategory.progress,
+                  ),
+                  onRemove: (photo) =>
+                      context.read<WorkOrderDetailCubit>().removePhoto(
+                            category: WorkOrderPhotoCategory.progress,
+                            url: photo.url,
+                          ),
+                );
+              },
+            )
+          else
+            WorkOrderPhotoGallery(
+              title: l10n.workOrderProgressPhotos,
+              heroPrefix: 'wo-progress',
+              photos: workOrder.progressPhotos,
+            ),
           const SizedBox(height: AppSpacing.md),
           Text(
             l10n.workOrderProgressNotes,
@@ -582,21 +601,31 @@ class _InProgressSection extends StatelessWidget {
             ),
           if (canEdit) ...[
             const SizedBox(height: AppSpacing.xs),
-            _ExpandableNoteField(
-              key: ValueKey(
-                'progress-notes-${workOrder.progressNotes.length}',
+            BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState,
+                ({bool saving, bool busy, int noteCount})>(
+              selector: (state) => (
+                saving: state.action == WorkOrderAction.progressNote,
+                busy: state.isBusy,
+                noteCount: state.workOrder?.progressNotes.length ?? 0,
               ),
-              title: l10n.workOrderAddProgressNote,
-              hint: l10n.workOrderProgressNoteHint,
-              initialText: '',
-              clearOnSave: true,
-              isSaving: state.action == WorkOrderAction.progressNote,
-              enabled: !state.isBusy,
-              onSave: (text) async {
-                if (text.isEmpty) {
-                  return;
-                }
-                await context.read<WorkOrderDetailCubit>().addProgressNote(text);
+              builder: (context, slice) {
+                return _ExpandableNoteField(
+                  key: ValueKey('progress-notes-${slice.noteCount}'),
+                  title: l10n.workOrderAddProgressNote,
+                  hint: l10n.workOrderProgressNoteHint,
+                  initialText: '',
+                  clearOnSave: true,
+                  isSaving: slice.saving,
+                  enabled: !slice.busy,
+                  onSave: (text) async {
+                    if (text.isEmpty) {
+                      return;
+                    }
+                    await context
+                        .read<WorkOrderDetailCubit>()
+                        .addProgressNote(text);
+                  },
+                );
               },
             ),
           ],
@@ -609,14 +638,12 @@ class _InProgressSection extends StatelessWidget {
 class _CompleteWorkSection extends StatelessWidget {
   const _CompleteWorkSection({
     required this.workOrder,
-    required this.state,
     required this.canEdit,
     this.completionNotesDraft = '',
     this.onCompletionNotesChanged,
   });
 
   final WorkOrder workOrder;
-  final WorkOrderDetailState state;
   final bool canEdit;
   final String completionNotesDraft;
   final ValueChanged<String>? onCompletionNotesChanged;
@@ -642,48 +669,68 @@ class _CompleteWorkSection extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
           ],
-          WorkOrderPhotoGallery(
-            title: l10n.workOrderAfterPhotos,
-            heroPrefix: 'wo-after',
-            photos: workOrder.afterPhotos,
-            isBusy: state.isBusy,
-            canRemove: canEdit,
-            onAdd: canEdit
-                ? () => pickAndUploadPhotos(
-                      context,
-                      category: WorkOrderPhotoCategory.after,
-                    )
-                : null,
-            onRemove: canEdit
-                ? (photo) => context.read<WorkOrderDetailCubit>().removePhoto(
-                      category: WorkOrderPhotoCategory.after,
-                      url: photo.url,
-                    )
-                : null,
-          ),
-          if (canEdit && workOrder.afterPhotos.isEmpty) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              l10n.workOrderAfterPhotoRequired,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+          if (canEdit)
+            BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState,
+                List<WorkOrderAttachment>>(
+              selector: (state) =>
+                  state.workOrder?.afterPhotos ?? const [],
+              builder: (context, photos) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    WorkOrderPhotoGallery(
+                      title: l10n.workOrderAfterPhotos,
+                      heroPrefix: 'wo-after',
+                      photos: photos,
+                      canRemove: true,
+                      onAdd: () => pickAndUploadPhotos(
+                        context,
+                        category: WorkOrderPhotoCategory.after,
+                      ),
+                      onRemove: (photo) =>
+                          context.read<WorkOrderDetailCubit>().removePhoto(
+                                category: WorkOrderPhotoCategory.after,
+                                url: photo.url,
+                              ),
+                    ),
+                    if (photos.isEmpty) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      Text(
+                        l10n.workOrderAfterPhotoRequired,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            )
+          else
+            WorkOrderPhotoGallery(
+              title: l10n.workOrderAfterPhotos,
+              heroPrefix: 'wo-after',
+              photos: workOrder.afterPhotos,
             ),
-          ],
           if (canEdit && onCompletionNotesChanged != null) ...[
             const SizedBox(height: AppSpacing.md),
-            _ExpandableNoteField(
-              key: const ValueKey('completion-notes-field'),
-              title: l10n.workOrderCompletionNotes,
-              hint: l10n.workOrderCompletionNotesHint,
-              initialText: completionNotesDraft,
-              isSaving: false,
-              enabled: !state.isBusy,
-              showSaveButton: false,
-              onSave: (text) async {
-                onCompletionNotesChanged!(text);
+            BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState, bool>(
+              selector: (state) => state.isBusy,
+              builder: (context, busy) {
+                return _ExpandableNoteField(
+                  key: const ValueKey('completion-notes-field'),
+                  title: l10n.workOrderCompletionNotes,
+                  hint: l10n.workOrderCompletionNotesHint,
+                  initialText: completionNotesDraft,
+                  isSaving: false,
+                  enabled: !busy,
+                  showSaveButton: false,
+                  onSave: (text) async {
+                    onCompletionNotesChanged!(text);
+                  },
+                  onChanged: onCompletionNotesChanged,
+                );
               },
-              onChanged: onCompletionNotesChanged,
             ),
           ],
         ],

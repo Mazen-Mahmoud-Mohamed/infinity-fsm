@@ -34,7 +34,12 @@ class AppCachedNetworkImage extends StatelessWidget {
     'Accept': 'image/jpeg,image/png,image/webp,image/*;q=0.8,*/*;q=0.5',
   };
 
+  /// When true, forces the desktop `Image.network` path (tests only).
+  @visibleForTesting
+  static bool debugForceDesktopImagePath = false;
+
   static bool get _isDesktop {
+    if (debugForceDesktopImagePath) return true;
     if (kIsWeb) return false;
     return defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.linux ||
@@ -61,12 +66,16 @@ class AppCachedNetworkImage extends StatelessWidget {
     if (_isDesktop) {
       // Bypass CachedNetworkImage on desktop (OneDrive cache path issues) and
       // load JPEG-forced Cloudinary URLs with a safe Accept header.
+      // Honor caller memCache* as Image.network cacheWidth/Height so thumbnail
+      // tiles do not decode full-resolution bitmaps into GPU memory.
       image = Image.network(
         resolved,
         width: width,
         height: height,
         fit: fit,
         headers: _safeAcceptHeaders,
+        cacheWidth: memCacheWidth,
+        cacheHeight: memCacheHeight,
         filterQuality: FilterQuality.medium,
         gaplessPlayback: true,
         loadingBuilder: (context, child, progress) {

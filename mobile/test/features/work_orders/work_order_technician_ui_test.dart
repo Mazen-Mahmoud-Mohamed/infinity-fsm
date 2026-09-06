@@ -5,7 +5,6 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_status.dart';
-import 'package:mobile/features/work_orders/presentation/cubit/work_order_detail_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_execution_panel.dart';
 
 WorkOrder _wo({
@@ -33,11 +32,6 @@ WorkOrder _wo({
   );
 }
 
-WorkOrderDetailState _state(WorkOrder wo) => WorkOrderDetailState(
-      status: WorkOrderDetailStatus.success,
-      workOrder: wo,
-    );
-
 Future<void> _pumpPanel(
   WidgetTester tester, {
   required WorkOrder workOrder,
@@ -58,7 +52,6 @@ Future<void> _pumpPanel(
         body: SingleChildScrollView(
           child: WorkOrderExecutionPanel(
             workOrder: workOrder,
-            state: _state(workOrder),
             canExecute: true,
             showAdminDetails: showAdminDetails,
           ),

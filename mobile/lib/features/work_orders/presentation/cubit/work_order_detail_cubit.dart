@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/services/address_resolver_service.dart';
 import 'package:mobile/core/services/gps_service.dart';
@@ -136,6 +137,10 @@ class WorkOrderDetailCubit extends Cubit<WorkOrderDetailState> {
   final GpsService _gpsService;
   final AddressResolverService _addressResolver;
   final String workOrderId;
+
+  /// Test-only state replacement (does not run use cases).
+  @visibleForTesting
+  void debugEmitState(WorkOrderDetailState next) => emit(next);
 
   Future<void> load({bool silent = false}) async {
     if (!silent || state.workOrder == null) {

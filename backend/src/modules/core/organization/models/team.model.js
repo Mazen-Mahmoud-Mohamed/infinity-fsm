@@ -66,6 +66,8 @@ const teamSchema = new Schema(
 
 teamSchema.index({ departmentId: 1, code: 1 }, { unique: true });
 teamSchema.index({ companyId: 1, departmentId: 1 });
+// Supervisor/dashboard scope: teams led by a user within a company.
+teamSchema.index({ companyId: 1, leadId: 1 });
 
 const Team = mongoose.model('Team', teamSchema);
 

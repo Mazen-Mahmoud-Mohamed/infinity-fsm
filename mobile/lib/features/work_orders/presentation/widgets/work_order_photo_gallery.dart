@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/utils/media_url.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
+import 'package:mobile/features/work_orders/presentation/cubit/work_order_detail_cubit.dart';
 
 class WorkOrderFullscreenImagePage extends StatelessWidget {
   const WorkOrderFullscreenImagePage({
@@ -69,6 +72,16 @@ Future<void> openWorkOrderFullscreenImage(
   );
 }
 
+/// Responsive photo count for the work-order gallery Wrap.
+///
+/// Phone &lt; 600 → 3 · Tablet 600–900 → 4 · Desktop ≥ 900 → 5.
+@visibleForTesting
+int workOrderPhotoGalleryCrossAxisCount(double width) {
+  if (width >= 900) return 5;
+  if (width >= 600) return 4;
+  return 3;
+}
+
 class WorkOrderPhotoGallery extends StatelessWidget {
   const WorkOrderPhotoGallery({
     super.key,
@@ -78,7 +91,6 @@ class WorkOrderPhotoGallery extends StatelessWidget {
     this.canRemove = false,
     this.onRemove,
     this.onAdd,
-    this.isBusy = false,
   });
 
   final List<WorkOrderAttachment> photos;
@@ -87,18 +99,31 @@ class WorkOrderPhotoGallery extends StatelessWidget {
   final bool canRemove;
   final ValueChanged<WorkOrderAttachment>? onRemove;
   final VoidCallback? onAdd;
-  final bool isBusy;
+
+  /// When true, [build] increments [debugBuildCount] (tests only).
+  @visibleForTesting
+  static bool trackBuilds = false;
+
+  /// Cumulative builds while [trackBuilds] is true.
+  @visibleForTesting
+  static int debugBuildCount = 0;
+
+  @visibleForTesting
+  static void resetDebugBuildCount() {
+    debugBuildCount = 0;
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (trackBuilds) {
+      debugBuildCount++;
+    }
+
     final scheme = Theme.of(context).colorScheme;
     final l10n = AppLocalizations.of(context);
     final width = MediaQuery.sizeOf(context).width;
-    final crossAxisCount = width >= 900
-        ? 5
-        : width >= 600
-            ? 4
-            : 3;
+    final crossAxisCount = workOrderPhotoGalleryCrossAxisCount(width);
+    final showRemove = canRemove && onRemove != null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -129,10 +154,15 @@ class WorkOrderPhotoGallery extends StatelessWidget {
             ),
             if (onAdd != null) ...[
               const SizedBox(width: AppSpacing.xs),
-              IconButton.filledTonal(
-                tooltip: l10n.workOrderAddPhoto,
-                onPressed: isBusy ? null : onAdd,
-                icon: const Icon(Icons.add_a_photo_outlined, size: 20),
+              BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState, bool>(
+                selector: (state) => state.isBusy,
+                builder: (context, busy) {
+                  return IconButton.filledTonal(
+                    tooltip: l10n.workOrderAddPhoto,
+                    onPressed: busy ? null : onAdd,
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 20),
+                  );
+                },
               ),
             ],
           ],
@@ -167,30 +197,36 @@ class WorkOrderPhotoGallery extends StatelessWidget {
             ),
           )
         else
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: photos.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: crossAxisCount,
-              mainAxisSpacing: AppSpacing.sm,
-              crossAxisSpacing: AppSpacing.sm,
-              childAspectRatio: 1,
-            ),
-            itemBuilder: (context, index) {
-              final photo = photos[index];
-              final heroTag = '$heroPrefix-${photo.url}';
-              return _PhotoTile(
-                photo: photo,
-                heroTag: heroTag,
-                canRemove: canRemove && onRemove != null,
-                onOpen: () => openWorkOrderFullscreenImage(
-                  context,
-                  imageUrl: photo.url,
-                  title: photo.fileName ?? title,
-                  heroTag: heroTag,
-                ),
-                onRemove: isBusy ? null : () => onRemove?.call(photo),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = AppSpacing.sm;
+              final tileSize =
+                  (constraints.maxWidth - spacing * (crossAxisCount - 1)) /
+                      crossAxisCount;
+              return Wrap(
+                spacing: spacing,
+                runSpacing: spacing,
+                children: [
+                  for (final photo in photos)
+                    SizedBox(
+                      width: tileSize,
+                      height: tileSize,
+                      child: _PhotoTile(
+                        photo: photo,
+                        heroTag: '$heroPrefix-${photo.url}',
+                        canRemove: showRemove,
+                        onOpen: () => openWorkOrderFullscreenImage(
+                          context,
+                          imageUrl: photo.url,
+                          title: photo.fileName ?? title,
+                          heroTag: '$heroPrefix-${photo.url}',
+                        ),
+                        onRemove: showRemove
+                            ? () => onRemove?.call(photo)
+                            : null,
+                      ),
+                    ),
+                ],
               );
             },
           ),
@@ -232,32 +268,40 @@ class _PhotoTile extends StatelessWidget {
             child: Hero(
               tag: heroTag,
               child: AppCachedNetworkImage(
-                imageUrl: photo.url,
+                // Display-only thumb; identity/API/remove/fullscreen keep
+                // [photo.url] unchanged.
+                imageUrl: cloudinaryGalleryThumbUrl(photo.url),
                 fit: BoxFit.cover,
                 memCacheWidth: 400,
               ),
             ),
           ),
-          if (canRemove)
+          if (canRemove && onRemove != null)
             Positioned(
               top: 6,
               right: 6,
-              child: Material(
-                color: scheme.surface.withValues(alpha: 0.92),
-                elevation: 1,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: onRemove,
-                  child: Padding(
-                    padding: const EdgeInsets.all(5),
-                    child: Icon(
-                      Icons.close_rounded,
-                      size: 14,
-                      color: scheme.error,
+              child: BlocSelector<WorkOrderDetailCubit, WorkOrderDetailState,
+                  bool>(
+                selector: (state) => state.isBusy,
+                builder: (context, busy) {
+                  return Material(
+                    color: scheme.surface.withValues(alpha: 0.92),
+                    elevation: 1,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      customBorder: const CircleBorder(),
+                      onTap: busy ? null : onRemove,
+                      child: Padding(
+                        padding: const EdgeInsets.all(5),
+                        child: Icon(
+                          Icons.close_rounded,
+                          size: 14,
+                          color: scheme.error,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
             ),
         ],

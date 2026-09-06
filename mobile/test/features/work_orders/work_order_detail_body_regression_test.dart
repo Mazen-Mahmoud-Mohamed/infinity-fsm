@@ -8,7 +8,6 @@ import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_not
 import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_priority.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_status.dart';
-import 'package:mobile/features/work_orders/presentation/cubit/work_order_detail_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_execution_panel.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_section_card.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_timeline.dart';
@@ -37,11 +36,6 @@ WorkOrder _wo({
   );
 }
 
-WorkOrderDetailState _state(WorkOrder wo) => WorkOrderDetailState(
-      status: WorkOrderDetailStatus.success,
-      workOrder: wo,
-    );
-
 Future<List<Object>> _pumpDesktopDetailBody(
   WidgetTester tester, {
   required WorkOrder workOrder,
@@ -58,8 +52,6 @@ Future<List<Object>> _pumpDesktopDetailBody(
     oldOnError?.call(details);
   };
   addTearDown(() => FlutterError.onError = oldOnError);
-
-  final state = _state(workOrder);
 
   await tester.pumpWidget(
     MaterialApp(
@@ -93,7 +85,6 @@ Future<List<Object>> _pumpDesktopDetailBody(
                             const SizedBox(height: 12),
                             WorkOrderExecutionPanel(
                               workOrder: workOrder,
-                              state: state,
                               canExecute: false,
                               showAdminDetails: true,
                               column: WorkOrderExecutionColumn.main,
@@ -105,7 +96,6 @@ Future<List<Object>> _pumpDesktopDetailBody(
                           children: [
                             WorkOrderExecutionPanel(
                               workOrder: workOrder,
-                              state: state,
                               canExecute: false,
                               showAdminDetails: true,
                               column: WorkOrderExecutionColumn.sidebar,

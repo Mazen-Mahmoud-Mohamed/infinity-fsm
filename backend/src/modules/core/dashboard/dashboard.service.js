@@ -38,6 +38,30 @@ function otMinutesExpr() {
   };
 }
 
+/** Whole minutes for trend charts — matches [overtimeRecordTrendMinutes]. */
+function trendMinutesExpr() {
+  return {
+    $cond: [
+      {
+        $and: [
+          { $ne: [{ $ifNull: ['$approvedHours', null] }, null] },
+          { $ne: ['$approvedHours', ''] },
+        ],
+      },
+      {
+        $floor: {
+          $multiply: [{ $toDouble: { $ifNull: ['$approvedHours', 0] } }, 60],
+        },
+      },
+      {
+        $floor: {
+          $toDouble: { $ifNull: ['$eligibleOvertimeMinutes', 0] },
+        },
+      },
+    ],
+  };
+}
+
 function approvedOtMinutesExprByStatus() {
   // Approved-only minutes for KPI widgets.
   //
@@ -294,6 +318,44 @@ function buildTrendBuckets(from, to) {
   return buckets;
 }
 
+/**
+ * Chart series only cover up to 31 calendar days ([buildTrendBuckets]).
+ * Sessions that cannot overlap that window are excluded from trend loading.
+ */
+function resolveTrendWindow(from, to) {
+  const buckets = buildTrendBuckets(from, to);
+  if (buckets.length === 0) {
+    return { buckets, trendFrom: null, trendTo: null };
+  }
+  return {
+    buckets,
+    trendFrom: buckets[0].from,
+    trendTo: buckets[buckets.length - 1].to,
+  };
+}
+
+/**
+ * Merge Mongo same-day groups with Node-allocated multi-day sessions.
+ * @param {{ sameDay?: Array<{ _id: string, minutes: number }>, multiDay?: object[] } | null | undefined} facetRow
+ */
+function mergeOvertimeTrendFacetToDayMap(facetRow) {
+  /** @type {Record<string, number>} */
+  const otMap = {};
+  const sameDay = facetRow?.sameDay || [];
+  for (const row of sameDay) {
+    const key = row?._id;
+    const minutes = Math.floor(Number(row?.minutes) || 0);
+    if (!key || minutes <= 0) continue;
+    otMap[key] = (otMap[key] || 0) + minutes;
+  }
+
+  const multiMap = buildOvertimeTrendDayMap(facetRow?.multiDay || []);
+  for (const [key, minutes] of Object.entries(multiMap)) {
+    otMap[key] = (otMap[key] || 0) + minutes;
+  }
+  return otMap;
+}
+
 /** Map an audit row (find+populate or $lookup) to the liveActivity DTO. */
 function mapLiveActivityRow(row) {
   const actor = row?.actorId;
@@ -422,9 +484,9 @@ class DashboardService {
       scheduledDate: { $gte: from, $lte: to },
     };
 
-    // Fan-out reduction: compatible queries on the same collection/filters are
-    // merged via $facet. Chart series reuse those rows (no second pass).
-    // Semantics of every metric below are unchanged.
+    // Fan-out reduction: compatible KPI queries on the same collection are
+    // merged via $facet. Overtime chart series use a separate window-scoped
+    // aggregation so long periods do not materialize every OT document.
     const [
       userFacetRows,
       otRunningRows,
@@ -435,6 +497,7 @@ class DashboardService {
       recentMovements,
       assetsByStatus,
       liveActivity,
+      overtimeTrendDayMinutes,
     ] = await Promise.all([
       User.aggregate([
         { $match: { companyId, deletedAt: null } },
@@ -531,17 +594,6 @@ class DashboardService {
                 },
               },
             ],
-            forTrends: [
-              { $match: { endAt: { $ne: null } } },
-              {
-                $project: {
-                  startAt: 1,
-                  endAt: 1,
-                  approvedHours: 1,
-                  eligibleOvertimeMinutes: 1,
-                },
-              },
-            ],
           },
         },
       ]),
@@ -619,6 +671,7 @@ class DashboardService {
         { $group: { _id: '$status', count: { $sum: 1 } } },
       ]),
       this._liveActivity(companyId, null),
+      this._aggregateOvertimeTrendDayMinutes({ companyId, from, to }),
     ]);
 
     const userFacet = userFacetRows[0] || { total: [], active: [] };
@@ -626,7 +679,6 @@ class DashboardService {
       totals: [],
       top: [],
       travel: [],
-      forTrends: [],
     };
     const woFacet = woFacetRows[0] || { byStatus: [], byDay: [] };
     const pmFacet = pmFacetRows[0] || { byStatus: [], byDay: [] };
@@ -684,7 +736,7 @@ class DashboardService {
     const trends = this._mapTrendCharts({
       from,
       to,
-      overtimeRecords: overtimeFacet.forTrends || [],
+      otMinutesMap: overtimeTrendDayMinutes,
       woRows: woFacet.byDay || [],
       pmRows: pmFacet.byDay || [],
     });
@@ -1050,20 +1102,12 @@ class DashboardService {
       };
     }
 
-    const userFilter = userIds?.length ? { userId: { $in: userIds } } : {};
     const woUserFilter = userIds?.length
       ? { assignedTechnicianId: { $in: userIds } }
       : {};
 
-    const [overtimeRecords, woRows, pmRows] = await Promise.all([
-      OvertimeRecord.find({
-        companyId,
-        ...userFilter,
-        startAt: { $gte: from, $lte: to },
-        endAt: { $ne: null },
-      })
-        .select('startAt endAt approvedHours eligibleOvertimeMinutes')
-        .lean(),
+    const [otMinutesMap, woRows, pmRows] = await Promise.all([
+      this._aggregateOvertimeTrendDayMinutes({ companyId, userIds, from, to }),
       WorkOrder.aggregate([
         {
           $match: {
@@ -1138,17 +1182,99 @@ class DashboardService {
     return this._mapTrendCharts({
       from,
       to,
-      overtimeRecords,
+      otMinutesMap,
       woRows,
       pmRows,
     });
   }
 
   /**
+   * Load overtime trend day minutes without materializing every period session.
+   *
+   * - Early $match overlaps the ≤31-day chart window (preserves period startAt
+   *   semantics and multi-day sessions that spill into the window).
+   * - Same Cairo calendar-day sessions are summed in MongoDB.
+   * - Multi-day sessions are still allocated in Node via official OT day rules.
+   */
+  async _aggregateOvertimeTrendDayMinutes({ companyId, userIds, from, to }) {
+    const { buckets, trendFrom, trendTo } = resolveTrendWindow(from, to);
+    if (!buckets.length || !trendFrom || !trendTo) {
+      return {};
+    }
+
+    const startAtUpper =
+      to.getTime() <= trendTo.getTime() ? to : trendTo;
+
+    /** @type {Record<string, unknown>} */
+    const match = {
+      companyId,
+      endAt: { $ne: null, $gte: trendFrom },
+      startAt: { $gte: from, $lte: startAtUpper },
+    };
+    if (userIds?.length) {
+      match.userId = { $in: userIds };
+    }
+
+    const [facetRow] = await OvertimeRecord.aggregate([
+      { $match: match },
+      {
+        $project: {
+          startAt: 1,
+          endAt: 1,
+          approvedHours: 1,
+          eligibleOvertimeMinutes: 1,
+          startDay: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$startAt',
+              timezone: COMPANY_TZ,
+            },
+          },
+          endDay: {
+            $dateToString: {
+              format: '%Y-%m-%d',
+              date: '$endAt',
+              timezone: COMPANY_TZ,
+            },
+          },
+          trendMinutes: trendMinutesExpr(),
+        },
+      },
+      {
+        $facet: {
+          sameDay: [
+            { $match: { $expr: { $eq: ['$startDay', '$endDay'] } } },
+            {
+              $group: {
+                _id: '$startDay',
+                minutes: { $sum: '$trendMinutes' },
+              },
+            },
+          ],
+          multiDay: [
+            { $match: { $expr: { $ne: ['$startDay', '$endDay'] } } },
+            {
+              $project: {
+                startAt: 1,
+                endAt: 1,
+                approvedHours: 1,
+                eligibleOvertimeMinutes: 1,
+                _id: 0,
+              },
+            },
+          ],
+        },
+      },
+    ]);
+
+    return mergeOvertimeTrendFacetToDayMap(facetRow);
+  }
+
+  /**
    * Build chart series from already-fetched daily/OT rows.
    * Shared by admin fan-out consolidation and role-scoped `_buildTrends`.
    */
-  _mapTrendCharts({ from, to, overtimeRecords, woRows, pmRows }) {
+  _mapTrendCharts({ from, to, otMinutesMap, overtimeRecords, woRows, pmRows }) {
     const buckets = buildTrendBuckets(from, to);
     if (buckets.length === 0) {
       return {
@@ -1158,9 +1284,13 @@ class DashboardService {
       };
     }
 
-    const otMinutesMap = buildOvertimeTrendDayMap(overtimeRecords || []);
+    const resolvedOtMinutes =
+      otMinutesMap || buildOvertimeTrendDayMap(overtimeRecords || []);
     const otMap = Object.fromEntries(
-      Object.entries(otMinutesMap).map(([key, minutes]) => [key, toHours(minutes)])
+      Object.entries(resolvedOtMinutes).map(([key, minutes]) => [
+        key,
+        toHours(minutes),
+      ])
     );
     const woMap = Object.fromEntries((woRows || []).map((r) => [r._id, r.count]));
     const pmMap = Object.fromEntries((pmRows || []).map((r) => [r._id, r.count]));
@@ -1200,4 +1330,7 @@ export {
   overtimeRecordTrendMinutes,
   overtimeRecordApprovedKpiMinutes,
   mapLiveActivityRow,
+  mergeOvertimeTrendFacetToDayMap,
+  resolveTrendWindow,
+  buildTrendBuckets,
 };
