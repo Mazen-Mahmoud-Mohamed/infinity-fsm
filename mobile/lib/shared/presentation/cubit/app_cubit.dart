@@ -217,8 +217,10 @@ class AppCubit extends Cubit<AppState> {
     emit(state.copyWith(startupStatus: AppStartupStatus.loading));
 
     try {
-      final connectivity =
-          await _connectivityService.refreshStatus(reason: 'app_init');
+      // Never block first paint / auth routing on /health (up to 15s).
+      // Use the current snapshot (unknown until probed) — canSync stays false
+      // unless a prior successful probe already marked the API reachable.
+      final connectivity = _connectivityService.currentSnapshot;
       final syncConfig = _syncConfiguration.current;
       final themeRaw = _preferences.getString(_themeKey);
       final themeMode = switch (themeRaw) {
@@ -253,6 +255,9 @@ class AppCubit extends Cubit<AppState> {
           releaseChannel: _preferences.getString(_channelKey) ?? 'stable',
         ),
       );
+
+      // Single deferred probe; stream listener applies the accurate result.
+      unawaited(_connectivityService.refreshStatus(reason: 'app_init'));
     } on Object catch (error) {
       emit(
         state.copyWith(

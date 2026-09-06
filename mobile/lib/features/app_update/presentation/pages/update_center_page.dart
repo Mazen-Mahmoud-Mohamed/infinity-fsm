@@ -84,13 +84,6 @@ class _UpdateCenterView extends StatelessWidget {
     return AppFormatters.mediumDateTime(context).format(value.toLocal());
   }
 
-  String _formatBytes(int bytes) {
-    if (bytes < 1024 * 1024) {
-      return '${(bytes / 1024).toStringAsFixed(0)} KB';
-    }
-    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
-  }
-
   Future<void> _showReleaseNotes(
     BuildContext context,
     UpdateCenterCubit cubit,
@@ -125,6 +118,8 @@ class _UpdateCenterView extends StatelessWidget {
     final l10n = AppLocalizations.of(context);
 
     return BlocBuilder<UpdateCenterCubit, UpdateCenterState>(
+      buildWhen: (previous, current) =>
+          !_updateCenterSameExceptProgress(previous, current),
       builder: (context, state) {
         final channel = context.watch<AppCubit>().state.releaseChannel;
         final latestVersion =
@@ -197,21 +192,7 @@ class _UpdateCenterView extends StatelessWidget {
                     label: l10n.settingsUpdateStatus,
                     value: _statusLabel(l10n, state),
                   ),
-                  if (state.status == UpdateCenterStatus.downloading ||
-                      state.status == UpdateCenterStatus.verifying) ...[
-                    const SizedBox(height: AppSpacing.sm),
-                    if (state.downloadProgress != null)
-                      LinearProgressIndicator(value: state.downloadProgress),
-                    if (state.downloadReceivedBytes != null &&
-                        state.downloadTotalBytes != null &&
-                        state.downloadTotalBytes! > 0) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        '${_formatBytes(state.downloadReceivedBytes!)} / ${_formatBytes(state.downloadTotalBytes!)}',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ],
+                  const _UpdateCenterDownloadProgress(),
                   const SizedBox(height: AppSpacing.sm),
                   Align(
                     alignment: AlignmentDirectional.centerStart,
@@ -324,6 +305,98 @@ class _UpdateCenterView extends StatelessWidget {
         return Scaffold(
           appBar: AppBar(title: Text(l10n.settingsUpdateCenter)),
           body: body,
+        );
+      },
+    );
+  }
+}
+
+bool _updateCenterSameExceptProgress(
+  UpdateCenterState previous,
+  UpdateCenterState current,
+) {
+  return previous.status == current.status &&
+      previous.installedVersion == current.installedVersion &&
+      previous.installedBuild == current.installedBuild &&
+      previous.platformKey == current.platformKey &&
+      previous.latestRelease == current.latestRelease &&
+      previous.availability == current.availability &&
+      previous.lastCheckedAt == current.lastCheckedAt &&
+      previous.downloadedPath == current.downloadedPath &&
+      previous.errorCode == current.errorCode &&
+      previous.showUpdateBanner == current.showUpdateBanner &&
+      previous.autoUpdateEnabled == current.autoUpdateEnabled &&
+      previous.autoUpdateOwned == current.autoUpdateOwned;
+}
+
+class _DownloadProgressSlice {
+  const _DownloadProgressSlice({
+    required this.status,
+    required this.progress,
+    required this.receivedBytes,
+    required this.totalBytes,
+  });
+
+  final UpdateCenterStatus status;
+  final double? progress;
+  final int? receivedBytes;
+  final int? totalBytes;
+
+  @override
+  bool operator ==(Object other) {
+    return other is _DownloadProgressSlice &&
+        other.status == status &&
+        other.progress == progress &&
+        other.receivedBytes == receivedBytes &&
+        other.totalBytes == totalBytes;
+  }
+
+  @override
+  int get hashCode => Object.hash(status, progress, receivedBytes, totalBytes);
+}
+
+/// Isolates frequent download progress rebuilds from the rest of Update Center.
+class _UpdateCenterDownloadProgress extends StatelessWidget {
+  const _UpdateCenterDownloadProgress();
+
+  String _formatBytes(int bytes) {
+    if (bytes < 1024 * 1024) {
+      return '${(bytes / 1024).toStringAsFixed(0)} KB';
+    }
+    return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<UpdateCenterCubit, UpdateCenterState,
+        _DownloadProgressSlice>(
+      selector: (state) => _DownloadProgressSlice(
+        status: state.status,
+        progress: state.downloadProgress,
+        receivedBytes: state.downloadReceivedBytes,
+        totalBytes: state.downloadTotalBytes,
+      ),
+      builder: (context, slice) {
+        if (slice.status != UpdateCenterStatus.downloading &&
+            slice.status != UpdateCenterStatus.verifying) {
+          return const SizedBox.shrink();
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: AppSpacing.sm),
+            if (slice.progress != null)
+              LinearProgressIndicator(value: slice.progress),
+            if (slice.receivedBytes != null &&
+                slice.totalBytes != null &&
+                slice.totalBytes! > 0) ...[
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                '${_formatBytes(slice.receivedBytes!)} / ${_formatBytes(slice.totalBytes!)}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ],
         );
       },
     );

@@ -1,3 +1,4 @@
+import 'package:mobile/core/utils/timezone_bootstrap.dart';
 import 'package:timezone/timezone.dart' as tz;
 
 /// Official company working hours — single source of truth on the client.
@@ -71,6 +72,7 @@ class OvertimeCalculator {
   static const String calculationVersion = 'ot-v4-africa-cairo';
 
   static tz.Location get _cairo {
+    ensureTimeZonesInitialized();
     return tz.getLocation(OfficialWorkingHours.timeZoneId);
   }
 

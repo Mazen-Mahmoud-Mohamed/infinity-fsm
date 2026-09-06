@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/cache/session_query_cache.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
@@ -99,7 +100,7 @@ typedef _CheckpointCapture = ({
   String? notes,
 });
 
-class OvertimeCubit extends Cubit<OvertimeState> {
+class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
   OvertimeCubit({
     required GetRunningOvertimeUseCase getRunningOvertimeUseCase,
     required StartOvertimeUseCase startOvertimeUseCase,
@@ -167,6 +168,8 @@ class OvertimeCubit extends Cubit<OvertimeState> {
 
   Timer? _tickTimer;
   Timer? _telemetryTimer;
+  DateTime? _tickerStartAt;
+  bool _lifecycleObserverAttached = false;
 
   void updateNotesDraft(String? notes) {
     final trimmed = notes?.trim();
@@ -901,25 +904,89 @@ class OvertimeCubit extends Cubit<OvertimeState> {
 
   void _startTicker(DateTime startAt) {
     _stopTicker();
-    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (isClosed) {
-        return;
-      }
-      emit(
-        state.copyWith(
-          elapsedSeconds: DateTime.now().difference(startAt).inSeconds,
-        ),
-      );
-    });
+    _tickerStartAt = startAt;
+    _ensureLifecycleObserver();
+    _emitElapsedFromStartAt();
+    _armTickTimer();
     _reminderService?.startMonitoring(startAt, onRemind: _handleReminder);
     _startTelemetryRefresh();
   }
 
   void _stopTicker() {
-    _tickTimer?.cancel();
-    _tickTimer = null;
+    _stopTickTimerOnly();
+    _tickerStartAt = null;
+    _detachLifecycleObserver();
     _reminderService?.stopMonitoring();
     _stopTelemetryRefresh();
+  }
+
+  void _stopTickTimerOnly() {
+    _tickTimer?.cancel();
+    _tickTimer = null;
+  }
+
+  void _armTickTimer() {
+    final startAt = _tickerStartAt;
+    if (startAt == null || isClosed) {
+      return;
+    }
+    _stopTickTimerOnly();
+    _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (isClosed || _tickerStartAt == null) {
+        return;
+      }
+      _emitElapsedFromStartAt();
+    });
+  }
+
+  void _emitElapsedFromStartAt() {
+    final startAt = _tickerStartAt;
+    if (startAt == null || isClosed) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        elapsedSeconds: DateTime.now().difference(startAt).inSeconds,
+      ),
+    );
+  }
+
+  void _ensureLifecycleObserver() {
+    if (_lifecycleObserverAttached) {
+      return;
+    }
+    WidgetsBinding.instance.addObserver(this);
+    _lifecycleObserverAttached = true;
+  }
+
+  void _detachLifecycleObserver() {
+    if (!_lifecycleObserverAttached) {
+      return;
+    }
+    WidgetsBinding.instance.removeObserver(this);
+    _lifecycleObserverAttached = false;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_tickerStartAt == null) {
+      return;
+    }
+    switch (state) {
+      case AppLifecycleState.resumed:
+        // Recalculate from authoritative startAt — do not assume ticks ran.
+        _emitElapsedFromStartAt();
+        if (_tickTimer == null) {
+          _armTickTimer();
+        }
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.hidden:
+        // Pause 1 Hz UI updates only; telemetry / reminder stay unchanged.
+        _stopTickTimerOnly();
+      case AppLifecycleState.detached:
+        break;
+    }
   }
 
   void _handleReminder() {

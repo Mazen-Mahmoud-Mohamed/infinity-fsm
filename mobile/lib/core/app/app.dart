@@ -18,6 +18,7 @@ import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_dialog.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
+import 'package:mobile/features/organization/data/cache/organization_memory_cache.dart';
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
@@ -223,6 +224,7 @@ class _InfinityAppShell extends StatelessWidget {
               unread.clear();
               overtimeSync.pauseAuthenticatedSync();
               getIt<PushNotificationService>().onLoggedOut();
+              getIt<OrganizationMemoryCache>().clear();
             }
           },
         ),

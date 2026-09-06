@@ -227,6 +227,7 @@ class PushNotificationService {
   }
 
   Future<void> onLoggedOut() async {
+    await _tearDownFcmListeners();
     await _disconnectSocket();
     final token = _currentToken;
     if (token != null && token.isNotEmpty) {
@@ -636,10 +637,18 @@ class PushNotificationService {
     await _preferences.remove(StorageKeys.pendingNotificationNav);
   }
 
-  Future<void> dispose() async {
+  Future<void> _tearDownFcmListeners() async {
     await _onMessageSub?.cancel();
+    _onMessageSub = null;
     await _onOpenedSub?.cancel();
+    _onOpenedSub = null;
     await _onTokenRefreshSub?.cancel();
+    _onTokenRefreshSub = null;
+    _fcmListenersAttached = false;
+  }
+
+  Future<void> dispose() async {
+    await _tearDownFcmListeners();
     await _disconnectSocket();
   }
 }
