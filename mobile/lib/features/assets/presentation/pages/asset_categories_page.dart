@@ -5,11 +5,11 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/assets/domain/entities/asset_category.dart';
 import 'package:mobile/features/assets/presentation/cubit/asset_categories_cubit.dart';
+import 'package:mobile/features/assets/presentation/widgets/assets_skeleton.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 
 class AssetCategoriesPage extends StatefulWidget {
@@ -193,7 +193,10 @@ class _AssetCategoriesPageState extends State<AssetCategoriesPage> {
                   if ((state.status == AssetCategoriesStatus.loading ||
                           state.status == AssetCategoriesStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.assetsLoading);
+                    return AssetsSkeleton(
+                      variant: AssetsSkeletonVariant.list,
+                      semanticsLabel: l10n.assetsLoading,
+                    );
                   }
                   if (state.status == AssetCategoriesStatus.failure &&
                       state.items.isEmpty) {

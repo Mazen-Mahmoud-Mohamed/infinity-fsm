@@ -6,7 +6,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
@@ -15,6 +14,7 @@ import 'package:mobile/features/overtime/domain/constants/overtime_media_estimat
 import 'package:mobile/features/settings/presentation/widgets/overtime_settings_config_lab.dart';
 import 'package:mobile/features/settings/presentation/widgets/overtime_settings_helpers.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_form_skeleton.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
 
 class OvertimeSettingsPage extends StatefulWidget {
@@ -63,9 +63,14 @@ class _OvertimeSettingsPageState extends State<OvertimeSettingsPage> {
   Widget _buildBody(AppLocalizations l10n, bool canManage) {
     return BlocBuilder<OvertimeSettingsCubit, OvertimeSettingsState>(
       builder: (context, state) {
-        if (state.status == OvertimeSettingsStatus.loading &&
+        if ((state.status == OvertimeSettingsStatus.loading ||
+                state.status == OvertimeSettingsStatus.initial) &&
             state.settings == null) {
-          return AppLoader(message: l10n.settingsLoading);
+          return SettingsFormSkeleton(
+            showAvatar: false,
+            fieldCount: 8,
+            semanticsLabel: l10n.settingsLoading,
+          );
         }
         if (state.status == OvertimeSettingsStatus.failure &&
             state.settings == null) {

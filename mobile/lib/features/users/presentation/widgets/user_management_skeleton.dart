@@ -5,7 +5,7 @@ import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/core/widgets/skeleton/skeleton.dart';
 
-enum UserManagementSkeletonVariant { dashboard, list }
+enum UserManagementSkeletonVariant { dashboard, list, detail }
 
 /// First-load placeholder for Users dashboard or user list body.
 class UserManagementSkeleton extends StatelessWidget {
@@ -27,11 +27,17 @@ class UserManagementSkeleton extends StatelessWidget {
     final count = itemCount.clamp(1, kMaxItems);
     final isDesktop = AppBreakpoints.isDesktopOf(context);
 
-    final body = SkeletonScope(
-      child: variant == UserManagementSkeletonVariant.list
-          ? _UsersListSkeleton(itemCount: count, isDesktop: isDesktop)
-          : _UsersDashboardSkeleton(isDesktop: isDesktop),
-    );
+    final Widget child;
+    switch (variant) {
+      case UserManagementSkeletonVariant.list:
+        child = _UsersListSkeleton(itemCount: count, isDesktop: isDesktop);
+      case UserManagementSkeletonVariant.detail:
+        child = const _UserDetailSkeleton();
+      case UserManagementSkeletonVariant.dashboard:
+        child = _UsersDashboardSkeleton(isDesktop: isDesktop);
+    }
+
+    final body = SkeletonScope(child: child);
 
     return Semantics(
       label: semanticsLabel,
@@ -162,6 +168,45 @@ class _UsersListSkeleton extends StatelessWidget {
         showTrailing: true,
         trailingWidth: 64,
       ),
+    );
+  }
+}
+
+class _UserDetailSkeleton extends StatelessWidget {
+  const _UserDetailSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: AppScrollPadding.resolve(
+        context,
+        base: const EdgeInsets.all(AppSpacing.md),
+        chrome: AppBottomChrome.system,
+      ),
+      children: const [
+        Center(child: SkeletonCircle(size: 96)),
+        SizedBox(height: AppSpacing.md),
+        Center(
+          child: SizedBox(
+            width: 180,
+            child: SkeletonText(lines: 1, widthFactors: [1]),
+          ),
+        ),
+        SizedBox(height: AppSpacing.sm),
+        Center(child: SkeletonChip(width: 88, height: 24)),
+        SizedBox(height: AppSpacing.lg),
+        SkeletonText(lines: 6, widthFactors: [0.35, 0.7, 0.4, 0.65, 0.38, 0.55]),
+        SizedBox(height: AppSpacing.lg),
+        Wrap(
+          spacing: AppSpacing.sm,
+          runSpacing: AppSpacing.sm,
+          children: [
+            SkeletonChip(width: 120, height: 36),
+            SkeletonChip(width: 108, height: 36),
+          ],
+        ),
+      ],
     );
   }
 }

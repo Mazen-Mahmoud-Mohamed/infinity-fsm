@@ -9,12 +9,12 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/pm/presentation/cubit/pm_plan_detail_form_checklist_cubits.dart';
 import 'package:mobile/features/pm/presentation/widgets/pm_status_badges.dart';
+import 'package:mobile/features/pm/presentation/widgets/preventive_maintenance_skeleton.dart';
 
 class PmPlanDetailPage extends StatefulWidget {
   const PmPlanDetailPage({super.key, required this.planId});
@@ -142,7 +142,10 @@ class _PmPlanDetailPageState extends State<PmPlanDetailPage> {
               if ((state.status == PmPlanDetailStatus.loading ||
                       state.status == PmPlanDetailStatus.initial) &&
                   state.plan == null) {
-                return AppLoader(message: l10n.pmLoading);
+                return PreventiveMaintenanceSkeleton(
+                  variant: PreventiveMaintenanceSkeletonVariant.list,
+                  semanticsLabel: l10n.pmLoading,
+                );
               }
               if (state.status == PmPlanDetailStatus.failure &&
                   state.plan == null) {

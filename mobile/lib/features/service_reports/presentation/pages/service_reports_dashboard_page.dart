@@ -239,6 +239,13 @@ class _DashboardView extends StatelessWidget {
               ),
             ],
           );
+          }
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: body,
+          );
         },
       ),
     );

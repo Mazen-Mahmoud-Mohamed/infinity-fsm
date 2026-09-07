@@ -11,18 +11,26 @@ import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/users/domain/entities/user_management_entities.dart';
 import 'package:mobile/features/users/presentation/cubit/users_cubits.dart';
+import 'package:mobile/features/users/presentation/widgets/user_management_skeleton.dart';
 import 'package:mobile/features/users/presentation/widgets/user_status_badge.dart';
 
 class UserDetailPage extends StatefulWidget {
-  const UserDetailPage({super.key, required this.userId});
+  const UserDetailPage({
+    super.key,
+    required this.userId,
+    @visibleForTesting this.debugCubit,
+  });
 
   final String userId;
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final UserDetailCubit? debugCubit;
 
   @override
   State<UserDetailPage> createState() => _UserDetailPageState();
@@ -35,12 +43,15 @@ class _UserDetailPageState extends State<UserDetailPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<UserDetailCubit>(param1: widget.userId)..load();
+    _cubit = widget.debugCubit ??
+        (getIt<UserDetailCubit>(param1: widget.userId)..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -164,15 +175,20 @@ class _UserDetailPageState extends State<UserDetailPage> {
                 p.message != c.message ||
                 p.isRefreshing != c.isRefreshing,
             builder: (context, state) {
+              final Widget body;
               if ((state.status == UserDetailStatus.loading ||
                       state.status == UserDetailStatus.initial) &&
                   state.user == null) {
-                return AppLoader(message: l10n.usersLoading);
-              }
-              if ((state.status == UserDetailStatus.failure ||
+                body = UserManagementSkeleton(
+                  key: const ValueKey('user-detail-skeleton'),
+                  variant: UserManagementSkeletonVariant.detail,
+                  semanticsLabel: l10n.usersLoading,
+                );
+              } else if ((state.status == UserDetailStatus.failure ||
                       state.user == null) &&
                   state.user == null) {
-                return Center(
+                body = Center(
+                  key: const ValueKey('user-detail-error'),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -188,10 +204,10 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     ],
                   ),
                 );
-              }
-
+              } else {
               final user = state.user!;
-              return Column(
+              body = Column(
+                key: const ValueKey('user-detail-content'),
                 children: [
                   AppRefreshBar(visible: state.isRefreshing),
                   Expanded(
@@ -334,6 +350,14 @@ class _UserDetailPageState extends State<UserDetailPage> {
                     ),
                   ),
                 ],
+              );
+              }
+
+              return AnimatedSwitcher(
+                duration: const Duration(milliseconds: 180),
+                switchInCurve: Curves.easeOut,
+                switchOutCurve: Curves.easeIn,
+                child: body,
               );
             },
           ),

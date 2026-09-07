@@ -4,9 +4,9 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
 import 'package:mobile/features/settings/presentation/utils/server_management_unlock.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_form_skeleton.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_package_version_rows.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
@@ -53,8 +53,14 @@ class _SystemSettingsPageState extends State<SystemSettingsPage> {
   Widget _buildBody(AppLocalizations l10n) {
     return BlocBuilder<SystemInfoCubit, SystemInfoState>(
       builder: (context, state) {
-        if (state.status == SystemInfoStatus.loading && state.info == null) {
-          return AppLoader(message: l10n.settingsLoading);
+        if ((state.status == SystemInfoStatus.loading ||
+                state.status == SystemInfoStatus.initial) &&
+            state.info == null) {
+          return SettingsFormSkeleton(
+            showAvatar: false,
+            fieldCount: 6,
+            semanticsLabel: l10n.settingsLoading,
+          );
         }
         if (state.status == SystemInfoStatus.failure && state.info == null) {
           return Center(

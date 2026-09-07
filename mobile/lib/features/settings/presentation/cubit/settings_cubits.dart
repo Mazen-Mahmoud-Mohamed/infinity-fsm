@@ -42,11 +42,15 @@ class OrganizationSettingsState extends Equatable {
 
 class OrganizationSettingsCubit extends Cubit<OrganizationSettingsState> {
   OrganizationSettingsCubit({
-    required this._getSettings,
-    required this._updateSettings,
-    required this._uploadLogo,
-    required this._sessionQueryCache,
-  }) : super(const OrganizationSettingsState());
+    required GetOrganizationSettingsUseCase getSettings,
+    required UpdateOrganizationSettingsUseCase updateSettings,
+    required UploadOrganizationLogoUseCase uploadLogo,
+    required SessionQueryCache sessionQueryCache,
+  })  : _getSettings = getSettings,
+        _updateSettings = updateSettings,
+        _uploadLogo = uploadLogo,
+        _sessionQueryCache = sessionQueryCache,
+        super(const OrganizationSettingsState());
 
   static const String _cacheKey = 'settings:organization';
 

@@ -10,6 +10,7 @@ import 'package:mobile/features/reports_center/domain/entities/report_list_row.d
 import 'package:mobile/features/reports_center/domain/entities/reports_center_module.dart';
 import 'package:mobile/features/reports_center/presentation/cubit/reports_center_cubit.dart';
 import 'package:mobile/features/reports_center/presentation/utils/reports_center_labels.dart';
+import 'package:mobile/features/reports_center/presentation/widgets/reports_center_results_skeleton.dart';
 
 Future<void> showReportsCenterFilterSheet(
   BuildContext context, {
@@ -406,8 +407,13 @@ class ReportsCenterResults extends StatelessWidget {
     return BlocBuilder<ReportsCenterCubit, ReportsCenterState>(
       builder: (context, state) {
         final rows = state.sortedRows;
-        if (state.status == ReportsCenterStatus.loading && rows.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
+        if ((state.status == ReportsCenterStatus.loading ||
+                state.status == ReportsCenterStatus.initial) &&
+            rows.isEmpty) {
+          return ReportsCenterResultsSkeleton(
+            key: const ValueKey('reports-center-results-skeleton'),
+            semanticsLabel: l10n.reportsLoading,
+          );
         }
         if (state.status == ReportsCenterStatus.failure && rows.isEmpty) {
           return Center(

@@ -1,22 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/service_reports/domain/entities/service_report_entities.dart';
 import 'package:mobile/features/service_reports/presentation/cubit/service_reports_cubits.dart';
 import 'package:mobile/features/service_reports/presentation/widgets/report_status_badge.dart';
+import 'package:mobile/features/service_reports/presentation/widgets/service_reports_skeleton.dart';
 
 class ServiceReportsListPage extends StatefulWidget {
-  const ServiceReportsListPage({super.key});
+  const ServiceReportsListPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final ServiceReportsListCubit? debugCubit;
 
   @override
   State<ServiceReportsListPage> createState() => _ServiceReportsListPageState();
@@ -30,7 +36,8 @@ class _ServiceReportsListPageState extends State<ServiceReportsListPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<ServiceReportsListCubit>()..loadFirstPage();
+    _cubit = widget.debugCubit ??
+        (getIt<ServiceReportsListCubit>()..loadFirstPage());
     _scrollController.addListener(_onScroll);
   }
 
@@ -40,7 +47,9 @@ class _ServiceReportsListPageState extends State<ServiceReportsListPage> {
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -121,14 +130,19 @@ class _ServiceReportsListPageState extends State<ServiceReportsListPage> {
             Expanded(
               child: BlocBuilder<ServiceReportsListCubit, ServiceReportsListState>(
                 builder: (context, state) {
+                  final Widget body;
                   if ((state.status == ServiceReportsListStatus.loading ||
                           state.status == ServiceReportsListStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.reportsLoading);
-                  }
-                  if (state.status == ServiceReportsListStatus.failure &&
+                    body = ServiceReportsSkeleton(
+                      key: const ValueKey('service-reports-list-skeleton'),
+                      variant: ServiceReportsSkeletonVariant.list,
+                      semanticsLabel: l10n.reportsLoading,
+                    );
+                  } else if (state.status == ServiceReportsListStatus.failure &&
                       state.items.isEmpty) {
-                    return Center(
+                    body = Center(
+                      key: const ValueKey('service-reports-list-error'),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -144,11 +158,14 @@ class _ServiceReportsListPageState extends State<ServiceReportsListPage> {
                         ],
                       ),
                     );
-                  }
-                  if (state.items.isEmpty) {
-                    return Center(child: Text(l10n.reportsEmpty));
-                  }
-                  return RefreshIndicator(
+                  } else if (state.items.isEmpty) {
+                    body = Center(
+                      key: const ValueKey('service-reports-list-empty'),
+                      child: Text(l10n.reportsEmpty),
+                    );
+                  } else {
+                  body = RefreshIndicator(
+                    key: const ValueKey('service-reports-list-content'),
                     onRefresh: () => _cubit.loadFirstPage(),
                     child: ListView.separated(
                       controller: _scrollController,
@@ -194,6 +211,14 @@ class _ServiceReportsListPageState extends State<ServiceReportsListPage> {
                         );
                       },
                     ),
+                  );
+                  }
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: body,
                   );
                 },
               ),

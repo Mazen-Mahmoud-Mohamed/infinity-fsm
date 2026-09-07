@@ -9,6 +9,7 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/global_search/domain/entities/global_search_hit.dart';
 import 'package:mobile/features/global_search/presentation/cubit/global_search_cubit.dart';
+import 'package:mobile/features/global_search/presentation/widgets/global_search_results_skeleton.dart';
 
 class OpenGlobalSearchIntent extends Intent {
   const OpenGlobalSearchIntent();
@@ -149,8 +150,39 @@ class _GlobalSearchDialogState extends State<GlobalSearchDialog> {
                         message: l10n.globalSearchPrompt,
                       );
                     }
-                    if (state.status == GlobalSearchStatus.loading) {
-                      return const Center(child: CircularProgressIndicator());
+                    if (state.status == GlobalSearchStatus.loading &&
+                        state.hits.isEmpty) {
+                      return GlobalSearchResultsSkeleton(
+                        semanticsLabel: l10n.globalSearch,
+                      );
+                    }
+                    if (state.status == GlobalSearchStatus.loading &&
+                        state.hits.isNotEmpty) {
+                      final grouped = state.groupedHits;
+                      final modules = GlobalSearchModule.values
+                          .where((m) => grouped.containsKey(m))
+                          .toList(growable: false);
+                      return Column(
+                        children: [
+                          const LinearProgressIndicator(minHeight: 2),
+                          Expanded(
+                            child: ListView.builder(
+                              padding: const EdgeInsets.only(
+                                bottom: AppSpacing.md,
+                              ),
+                              itemCount: modules.length,
+                              itemBuilder: (context, index) {
+                                final module = modules[index];
+                                return _ModuleSection(
+                                  module: module,
+                                  hits: grouped[module]!,
+                                  onTap: _openHit,
+                                );
+                              },
+                            ),
+                          ),
+                        ],
+                      );
                     }
                     if (state.status == GlobalSearchStatus.failure) {
                       return _MessagePane(

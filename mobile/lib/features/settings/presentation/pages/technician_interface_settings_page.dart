@@ -7,11 +7,11 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_form_skeleton.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_layout.dart';
 
 class TechnicianInterfaceSettingsPage extends StatefulWidget {
@@ -93,9 +93,14 @@ class _TechnicianInterfaceSettingsPageState
     return BlocBuilder<TechnicianInterfaceSettingsCubit,
         TechnicianInterfaceSettingsState>(
       builder: (context, state) {
-        if (state.status == TechnicianInterfaceSettingsStatus.loading &&
+        if ((state.status == TechnicianInterfaceSettingsStatus.loading ||
+                state.status == TechnicianInterfaceSettingsStatus.initial) &&
             state.config == null) {
-          return AppLoader(message: l10n.settingsLoading);
+          return SettingsFormSkeleton(
+            showAvatar: false,
+            fieldCount: 4,
+            semanticsLabel: l10n.settingsLoading,
+          );
         }
         if (state.status == TechnicianInterfaceSettingsStatus.failure &&
             state.config == null) {

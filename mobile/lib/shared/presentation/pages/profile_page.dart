@@ -10,7 +10,6 @@ import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/technician_main_app_bar.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -24,15 +23,29 @@ import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_bell_action.dart';
 import 'package:mobile/features/organization/presentation/cubit/profile_cubit.dart';
+import 'package:mobile/features/organization/presentation/widgets/profile_skeleton.dart';
 import 'package:mobile/features/roles/presentation/widgets/role_permission_tiles.dart';
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({super.key});
+  const ProfilePage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final ProfileCubit? debugCubit;
 
   @override
   Widget build(BuildContext context) {
+    final cubit = debugCubit;
+    if (cubit != null) {
+      return BlocProvider<ProfileCubit>.value(
+        value: cubit,
+        child: const _ProfileView(),
+      );
+    }
     final user = context.read<AuthCubit>().state.user;
-
     return BlocProvider(
       create: (_) => getIt<ProfileCubit>()..load(user),
       child: const _ProfileView(),
@@ -64,8 +77,10 @@ class _ProfileView extends StatelessWidget {
           final user = state.user ?? context.watch<AuthCubit>().state.user;
           final org = state.context;
 
-          if (state.status == ProfileStatus.loading && org == null) {
-            return AppLoader(message: l10n.profileLoading);
+          if ((state.status == ProfileStatus.loading ||
+                  state.status == ProfileStatus.initial) &&
+              org == null) {
+            return ProfileSkeleton(semanticsLabel: l10n.profileLoading);
           }
 
           final roles = user?.roles ?? const <String>[];

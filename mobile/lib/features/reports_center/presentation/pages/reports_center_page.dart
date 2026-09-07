@@ -23,7 +23,14 @@ import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_excel_export_flow.dart';
 
 class ReportsCenterPage extends StatefulWidget {
-  const ReportsCenterPage({super.key});
+  const ReportsCenterPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [bootstrap] (widget tests).
+  @visibleForTesting
+  final ReportsCenterCubit? debugCubit;
 
   @override
   State<ReportsCenterPage> createState() => _ReportsCenterPageState();
@@ -37,10 +44,14 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
   @override
   void initState() {
     super.initState();
-    final permissions =
-        getIt<AuthCubit>().state.user?.permissionChecker ??
-            const PermissionChecker([]);
-    _cubit = getIt<ReportsCenterCubit>(param1: permissions)..bootstrap();
+    if (widget.debugCubit != null) {
+      _cubit = widget.debugCubit!;
+    } else {
+      final permissions =
+          getIt<AuthCubit>().state.user?.permissionChecker ??
+              const PermissionChecker([]);
+      _cubit = getIt<ReportsCenterCubit>(param1: permissions)..bootstrap();
+    }
     _scrollController.addListener(_onScroll);
   }
 
@@ -50,7 +61,9 @@ class _ReportsCenterPageState extends State<ReportsCenterPage> {
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 

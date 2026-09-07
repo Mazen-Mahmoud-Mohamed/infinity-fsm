@@ -7,16 +7,24 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/roles/domain/entities/role_entities.dart';
 import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
 import 'package:mobile/features/roles/presentation/widgets/role_permission_tiles.dart';
+import 'package:mobile/features/roles/presentation/widgets/roles_permissions_skeleton.dart';
 
 class RoleFormPage extends StatefulWidget {
-  const RoleFormPage({super.key, this.roleId});
+  const RoleFormPage({
+    super.key,
+    this.roleId,
+    @visibleForTesting this.debugCubit,
+  });
 
   final String? roleId;
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final RoleFormCubit? debugCubit;
 
   @override
   State<RoleFormPage> createState() => _RoleFormPageState();
@@ -35,7 +43,8 @@ class _RoleFormPageState extends State<RoleFormPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<RoleFormCubit>()..load(roleId: widget.roleId);
+    _cubit = widget.debugCubit ??
+        (getIt<RoleFormCubit>()..load(roleId: widget.roleId));
   }
 
   @override
@@ -44,7 +53,9 @@ class _RoleFormPageState extends State<RoleFormPage> {
     _descriptionController.dispose();
     _colorController.dispose();
     _permissionSearch.dispose();
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -145,7 +156,11 @@ class _RoleFormPageState extends State<RoleFormPage> {
               title: Text(isEdit ? l10n.rolesEdit : l10n.rolesCreate),
             ),
             body: state.status == RoleFormStatus.loading
-                ? AppLoader(message: l10n.rolesLoading)
+                ? RolesPermissionsSkeleton(
+                    key: const ValueKey('role-form-skeleton'),
+                    variant: RolesPermissionsSkeletonVariant.detail,
+                    semanticsLabel: l10n.rolesLoading,
+                  )
                 : state.status == RoleFormStatus.failure &&
                         state.role == null &&
                         isEdit

@@ -1,7 +1,7 @@
 name: mobile
 description: INFINITY — Total-Com Solutions Field Service Management
 publish_to: 'none'
-version: 1.0.18+19
+version: 1.0.19+20
 
 environment:
   sdk: ^3.12.2

@@ -10,7 +10,6 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_responsive_card_list.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -23,15 +22,30 @@ import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_admin_desktop_table.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_list_skeleton.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_status_badge.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_export_filters.dart';
 
 class OvertimeAdminPage extends StatelessWidget {
-  const OvertimeAdminPage({super.key});
+  const OvertimeAdminPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final OvertimeAdminCubit? debugCubit;
 
   @override
   Widget build(BuildContext context) {
+    final cubit = debugCubit;
+    if (cubit != null) {
+      return BlocProvider<OvertimeAdminCubit>.value(
+        value: cubit,
+        child: const _OvertimeAdminView(),
+      );
+    }
     return BlocProvider(
       create: (_) => getIt<OvertimeAdminCubit>()..loadFirstPage(),
       child: const _OvertimeAdminView(),
@@ -420,8 +434,10 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
     required DateFormat dateFormat,
     required bool isDesktop,
   }) {
-    if (state.status == OvertimeAdminStatus.loading && state.items.isEmpty) {
-      return AppLoader(message: l10n.overtimeLoading);
+    if ((state.status == OvertimeAdminStatus.loading ||
+            state.status == OvertimeAdminStatus.initial) &&
+        state.items.isEmpty) {
+      return OvertimeListSkeleton(semanticsLabel: l10n.overtimeLoading);
     }
 
     if (state.status == OvertimeAdminStatus.failure && state.items.isEmpty) {

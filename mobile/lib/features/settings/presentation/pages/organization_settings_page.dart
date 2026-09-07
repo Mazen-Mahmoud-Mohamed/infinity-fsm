@@ -7,17 +7,25 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_form_skeleton.dart';
 
 class OrganizationSettingsPage extends StatefulWidget {
-  const OrganizationSettingsPage({super.key, this.embedded = false});
+  const OrganizationSettingsPage({
+    super.key,
+    this.embedded = false,
+    @visibleForTesting this.debugCubit,
+  });
 
   final bool embedded;
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final OrganizationSettingsCubit? debugCubit;
 
   @override
   State<OrganizationSettingsPage> createState() =>
@@ -44,7 +52,7 @@ class _OrganizationSettingsPageState extends State<OrganizationSettingsPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<OrganizationSettingsCubit>()..load();
+    _cubit = widget.debugCubit ?? (getIt<OrganizationSettingsCubit>()..load());
   }
 
   @override
@@ -65,7 +73,9 @@ class _OrganizationSettingsPageState extends State<OrganizationSettingsPage> {
     ]) {
       c.dispose();
     }
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -173,9 +183,10 @@ class _OrganizationSettingsPageState extends State<OrganizationSettingsPage> {
         }
       },
       builder: (context, state) {
-        if (state.status == OrganizationSettingsStatus.loading &&
+        if ((state.status == OrganizationSettingsStatus.loading ||
+                state.status == OrganizationSettingsStatus.initial) &&
             state.settings == null) {
-          return AppLoader(message: l10n.settingsLoading);
+          return SettingsFormSkeleton(semanticsLabel: l10n.settingsLoading);
         }
         if (state.status == OrganizationSettingsStatus.failure &&
             state.settings == null) {

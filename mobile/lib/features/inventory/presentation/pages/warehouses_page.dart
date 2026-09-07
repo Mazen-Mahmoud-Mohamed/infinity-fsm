@@ -5,12 +5,12 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/inventory/domain/entities/warehouse.dart';
 import 'package:mobile/features/inventory/presentation/cubit/warehouses_list_cubit.dart';
+import 'package:mobile/features/inventory/presentation/widgets/inventory_skeleton.dart';
 
 class WarehousesPage extends StatefulWidget {
   const WarehousesPage({super.key});
@@ -252,7 +252,10 @@ class _WarehousesViewState extends State<_WarehousesView> {
                 if ((state.status == WarehousesListStatus.loading ||
                         state.status == WarehousesListStatus.initial) &&
                     state.items.isEmpty) {
-                  return AppLoader(message: l10n.inventoryLoading);
+                  return InventorySkeleton(
+                    variant: InventorySkeletonVariant.list,
+                    semanticsLabel: l10n.inventoryLoading,
+                  );
                 }
                 if (state.status == WarehousesListStatus.failure &&
                     state.items.isEmpty) {

@@ -5,13 +5,13 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/pm/domain/entities/pm_entities.dart';
 import 'package:mobile/features/pm/presentation/cubit/pm_schedules_history_cubits.dart';
 import 'package:mobile/features/pm/presentation/widgets/pm_schedule_tile.dart';
+import 'package:mobile/features/pm/presentation/widgets/preventive_maintenance_skeleton.dart';
 
 class PmSchedulesPage extends StatefulWidget {
   const PmSchedulesPage({
@@ -232,7 +232,10 @@ class _PmSchedulesPageState extends State<PmSchedulesPage> {
                   if ((state.status == PmSchedulesStatus.loading ||
                           state.status == PmSchedulesStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.pmLoading);
+                    return PreventiveMaintenanceSkeleton(
+                      variant: PreventiveMaintenanceSkeletonVariant.list,
+                      semanticsLabel: l10n.pmLoading,
+                    );
                   }
                   if (state.status == PmSchedulesStatus.failure &&
                       state.items.isEmpty) {

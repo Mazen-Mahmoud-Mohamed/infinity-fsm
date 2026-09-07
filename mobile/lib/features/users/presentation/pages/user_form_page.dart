@@ -5,12 +5,12 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/organization/domain/entities/department.dart';
 import 'package:mobile/features/users/domain/entities/user_management_entities.dart';
 import 'package:mobile/features/users/presentation/cubit/users_cubits.dart';
 import 'package:mobile/features/users/presentation/utils/user_labels.dart';
+import 'package:mobile/features/settings/presentation/widgets/settings_form_skeleton.dart';
 
 class UserFormPage extends StatefulWidget {
   const UserFormPage({super.key, this.userId});
@@ -176,7 +176,10 @@ class _UserFormPageState extends State<UserFormPage> {
           builder: (context, state) {
             if (state.status == UserFormStatus.loading ||
                 state.status == UserFormStatus.initial) {
-              return AppLoader(message: l10n.usersLoading);
+              return SettingsFormSkeleton(
+                showAvatar: false,
+                semanticsLabel: l10n.usersLoading,
+              );
             }
 
             final saving = state.status == UserFormStatus.saving;

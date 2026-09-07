@@ -4,7 +4,6 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/branding/infinity_brand.dart';
@@ -15,12 +14,27 @@ import 'package:mobile/features/overtime/presentation/cubit/overtime_history_cub
 import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_technician_presentation.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_history_session_card.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_list_skeleton.dart';
 
 class OvertimeHistoryPage extends StatelessWidget {
-  const OvertimeHistoryPage({super.key});
+  const OvertimeHistoryPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final OvertimeHistoryCubit? debugCubit;
 
   @override
   Widget build(BuildContext context) {
+    final cubit = debugCubit;
+    if (cubit != null) {
+      return BlocProvider<OvertimeHistoryCubit>.value(
+        value: cubit,
+        child: const _OvertimeHistoryView(),
+      );
+    }
     return BlocProvider(
       create: (_) => getIt<OvertimeHistoryCubit>()..loadFirstPage(),
       child: const _OvertimeHistoryView(),
@@ -89,22 +103,16 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
     final l10n = AppLocalizations.of(context);
     final dateFormat = AppFormatters.mediumDate(context);
 
-    return BlocListener<OvertimeSyncCubit, OvertimeSyncState>(
-      listenWhen: (previous, current) =>
-          previous.pendingCount != current.pendingCount ||
-          previous.status != current.status,
-      listener: (context, syncState) {
-        // After offline queue drains (or shrinks), refresh History so badges
-        // move from Pending Sync → server status.
-        context.read<OvertimeHistoryCubit>().loadFirstPage();
-      },
-      child: Scaffold(
-        appBar: AppBar(title: Text(l10n.overtimeTechnicianMyHistory)),
-        body: BlocBuilder<OvertimeHistoryCubit, OvertimeHistoryState>(
-          builder: (context, state) {
-            if (state.status == OvertimeHistoryStatus.loading &&
+    final scaffold = Scaffold(
+      appBar: AppBar(title: Text(l10n.overtimeTechnicianMyHistory)),
+      body: BlocBuilder<OvertimeHistoryCubit, OvertimeHistoryState>(
+        builder: (context, state) {
+            if ((state.status == OvertimeHistoryStatus.loading ||
+                    state.status == OvertimeHistoryStatus.initial) &&
                 state.items.isEmpty) {
-              return AppLoader(message: l10n.historyLoading);
+              return OvertimeListSkeleton(
+                semanticsLabel: l10n.historyLoading,
+              );
             }
 
             if (state.status == OvertimeHistoryStatus.failure &&
@@ -195,7 +203,25 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
             );
           },
         ),
-      ),
+      );
+
+    OvertimeSyncCubit? syncCubit;
+    try {
+      syncCubit = BlocProvider.of<OvertimeSyncCubit>(context, listen: false);
+    } on Object {
+      syncCubit = null;
+    }
+    if (syncCubit == null) return scaffold;
+    return BlocListener<OvertimeSyncCubit, OvertimeSyncState>(
+      listenWhen: (previous, current) =>
+          previous.pendingCount != current.pendingCount ||
+          previous.status != current.status,
+      listener: (context, syncState) {
+        // After offline queue drains (or shrinks), refresh History so badges
+        // move from Pending Sync → server status.
+        context.read<OvertimeHistoryCubit>().loadFirstPage();
+      },
+      child: scaffold,
     );
   }
 }

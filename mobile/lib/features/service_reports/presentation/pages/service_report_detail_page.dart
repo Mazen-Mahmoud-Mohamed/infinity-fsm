@@ -5,17 +5,25 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/service_reports/presentation/cubit/service_reports_cubits.dart';
 import 'package:mobile/features/service_reports/presentation/widgets/service_report_preview_card.dart';
+import 'package:mobile/features/service_reports/presentation/widgets/service_reports_skeleton.dart';
 
 class ServiceReportDetailPage extends StatefulWidget {
-  const ServiceReportDetailPage({super.key, required this.reportId});
+  const ServiceReportDetailPage({
+    super.key,
+    required this.reportId,
+    @visibleForTesting this.debugCubit,
+  });
 
   final String reportId;
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final ServiceReportDetailCubit? debugCubit;
 
   @override
   State<ServiceReportDetailPage> createState() =>
@@ -28,12 +36,15 @@ class _ServiceReportDetailPageState extends State<ServiceReportDetailPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<ServiceReportDetailCubit>(param1: widget.reportId)..load();
+    _cubit = widget.debugCubit ??
+        (getIt<ServiceReportDetailCubit>(param1: widget.reportId)..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -85,14 +96,19 @@ class _ServiceReportDetailPageState extends State<ServiceReportDetailPage> {
               p.downloading != c.downloading ||
               p.isRefreshing != c.isRefreshing,
           builder: (context, state) {
+            final Widget body;
             if ((state.status == ServiceReportDetailStatus.loading ||
                     state.status == ServiceReportDetailStatus.initial) &&
                 state.report == null) {
-              return AppLoader(message: l10n.reportsLoading);
-            }
-            if (state.status == ServiceReportDetailStatus.failure &&
+              body = ServiceReportsSkeleton(
+                key: const ValueKey('service-report-detail-skeleton'),
+                variant: ServiceReportsSkeletonVariant.detail,
+                semanticsLabel: l10n.reportsLoading,
+              );
+            } else if (state.status == ServiceReportDetailStatus.failure &&
                 state.report == null) {
-              return Center(
+              body = Center(
+                key: const ValueKey('service-report-detail-error'),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -108,12 +124,15 @@ class _ServiceReportDetailPageState extends State<ServiceReportDetailPage> {
                   ],
                 ),
               );
-            }
-            if (state.report == null) {
-              return AppLoader(message: l10n.reportsLoading);
-            }
-
-            return Column(
+            } else if (state.report == null) {
+              body = ServiceReportsSkeleton(
+                key: const ValueKey('service-report-detail-skeleton'),
+                variant: ServiceReportsSkeletonVariant.detail,
+                semanticsLabel: l10n.reportsLoading,
+              );
+            } else {
+            body = Column(
+              key: const ValueKey('service-report-detail-content'),
               children: [
                 AppRefreshBar(visible: state.isRefreshing),
                 Expanded(
@@ -142,6 +161,14 @@ class _ServiceReportDetailPageState extends State<ServiceReportDetailPage> {
                   ),
                 ),
               ],
+            );
+            }
+
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: body,
             );
           },
         ),

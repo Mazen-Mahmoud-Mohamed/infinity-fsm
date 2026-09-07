@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
@@ -10,12 +9,12 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/assets/domain/entities/asset_history.dart';
 import 'package:mobile/features/assets/presentation/cubit/asset_detail_form_history_cubits.dart';
 import 'package:mobile/features/assets/presentation/widgets/asset_history_tile.dart';
 import 'package:mobile/features/assets/presentation/widgets/asset_status_badge.dart';
+import 'package:mobile/features/assets/presentation/widgets/assets_skeleton.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 
 class AssetDetailPage extends StatefulWidget {
@@ -216,9 +215,13 @@ class _AssetDetailPageState extends State<AssetDetailPage> {
           ),
           body: BlocBuilder<AssetDetailCubit, AssetDetailState>(
             builder: (context, state) {
-              if (state.status == AssetDetailStatus.loading ||
-                  state.status == AssetDetailStatus.initial) {
-                return AppLoader(message: l10n.assetsLoading);
+              if ((state.status == AssetDetailStatus.loading ||
+                      state.status == AssetDetailStatus.initial) &&
+                  state.asset == null) {
+                return AssetsSkeleton(
+                  variant: AssetsSkeletonVariant.list,
+                  semanticsLabel: l10n.assetsLoading,
+                );
               }
               if (state.status == AssetDetailStatus.failure ||
                   state.asset == null) {

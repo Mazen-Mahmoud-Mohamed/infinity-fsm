@@ -4,12 +4,12 @@ import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/assets/domain/entities/asset_history.dart';
 import 'package:mobile/features/assets/presentation/cubit/asset_detail_form_history_cubits.dart';
 import 'package:mobile/features/assets/presentation/widgets/asset_history_tile.dart';
+import 'package:mobile/features/assets/presentation/widgets/assets_skeleton.dart';
 
 class AssetHistoryPage extends StatefulWidget {
   const AssetHistoryPage({super.key, this.assetId});
@@ -119,7 +119,10 @@ class _AssetHistoryPageState extends State<AssetHistoryPage> {
                   if ((state.status == AssetHistoryStatus.loading ||
                           state.status == AssetHistoryStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.assetsLoading);
+                    return AssetsSkeleton(
+                      variant: AssetsSkeletonVariant.list,
+                      semanticsLabel: l10n.assetsLoading,
+                    );
                   }
                   if (state.status == AssetHistoryStatus.failure &&
                       state.items.isEmpty) {
