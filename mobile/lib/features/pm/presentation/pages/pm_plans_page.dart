@@ -8,18 +8,26 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/pm/domain/entities/pm_entities.dart';
 import 'package:mobile/features/pm/presentation/cubit/pm_plans_cubit.dart';
 import 'package:mobile/features/pm/presentation/widgets/pm_status_badges.dart';
+import 'package:mobile/features/pm/presentation/widgets/preventive_maintenance_skeleton.dart';
 
 class PmPlansPage extends StatefulWidget {
-  const PmPlansPage({super.key, this.initialStatus});
+  const PmPlansPage({
+    super.key,
+    this.initialStatus,
+    @visibleForTesting this.debugCubit,
+  });
 
   final PmPlanStatus? initialStatus;
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final PmPlansCubit? debugCubit;
 
   @override
   State<PmPlansPage> createState() => _PmPlansPageState();
@@ -33,8 +41,8 @@ class _PmPlansPageState extends State<PmPlansPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<PmPlansCubit>()
-      ..loadFirstPage(status: widget.initialStatus);
+    _cubit = widget.debugCubit ??
+        (getIt<PmPlansCubit>()..loadFirstPage(status: widget.initialStatus));
     _scrollController.addListener(_onScroll);
   }
 
@@ -44,7 +52,9 @@ class _PmPlansPageState extends State<PmPlansPage> {
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -141,14 +151,19 @@ class _PmPlansPageState extends State<PmPlansPage> {
                     p.hasMore != c.hasMore ||
                     p.message != c.message,
                 builder: (context, state) {
+                  final Widget body;
                   if ((state.status == PmPlansStatus.loading ||
                           state.status == PmPlansStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.pmLoading);
-                  }
-                  if (state.status == PmPlansStatus.failure &&
+                    body = PreventiveMaintenanceSkeleton(
+                      key: const ValueKey('pm-list-skeleton'),
+                      variant: PreventiveMaintenanceSkeletonVariant.list,
+                      semanticsLabel: l10n.pmLoading,
+                    );
+                  } else if (state.status == PmPlansStatus.failure &&
                       state.items.isEmpty) {
-                    return Center(
+                    body = Center(
+                      key: const ValueKey('pm-list-error'),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -164,11 +179,14 @@ class _PmPlansPageState extends State<PmPlansPage> {
                         ],
                       ),
                     );
-                  }
-                  if (state.items.isEmpty) {
-                    return Center(child: Text(l10n.pmPlansEmpty));
-                  }
-                  return RefreshIndicator(
+                  } else if (state.items.isEmpty) {
+                    body = Center(
+                      key: const ValueKey('pm-list-empty'),
+                      child: Text(l10n.pmPlansEmpty),
+                    );
+                  } else {
+                  body = RefreshIndicator(
+                    key: const ValueKey('pm-list-content'),
                     onRefresh: () => _cubit.loadFirstPage(),
                     child: ListView.separated(
                       controller: _scrollController,
@@ -225,6 +243,14 @@ class _PmPlansPageState extends State<PmPlansPage> {
                         );
                       },
                     ),
+                  );
+                  }
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: body,
                   );
                 },
               ),

@@ -8,7 +8,6 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
@@ -16,11 +15,20 @@ import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
 import 'package:mobile/features/roles/presentation/widgets/assign_users_dialog.dart';
 import 'package:mobile/features/roles/presentation/widgets/role_permission_tiles.dart';
 import 'package:mobile/features/roles/presentation/widgets/role_status_chip.dart';
+import 'package:mobile/features/roles/presentation/widgets/roles_permissions_skeleton.dart';
 
 class RoleDetailPage extends StatefulWidget {
-  const RoleDetailPage({super.key, required this.roleId});
+  const RoleDetailPage({
+    super.key,
+    required this.roleId,
+    @visibleForTesting this.debugCubit,
+  });
 
   final String roleId;
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final RoleDetailCubit? debugCubit;
 
   @override
   State<RoleDetailPage> createState() => _RoleDetailPageState();
@@ -32,12 +40,15 @@ class _RoleDetailPageState extends State<RoleDetailPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<RoleDetailCubit>()..load(widget.roleId);
+    _cubit = widget.debugCubit ??
+        (getIt<RoleDetailCubit>()..load(widget.roleId));
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -147,7 +158,11 @@ class _RoleDetailPageState extends State<RoleDetailPage> {
                 if ((state.status == RoleDetailStatus.loading ||
                         state.status == RoleDetailStatus.initial) &&
                     role == null) {
-                  return AppLoader(message: l10n.rolesLoading);
+                  return RolesPermissionsSkeleton(
+                    key: const ValueKey('roles-detail-skeleton'),
+                    variant: RolesPermissionsSkeletonVariant.detail,
+                    semanticsLabel: l10n.rolesLoading,
+                  );
                 }
                 if (state.status == RoleDetailStatus.failure && role == null) {
                   return Center(

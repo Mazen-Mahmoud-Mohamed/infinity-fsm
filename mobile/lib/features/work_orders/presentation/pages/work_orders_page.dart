@@ -11,7 +11,6 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_list_card.dart';
 import 'package:mobile/core/widgets/technician_main_app_bar.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_responsive_card_list.dart';
@@ -24,6 +23,7 @@ import 'package:mobile/features/work_orders/presentation/cubit/work_orders_list_
 import 'package:mobile/features/work_orders/presentation/utils/work_order_labels.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_badges.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_orders_desktop_view.dart';
+import 'package:mobile/features/work_orders/presentation/widgets/work_orders_list_skeleton.dart';
 
 class WorkOrdersPage extends StatefulWidget {
   const WorkOrdersPage({super.key});
@@ -235,15 +235,19 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                       previous.isRefreshing != current.isRefreshing ||
                       previous.message != current.message,
                   builder: (context, state) {
+                    final Widget body;
                     if ((state.status == WorkOrdersListStatus.loading ||
                             state.status == WorkOrdersListStatus.initial) &&
                         state.items.isEmpty) {
-                      return AppLoader(message: l10n.workOrderLoading);
-                    }
-
-                    if (state.status == WorkOrdersListStatus.failure &&
+                      body = WorkOrdersListSkeleton(
+                        key: const ValueKey('work-orders-skeleton'),
+                        isAdminMode: widget.isAdminMode,
+                        semanticsLabel: l10n.workOrderLoading,
+                      );
+                    } else if (state.status == WorkOrdersListStatus.failure &&
                         state.items.isEmpty) {
-                      return Center(
+                      body = Center(
+                        key: const ValueKey('work-orders-error'),
                         child: Padding(
                           padding: const EdgeInsets.all(AppSpacing.lg),
                           child: Column(
@@ -251,8 +255,8 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                             children: [
                               Text(
                                 state.message != null
-                          ? localizeAppMessage(l10n, state.message)
-                          : l10n.workOrderLoadFailed,
+                                    ? localizeAppMessage(l10n, state.message)
+                                    : l10n.workOrderLoadFailed,
                                 textAlign: TextAlign.center,
                               ),
                               const SizedBox(height: AppSpacing.md),
@@ -266,10 +270,9 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                           ),
                         ),
                       );
-                    }
-
-                    if (state.items.isEmpty) {
-                      return Column(
+                    } else if (state.items.isEmpty) {
+                      body = Column(
+                        key: const ValueKey('work-orders-empty'),
                         children: [
                           AppRefreshBar(visible: state.isRefreshing),
                           Expanded(
@@ -285,52 +288,61 @@ class _WorkOrdersViewState extends State<_WorkOrdersView> {
                           ),
                         ],
                       );
-                    }
-
-                    return Column(
-                      children: [
-                        AppRefreshBar(visible: state.isRefreshing),
-                        Expanded(
-                          child: RefreshIndicator(
-                            onRefresh: () =>
-                                context.read<WorkOrdersListCubit>().refresh(),
-                            child: AppResponsiveCardList(
-                              controller: _scrollController,
-                              chrome: AppBottomChrome.fab,
-                              padding: EdgeInsets.fromLTRB(
-                                pagePad,
-                                AppSpacing.sm,
-                                pagePad,
-                                0,
+                    } else {
+                      body = Column(
+                        key: const ValueKey('work-orders-content'),
+                        children: [
+                          AppRefreshBar(visible: state.isRefreshing),
+                          Expanded(
+                            child: RefreshIndicator(
+                              onRefresh: () => context
+                                  .read<WorkOrdersListCubit>()
+                                  .refresh(),
+                              child: AppResponsiveCardList(
+                                controller: _scrollController,
+                                chrome: AppBottomChrome.fab,
+                                padding: EdgeInsets.fromLTRB(
+                                  pagePad,
+                                  AppSpacing.sm,
+                                  pagePad,
+                                  0,
+                                ),
+                                itemCount: state.items.length,
+                                loadingMore: state.status ==
+                                    WorkOrdersListStatus.loadingMore,
+                                itemBuilder: (context, index) {
+                                  final item = state.items[index];
+                                  return _WorkOrderTile(
+                                    workOrder: item,
+                                    dateFormat: dateFormat,
+                                    showTechnician: widget.isAdminMode,
+                                    onTap: () async {
+                                      final changed = await context.push<bool>(
+                                        RoutePaths.workOrderDetail(item.id),
+                                      );
+                                      if (!context.mounted) {
+                                        return;
+                                      }
+                                      if (changed == true) {
+                                        context
+                                            .read<WorkOrdersListCubit>()
+                                            .refresh();
+                                      }
+                                    },
+                                  );
+                                },
                               ),
-                              itemCount: state.items.length,
-                              loadingMore: state.status ==
-                                  WorkOrdersListStatus.loadingMore,
-                              itemBuilder: (context, index) {
-                                final item = state.items[index];
-                                return _WorkOrderTile(
-                                  workOrder: item,
-                                  dateFormat: dateFormat,
-                                  showTechnician: widget.isAdminMode,
-                                  onTap: () async {
-                                    final changed = await context.push<bool>(
-                                      RoutePaths.workOrderDetail(item.id),
-                                    );
-                                    if (!context.mounted) {
-                                      return;
-                                    }
-                                    if (changed == true) {
-                                      context
-                                          .read<WorkOrdersListCubit>()
-                                          .refresh();
-                                    }
-                                  },
-                                );
-                              },
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      );
+                    }
+
+                    return AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 180),
+                      switchInCurve: Curves.easeOut,
+                      switchOutCurve: Curves.easeIn,
+                      child: body,
                     );
                   },
                 ),

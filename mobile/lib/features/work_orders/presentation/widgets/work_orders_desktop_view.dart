@@ -7,7 +7,6 @@ import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_data_table.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
@@ -18,6 +17,7 @@ import 'package:mobile/features/work_orders/domain/entities/work_order_status.da
 import 'package:mobile/features/work_orders/presentation/cubit/work_orders_list_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/utils/work_order_labels.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_badges.dart';
+import 'package:mobile/features/work_orders/presentation/widgets/work_orders_list_skeleton.dart';
 
 /// Desktop-only work orders list — table layout with toolbar.
 class WorkOrdersDesktopView extends StatelessWidget {
@@ -315,7 +315,11 @@ class _WorkOrdersDesktopTableBody extends StatelessWidget {
     if ((state.status == WorkOrdersListStatus.loading ||
             state.status == WorkOrdersListStatus.initial) &&
         state.items.isEmpty) {
-      return AppLoader(message: l10n.workOrderLoading);
+      return WorkOrdersListSkeleton(
+        key: const ValueKey('work-orders-desktop-skeleton'),
+        isAdminMode: isAdminMode,
+        semanticsLabel: l10n.workOrderLoading,
+      );
     }
 
     if (state.status == WorkOrdersListStatus.failure && state.items.isEmpty) {

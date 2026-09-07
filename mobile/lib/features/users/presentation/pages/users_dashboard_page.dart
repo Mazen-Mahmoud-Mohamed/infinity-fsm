@@ -7,7 +7,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -18,11 +17,20 @@ import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
 import 'package:mobile/features/users/domain/entities/user_management_entities.dart';
 import 'package:mobile/features/users/presentation/cubit/users_cubits.dart';
+import 'package:mobile/features/users/presentation/widgets/user_management_skeleton.dart';
 
 class UsersDashboardPage extends StatefulWidget {
-  const UsersDashboardPage({super.key, this.embedded = false});
+  const UsersDashboardPage({
+    super.key,
+    this.embedded = false,
+    @visibleForTesting this.debugCubit,
+  });
 
   final bool embedded;
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final UsersDashboardCubit? debugCubit;
 
   @override
   State<UsersDashboardPage> createState() => _UsersDashboardPageState();
@@ -34,12 +42,14 @@ class _UsersDashboardPageState extends State<UsersDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<UsersDashboardCubit>()..load();
+    _cubit = widget.debugCubit ?? (getIt<UsersDashboardCubit>()..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -74,14 +84,18 @@ class _UsersDashboardView extends StatelessWidget {
           p.message != c.message ||
           p.isRefreshing != c.isRefreshing,
       builder: (context, state) {
+        final Widget surface;
         if ((state.status == UsersDashboardStatus.loading ||
                 state.status == UsersDashboardStatus.initial) &&
             state.dashboard == null) {
-          return AppLoader(message: l10n.usersLoading);
-        }
-        if (state.status == UsersDashboardStatus.failure &&
+          surface = UserManagementSkeleton(
+            key: const ValueKey('users-dashboard-skeleton'),
+            semanticsLabel: l10n.usersLoading,
+          );
+        } else if (state.status == UsersDashboardStatus.failure &&
             state.dashboard == null) {
-          return Center(
+          surface = Center(
+            key: const ValueKey('users-dashboard-error'),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
@@ -102,11 +116,12 @@ class _UsersDashboardView extends StatelessWidget {
               ),
             ),
           );
-        }
+        } else {
 
         final dashboard = state.dashboard;
 
         final content = Column(
+          key: const ValueKey('users-dashboard-content'),
           children: [
             AppRefreshBar(visible: state.isRefreshing),
             Expanded(
@@ -253,7 +268,15 @@ class _UsersDashboardView extends StatelessWidget {
           ],
         );
 
-        return content;
+        surface = content;
+        }
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: surface,
+        );
       },
     );
 

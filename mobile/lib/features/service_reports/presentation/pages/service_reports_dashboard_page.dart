@@ -7,7 +7,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -16,9 +15,17 @@ import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
 import 'package:mobile/features/service_reports/presentation/cubit/service_reports_cubits.dart';
+import 'package:mobile/features/service_reports/presentation/widgets/service_reports_skeleton.dart';
 
 class ServiceReportsDashboardPage extends StatefulWidget {
-  const ServiceReportsDashboardPage({super.key});
+  const ServiceReportsDashboardPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final ServiceReportsDashboardCubit? debugCubit;
 
   @override
   State<ServiceReportsDashboardPage> createState() =>
@@ -32,12 +39,15 @@ class _ServiceReportsDashboardPageState
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<ServiceReportsDashboardCubit>()..load();
+    _cubit = widget.debugCubit ??
+        (getIt<ServiceReportsDashboardCubit>()..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -75,14 +85,18 @@ class _DashboardView extends StatelessWidget {
             p.message != c.message ||
             p.isRefreshing != c.isRefreshing,
         builder: (context, state) {
+          final Widget body;
           if ((state.status == ServiceReportsDashboardStatus.loading ||
                   state.status == ServiceReportsDashboardStatus.initial) &&
               state.dashboard == null) {
-            return AppLoader(message: l10n.reportsLoading);
-          }
-          if (state.status == ServiceReportsDashboardStatus.failure &&
+            body = ServiceReportsSkeleton(
+              key: const ValueKey('service-reports-dashboard-skeleton'),
+              semanticsLabel: l10n.reportsLoading,
+            );
+          } else if (state.status == ServiceReportsDashboardStatus.failure &&
               state.dashboard == null) {
-            return Center(
+            body = Center(
+              key: const ValueKey('service-reports-dashboard-error'),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -105,11 +119,11 @@ class _DashboardView extends StatelessWidget {
                 ),
               ),
             );
-          }
-
+          } else {
           final dashboard = state.dashboard;
 
-          return Column(
+          body = Column(
+            key: const ValueKey('service-reports-dashboard-content'),
             children: [
               AppRefreshBar(visible: state.isRefreshing),
               Expanded(

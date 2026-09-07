@@ -10,7 +10,6 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_action_bar.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_split_view.dart';
@@ -22,6 +21,7 @@ import 'package:mobile/features/work_orders/domain/entities/work_order.dart';
 import 'package:mobile/features/work_orders/domain/entities/work_order_status.dart';
 import 'package:mobile/features/work_orders/presentation/cubit/work_order_detail_cubit.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_badges.dart';
+import 'package:mobile/features/work_orders/presentation/widgets/work_order_detail_skeleton.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_execution_panel.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_section_card.dart';
 import 'package:mobile/features/work_orders/presentation/widgets/work_order_text_prompt.dart';
@@ -187,21 +187,29 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                   ),
               ],
             ),
-            body: showInitialLoader
-                ? AppLoader(message: l10n.workOrderLoading)
-                : workOrder == null
-                    ? Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(AppSpacing.lg),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                state.message != null
-                                    ? localizeAppMessage(l10n, state.message)
-                                    : l10n.workOrderLoadFailed,
-                                textAlign: TextAlign.center,
-                              ),
+            body: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 180),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              child: showInitialLoader
+                  ? WorkOrderDetailSkeleton(
+                      key: const ValueKey('work-order-detail-skeleton'),
+                      semanticsLabel: l10n.workOrderLoading,
+                    )
+                  : workOrder == null
+                      ? Center(
+                          key: const ValueKey('work-order-detail-error'),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.lg),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  state.message != null
+                                      ? localizeAppMessage(l10n, state.message)
+                                      : l10n.workOrderLoadFailed,
+                                  textAlign: TextAlign.center,
+                                ),
                               const SizedBox(height: AppSpacing.md),
                               FilledButton(
                                 onPressed: () =>
@@ -354,6 +362,7 @@ class _WorkOrderDetailViewState extends State<_WorkOrderDetailView> {
                           ),
                         ),
                       ),
+            ),
             bottomNavigationBar: isDesktop ? null : bottomBar,
           ),
         );

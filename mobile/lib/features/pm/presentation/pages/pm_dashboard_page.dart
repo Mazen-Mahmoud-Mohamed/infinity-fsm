@@ -8,7 +8,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
@@ -20,9 +19,17 @@ import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_c
 import 'package:mobile/features/pm/domain/entities/pm_entities.dart';
 import 'package:mobile/features/pm/presentation/cubit/pm_dashboard_cubit.dart';
 import 'package:mobile/features/pm/presentation/widgets/pm_schedule_tile.dart';
+import 'package:mobile/features/pm/presentation/widgets/preventive_maintenance_skeleton.dart';
 
 class PmDashboardPage extends StatefulWidget {
-  const PmDashboardPage({super.key});
+  const PmDashboardPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final PmDashboardCubit? debugCubit;
 
   @override
   State<PmDashboardPage> createState() => _PmDashboardPageState();
@@ -34,12 +41,14 @@ class _PmDashboardPageState extends State<PmDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<PmDashboardCubit>()..load();
+    _cubit = widget.debugCubit ?? (getIt<PmDashboardCubit>()..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -75,14 +84,18 @@ class _PmDashboardView extends StatelessWidget {
             p.message != c.message ||
             p.isRefreshing != c.isRefreshing,
         builder: (context, state) {
+          final Widget body;
           if ((state.status == PmDashboardStatus.loading ||
                   state.status == PmDashboardStatus.initial) &&
               state.dashboard == null) {
-            return AppLoader(message: l10n.pmLoading);
-          }
-          if (state.status == PmDashboardStatus.failure &&
+            body = PreventiveMaintenanceSkeleton(
+              key: const ValueKey('pm-skeleton'),
+              semanticsLabel: l10n.pmLoading,
+            );
+          } else if (state.status == PmDashboardStatus.failure &&
               state.dashboard == null) {
-            return Center(
+            body = Center(
+              key: const ValueKey('pm-error'),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -104,8 +117,7 @@ class _PmDashboardView extends StatelessWidget {
                 ),
               ),
             );
-          }
-
+          } else {
           final dashboard = state.dashboard;
           final recent = dashboard?.recentSchedules ?? const [];
 
@@ -150,7 +162,8 @@ class _PmDashboardView extends StatelessWidget {
           ];
 
           if (isDesktop) {
-            return AppDesktopPageLayout(
+            body = AppDesktopPageLayout(
+              key: const ValueKey('pm-content'),
               title: l10n.pmTitle,
               isRefreshing: state.isRefreshing,
               headerTrailing: canCreate
@@ -248,11 +261,11 @@ class _PmDashboardView extends StatelessWidget {
                 ],
               ),
             );
-          }
-
+          } else {
           final cols = isPhone ? 2 : 4;
 
-          return Column(
+          body = Column(
+            key: const ValueKey('pm-content'),
             children: [
               AppRefreshBar(visible: state.isRefreshing),
               Expanded(
@@ -381,6 +394,15 @@ class _PmDashboardView extends StatelessWidget {
                 ),
               ),
             ],
+          );
+          }
+          }
+
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: body,
           );
         },
       ),

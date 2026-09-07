@@ -9,7 +9,6 @@ import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
@@ -18,13 +17,22 @@ import 'package:mobile/core/widgets/desktop/app_desktop_toolbar.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/users/domain/entities/user_management_entities.dart';
 import 'package:mobile/features/users/presentation/cubit/users_cubits.dart';
+import 'package:mobile/features/users/presentation/widgets/user_management_skeleton.dart';
 import 'package:mobile/features/users/presentation/widgets/user_status_badge.dart';
 import 'package:mobile/features/users/presentation/widgets/users_desktop_table.dart';
 
 class UsersListPage extends StatefulWidget {
-  const UsersListPage({super.key, this.initialStatus});
+  const UsersListPage({
+    super.key,
+    this.initialStatus,
+    @visibleForTesting this.debugCubit,
+  });
 
   final ManagedUserStatus? initialStatus;
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final UsersListCubit? debugCubit;
 
   @override
   State<UsersListPage> createState() => _UsersListPageState();
@@ -38,8 +46,8 @@ class _UsersListPageState extends State<UsersListPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<UsersListCubit>()
-      ..loadFirstPage(status: widget.initialStatus);
+    _cubit = widget.debugCubit ??
+        (getIt<UsersListCubit>()..loadFirstPage(status: widget.initialStatus));
     _scrollController.addListener(_onScroll);
   }
 
@@ -49,7 +57,9 @@ class _UsersListPageState extends State<UsersListPage> {
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -171,14 +181,19 @@ class _UsersListPageState extends State<UsersListPage> {
             Expanded(
               child: BlocBuilder<UsersListCubit, UsersListState>(
                 builder: (context, state) {
+                  final Widget body;
                   if ((state.status == UsersListStatus.loading ||
                           state.status == UsersListStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.usersLoading);
-                  }
-                  if (state.status == UsersListStatus.failure &&
+                    body = UserManagementSkeleton(
+                      key: const ValueKey('users-list-skeleton'),
+                      variant: UserManagementSkeletonVariant.list,
+                      semanticsLabel: l10n.usersLoading,
+                    );
+                  } else if (state.status == UsersListStatus.failure &&
                       state.items.isEmpty) {
-                    return Center(
+                    body = Center(
+                      key: const ValueKey('users-list-error'),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -194,17 +209,20 @@ class _UsersListPageState extends State<UsersListPage> {
                         ],
                       ),
                     );
-                  }
-                  if (state.items.isEmpty) {
-                    return isDesktop
+                  } else if (state.items.isEmpty) {
+                    body = isDesktop
                         ? AppDesktopEmptyState(
+                            key: const ValueKey('users-list-empty'),
                             icon: Icons.people_outline,
                             title: l10n.usersEmpty,
                           )
-                        : Center(child: Text(l10n.usersEmpty));
-                  }
-                  if (isDesktop) {
-                    return RefreshIndicator(
+                        : Center(
+                            key: const ValueKey('users-list-empty'),
+                            child: Text(l10n.usersEmpty),
+                          );
+                  } else if (isDesktop) {
+                    body = RefreshIndicator(
+                      key: const ValueKey('users-list-content'),
                       onRefresh: () => _cubit.loadFirstPage(),
                       child: UsersDesktopTable(
                         users: state.items,
@@ -212,8 +230,9 @@ class _UsersListPageState extends State<UsersListPage> {
                         loadingMore: state.hasMore,
                       ),
                     );
-                  }
-                  return RefreshIndicator(
+                  } else {
+                    body = RefreshIndicator(
+                      key: const ValueKey('users-list-content'),
                     onRefresh: () => _cubit.loadFirstPage(),
                     child: ListView.separated(
                       controller: _scrollController,
@@ -274,6 +293,14 @@ class _UsersListPageState extends State<UsersListPage> {
                         );
                       },
                     ),
+                  );
+                  }
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: body,
                   );
                 },
               ),

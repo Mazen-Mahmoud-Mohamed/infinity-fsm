@@ -7,18 +7,26 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/presentation/cubit/assets_list_cubit.dart';
 import 'package:mobile/features/assets/presentation/widgets/asset_status_badge.dart';
+import 'package:mobile/features/assets/presentation/widgets/assets_skeleton.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 
 class AssetsListPage extends StatefulWidget {
-  const AssetsListPage({super.key, this.initialStatus});
+  const AssetsListPage({
+    super.key,
+    this.initialStatus,
+    @visibleForTesting this.debugCubit,
+  });
 
   final AssetStatus? initialStatus;
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final AssetsListCubit? debugCubit;
 
   @override
   State<AssetsListPage> createState() => _AssetsListPageState();
@@ -32,8 +40,8 @@ class _AssetsListPageState extends State<AssetsListPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<AssetsListCubit>()
-      ..loadFirstPage(status: widget.initialStatus);
+    _cubit = widget.debugCubit ??
+        (getIt<AssetsListCubit>()..loadFirstPage(status: widget.initialStatus));
     _scrollController.addListener(_onScroll);
   }
 
@@ -43,7 +51,9 @@ class _AssetsListPageState extends State<AssetsListPage> {
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -139,14 +149,19 @@ class _AssetsListPageState extends State<AssetsListPage> {
                     previous.isRefreshing != current.isRefreshing ||
                     previous.message != current.message,
                 builder: (context, state) {
+                  final Widget body;
                   if ((state.status == AssetsListStatus.loading ||
                           state.status == AssetsListStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.assetsLoading);
-                  }
-                  if (state.status == AssetsListStatus.failure &&
+                    body = AssetsSkeleton(
+                      key: const ValueKey('assets-list-skeleton'),
+                      variant: AssetsSkeletonVariant.list,
+                      semanticsLabel: l10n.assetsLoading,
+                    );
+                  } else if (state.status == AssetsListStatus.failure &&
                       state.items.isEmpty) {
-                    return Center(
+                    body = Center(
+                      key: const ValueKey('assets-list-error'),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
@@ -162,9 +177,9 @@ class _AssetsListPageState extends State<AssetsListPage> {
                         ],
                       ),
                     );
-                  }
-                  if (state.items.isEmpty) {
-                    return Column(
+                  } else if (state.items.isEmpty) {
+                    body = Column(
+                      key: const ValueKey('assets-list-empty'),
                       children: [
                         AppRefreshBar(visible: state.isRefreshing),
                         Expanded(
@@ -172,8 +187,9 @@ class _AssetsListPageState extends State<AssetsListPage> {
                         ),
                       ],
                     );
-                  }
-                  return Column(
+                  } else {
+                  body = Column(
+                    key: const ValueKey('assets-list-content'),
                     children: [
                       AppRefreshBar(visible: state.isRefreshing),
                       Expanded(
@@ -245,6 +261,14 @@ class _AssetsListPageState extends State<AssetsListPage> {
                         ),
                       ),
                     ],
+                  );
+                  }
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: body,
                   );
                 },
               ),

@@ -7,7 +7,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -17,11 +16,20 @@ import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
 import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
+import 'package:mobile/features/roles/presentation/widgets/roles_permissions_skeleton.dart';
 
 class RolesDashboardPage extends StatefulWidget {
-  const RolesDashboardPage({super.key, this.embedded = false});
+  const RolesDashboardPage({
+    super.key,
+    this.embedded = false,
+    @visibleForTesting this.debugCubit,
+  });
 
   final bool embedded;
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final RolesDashboardCubit? debugCubit;
 
   @override
   State<RolesDashboardPage> createState() => _RolesDashboardPageState();
@@ -33,12 +41,14 @@ class _RolesDashboardPageState extends State<RolesDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<RolesDashboardCubit>()..load();
+    _cubit = widget.debugCubit ?? (getIt<RolesDashboardCubit>()..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -80,14 +90,18 @@ class _RolesDashboardView extends StatelessWidget {
           p.message != c.message ||
           p.isRefreshing != c.isRefreshing,
       builder: (context, state) {
+        final Widget surface;
         if ((state.status == RolesDashboardStatus.loading ||
                 state.status == RolesDashboardStatus.initial) &&
             state.dashboard == null) {
-          return AppLoader(message: l10n.rolesLoading);
-        }
-        if (state.status == RolesDashboardStatus.failure &&
+          surface = RolesPermissionsSkeleton(
+            key: const ValueKey('roles-dashboard-skeleton'),
+            semanticsLabel: l10n.rolesLoading,
+          );
+        } else if (state.status == RolesDashboardStatus.failure &&
             state.dashboard == null) {
-          return Center(
+          surface = Center(
+            key: const ValueKey('roles-dashboard-error'),
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.lg),
               child: Column(
@@ -108,11 +122,11 @@ class _RolesDashboardView extends StatelessWidget {
               ),
             ),
           );
-        }
-
+        } else {
         final dashboard = state.dashboard;
 
-        return Column(
+        surface = Column(
+          key: const ValueKey('roles-dashboard-content'),
           children: [
             AppRefreshBar(visible: state.isRefreshing),
             Expanded(
@@ -247,6 +261,14 @@ class _RolesDashboardView extends StatelessWidget {
               ),
             ),
           ],
+        );
+        }
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 180),
+          switchInCurve: Curves.easeOut,
+          switchOutCurve: Curves.easeIn,
+          child: surface,
         );
       },
     );

@@ -7,7 +7,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -18,10 +17,18 @@ import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
 import 'package:mobile/features/inventory/presentation/cubit/inventory_dashboard_cubit.dart';
+import 'package:mobile/features/inventory/presentation/widgets/inventory_skeleton.dart';
 import 'package:mobile/features/inventory/presentation/widgets/stock_movement_tile.dart';
 
 class InventoryDashboardPage extends StatefulWidget {
-  const InventoryDashboardPage({super.key});
+  const InventoryDashboardPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final InventoryDashboardCubit? debugCubit;
 
   @override
   State<InventoryDashboardPage> createState() => _InventoryDashboardPageState();
@@ -33,12 +40,14 @@ class _InventoryDashboardPageState extends State<InventoryDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<InventoryDashboardCubit>()..load();
+    _cubit = widget.debugCubit ?? (getIt<InventoryDashboardCubit>()..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -75,15 +84,18 @@ class _InventoryDashboardView extends StatelessWidget {
             previous.isRefreshing != current.isRefreshing ||
             previous.message != current.message,
         builder: (context, state) {
+          final Widget body;
           if ((state.status == InventoryDashboardStatus.loading ||
                   state.status == InventoryDashboardStatus.initial) &&
               state.dashboard == null) {
-            return AppLoader(message: l10n.inventoryLoading);
-          }
-
-          if (state.status == InventoryDashboardStatus.failure &&
+            body = InventorySkeleton(
+              key: const ValueKey('inventory-skeleton'),
+              semanticsLabel: l10n.inventoryLoading,
+            );
+          } else if (state.status == InventoryDashboardStatus.failure &&
               state.dashboard == null) {
-            return Center(
+            body = Center(
+              key: const ValueKey('inventory-error'),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -105,11 +117,11 @@ class _InventoryDashboardView extends StatelessWidget {
                 ),
               ),
             );
-          }
-
+          } else {
           final dashboard = state.dashboard;
 
-          return Column(
+          body = Column(
+            key: const ValueKey('inventory-content'),
             children: [
               AppRefreshBar(visible: state.isRefreshing),
               Expanded(
@@ -284,6 +296,14 @@ class _InventoryDashboardView extends StatelessWidget {
                 ),
               ),
             ],
+          );
+          }
+
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: body,
           );
         },
       ),

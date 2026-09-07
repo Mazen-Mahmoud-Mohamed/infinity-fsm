@@ -8,7 +8,6 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_audit_event.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
@@ -17,6 +16,7 @@ import 'package:mobile/core/widgets/desktop/app_desktop_toolbar.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notification_list_tile.dart';
+import 'package:mobile/features/notifications/presentation/widgets/notifications_skeleton.dart';
 
 /// Desktop notification center with list + detail preview panel.
 class NotificationsDesktopView extends StatefulWidget {
@@ -56,9 +56,13 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
 
     return BlocBuilder<NotificationsCubit, NotificationsState>(
       builder: (context, state) {
-        if (state.status == NotificationsStatus.loading &&
+        if ((state.status == NotificationsStatus.loading ||
+                state.status == NotificationsStatus.initial) &&
             state.items.isEmpty) {
-          return AppLoader(message: l10n.notificationsLoading);
+          return NotificationsSkeleton(
+            key: const ValueKey('notifications-desktop-skeleton'),
+            semanticsLabel: l10n.notificationsLoading,
+          );
         }
 
         final displayItems = state.visibleItems

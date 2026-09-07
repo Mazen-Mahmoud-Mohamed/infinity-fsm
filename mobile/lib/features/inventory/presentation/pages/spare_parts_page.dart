@@ -8,18 +8,26 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/inventory/domain/entities/spare_part.dart';
 import 'package:mobile/features/inventory/presentation/cubit/spare_parts_list_cubit.dart';
+import 'package:mobile/features/inventory/presentation/widgets/inventory_skeleton.dart';
 import 'package:mobile/features/inventory/presentation/widgets/stock_status_badge.dart';
 
 class SparePartsPage extends StatefulWidget {
-  const SparePartsPage({super.key, this.initialStockStatus});
+  const SparePartsPage({
+    super.key,
+    this.initialStockStatus,
+    @visibleForTesting this.debugCubit,
+  });
 
   final StockStatus? initialStockStatus;
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final SparePartsListCubit? debugCubit;
 
   @override
   State<SparePartsPage> createState() => _SparePartsPageState();
@@ -31,13 +39,16 @@ class _SparePartsPageState extends State<SparePartsPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<SparePartsListCubit>()
-      ..loadFirstPage(stockStatus: widget.initialStockStatus);
+    _cubit = widget.debugCubit ??
+        (getIt<SparePartsListCubit>()
+          ..loadFirstPage(stockStatus: widget.initialStockStatus));
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -191,14 +202,19 @@ class _SparePartsViewState extends State<_SparePartsView> {
                   previous.isRefreshing != current.isRefreshing ||
                   previous.message != current.message,
               builder: (context, state) {
+                final Widget body;
                 if ((state.status == SparePartsListStatus.loading ||
                         state.status == SparePartsListStatus.initial) &&
                     state.items.isEmpty) {
-                  return AppLoader(message: l10n.inventoryLoading);
-                }
-                if (state.status == SparePartsListStatus.failure &&
+                  body = InventorySkeleton(
+                    key: const ValueKey('inventory-list-skeleton'),
+                    variant: InventorySkeletonVariant.list,
+                    semanticsLabel: l10n.inventoryLoading,
+                  );
+                } else if (state.status == SparePartsListStatus.failure &&
                     state.items.isEmpty) {
-                  return Center(
+                  body = Center(
+                    key: const ValueKey('inventory-list-error'),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -217,9 +233,9 @@ class _SparePartsViewState extends State<_SparePartsView> {
                       ],
                     ),
                   );
-                }
-                if (state.items.isEmpty) {
-                  return Column(
+                } else if (state.items.isEmpty) {
+                  body = Column(
+                    key: const ValueKey('inventory-list-empty'),
                     children: [
                       AppRefreshBar(visible: state.isRefreshing),
                       Expanded(
@@ -227,9 +243,9 @@ class _SparePartsViewState extends State<_SparePartsView> {
                       ),
                     ],
                   );
-                }
-
-                return Column(
+                } else {
+                body = Column(
+                  key: const ValueKey('inventory-list-content'),
                   children: [
                     AppRefreshBar(visible: state.isRefreshing),
                     Expanded(
@@ -309,6 +325,14 @@ class _SparePartsViewState extends State<_SparePartsView> {
                       ),
                     ),
                   ],
+                );
+                }
+
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: body,
                 );
               },
             ),

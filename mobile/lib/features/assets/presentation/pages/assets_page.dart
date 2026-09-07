@@ -7,7 +7,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
@@ -16,12 +15,20 @@ import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_stat_grid.dart';
 import 'package:mobile/features/assets/domain/entities/asset.dart';
 import 'package:mobile/features/assets/presentation/cubit/assets_dashboard_cubit.dart';
+import 'package:mobile/features/assets/presentation/widgets/assets_skeleton.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_quick_card.dart';
 
 /// Assets dashboard — replaces the previous coming-soon placeholder.
 class AssetsPage extends StatefulWidget {
-  const AssetsPage({super.key});
+  const AssetsPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final AssetsDashboardCubit? debugCubit;
 
   @override
   State<AssetsPage> createState() => _AssetsPageState();
@@ -33,12 +40,14 @@ class _AssetsPageState extends State<AssetsPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<AssetsDashboardCubit>()..load();
+    _cubit = widget.debugCubit ?? (getIt<AssetsDashboardCubit>()..load());
   }
 
   @override
   void dispose() {
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -75,14 +84,18 @@ class _AssetsDashboardView extends StatelessWidget {
             previous.isRefreshing != current.isRefreshing ||
             previous.message != current.message,
         builder: (context, state) {
+          final Widget body;
           if ((state.status == AssetsDashboardStatus.loading ||
                   state.status == AssetsDashboardStatus.initial) &&
               state.dashboard == null) {
-            return AppLoader(message: l10n.assetsLoading);
-          }
-          if (state.status == AssetsDashboardStatus.failure &&
+            body = AssetsSkeleton(
+              key: const ValueKey('assets-skeleton'),
+              semanticsLabel: l10n.assetsLoading,
+            );
+          } else if (state.status == AssetsDashboardStatus.failure &&
               state.dashboard == null) {
-            return Center(
+            body = Center(
+              key: const ValueKey('assets-error'),
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
@@ -104,11 +117,11 @@ class _AssetsDashboardView extends StatelessWidget {
                 ),
               ),
             );
-          }
-
+          } else {
           final dashboard = state.dashboard;
 
-          return Column(
+          body = Column(
+            key: const ValueKey('assets-content'),
             children: [
               AppRefreshBar(visible: state.isRefreshing),
               Expanded(
@@ -270,6 +283,14 @@ class _AssetsDashboardView extends StatelessWidget {
                 ),
               ),
             ],
+          );
+          }
+
+          return AnimatedSwitcher(
+            duration: const Duration(milliseconds: 180),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: body,
           );
         },
       ),

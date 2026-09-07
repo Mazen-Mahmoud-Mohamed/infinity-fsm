@@ -19,6 +19,7 @@ import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_dense_widgets.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_period_selector.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_role_sections.dart';
+import 'package:mobile/features/dashboard/presentation/widgets/dashboard_skeleton.dart';
 import 'package:mobile/features/dashboard/presentation/widgets/dashboard_typography.dart';
 import 'package:mobile/features/app_update/presentation/widgets/update_available_banner.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
@@ -29,10 +30,23 @@ import 'package:mobile/features/settings/presentation/cubit/technician_interface
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
 class DashboardPage extends StatelessWidget {
-  const DashboardPage({super.key});
+  const DashboardPage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [load] (widget tests).
+  @visibleForTesting
+  final ExecutiveDashboardCubit? debugCubit;
 
   @override
   Widget build(BuildContext context) {
+    if (debugCubit != null) {
+      return BlocProvider<ExecutiveDashboardCubit>.value(
+        value: debugCubit!,
+        child: const _DashboardView(),
+      );
+    }
     return BlocProvider(
       create: (_) => getIt<ExecutiveDashboardCubit>()..load(),
       child: const _DashboardView(),
@@ -99,15 +113,23 @@ class _DashboardViewState extends State<_DashboardView> {
                   previous.customTo != current.customTo ||
                   previous.message != current.message,
               builder: (context, state) {
+                final Widget body;
                 if (state.status == ExecutiveDashboardStatus.initial ||
                     (state.status == ExecutiveDashboardStatus.loading &&
                         state.summary == null)) {
-                  return AppLoader(message: l10n.dashboardLoading);
-                }
-
-                if (state.status == ExecutiveDashboardStatus.failure &&
+                  final authUser =
+                      context.select((AuthCubit c) => c.state.user);
+                  body = DashboardSkeleton(
+                    key: const ValueKey('dashboard-skeleton'),
+                    viewRole: resolveDashboardSkeletonRole(authUser),
+                    pagePadding: pagePadding,
+                    sectionGap: sectionGap,
+                    semanticsLabel: l10n.dashboardLoading,
+                  );
+                } else if (state.status == ExecutiveDashboardStatus.failure &&
                     state.summary == null) {
-                  return Center(
+                  body = Center(
+                    key: const ValueKey('dashboard-error'),
                     child: Padding(
                       padding: EdgeInsets.all(pagePadding),
                       child: Column(
@@ -135,17 +157,25 @@ class _DashboardViewState extends State<_DashboardView> {
                       ),
                     ),
                   );
+                } else {
+                  body = _DashboardScrollBody(
+                    key: const ValueKey('dashboard-content'),
+                    state: state,
+                    pagePadding: pagePadding,
+                    sectionGap: sectionGap,
+                    isPhone: isPhone,
+                    chartWindowDays: _chartWindowDays,
+                    onChartWindowChanged: (days) {
+                      setState(() => _chartWindowDays = days);
+                    },
+                  );
                 }
 
-                return _DashboardScrollBody(
-                  state: state,
-                  pagePadding: pagePadding,
-                  sectionGap: sectionGap,
-                  isPhone: isPhone,
-                  chartWindowDays: _chartWindowDays,
-                  onChartWindowChanged: (days) {
-                    setState(() => _chartWindowDays = days);
-                  },
+                return AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 180),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: body,
                 );
               },
             ),
@@ -159,6 +189,7 @@ class _DashboardViewState extends State<_DashboardView> {
 /// Lazy-built dashboard content. Keeps expensive sections off-screen unmounted.
 class _DashboardScrollBody extends StatelessWidget {
   const _DashboardScrollBody({
+    super.key,
     required this.state,
     required this.pagePadding,
     required this.sectionGap,

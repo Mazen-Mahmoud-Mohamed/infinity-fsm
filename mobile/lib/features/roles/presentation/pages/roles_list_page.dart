@@ -9,7 +9,6 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
@@ -21,16 +20,22 @@ import 'package:mobile/features/roles/domain/entities/role_entities.dart';
 import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
 import 'package:mobile/features/roles/presentation/widgets/role_status_chip.dart';
 import 'package:mobile/features/roles/presentation/widgets/roles_desktop_table.dart';
+import 'package:mobile/features/roles/presentation/widgets/roles_permissions_skeleton.dart';
 
 class RolesListPage extends StatefulWidget {
   const RolesListPage({
     super.key,
     this.initialActive,
     this.initialSystem,
+    @visibleForTesting this.debugCubit,
   });
 
   final bool? initialActive;
   final bool? initialSystem;
+
+  /// When set, skips GetIt and does not auto-call [loadFirstPage] (widget tests).
+  @visibleForTesting
+  final RolesListCubit? debugCubit;
 
   @override
   State<RolesListPage> createState() => _RolesListPageState();
@@ -44,11 +49,12 @@ class _RolesListPageState extends State<RolesListPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<RolesListCubit>()
-      ..loadFirstPage(
-        isActive: widget.initialActive,
-        isSystem: widget.initialSystem,
-      );
+    _cubit = widget.debugCubit ??
+        (getIt<RolesListCubit>()
+          ..loadFirstPage(
+            isActive: widget.initialActive,
+            isSystem: widget.initialSystem,
+          ));
     _scrollController.addListener(_onScroll);
   }
 
@@ -58,7 +64,9 @@ class _RolesListPageState extends State<RolesListPage> {
       ..removeListener(_onScroll)
       ..dispose();
     _searchController.dispose();
-    _cubit.close();
+    if (widget.debugCubit == null) {
+      _cubit.close();
+    }
     super.dispose();
   }
 
@@ -175,14 +183,19 @@ class _RolesListPageState extends State<RolesListPage> {
             Expanded(
               child: BlocBuilder<RolesListCubit, RolesListState>(
                 builder: (context, state) {
+                  final Widget body;
                   if ((state.status == RolesListStatus.loading ||
                           state.status == RolesListStatus.initial) &&
                       state.items.isEmpty) {
-                    return AppLoader(message: l10n.rolesLoading);
-                  }
-                  if (state.status == RolesListStatus.failure &&
+                    body = RolesPermissionsSkeleton(
+                      key: const ValueKey('roles-list-skeleton'),
+                      variant: RolesPermissionsSkeletonVariant.list,
+                      semanticsLabel: l10n.rolesLoading,
+                    );
+                  } else if (state.status == RolesListStatus.failure &&
                       state.items.isEmpty) {
-                    return Center(
+                    body = Center(
+                      key: const ValueKey('roles-list-error'),
                       child: Padding(
                         padding: const EdgeInsets.all(AppSpacing.lg),
                         child: Column(
@@ -202,18 +215,20 @@ class _RolesListPageState extends State<RolesListPage> {
                         ),
                       ),
                     );
-                  }
-                  if (state.items.isEmpty) {
-                    return isDesktop
+                  } else if (state.items.isEmpty) {
+                    body = isDesktop
                         ? AppDesktopEmptyState(
+                            key: const ValueKey('roles-list-empty'),
                             icon: Icons.security_outlined,
                             title: l10n.rolesEmpty,
                           )
-                        : Center(child: Text(l10n.rolesEmpty));
-                  }
-
-                  if (isDesktop) {
-                    return RefreshIndicator(
+                        : Center(
+                            key: const ValueKey('roles-list-empty'),
+                            child: Text(l10n.rolesEmpty),
+                          );
+                  } else if (isDesktop) {
+                    body = RefreshIndicator(
+                      key: const ValueKey('roles-list-content'),
                       onRefresh: () => _cubit.loadFirstPage(),
                       child: RolesDesktopTable(
                         roles: state.items,
@@ -222,9 +237,9 @@ class _RolesListPageState extends State<RolesListPage> {
                             state.status == RolesListStatus.loadingMore,
                       ),
                     );
-                  }
-
-                  return RefreshIndicator(
+                  } else {
+                    body = RefreshIndicator(
+                      key: const ValueKey('roles-list-content'),
                     onRefresh: () => _cubit.loadFirstPage(),
                     child: ListView.separated(
                       controller: _scrollController,
@@ -253,6 +268,14 @@ class _RolesListPageState extends State<RolesListPage> {
                         return _RoleListTile(role: role, theme: theme);
                       },
                     ),
+                  );
+                  }
+
+                  return AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 180),
+                    switchInCurve: Curves.easeOut,
+                    switchOutCurve: Curves.easeIn,
+                    child: body,
                   );
                 },
               ),
