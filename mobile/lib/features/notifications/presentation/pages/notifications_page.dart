@@ -74,6 +74,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
         body: AppBreakpoints.isDesktopOf(context)
             ? NotificationsDesktopView(searchController: _searchController)
             : BlocBuilder<NotificationsCubit, NotificationsState>(
+          buildWhen: (previous, current) =>
+              previous.status != current.status ||
+              previous.items != current.items ||
+              previous.category != current.category ||
+              previous.searchQuery != current.searchQuery ||
+              previous.isRefreshing != current.isRefreshing ||
+              previous.message != current.message,
           builder: (context, state) {
             final Widget body;
             if ((state.status == NotificationsStatus.loading ||

@@ -6,6 +6,10 @@ import {
   workedHoursFromRecord,
 } from './overtime.approved-hours.js';
 import {
+  eligibleOvertimeMinutesByCalendarDay,
+  isOfficialWorkingDay,
+} from './overtime.calculation.js';
+import {
   EXPORT_LANG,
   normalizeExportLanguage,
   excelStrings,
@@ -19,6 +23,12 @@ import {
   formatExcelDuration,
   stripBidiMarks,
 } from './overtime.excel.i18n.js';
+
+/** Excel time as a fraction of a day; hours may exceed 24. */
+export const EXCEL_DURATION_NUM_FMT = '[h]:mm';
+/** Keep phone digits (including leading zeros) as text. */
+export const EXCEL_TEXT_NUM_FMT = '@';
+const MINUTES_PER_EXCEL_DAY = 24 * 60;
 
 const require = createRequire(import.meta.url);
 const pkg = require('../../../../package.json');
@@ -112,16 +122,112 @@ function formatDateTimeStamp(value) {
   return `${formatDate(d)}_${pad2(d.getUTCHours())}-${pad2(d.getUTCMinutes())}`;
 }
 
-function hoursLabel(minutes, lang = EXPORT_LANG.EN) {
-  return formatDurationProseFromMinutes(minutes, lang);
-}
-
 function formatVoiceDuration(seconds) {
   if (seconds === null || seconds === undefined || seconds === '') return null;
   const n = Number(seconds);
   if (!Number.isFinite(n) || n < 0) return null;
   const total = Math.round(n);
   return `${pad2(Math.floor(total / 60))}:${pad2(total % 60)}`;
+}
+
+/**
+ * Excel serial (day fraction) for a whole-minute duration.
+ * Returns null when the source is empty/invalid so callers can use a dash.
+ */
+export function excelSerialFromMinutes(minutes) {
+  if (minutes === null || minutes === undefined || minutes === '') return null;
+  const n = Number(minutes);
+  if (!Number.isFinite(n)) return null;
+  return Math.max(0, Math.round(n)) / MINUTES_PER_EXCEL_DAY;
+}
+
+export function excelSerialFromHours(hours) {
+  if (hours === null || hours === undefined || hours === '') return null;
+  if (hours === '—' || hours === excelStrings(EXPORT_LANG.EN).dash) return null;
+  const n = Number(hours);
+  if (!Number.isFinite(n)) return null;
+  return excelSerialFromMinutes(Math.round(n * 60));
+}
+
+function excelDurationOrDash(minutes, dash) {
+  const serial = excelSerialFromMinutes(minutes);
+  if (serial == null) return dash;
+  return {
+    __excelDuration: true,
+    value: serial,
+    numFmt: EXCEL_DURATION_NUM_FMT,
+  };
+}
+
+function excelDurationOrDashFromHours(hours, dash) {
+  const serial = excelSerialFromHours(hours);
+  if (serial == null) return dash;
+  return {
+    __excelDuration: true,
+    value: serial,
+    numFmt: EXCEL_DURATION_NUM_FMT,
+  };
+}
+
+function isExcelDurationInput(value) {
+  return Boolean(value && typeof value === 'object' && value.__excelDuration);
+}
+
+function applyExcelDurationCell(cell, minutes, dash) {
+  const serial = excelSerialFromMinutes(minutes);
+  if (serial == null) {
+    cell.value = dash;
+    return;
+  }
+  cell.value = serial;
+  cell.numFmt = EXCEL_DURATION_NUM_FMT;
+}
+
+function applyExcelPhoneCell(cell, phone, dash) {
+  const text =
+    phone === null || phone === undefined || String(phone).trim() === ''
+      ? dash
+      : String(phone).trim();
+  cell.value = text;
+  cell.numFmt = EXCEL_TEXT_NUM_FMT;
+}
+
+function userPhone(user, dash = '—') {
+  if (!user || typeof user === 'string') return dash;
+  const raw = user.phone;
+  if (raw === null || raw === undefined) return dash;
+  const text = String(raw).trim();
+  return text === '' ? dash : text;
+}
+
+function parseYmdKey(key) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key || ''));
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+  };
+}
+
+/**
+ * Official non-working calendar days (Africa/Cairo policy) that contributed
+ * eligible overtime on this session's start/end range.
+ * Status is not applied here — callers must restrict to APPROVED sessions
+ * with approved overtime minutes before counting employee-summary days.
+ */
+export function countedVacationDayKeysForRecord(record) {
+  const startAt = record?.startAt;
+  const endAt = record?.endAt;
+  if (!startAt || !endAt) return [];
+  const byDay = eligibleOvertimeMinutesByCalendarDay(startAt, endAt);
+  const keys = [];
+  for (const [key, minutes] of Object.entries(byDay)) {
+    if (!Number.isFinite(Number(minutes)) || Number(minutes) <= 0) continue;
+    const ymd = parseYmdKey(key);
+    if (ymd && !isOfficialWorkingDay(ymd)) keys.push(key);
+  }
+  return keys;
 }
 
 function userDisplayName(user) {
@@ -431,7 +537,10 @@ export function computeEmployeeSummaries(records = []) {
       summary = {
         technicianName: name,
         email,
+        phone: userPhone(user),
         totalApprovedMinutes: 0,
+        totalTravelApprovedMinutes: 0,
+        totalNormalApprovedMinutes: 0,
         totalWorkedMinutes: 0,
         totalSessions: 0,
         normalSessions: 0,
@@ -440,8 +549,12 @@ export function computeEmployeeSummaries(records = []) {
         approvedSessions: 0,
         pendingReviewSessions: 0,
         rejectedSessions: 0,
+        vacationDayKeys: new Set(),
       };
       employees.set(key, summary);
+    } else if (summary.phone === '—') {
+      const nextPhone = userPhone(user);
+      if (nextPhone !== '—') summary.phone = nextPhone;
     }
 
     const status = String(record?.status || '').toUpperCase();
@@ -458,8 +571,19 @@ export function computeEmployeeSummaries(records = []) {
       summary.normalSessions += 1;
     }
     if (status === 'APPROVED') {
+      const approvedMinutes = resolveApprovedMinutes(record);
       summary.approvedSessions += 1;
-      summary.totalApprovedMinutes += resolveApprovedMinutes(record);
+      summary.totalApprovedMinutes += approvedMinutes;
+      if (type === 'TRAVEL') {
+        summary.totalTravelApprovedMinutes += approvedMinutes;
+      } else if (type === 'NORMAL') {
+        summary.totalNormalApprovedMinutes += approvedMinutes;
+      }
+      if (approvedMinutes > 0) {
+        for (const dayKey of countedVacationDayKeysForRecord(record)) {
+          summary.vacationDayKeys.add(dayKey);
+        }
+      }
     } else if (status === 'PENDING_REVIEW') {
       summary.pendingReviewSessions += 1;
     } else if (status === 'REJECTED') {
@@ -467,7 +591,14 @@ export function computeEmployeeSummaries(records = []) {
     }
   }
 
-  return [...employees.values()].sort((a, b) =>
+  return [...employees.values()]
+    .map((summary) => {
+      const countedVacationDays = summary.vacationDayKeys.size;
+      const { vacationDayKeys, ...rest } = summary;
+      void vacationDayKeys;
+      return { ...rest, countedVacationDays };
+    })
+    .sort((a, b) =>
     a.technicianName.localeCompare(b.technicianName, undefined, {
       sensitivity: 'base',
     })
@@ -548,20 +679,36 @@ function writeKvRow(sheet, row, label1, value1, label2, value2) {
   const r = sheet.getRow(row);
   r.getCell(1).value = label1;
   r.getCell(1).font = { bold: true, color: { argb: COLORS.muted } };
-  r.getCell(2).value = value1 ?? '—';
-  r.getCell(2).alignment = { vertical: 'middle', wrapText: true };
+  writeKvValueCell(r.getCell(2), value1);
   if (label2 !== undefined) {
     r.getCell(3).value = label2;
     r.getCell(3).font = { bold: true, color: { argb: COLORS.muted } };
-    r.getCell(4).value = value2 ?? '—';
-    r.getCell(4).alignment = { vertical: 'middle', wrapText: true };
+    writeKvValueCell(r.getCell(4), value2);
   }
   for (let c = 1; c <= 4; c += 1) {
     r.getCell(c).border = thinBorder();
     r.getCell(c).fill = solidFill(COLORS.surface);
   }
-  r.height = Math.max(22, estimateWrapHeight(String(value1 ?? ''), 40));
+  const wrapSource = isExcelDurationInput(value1)
+    ? '0:00'
+    : String(value1 ?? '');
+  r.height = Math.max(22, estimateWrapHeight(wrapSource, 40));
   return row + 1;
+}
+
+function writeKvValueCell(cell, value) {
+  if (isExcelDurationInput(value)) {
+    cell.value = value.value;
+    cell.numFmt = value.numFmt;
+    cell.alignment = {
+      vertical: 'middle',
+      wrapText: true,
+      horizontal: 'center',
+    };
+    return;
+  }
+  cell.value = value ?? '—';
+  cell.alignment = { vertical: 'middle', wrapText: true };
 }
 
 function estimateWrapHeight(text, charsPerLine) {
@@ -587,32 +734,26 @@ function writeSectionHeader(sheet, row, title, fillArgb = COLORS.navy, colSpan =
 
 /**
  * Arabic worksheets stay column-LTR (A on the left) so the employee table's
- * visual order matches logical A:K. Duration cells still set readingOrder=ltr
- * because context-dependent direction picks RTL from the first Arabic letter
- * (digits are not strong), which visually reverses "23 ساعة و 42 دقيقة".
+ * visual order matches logical A:N. Duration cells are Excel time serials
+ * with [h]:mm so mixed Arabic+digit prose is not BiDi-reordered.
  */
 function sheetUsesRightToLeft(lang) {
-  // Intentionally false for Arabic: sheet RTL mirrors columns and makes A:K
+  // Intentionally false for Arabic: sheet RTL mirrors columns and makes A:N
   // appear semantically wrong when read left-to-right in Excel.
   void lang;
   return false;
 }
 
-function durationCellAlignment(lang) {
-  if (normalizeExportLanguage(lang) !== EXPORT_LANG.AR) {
-    return { vertical: 'middle', wrapText: true, horizontal: 'center' };
-  }
+function durationNumberAlignment() {
   return {
     vertical: 'middle',
     wrapText: true,
-    horizontal: 'left',
-    readingOrder: 'ltr',
+    horizontal: 'center',
   };
 }
 
-function isDurationCellValue(value) {
-  if (typeof value !== 'string') return false;
-  return /ساعة|دقيقة|hour|minute/i.test(value);
+function isDurationKpi(kpi) {
+  return Boolean(kpi?.isDuration);
 }
 
 function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
@@ -639,14 +780,17 @@ function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
       labelRow.getCell(col).border = thinBorder();
 
       valueRow.getCell(col).value = kpi.value;
+      if (kpi.numFmt) {
+        valueRow.getCell(col).numFmt = kpi.numFmt;
+      }
       valueRow.getCell(col).font = {
         bold: true,
         size: 14,
         color: { argb: COLORS.navy },
       };
       valueRow.getCell(col).fill = solidFill(COLORS.kpiBg);
-      valueRow.getCell(col).alignment = isDurationCellValue(kpi.value)
-        ? durationCellAlignment(lang)
+      valueRow.getCell(col).alignment = isDurationKpi(kpi)
+        ? durationNumberAlignment()
         : {
             horizontal: 'center',
             vertical: 'middle',
@@ -663,39 +807,37 @@ function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
 
 /**
  * Canonical employee-summary columns — ONE source for headers, values,
- * widths, and tests. Logical + visual A:K (sheet is column-LTR).
+ * widths, and tests. Logical + visual A:N (sheet is column-LTR).
  * ExcelJS `row.values = [null, …]` is forbidden (null occupies column A and shifts data).
  */
 export function getEmployeeSummaryColumnDefs(lang = EXPORT_LANG.EN) {
   const t = excelStrings(lang);
   return [
-    { key: 'name', header: t.empName, width: 22 },
-    { key: 'email', header: t.empEmail, width: 28 },
-    { key: 'workedHours', header: t.empWorkedHours, isDuration: true, width: 26 },
-    { key: 'approvedHours', header: t.empApprovedHours, isDuration: true, width: 24 },
-    { key: 'totalSessions', header: t.empSessions, width: 14 },
-    { key: 'normalSessions', header: t.empNormal, width: 14 },
-    { key: 'travelSessions', header: t.empTravel, width: 14 },
-    { key: 'overnightSessions', header: t.empOvernight, width: 14 },
-    { key: 'approvedSessions', header: t.empApproved, width: 14 },
-    { key: 'pendingSessions', header: t.empPending, width: 16 },
-    { key: 'rejectedSessions', header: t.empRejected, width: 14 },
+    { key: 'name', header: t.empName, type: 'text', width: 22 },
+    { key: 'email', header: t.empEmail, type: 'text', width: 28 },
+    { key: 'phone', header: t.empPhone, type: 'phone', width: 16 },
+    { key: 'approvedHours', header: t.empApprovedHours, type: 'duration', width: 28 },
+    { key: 'totalSessions', header: t.empSessions, type: 'number', width: 14 },
+    { key: 'normalSessions', header: t.empNormal, type: 'number', width: 16 },
+    { key: 'travelSessions', header: t.empTravel, type: 'number', width: 12 },
+    { key: 'overnightSessions', header: t.empOvernight, type: 'number', width: 12 },
+    { key: 'approvedSessions', header: t.empApproved, type: 'number', width: 12 },
+    { key: 'pendingSessions', header: t.empPending, type: 'number', width: 14 },
+    { key: 'rejectedSessions', header: t.empRejected, type: 'number', width: 12 },
+    { key: 'travelApprovedHours', header: t.empTravelHours, type: 'duration', width: 28 },
+    { key: 'normalApprovedHours', header: t.empNormalHours, type: 'duration', width: 24 },
+    { key: 'countedVacationDays', header: t.empCountedVacationDays, type: 'number', width: 24 },
   ];
 }
 
-/** Map aggregated employee summary → canonical A:K cell values. */
+/** Map aggregated employee summary → canonical A:N cell values. */
 export function employeeSummaryRowValues(employee, lang = EXPORT_LANG.EN) {
+  void lang;
   return {
     name: employee.technicianName,
     email: employee.email,
-    workedHours: formatDurationProseFromMinutes(
-      employee.totalWorkedMinutes,
-      lang
-    ),
-    approvedHours: formatDurationProseFromMinutes(
-      employee.totalApprovedMinutes,
-      lang
-    ),
+    phone: employee.phone ?? '—',
+    approvedHours: employee.totalApprovedMinutes,
     totalSessions: employee.totalSessions,
     normalSessions: employee.normalSessions,
     travelSessions: employee.travelSessions,
@@ -703,10 +845,14 @@ export function employeeSummaryRowValues(employee, lang = EXPORT_LANG.EN) {
     approvedSessions: employee.approvedSessions,
     pendingSessions: employee.pendingReviewSessions,
     rejectedSessions: employee.rejectedSessions,
+    travelApprovedHours: employee.totalTravelApprovedMinutes,
+    normalApprovedHours: employee.totalNormalApprovedMinutes,
+    countedVacationDays: employee.countedVacationDays,
   };
 }
 
 function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
+  const t = excelStrings(lang);
   const columns = getEmployeeSummaryColumnDefs(lang);
   const headerRow = sheet.getRow(startRow);
   for (let i = 0; i < columns.length; i += 1) {
@@ -721,7 +867,7 @@ function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
       wrapText: true,
     };
   }
-  headerRow.height = 34;
+  headerRow.height = 46;
 
   summaries.forEach((employee, index) => {
     const row = sheet.getRow(startRow + index + 1);
@@ -729,11 +875,21 @@ function writeEmployeeSummaryTable(sheet, startRow, summaries, lang) {
     for (let i = 0; i < columns.length; i += 1) {
       const column = columns[i];
       const cell = row.getCell(i + 1);
-      cell.value = values[column.key];
+      const raw = values[column.key];
+      if (column.type === 'duration') {
+        applyExcelDurationCell(cell, raw, t.dash);
+        cell.alignment = durationNumberAlignment();
+      } else if (column.type === 'phone') {
+        applyExcelPhoneCell(cell, raw, t.dash);
+        cell.alignment = { vertical: 'middle', wrapText: true };
+      } else if (column.type === 'number') {
+        cell.value = Number(raw) || 0;
+        cell.alignment = { vertical: 'middle', wrapText: true, horizontal: 'center' };
+      } else {
+        cell.value = raw;
+        cell.alignment = { vertical: 'middle', wrapText: true };
+      }
       cell.border = thinBorder();
-      cell.alignment = column.isDuration
-        ? durationCellAlignment(lang)
-        : { vertical: 'middle', wrapText: true };
       if (index % 2 === 1) cell.fill = solidFill(COLORS.altRow);
     }
   });
@@ -952,11 +1108,15 @@ export async function buildOvertimeExcelWorkbook({
       { label: t.kpiTotalTechnicians, value: employeeSummaries.length },
       {
         label: t.kpiTotalWorkedHours,
-        value: formatDurationProseFromMinutes(stats.totalEligibleMinutes, lang),
+        value: excelSerialFromMinutes(stats.totalEligibleMinutes) ?? t.dash,
+        numFmt: EXCEL_DURATION_NUM_FMT,
+        isDuration: true,
       },
       {
         label: t.kpiTotalApprovedHours,
-        value: formatDurationProseFromMinutes(stats.totalApprovedMinutes, lang),
+        value: excelSerialFromMinutes(stats.totalApprovedMinutes) ?? t.dash,
+        numFmt: EXCEL_DURATION_NUM_FMT,
+        isDuration: true,
       },
       { label: t.kpiTotalSessions, value: limited.length },
       { label: t.kpiTravelTrips, value: stats.travelCount },
@@ -1061,7 +1221,7 @@ export async function buildOvertimeExcelWorkbook({
     const sheetName = hasSheet ? sessionSheetName(seq, lang) : t.sheetAdditionalSessions;
     const approvedHours =
       String(record.status).toUpperCase() === 'APPROVED'
-        ? formatDurationProseFromHours(resolveApprovedHours(record), lang)
+        ? excelDurationOrDashFromHours(resolveApprovedHours(record), t.dash)
         : t.dash;
     const rowValues = [
       record._id?.toString?.() || '',
@@ -1075,8 +1235,8 @@ export async function buildOvertimeExcelWorkbook({
       statusLabel(record.status, lang),
       typeLabel(record.type, lang),
       overnightLabel(record, lang),
-      formatDurationProseFromHours(workedHoursFromRecord(record), lang),
-      hoursLabel(record.eligibleOvertimeMinutes, lang),
+      excelDurationOrDashFromHours(workedHoursFromRecord(record), t.dash),
+      excelDurationOrDash(record.eligibleOvertimeMinutes, t.dash),
       approvedHours,
       hasSheet
         ? linkCell(t.openSheet(sheetName), sessionHyperlink(sheetName))
@@ -1100,9 +1260,11 @@ export async function buildOvertimeExcelWorkbook({
       style: { theme: 'TableStyleMedium2', showRowStripes: true },
       columns: indexHeaders.map((name) => ({ name, filterButton: true })),
       rows: indexRows.map((row) =>
-        row.map((cell) =>
-          cell && typeof cell === 'object' && cell.hyperlink ? cell.text : cell
-        )
+        row.map((cell) => {
+          if (cell && typeof cell === 'object' && cell.hyperlink) return cell.text;
+          if (isExcelDurationInput(cell)) return cell.value;
+          return cell;
+        })
       ),
     });
 
@@ -1118,15 +1280,17 @@ export async function buildOvertimeExcelWorkbook({
             underline: true,
             size: 10,
           };
+        } else if (isExcelDurationInput(value)) {
+          cell.value = value.value;
+          cell.numFmt = value.numFmt;
         }
       });
       styleStatusBadge(excelRow.getCell(9), limited[i]?.status);
       excelRow.eachCell((cell) => {
         cell.alignment = { vertical: 'middle', wrapText: true };
       });
-      // Duration columns: worked / calculated / approved
       for (const col of [12, 13, 14]) {
-        excelRow.getCell(col).alignment = durationCellAlignment(lang);
+        excelRow.getCell(col).alignment = durationNumberAlignment();
       }
     }
   }
@@ -1213,11 +1377,11 @@ export async function buildOvertimeExcelWorkbook({
         : record.approvedAt;
     const approvedHours =
       String(record.status).toUpperCase() === 'APPROVED'
-        ? formatDurationProseFromHours(resolveApprovedHours(record), lang)
+        ? excelDurationOrDashFromHours(resolveApprovedHours(record), t.dash)
         : t.dash;
-    const workedHours = formatDurationProseFromHours(
+    const workedHours = excelDurationOrDashFromHours(
       workedHoursFromRecord(record),
-      lang
+      t.dash
     );
 
     r = writeSectionHeader(sheet, r, t.sectionOvertimeInfo, COLORS.navy);
@@ -1276,17 +1440,17 @@ export async function buildOvertimeExcelWorkbook({
       sheet,
       r,
       t.calculatedHours,
-      hoursLabel(record.eligibleOvertimeMinutes, lang),
+      excelDurationOrDash(record.eligibleOvertimeMinutes, t.dash),
       t.workingHours,
-      hoursLabel(record.workingDurationMinutes, lang)
+      excelDurationOrDash(record.workingDurationMinutes, t.dash)
     );
     r = writeKvRow(
       sheet,
       r,
       t.totalDuration,
-      hoursLabel(record.totalDurationMinutes, lang),
+      excelDurationOrDash(record.totalDurationMinutes, t.dash),
       t.travelHours,
-      hoursLabel(travelMinutes(record), lang)
+      excelDurationOrDash(travelMinutes(record), t.dash)
     );
     r = writeKvRow(
       sheet,
@@ -1572,23 +1736,26 @@ export async function buildOvertimeExcelWorkbook({
         statusLabel(record.status, lang),
         typeLabel(record.type, lang),
         overnightLabel(record, lang),
-        formatDurationProseFromHours(workedHoursFromRecord(record), lang),
-        hoursLabel(record.eligibleOvertimeMinutes, lang),
+        excelDurationOrDashFromHours(workedHoursFromRecord(record), t.dash),
+        excelDurationOrDash(record.eligibleOvertimeMinutes, t.dash),
         String(record.status).toUpperCase() === 'APPROVED'
-          ? formatDurationProseFromHours(resolveApprovedHours(record), lang)
+          ? excelDurationOrDashFromHours(resolveApprovedHours(record), t.dash)
           : t.dash,
-        hoursLabel(record.workingDurationMinutes, lang),
-        hoursLabel(travelMinutes(record), lang),
+        excelDurationOrDash(record.workingDurationMinutes, t.dash),
+        excelDurationOrDash(travelMinutes(record), t.dash),
         record.reviewNotes || t.dash,
       ];
       values.forEach((value, colIdx) => {
         const cell = row.getCell(colIdx + 1);
-        cell.value = value;
+        if (isExcelDurationInput(value)) {
+          cell.value = value.value;
+          cell.numFmt = value.numFmt;
+          cell.alignment = durationNumberAlignment();
+        } else {
+          cell.value = value;
+          cell.alignment = { vertical: 'middle', wrapText: true };
+        }
         cell.border = thinBorder();
-        cell.alignment =
-          colIdx >= 11 && colIdx <= 15
-            ? durationCellAlignment(lang)
-            : { vertical: 'middle', wrapText: true };
       });
       styleStatusBadge(row.getCell(9), record.status);
     });

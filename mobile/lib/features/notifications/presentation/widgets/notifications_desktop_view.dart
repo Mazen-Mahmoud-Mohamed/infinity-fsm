@@ -55,6 +55,13 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
     final l10n = AppLocalizations.of(context);
 
     return BlocBuilder<NotificationsCubit, NotificationsState>(
+      buildWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.items != current.items ||
+          previous.category != current.category ||
+          previous.searchQuery != current.searchQuery ||
+          previous.isRefreshing != current.isRefreshing ||
+          previous.message != current.message,
       builder: (context, state) {
         if ((state.status == NotificationsStatus.loading ||
                 state.status == NotificationsStatus.initial) &&

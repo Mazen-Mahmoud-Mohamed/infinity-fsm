@@ -108,12 +108,16 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         emit(
           state.copyWith(
             status: NotificationsStatus.ready,
-            items: data,
+            items: data.items,
             clearMessage: true,
             isRefreshing: false,
           ),
         );
-        await _unreadCubit.refresh();
+        if (data.unreadCount != null) {
+          _unreadCubit.applyExactCount(data.unreadCount!);
+        } else {
+          await _unreadCubit.refresh();
+        }
     }
   }
 
@@ -127,13 +131,17 @@ class NotificationsCubit extends Cubit<NotificationsState> {
   }
 
   Future<void> markAsRead(String id) async {
+    final wasUnread =
+        state.items.any((item) => item.id == id && !item.isRead);
     final result = await _markNotificationRead(id);
     if (result is Failure) return;
     final next = state.items
         .map((item) => item.id == id ? item.copyWith(isRead: true) : item)
         .toList(growable: false);
     emit(state.copyWith(items: next));
-    await _unreadCubit.refresh();
+    if (wasUnread) {
+      _unreadCubit.adjustBy(-1);
+    }
   }
 
   Future<void> markAllAsRead() async {
@@ -144,6 +152,6 @@ class NotificationsCubit extends Cubit<NotificationsState> {
         .map((item) => item.copyWith(isRead: true))
         .toList(growable: false);
     emit(state.copyWith(items: next));
-    await _unreadCubit.refresh();
+    _unreadCubit.applyExactCount(0);
   }
 }

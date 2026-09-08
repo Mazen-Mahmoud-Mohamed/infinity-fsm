@@ -7,6 +7,8 @@ import {
   computeEmployeeSummaries,
   getEmployeeSummaryColumnDefs,
   employeeSummaryRowValues,
+  excelSerialFromMinutes,
+  countedVacationDayKeysForRecord,
   EXPORT_MODE,
   stripBidiMarks,
 } from '../modules/business/overtime/overtime.excel.export.js';
@@ -37,19 +39,49 @@ function expectPlainArabicDuration(actual, expectedLogical) {
   }
 }
 
-function makeUser(id, first, last, email) {
+function minutesFromExcelCell(cell) {
+  const value = cell?.value;
+  if (typeof value === 'number') {
+    return Math.round(value * 24 * 60);
+  }
+  if (value instanceof Date) {
+    return (
+      value.getUTCHours() * 60 +
+      value.getUTCMinutes() +
+      Math.round(value.getUTCSeconds() / 60)
+    );
+  }
+  if (value && typeof value === 'object' && typeof value.result === 'number') {
+    return Math.round(value.result * 24 * 60);
+  }
+  return null;
+}
+
+function expectExcelDurationMinutes(cell, minutes) {
+  expect(minutesFromExcelCell(cell)).toBe(minutes);
+  expect(String(cell.numFmt || '')).toMatch(/\[h\]:mm/i);
+}
+
+function expectPhoneText(cell, expected) {
+  expect(cell.value).toBe(expected);
+  expect(typeof cell.value).toBe('string');
+  expect(String(cell.numFmt || '')).toContain('@');
+}
+
+function makeUser(id, first, last, email, phone = null) {
   return {
     _id: { toString: () => id },
     firstName: first,
     lastName: last,
     email,
     employeeId: id,
+    phone,
   };
 }
 
 /** Screenshot regression fixture: Field Technician + test2 test. */
 function makeScreenshotRegressionRecords() {
-  const u1 = makeUser('u1', 'Field', 'Technician', 'test@gmail.com');
+  const u1 = makeUser('u1', 'Field', 'Technician', 'test@gmail.com', '01234567890');
   const u2 = makeUser('u2', 'test2', 'test', 'test2@gmail.com');
   const records = [];
   const fieldEligible = [250, 250, 250, 250, 250, 172];
@@ -130,6 +162,7 @@ function makeRecord(overrides = {}) {
       email: 'ada@example.com',
       employeeId: 'E-100',
       jobTitle: 'Technician',
+      phone: '01234567890',
     },
     checkpoints: {},
     ...overrides,
@@ -273,6 +306,7 @@ describe('employee summary aggregation', () => {
           firstName: 'Ada',
           lastName: 'Lovelace',
           email: 'ada@example.com',
+          phone: '01234567890',
         },
       }),
       makeRecord({
@@ -287,6 +321,7 @@ describe('employee summary aggregation', () => {
           firstName: 'Ada',
           lastName: 'Lovelace',
           email: 'ada@example.com',
+          phone: '01234567890',
         },
       }),
       makeRecord({
@@ -309,6 +344,7 @@ describe('employee summary aggregation', () => {
     expect(summaries).toHaveLength(2);
 
     const ada = summaries.find((s) => s.email === 'ada@example.com');
+    expect(ada.phone).toBe('01234567890');
     expect(ada.totalSessions).toBe(2);
     expect(ada.normalSessions).toBe(1);
     expect(ada.travelSessions).toBe(1);
@@ -319,6 +355,8 @@ describe('employee summary aggregation', () => {
     expect(ada.totalWorkedMinutes).toBe(897 + 120);
     // 10.33 hours → round(10.33 * 60) = 620 minutes via resolveApprovedMinutes
     expect(ada.totalApprovedMinutes).toBe(620);
+    expect(ada.totalTravelApprovedMinutes).toBe(620);
+    expect(ada.totalNormalApprovedMinutes).toBe(0);
     expect(formatDurationProseFromMinutes(ada.totalApprovedMinutes, 'en')).toBe(
       '10 hours 20 minutes'
     );
@@ -327,10 +365,13 @@ describe('employee summary aggregation', () => {
     );
 
     const bob = summaries.find((s) => s.email === 'bob@example.com');
+    expect(bob.phone).toBe('—');
     expect(bob.totalSessions).toBe(1);
     expect(bob.overnightTrips).toBe(0);
     expect(bob.rejectedSessions).toBe(1);
     expect(bob.totalApprovedMinutes).toBe(0);
+    expect(bob.totalTravelApprovedMinutes).toBe(0);
+    expect(bob.totalNormalApprovedMinutes).toBe(0);
   });
 
   test('does not double-count sessions across technicians', () => {
@@ -363,8 +404,7 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(/Overnight Sessions/);
     expect(joined).toMatch(/Ada Lovelace/);
     expect(joined).toMatch(/ada@example\.com/);
-    expect(joined).toMatch(/10 hours 20 minutes/);
-    expect(joined).toMatch(/14 hours 57 minutes/);
+    expect(joined).toMatch(/01234567890/);
     expect(joined).not.toMatch(/Department/i);
     expect(joined).not.toMatch(/Branch/i);
   });
@@ -383,8 +423,6 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(t.kpiTotalApprovedHours);
     expect(joined).toMatch(t.kpiPendingSessions);
     expect(joined).toMatch(t.kpiRejectedSessions);
-    expect(stripBidiMarks(joined)).toMatch(/14 ساعة و 57 دقيقة/);
-    expect(stripBidiMarks(joined)).toMatch(/10 ساعة و 20 دقيقة/);
     expect(joined).toMatch(/ada@example\.com/);
     expect(joined).not.toMatch(/Department/i);
     expect(joined).not.toMatch(/Branch/i);
@@ -414,7 +452,7 @@ describe('overtime excel workbook columns', () => {
     expect(dataRow.getCell(2).value).toBe('Ada Lovelace');
     expect(dataRow.getCell(3).value).toBe('ada@example.com');
     expect(dataRow.getCell(11).value).toBe('Yes');
-    expect(String(dataRow.getCell(14).value)).toBe('10 hours 20 minutes');
+    expectExcelDurationMinutes(dataRow.getCell(14), 620);
   });
 
   test('detailed Arabic uses localized sheet and overnight labels', async () => {
@@ -429,41 +467,35 @@ describe('overtime excel workbook columns', () => {
     expect(String(dataRow.getCell(9).value)).toBe('معتمد');
   });
 
-  test('Arabic workbook duration cells are plain text with LTR readingOrder', async () => {
+  test('Arabic workbook duration cells use Excel [h]:mm numeric time', async () => {
     const t = excelStrings('ar');
     const workbook = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'ar' });
     const summary = workbook.getWorksheet(t.sheetSummary);
     const found = [];
     summary.eachRow((row) => {
       row.eachCell((cell) => {
-        const raw = cell.value == null ? '' : String(cell.value);
-        if (raw.includes('ساعة') || raw.includes('دقيقة')) {
+        if (String(cell.numFmt || '').includes('[h]:mm')) {
           found.push(cell);
         }
       });
     });
     expect(found.length).toBeGreaterThan(0);
     for (const cell of found) {
-      const value = String(cell.value);
-      expect(value).not.toMatch(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\u061C]/);
-      expect(cell.alignment?.readingOrder).toBe('ltr');
-      const hoursMatch = value.match(/^(\d+)\s+ساعة/);
-      const minutesMatch = value.match(/و\s+(\d+)\s+دقيقة/);
-      if (hoursMatch && minutesMatch) {
-        expect(value.indexOf(hoursMatch[1])).toBeLessThan(
-          value.indexOf(minutesMatch[1])
-        );
-      }
+      const minutes = minutesFromExcelCell(cell);
+      expect(minutes).not.toBeNull();
+      expect(minutes).toBeGreaterThanOrEqual(0);
+      expect(String(cell.value)).not.toMatch(/ساعة|دقيقة/);
+      expect(String(cell.value)).not.toMatch(/[\u200E\u200F\u202A-\u202E\u2066-\u2069\u061C]/);
     }
   });
 
-  test('employee summary canonical columns are A:K with normal before travel', () => {
+  test('employee summary canonical columns are A:N without worked-hours column', () => {
     const columns = getEmployeeSummaryColumnDefs('ar');
-    expect(columns).toHaveLength(11);
+    expect(columns).toHaveLength(14);
     expect(columns.map((c) => c.key)).toEqual([
       'name',
       'email',
-      'workedHours',
+      'phone',
       'approvedHours',
       'totalSessions',
       'normalSessions',
@@ -472,25 +504,34 @@ describe('overtime excel workbook columns', () => {
       'approvedSessions',
       'pendingSessions',
       'rejectedSessions',
+      'travelApprovedHours',
+      'normalApprovedHours',
+      'countedVacationDays',
     ]);
     const t = excelStrings('ar');
     expect(columns.map((c) => c.header)).toEqual([
       'اسم الموظف',
       'بريد الموظف',
-      'إجمالي الساعات المحسوبة / الفعلية',
-      'إجمالي الساعات المعتمدة',
+      'رقم الهاتف',
+      'إجمالي ساعات عمل الإضافي',
       'إجمالي الجلسات',
       'الجلسات العادية',
-      'جلسات السفر',
-      'جلسات المبيت',
-      'الجلسات المعتمدة',
-      'الجلسات قيد المراجعة',
-      'الجلسات المرفوضة',
+      'السفر',
+      'مبيت',
+      'المعتمدة',
+      'قيد المراجعة',
+      'المرفوضة',
+      'إجمالي ساعات السفر الإضافي',
+      'إجمالي الساعات العادية',
+      'عدد أيام الإجازات المحتسبة',
     ]);
+    expect(columns.map((c) => c.header)).not.toContain(
+      'إجمالي الساعات المحسوبة / الفعلية'
+    );
     expect(t.empName).toBe(columns[0].header);
   });
 
-  test('screenshot regression: employee A:K mapping and durations in generated XLSX', async () => {
+  test('screenshot regression: employee A:N mapping and durations in generated XLSX', async () => {
     const t = excelStrings('ar');
     const columns = getEmployeeSummaryColumnDefs('ar');
     const records = makeScreenshotRegressionRecords();
@@ -510,7 +551,6 @@ describe('overtime excel workbook columns', () => {
     await workbook.xlsx.load(buffer);
     const summary = workbook.getWorksheet(t.sheetSummary);
     expect(summary).toBeTruthy();
-    // Column-LTR sheet so A is visually on the left (matches A:K semantic order).
     expect(Boolean(summary.views?.[0]?.rightToLeft)).toBe(false);
 
     const headerRowNumber = findEmployeeHeaderRow(summary, t.empName);
@@ -519,36 +559,32 @@ describe('overtime excel workbook columns', () => {
     const headerRow = summary.getRow(headerRowNumber);
     const headers = columns.map((_, i) => String(headerRow.getCell(i + 1).value ?? ''));
     expect(headers).toEqual(columns.map((c) => c.header));
+    expect(headers).not.toContain('إجمالي الساعات المحسوبة / الفعلية');
     expect(headers[5]).toBe('الجلسات العادية');
-    expect(headers[6]).toBe('جلسات السفر');
+    expect(headers[6]).toBe('السفر');
 
     const row1 = summary.getRow(headerRowNumber + 1);
     const row2 = summary.getRow(headerRowNumber + 2);
 
-    // First employee starts at A, not B — no leading empty cell.
     expect(row1.getCell(1).value).toBe('Field Technician');
     expect(row1.getCell(2).value).toBe('test@gmail.com');
-    expect(row1.getCell(1).value).not.toBe('');
-    expect(row1.getCell(1).value).not.toBeNull();
-    const sparse = row1.values;
-    if (Array.isArray(sparse) && sparse.length > 1) {
-      expect(sparse[1]).toBe('Field Technician');
-    }
-
-    expectPlainArabicDuration(row1.getCell(3).value, '23 ساعة و 42 دقيقة');
-    expectPlainArabicDuration(row1.getCell(4).value, '18 ساعة و 44 دقيقة');
+    expectPhoneText(row1.getCell(3), '01234567890');
+    expectExcelDurationMinutes(row1.getCell(4), 1124);
     expect(row1.getCell(5).value).toBe(6);
-    expect(row1.getCell(6).value).toBe(5); // F = normal
-    expect(row1.getCell(7).value).toBe(1); // G = travel
+    expect(row1.getCell(6).value).toBe(5);
+    expect(row1.getCell(7).value).toBe(1);
     expect(row1.getCell(8).value).toBe(1);
     expect(row1.getCell(9).value).toBe(3);
     expect(row1.getCell(10).value).toBe(3);
     expect(row1.getCell(11).value).toBe(0);
+    expectExcelDurationMinutes(row1.getCell(12), 0);
+    expectExcelDurationMinutes(row1.getCell(13), 1124);
+    expect(row1.getCell(14).value).toBe(0);
 
     expect(row2.getCell(1).value).toBe('test2 test');
     expect(row2.getCell(2).value).toBe('test2@gmail.com');
-    expectPlainArabicDuration(row2.getCell(3).value, '19 ساعة و 48 دقيقة');
-    expectPlainArabicDuration(row2.getCell(4).value, '14 ساعة و 18 دقيقة');
+    expectPhoneText(row2.getCell(3), '—');
+    expectExcelDurationMinutes(row2.getCell(4), 858);
     expect(row2.getCell(5).value).toBe(4);
     expect(row2.getCell(6).value).toBe(0);
     expect(row2.getCell(7).value).toBe(4);
@@ -556,33 +592,24 @@ describe('overtime excel workbook columns', () => {
     expect(row2.getCell(9).value).toBe(1);
     expect(row2.getCell(10).value).toBe(3);
     expect(row2.getCell(11).value).toBe(0);
+    expectExcelDurationMinutes(row2.getCell(12), 858);
+    expectExcelDurationMinutes(row2.getCell(13), 0);
+    expect(row2.getCell(14).value).toBe(0);
 
-    expect(row1.getCell(3).alignment?.readingOrder).toBe('ltr');
-    expect(row1.getCell(4).alignment?.readingOrder).toBe('ltr');
-    expect(row2.getCell(3).alignment?.readingOrder).toBe('ltr');
-    expect(row2.getCell(4).alignment?.readingOrder).toBe('ltr');
-
-    // OOXML: column-LTR sheet, duration readingOrder=1, plain strings, A before B.
     const zip = await JSZip.loadAsync(buffer);
     const sheetXml = await zip.file('xl/worksheets/sheet1.xml').async('string');
     const stylesXml = await zip.file('xl/styles.xml').async('string');
     const sharedXml = await zip.file('xl/sharedStrings.xml').async('string');
 
     expect(sheetXml).not.toContain('rightToLeft="1"');
-    expect(stylesXml).toContain('readingOrder="1"');
+    expect(stylesXml).toMatch(/\[h\]:mm/);
+    expect(stylesXml).toMatch(/numFmtId="49"|formatCode="@"/);
     expect(sharedXml).not.toContain(LRO);
     expect(sharedXml).not.toContain(PDF);
-    expect(sharedXml).not.toContain(LRM);
-    expect(sharedXml).not.toContain(RLM);
-    expect(sharedXml).toContain('23 ساعة و 42 دقيقة');
+    expect(sharedXml).not.toContain('23 ساعة و 42 دقيقة');
     expect(sharedXml).toContain('Field Technician');
     expect(sharedXml).toContain('test2 test');
-    // Hours digit must appear before minutes digit in stored text.
-    const durationIdx = sharedXml.indexOf('23 ساعة و 42 دقيقة');
-    expect(durationIdx).toBeGreaterThan(-1);
-    expect(sharedXml.indexOf('42', durationIdx)).toBeGreaterThan(
-      sharedXml.indexOf('23', durationIdx)
-    );
+    expect(sharedXml).toContain('01234567890');
 
     const dataRowXml =
       sheetXml.match(
@@ -593,15 +620,12 @@ describe('overtime excel workbook columns', () => {
     expect(dataRowXml.indexOf(`r="A${headerRowNumber + 1}"`)).toBeLessThan(
       dataRowXml.indexOf(`r="B${headerRowNumber + 1}"`)
     );
-    // Duration cells must use a style that includes readingOrder (s index with ltr).
-    expect(dataRowXml).toMatch(
-      new RegExp(`<c r="C${headerRowNumber + 1}" s="\\d+"`)
-    );
 
     const summaries = computeEmployeeSummaries(records);
     const field = summaries.find((s) => s.email === 'test@gmail.com');
     const mapped = employeeSummaryRowValues(field, 'ar');
     expect(mapped.name).toBe('Field Technician');
+    expect(mapped.phone).toBe('01234567890');
     expect(mapped.normalSessions).toBe(5);
     expect(mapped.travelSessions).toBe(1);
     expect(Object.keys(mapped)).toEqual(columns.map((c) => c.key));
@@ -625,8 +649,8 @@ describe('overtime excel workbook columns', () => {
     const values = columns.map((_, i) => dataRow.getCell(i + 1).value);
     expect(values[0]).toBe('Ada Lovelace');
     expect(values[1]).toBe('ada@example.com');
-    expect(String(values[2])).toMatch(/ساعة|دقيقة/);
-    expect(String(values[3])).toMatch(/ساعة|دقيقة/);
+    expectPhoneText(dataRow.getCell(3), '01234567890');
+    expectExcelDurationMinutes(dataRow.getCell(4), 620);
     expect(values[0]).not.toBeNull();
     expect(values[0]).not.toBe('');
     expect(String(values[0])).not.toMatch(/@/);
@@ -672,8 +696,399 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(/End Time/);
     expect(joined).toMatch(/Review Notes/);
     expect(joined).toMatch(/Partial approval/);
-    expect(joined).toMatch(/10 hours 20 minutes/);
     expect(joined).not.toMatch(/Department/);
     expect(joined).not.toMatch(/\bBranch\b/);
+    let foundApproved = false;
+    sheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        if (String(cell.numFmt || '').includes('[h]:mm') && minutesFromExcelCell(cell) === 620) {
+          foundApproved = true;
+        }
+      });
+    });
+    expect(foundApproved).toBe(true);
+  });
+});
+
+describe('employee summary A/B/C export fixtures', () => {
+  const friday = {
+    start: new Date('2026-03-06T08:00:00.000Z'),
+    end: new Date('2026-03-06T14:00:00.000Z'),
+  };
+  const friday2 = {
+    start: new Date('2026-03-13T08:00:00.000Z'),
+    end: new Date('2026-03-13T14:00:00.000Z'),
+  };
+  const sunday = {
+    start: new Date('2026-03-01T08:00:00.000Z'),
+    end: new Date('2026-03-01T14:00:00.000Z'),
+  };
+
+  function makeAbcRecords() {
+    const a = makeUser('u-a', 'Employee', 'A', 'a@example.com', '01234567890');
+    const b = makeUser('u-b', 'Employee', 'B', 'b@example.com', '0555555555');
+    const c = makeUser('u-c', 'Employee', 'C', 'c@example.com', '01000000000');
+    return [
+      makeRecord({
+        id: 'a-n-ok',
+        type: 'NORMAL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 2,
+        eligibleOvertimeMinutes: 120,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: a,
+      }),
+      makeRecord({
+        id: 'a-t-ok',
+        type: 'TRAVEL',
+        status: 'APPROVED',
+        isOvernight: true,
+        approvedHours: 1,
+        eligibleOvertimeMinutes: 60,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: a,
+      }),
+      makeRecord({
+        id: 'a-n-pending',
+        type: 'NORMAL',
+        status: 'PENDING_REVIEW',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 45,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: a,
+      }),
+      makeRecord({
+        id: 'a-t-rej',
+        type: 'TRAVEL',
+        status: 'REJECTED',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 30,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: a,
+      }),
+      makeRecord({
+        id: 'b-n-ok',
+        type: 'NORMAL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 3,
+        eligibleOvertimeMinutes: 180,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: b,
+      }),
+      makeRecord({
+        id: 'c-t1',
+        type: 'TRAVEL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 1.5,
+        eligibleOvertimeMinutes: 90,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: c,
+      }),
+      makeRecord({
+        id: 'c-t2',
+        type: 'TRAVEL',
+        status: 'APPROVED',
+        isOvernight: true,
+        approvedHours: 2.25,
+        eligibleOvertimeMinutes: 135,
+        startAt: friday2.start,
+        endAt: friday2.end,
+        userId: c,
+      }),
+    ];
+  }
+
+  test('vacation-day helper counts official non-working days that contributed eligible OT', () => {
+    const keys = countedVacationDayKeysForRecord({
+      startAt: friday.start,
+      endAt: friday.end,
+    });
+    expect(keys).toEqual(['2026-03-06']);
+    const sundayKeys = countedVacationDayKeysForRecord({
+      startAt: sunday.start,
+      endAt: sunday.end,
+    });
+    expect(sundayKeys).toEqual([]);
+  });
+
+  test('counted vacation days include only APPROVED official non-working days', () => {
+    const user = makeUser('u-vac', 'Vac', 'Tech', 'vac@example.com');
+
+    const fridayApproved = computeEmployeeSummaries([
+      makeRecord({
+        id: 'v-fri-ok',
+        type: 'NORMAL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 2,
+        eligibleOvertimeMinutes: 120,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+    ]);
+    expect(fridayApproved[0].countedVacationDays).toBe(1);
+
+    const fridayPending = computeEmployeeSummaries([
+      makeRecord({
+        id: 'v-fri-pending',
+        type: 'NORMAL',
+        status: 'PENDING_REVIEW',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 120,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+    ]);
+    expect(fridayPending[0].countedVacationDays).toBe(0);
+
+    const fridayRejected = computeEmployeeSummaries([
+      makeRecord({
+        id: 'v-fri-rej',
+        type: 'TRAVEL',
+        status: 'REJECTED',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 120,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+    ]);
+    expect(fridayRejected[0].countedVacationDays).toBe(0);
+
+    const twoSameFriday = computeEmployeeSummaries([
+      makeRecord({
+        id: 'v-fri-a',
+        type: 'NORMAL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 1,
+        eligibleOvertimeMinutes: 60,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+      makeRecord({
+        id: 'v-fri-b',
+        type: 'TRAVEL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 1,
+        eligibleOvertimeMinutes: 60,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+    ]);
+    expect(twoSameFriday[0].countedVacationDays).toBe(1);
+
+    const fridayPlusWeekday = computeEmployeeSummaries([
+      makeRecord({
+        id: 'v-fri-plus',
+        type: 'NORMAL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 2,
+        eligibleOvertimeMinutes: 120,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+      makeRecord({
+        id: 'v-sun-ok',
+        type: 'NORMAL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 3,
+        eligibleOvertimeMinutes: 180,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: user,
+      }),
+    ]);
+    expect(fridayPlusWeekday[0].countedVacationDays).toBe(1);
+  });
+
+  test('approved travel and normal hours exclude pending and rejected sessions', () => {
+    const user = makeUser('u-hrs', 'Hours', 'Tech', 'hours@example.com');
+    const summaries = computeEmployeeSummaries([
+      makeRecord({
+        id: 'h-t-ok',
+        type: 'TRAVEL',
+        status: 'APPROVED',
+        isOvernight: true,
+        approvedHours: 1.5,
+        eligibleOvertimeMinutes: 90,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+      makeRecord({
+        id: 'h-t-pending',
+        type: 'TRAVEL',
+        status: 'PENDING_REVIEW',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 200,
+        startAt: friday.start,
+        endAt: friday.end,
+        userId: user,
+      }),
+      makeRecord({
+        id: 'h-t-rej',
+        type: 'TRAVEL',
+        status: 'REJECTED',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 80,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: user,
+      }),
+      makeRecord({
+        id: 'h-n-ok',
+        type: 'NORMAL',
+        status: 'APPROVED',
+        isOvernight: false,
+        approvedHours: 2,
+        eligibleOvertimeMinutes: 120,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: user,
+      }),
+      makeRecord({
+        id: 'h-n-pending',
+        type: 'NORMAL',
+        status: 'PENDING_REVIEW',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 45,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: user,
+      }),
+      makeRecord({
+        id: 'h-n-rej',
+        type: 'NORMAL',
+        status: 'REJECTED',
+        isOvernight: false,
+        approvedHours: null,
+        eligibleOvertimeMinutes: 30,
+        startAt: sunday.start,
+        endAt: sunday.end,
+        userId: user,
+      }),
+    ]);
+    const row = summaries[0];
+    expect(row.totalTravelApprovedMinutes).toBe(Math.round(1.5 * 60));
+    expect(row.totalNormalApprovedMinutes).toBe(120);
+    expect(row.totalApprovedMinutes).toBe(Math.round(1.5 * 60) + 120);
+    expect(row.travelSessions).toBe(3);
+    expect(row.normalSessions).toBe(3);
+    expect(row.approvedSessions).toBe(2);
+    expect(row.pendingReviewSessions).toBe(2);
+    expect(row.rejectedSessions).toBe(2);
+  });
+
+  test('excel serial durations cover hours+minutes, hours-only, and minutes-only', () => {
+    expect(excelSerialFromMinutes(14 * 60 + 57) * 24 * 60).toBe(14 * 60 + 57);
+    expect(excelSerialFromMinutes(120) * 24 * 60).toBe(120);
+    expect(excelSerialFromMinutes(40) * 24 * 60).toBe(40);
+    expect(excelSerialFromMinutes(0) * 24 * 60).toBe(0);
+  });
+
+  test('Employee A/B/C summary columns, phones, hours, and vacation days', async () => {
+    const records = makeAbcRecords();
+    const summaries = computeEmployeeSummaries(records);
+    const empA = summaries.find((s) => s.email === 'a@example.com');
+    const empB = summaries.find((s) => s.email === 'b@example.com');
+    const empC = summaries.find((s) => s.email === 'c@example.com');
+
+    expect(empA.totalSessions).toBe(4);
+    expect(empA.normalSessions).toBe(2);
+    expect(empA.travelSessions).toBe(2);
+    expect(empA.overnightTrips).toBe(1);
+    expect(empA.approvedSessions).toBe(2);
+    expect(empA.pendingReviewSessions).toBe(1);
+    expect(empA.rejectedSessions).toBe(1);
+    expect(empA.totalApprovedMinutes).toBe(180);
+    expect(empA.totalTravelApprovedMinutes).toBe(60);
+    expect(empA.totalNormalApprovedMinutes).toBe(120);
+    expect(empA.countedVacationDays).toBe(1);
+    expect(empA.phone).toBe('01234567890');
+
+    expect(empB.travelSessions).toBe(0);
+    expect(empB.totalTravelApprovedMinutes).toBe(0);
+    expect(empB.totalNormalApprovedMinutes).toBe(180);
+    expect(empB.totalApprovedMinutes).toBe(180);
+    expect(empB.countedVacationDays).toBe(0);
+
+    expect(empC.travelSessions).toBe(2);
+    expect(empC.normalSessions).toBe(0);
+    expect(empC.totalTravelApprovedMinutes).toBe(
+      Math.round(1.5 * 60) + Math.round(2.25 * 60)
+    );
+    expect(empC.totalNormalApprovedMinutes).toBe(0);
+    expect(empC.countedVacationDays).toBe(2);
+
+    const t = excelStrings('ar');
+    const workbook = await loadWorkbook({
+      mode: EXPORT_MODE.SUMMARY,
+      language: 'ar',
+      records,
+    });
+    const summary = workbook.getWorksheet(t.sheetSummary);
+    const headerRowNumber = findEmployeeHeaderRow(summary, t.empName);
+    const headerDefs = getEmployeeSummaryColumnDefs('ar');
+    const headers = headerDefs.map((_, i) =>
+      String(summary.getRow(headerRowNumber).getCell(i + 1).value ?? '')
+    );
+    expect(headers).toEqual(headerDefs.map((c) => c.header));
+    expect(headers).not.toContain('إجمالي الساعات المحسوبة / الفعلية');
+
+    const rows = {};
+    for (let offset = 1; offset <= 3; offset += 1) {
+      const row = summary.getRow(headerRowNumber + offset);
+      rows[String(row.getCell(2).value)] = row;
+    }
+    const rowA = rows['a@example.com'];
+    expectPhoneText(rowA.getCell(3), '01234567890');
+    expectExcelDurationMinutes(rowA.getCell(4), 180);
+    expect(rowA.getCell(7).value).toBe(2);
+    expect(rowA.getCell(8).value).toBe(1);
+    expect(rowA.getCell(9).value).toBe(2);
+    expect(rowA.getCell(10).value).toBe(1);
+    expect(rowA.getCell(11).value).toBe(1);
+    expectExcelDurationMinutes(rowA.getCell(12), 60);
+    expectExcelDurationMinutes(rowA.getCell(13), 120);
+    expect(rowA.getCell(14).value).toBe(1);
+
+    const rowB = rows['b@example.com'];
+    expect(rowB.getCell(7).value).toBe(0);
+    expectExcelDurationMinutes(rowB.getCell(12), 0);
+    expectExcelDurationMinutes(rowB.getCell(13), 180);
+
+    const rowC = rows['c@example.com'];
+    expect(rowC.getCell(7).value).toBe(2);
+    expectExcelDurationMinutes(
+      rowC.getCell(12),
+      Math.round(1.5 * 60) + Math.round(2.25 * 60)
+    );
+    expectExcelDurationMinutes(rowC.getCell(13), 0);
+    expect(rowC.getCell(14).value).toBe(2);
   });
 });

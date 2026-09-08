@@ -277,7 +277,8 @@ class InventoryService {
         .populate('toWarehouseId', 'name code')
         .populate('userId', 'firstName lastName email')
         .sort({ movementDate: -1, createdAt: -1 })
-        .limit(10),
+        .limit(10)
+        .lean(),
     ]);
 
     return {
@@ -305,7 +306,7 @@ class InventoryService {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      Warehouse.find(filter).sort({ name: 1 }).skip(skip).limit(limit),
+      Warehouse.find(filter).sort({ name: 1 }).skip(skip).limit(limit).lean(),
       Warehouse.countDocuments(filter),
     ]);
 
@@ -471,7 +472,7 @@ class InventoryService {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      SparePart.find(filter).sort({ name: 1 }).skip(skip).limit(limit),
+      SparePart.find(filter).sort({ name: 1 }).skip(skip).limit(limit).lean(),
       SparePart.countDocuments(filter),
     ]);
 
@@ -705,7 +706,8 @@ class InventoryService {
         .populate('userId', 'firstName lastName email')
         .sort({ movementDate: -1, createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       StockMovement.countDocuments(filter),
     ]);
 
@@ -806,7 +808,8 @@ class InventoryService {
       .populate('warehouseId', 'name code')
       .populate('fromWarehouseId', 'name code')
       .populate('toWarehouseId', 'name code')
-      .populate('userId', 'firstName lastName email');
+      .populate('userId', 'firstName lastName email')
+      .lean();
 
     return {
       movement: this._mapMovement(populated),

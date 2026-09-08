@@ -359,7 +359,8 @@ class PreventiveMaintenanceService {
         })
           .populate('planId', 'name code priority assetId')
           .sort({ scheduledDate: 1 })
-          .limit(10),
+          .limit(10)
+          .lean(),
       ]);
 
     return {
@@ -401,7 +402,8 @@ class PreventiveMaintenanceService {
         .populate('assetId', 'name assetNumber')
         .sort({ nextDueDate: 1, name: 1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       MaintenancePlan.countDocuments(filter),
     ]);
 
@@ -717,7 +719,8 @@ class PreventiveMaintenanceService {
         .populate('planId', 'name code priority assetId')
         .sort({ scheduledDate: 1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       MaintenanceSchedule.countDocuments(filter),
     ]);
 
@@ -844,7 +847,8 @@ class PreventiveMaintenanceService {
         .populate('planId', 'name code priority assetId')
         .sort({ updatedAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       MaintenanceSchedule.countDocuments(filter),
     ]);
 

@@ -1,5 +1,4 @@
 import 'package:mobile/core/utils/result.dart';
-import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/domain/repositories/notifications_repository.dart';
 
 class GetNotificationsUseCase {
@@ -7,7 +6,7 @@ class GetNotificationsUseCase {
 
   final NotificationsRepository _repository;
 
-  Future<Result<List<AppNotification>>> call() =>
+  Future<Result<NotificationsPageResult>> call() =>
       _repository.getNotifications();
 }
 

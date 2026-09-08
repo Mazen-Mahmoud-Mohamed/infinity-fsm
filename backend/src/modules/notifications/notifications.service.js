@@ -283,6 +283,9 @@ export async function listNotifications(user, auth, { page = 1, limit = 50 } = {
 
   const [items, total, unreadCount] = await Promise.all([
     AppNotification.find(filter)
+      .select(
+        'type module titleAr titleEn bodyAr bodyEn entityType entityId data actorName isRead createdAt'
+      )
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limitNum)

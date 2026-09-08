@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:mobile/core/utils/result.dart';
@@ -33,22 +35,80 @@ class NotificationsUnreadCubit extends Cubit<NotificationsUnreadState> {
   NotificationsUnreadCubit({
     required GetNotificationsUnreadCountUseCase getUnreadCount,
     required NotificationsRepository repository,
+    Duration refreshDebounce = const Duration(milliseconds: 400),
   })  : _getUnreadCount = getUnreadCount,
         _repository = repository,
+        _refreshDebounce = refreshDebounce,
         super(const NotificationsUnreadState());
 
   final GetNotificationsUnreadCountUseCase _getUnreadCount;
   final NotificationsRepository _repository;
+  final Duration _refreshDebounce;
 
-  Future<void> refresh() async {
-    emit(state.copyWith(isLoading: true));
+  Timer? _debounceTimer;
+  Completer<void>? _scheduled;
+  Future<void>? _inFlight;
+  var _queuedAfterInFlight = false;
+
+  /// Coalesces bursty FCM + Socket.IO + mark-read callers into one HTTP GET.
+  Future<void> refresh() {
+    _debounceTimer?.cancel();
+    _scheduled ??= Completer<void>();
+    final scheduled = _scheduled!;
+    _debounceTimer = Timer(_refreshDebounce, () {
+      _scheduled = null;
+      unawaited(
+        _runRefresh().then((_) {
+          if (!scheduled.isCompleted) scheduled.complete();
+        }).catchError((Object error, StackTrace stackTrace) {
+          if (!scheduled.isCompleted) {
+            scheduled.completeError(error, stackTrace);
+          }
+        }),
+      );
+    });
+    return scheduled.future;
+  }
+
+  Future<void> _runRefresh() async {
+    if (_inFlight != null) {
+      _queuedAfterInFlight = true;
+      await _inFlight;
+      return;
+    }
+
+    final run = _refreshNow();
+    _inFlight = run;
+    try {
+      await run;
+      if (_queuedAfterInFlight && !isClosed) {
+        _queuedAfterInFlight = false;
+        await _refreshNow();
+      }
+    } finally {
+      _inFlight = null;
+    }
+  }
+
+  Future<void> _refreshNow() async {
     final result = await _getUnreadCount();
+    if (isClosed) return;
     switch (result) {
       case Failure():
         emit(state.copyWith(isLoading: false));
       case Success(:final data):
         emit(NotificationsUnreadState(count: data));
     }
+  }
+
+  /// Applies the dedicated list API's unread meta (avoids a second HTTP GET).
+  void applyExactCount(int count) {
+    emit(NotificationsUnreadState(count: count < 0 ? 0 : count));
+  }
+
+  void adjustBy(int delta) {
+    final next = state.count + delta;
+    emit(NotificationsUnreadState(count: next < 0 ? 0 : next));
   }
 
   /// Seeds the badge from an already-loaded dashboard summary (no extra HTTP).
@@ -60,6 +120,17 @@ class NotificationsUnreadCubit extends Cubit<NotificationsUnreadState> {
 
   void clear() {
     emit(const NotificationsUnreadState());
+  }
+
+  @override
+  Future<void> close() {
+    _debounceTimer?.cancel();
+    final scheduled = _scheduled;
+    _scheduled = null;
+    if (scheduled != null && !scheduled.isCompleted) {
+      scheduled.complete();
+    }
+    return super.close();
   }
 
   List<DashboardLiveActivityItem> _extractActivity(

@@ -25,12 +25,14 @@ function mapTimestamps(doc) {
 class OrganizationService {
   async getMyContext(user) {
     const [company, branch, department, team, position] = await Promise.all([
-      Company.findById(user.companyId),
-      Branch.findOne({ _id: user.branchId, deletedAt: null }),
-      Department.findOne({ _id: user.departmentId, deletedAt: null }),
-      user.teamId ? Team.findOne({ _id: user.teamId, deletedAt: null }) : null,
+      Company.findById(user.companyId).lean(),
+      Branch.findOne({ _id: user.branchId, deletedAt: null }).lean(),
+      Department.findOne({ _id: user.departmentId, deletedAt: null }).lean(),
+      user.teamId
+        ? Team.findOne({ _id: user.teamId, deletedAt: null }).lean()
+        : null,
       user.positionId
-        ? Position.findOne({ _id: user.positionId, deletedAt: null })
+        ? Position.findOne({ _id: user.positionId, deletedAt: null }).lean()
         : null,
     ]);
 
@@ -206,8 +208,31 @@ class OrganizationService {
     }
 
     const items = await User.find(filter)
-      .select('-passwordHash -permissionOverrides')
-      .sort({ firstName: 1, lastName: 1 });
+      .select(
+        [
+          'employeeId',
+          'firstName',
+          'lastName',
+          'fullName',
+          'email',
+          'phone',
+          'avatarUrl',
+          'roles',
+          'branchId',
+          'regionId',
+          'cityId',
+          'departmentId',
+          'teamId',
+          'positionId',
+          'companyId',
+          'status',
+          'isActive',
+          'createdAt',
+          'updatedAt',
+        ].join(' ')
+      )
+      .sort({ firstName: 1, lastName: 1 })
+      .lean();
 
     return items.map((item) => this._mapUserSummary(item));
   }

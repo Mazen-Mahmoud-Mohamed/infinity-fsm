@@ -903,7 +903,7 @@ class OvertimeService {
     const records = await OvertimeRecord.find(filter)
       .populate({
         path: 'userId',
-        select: 'firstName lastName email roles employeeId jobTitle',
+        select: 'firstName lastName email phone roles employeeId jobTitle',
       })
       .populate('approvedBy', 'firstName lastName email')
       .populate('rejectedBy', 'firstName lastName email')

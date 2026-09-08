@@ -6,6 +6,30 @@ const mockSort = jest.fn();
 const mockSkip = jest.fn();
 const mockLimit = jest.fn();
 const mockLean = jest.fn();
+const mockSelect = jest.fn();
+
+function notificationQuery() {
+  const query = {
+    select: (...args) => {
+      mockSelect(...args);
+      return query;
+    },
+    sort: (...args) => {
+      mockSort(...args);
+      return query;
+    },
+    skip: (...args) => {
+      mockSkip(...args);
+      return query;
+    },
+    limit: (...args) => {
+      mockLimit(...args);
+      return query;
+    },
+    lean: () => mockLean(),
+  };
+  return query;
+}
 
 jest.unstable_mockModule(
   '../modules/notifications/models/appNotification.model.js',
@@ -13,24 +37,7 @@ jest.unstable_mockModule(
     default: {
       find: (...args) => {
         mockFind(...args);
-        return {
-          sort: (...sortArgs) => {
-            mockSort(...sortArgs);
-            return {
-              skip: (...skipArgs) => {
-                mockSkip(...skipArgs);
-                return {
-                  limit: (...limitArgs) => {
-                    mockLimit(...limitArgs);
-                    return {
-                      lean: () => mockLean(),
-                    };
-                  },
-                };
-              },
-            };
-          },
-        };
+        return notificationQuery();
       },
       countDocuments: (...args) => mockCountDocuments(...args),
     },
@@ -101,6 +108,7 @@ describe('notifications list API', () => {
     mockSkip.mockReset();
     mockLimit.mockReset();
     mockLean.mockReset();
+    mockSelect.mockReset();
     dashboardSummarySpy.mockReset();
   });
 
@@ -121,6 +129,7 @@ describe('notifications list API', () => {
       companyId: 'company-1',
       recipientUserId: 'user-1',
     });
+    expect(mockSelect).toHaveBeenCalled();
     expect(mockSort).toHaveBeenCalledWith({ createdAt: -1 });
     expect(mockSkip).toHaveBeenCalledWith(0);
     expect(mockLimit).toHaveBeenCalledWith(50);

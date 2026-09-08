@@ -61,15 +61,19 @@ const EN = {
   kpiRejectedSessions: 'Rejected Sessions',
   empName: 'Employee Name',
   empEmail: 'Employee Email',
+  empPhone: 'Phone Number',
   empWorkedHours: 'Total Calculated / Worked Hours',
-  empApprovedHours: 'Total Approved Hours',
+  empApprovedHours: 'Total Overtime Work Hours',
   empSessions: 'Total Sessions / Trips',
   empNormal: 'Normal Sessions',
-  empTravel: 'Travel Sessions',
-  empOvernight: 'Overnight Sessions',
-  empApproved: 'Approved Sessions',
-  empPending: 'Pending / Review Sessions',
-  empRejected: 'Rejected Sessions',
+  empTravel: 'Travel',
+  empOvernight: 'Overnight',
+  empApproved: 'Approved',
+  empPending: 'Pending Review',
+  empRejected: 'Rejected',
+  empTravelHours: 'Total Travel Overtime Hours',
+  empNormalHours: 'Total Normal Hours',
+  empCountedVacationDays: 'Counted Vacation Days',
   sessionId: 'Session ID',
   employeeName: 'Employee Name',
   email: 'Email',
@@ -197,15 +201,19 @@ const AR = {
   kpiRejectedSessions: 'الجلسات المرفوضة',
   empName: 'اسم الموظف',
   empEmail: 'بريد الموظف',
+  empPhone: 'رقم الهاتف',
   empWorkedHours: 'إجمالي الساعات المحسوبة / الفعلية',
-  empApprovedHours: 'إجمالي الساعات المعتمدة',
+  empApprovedHours: 'إجمالي ساعات عمل الإضافي',
   empSessions: 'إجمالي الجلسات',
   empNormal: 'الجلسات العادية',
-  empTravel: 'جلسات السفر',
-  empOvernight: 'جلسات المبيت',
-  empApproved: 'الجلسات المعتمدة',
-  empPending: 'الجلسات قيد المراجعة',
-  empRejected: 'الجلسات المرفوضة',
+  empTravel: 'السفر',
+  empOvernight: 'مبيت',
+  empApproved: 'المعتمدة',
+  empPending: 'قيد المراجعة',
+  empRejected: 'المرفوضة',
+  empTravelHours: 'إجمالي ساعات السفر الإضافي',
+  empNormalHours: 'إجمالي الساعات العادية',
+  empCountedVacationDays: 'عدد أيام الإجازات المحتسبة',
   sessionId: 'معرّف الجلسة',
   employeeName: 'اسم الموظف',
   email: 'البريد الإلكتروني',
@@ -304,10 +312,9 @@ export function stripBidiMarks(text) {
 }
 
 /**
- * Deterministic Arabic duration string for Excel cells.
- * Logical order is always: hours → ساعة → و → minutes → دقيقة.
- * Do NOT inject LRO/LRM/RLM/PDF — Excel cell readingOrder=ltr handles display
- * on RTL worksheets.
+ * Deterministic Arabic duration string (logical order).
+ * Workbook duration cells use Excel numeric [h]:mm instead of this prose
+ * so mixed Arabic+digits are not reordered by BiDi.
  */
 export function formatExcelDuration(hours, minutes) {
   const h = Math.max(0, Math.trunc(Number(hours) || 0));

@@ -349,8 +349,10 @@ class PushNotificationService {
         io.OptionBuilder()
             .setTransports(['websocket'])
             .setAuth({'token': accessToken})
+            .enableForceNew()
             .enableAutoConnect()
             .enableReconnection()
+            .setReconnectionDelayMax(10000)
             .build(),
       );
       _socket = socket;

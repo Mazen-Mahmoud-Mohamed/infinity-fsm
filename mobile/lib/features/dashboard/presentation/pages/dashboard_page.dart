@@ -62,8 +62,6 @@ class _DashboardView extends StatefulWidget {
 }
 
 class _DashboardViewState extends State<_DashboardView> {
-  int _chartWindowDays = 30;
-
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
@@ -164,10 +162,6 @@ class _DashboardViewState extends State<_DashboardView> {
                     pagePadding: pagePadding,
                     sectionGap: sectionGap,
                     isPhone: isPhone,
-                    chartWindowDays: _chartWindowDays,
-                    onChartWindowChanged: (days) {
-                      setState(() => _chartWindowDays = days);
-                    },
                   );
                 }
 
@@ -194,23 +188,18 @@ class _DashboardScrollBody extends StatelessWidget {
     required this.pagePadding,
     required this.sectionGap,
     required this.isPhone,
-    required this.chartWindowDays,
-    required this.onChartWindowChanged,
   });
 
   final ExecutiveDashboardState state;
   final double pagePadding;
   final double sectionGap;
   final bool isPhone;
-  final int chartWindowDays;
-  final ValueChanged<int> onChartWindowChanged;
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final summary = state.summary;
-    final isTechnician = summary?.viewRole == DashboardViewRole.technician;
     final authUser = context.select((AuthCubit cubit) => cubit.state.user);
 
     final children = <Widget>[
@@ -248,8 +237,6 @@ class _DashboardScrollBody extends StatelessWidget {
           l10n: l10n,
           summary: summary,
           sectionGap: sectionGap,
-          chartWindowDays: chartWindowDays,
-          onChartWindowChanged: onChartWindowChanged,
           permissions: authUser?.permissionChecker,
           showQuickActions: isPhone,
         ),

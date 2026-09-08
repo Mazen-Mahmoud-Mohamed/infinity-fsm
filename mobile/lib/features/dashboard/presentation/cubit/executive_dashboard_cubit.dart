@@ -130,11 +130,13 @@ class ExecutiveDashboardCubit extends Cubit<ExecutiveDashboardState> {
     final hasData =
         state.hasLoadedOnce || cached != null || state.summary != null;
 
-    debugPrint(
-      'DashboardCubit.load start key=$cacheKey '
-      'hasData=$hasData cached=${cached != null} '
-      'period=${state.period.name}',
-    );
+    if (kDebugMode) {
+      debugPrint(
+        'DashboardCubit.load start key=$cacheKey '
+        'hasData=$hasData cached=${cached != null} '
+        'period=${state.period.name}',
+      );
+    }
 
     if (cached != null && !state.hasLoadedOnce) {
       emit(
@@ -165,7 +167,9 @@ class ExecutiveDashboardCubit extends Cubit<ExecutiveDashboardState> {
     }
 
     try {
-      debugPrint('DashboardCubit.load API request…');
+      if (kDebugMode) {
+        debugPrint('DashboardCubit.load API request…');
+      }
       final result = await _getDashboardSummary(
         period: state.period,
         from: state.customFrom,
@@ -174,9 +178,11 @@ class ExecutiveDashboardCubit extends Cubit<ExecutiveDashboardState> {
 
       switch (result) {
         case Success<RoleDashboardSummary>(data: final data):
-          debugPrint(
-            'DashboardCubit.load API success viewRole=${data.viewRole}',
-          );
+          if (kDebugMode) {
+            debugPrint(
+              'DashboardCubit.load API success viewRole=${data.viewRole}',
+            );
+          }
           _sessionQueryCache.set(cacheKey, data);
           emit(
             ExecutiveDashboardState(
@@ -190,7 +196,9 @@ class ExecutiveDashboardCubit extends Cubit<ExecutiveDashboardState> {
             ),
           );
         case Failure(:final message):
-          debugPrint('DashboardCubit.load API failure message=$message');
+          if (kDebugMode) {
+            debugPrint('DashboardCubit.load API failure message=$message');
+          }
           if (state.summary != null || cached != null) {
             emit(
               state.copyWith(
@@ -216,7 +224,9 @@ class ExecutiveDashboardCubit extends Cubit<ExecutiveDashboardState> {
           }
       }
     } catch (e, st) {
-      debugPrint('DashboardCubit.load exception: $e\n$st');
+      if (kDebugMode) {
+        debugPrint('DashboardCubit.load exception: $e\n$st');
+      }
       emit(
         ExecutiveDashboardState(
           status: ExecutiveDashboardStatus.failure,

@@ -357,7 +357,8 @@ class NotificationPreferencesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final state = context.watch<AppCubit>().state;
+    final pushEnabled =
+        context.select((AppCubit c) => c.state.notificationPushEnabled);
 
     final body = SettingsPageBody(
       embedded: embedded,
@@ -368,7 +369,7 @@ class NotificationPreferencesPage extends StatelessWidget {
           child: SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text(l10n.settingsPushNotifications),
-            value: state.notificationPushEnabled,
+            value: pushEnabled,
             onChanged: (value) async {
               await context
                   .read<AppCubit>()
@@ -430,7 +431,7 @@ class _AboutSettingsPageState extends State<AboutSettingsPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
-    final channel = context.watch<AppCubit>().state.releaseChannel;
+    final channel = context.select((AppCubit c) => c.state.releaseChannel);
     final year = DateTime.now().year.toString();
 
     final body = SettingsPageBody(

@@ -386,7 +386,7 @@ class AssetsService {
 
     const skip = (page - 1) * limit;
     const [items, total] = await Promise.all([
-      AssetCategory.find(filter).sort({ name: 1 }).skip(skip).limit(limit),
+      AssetCategory.find(filter).sort({ name: 1 }).skip(skip).limit(limit).lean(),
       AssetCategory.countDocuments(filter),
     ]);
 
@@ -539,7 +539,8 @@ class AssetsService {
         .populate('categoryId', 'name code icon')
         .sort({ updatedAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       Asset.countDocuments(filter),
     ]);
 
@@ -862,7 +863,8 @@ class AssetsService {
         .populate('userId', 'firstName lastName email')
         .sort({ eventDate: -1, createdAt: -1 })
         .skip(skip)
-        .limit(limit),
+        .limit(limit)
+        .lean(),
       AssetHistory.countDocuments(filter),
     ]);
 

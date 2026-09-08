@@ -22,33 +22,33 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   final NotificationsApiDataSource _api;
 
   @override
-  Future<Result<List<AppNotification>>> getNotifications() async {
+  Future<Result<NotificationsPageResult>> getNotifications() async {
     final apiResult = await _api.listNotifications();
     switch (apiResult) {
       case Success(:final data):
-        return Success(data.items);
+        return Success((items: data.items, unreadCount: data.unreadCount));
       case Failure():
         break;
     }
 
     final result = await _remote.fetchActivityFeed();
-    return switch (result) {
-      Failure(:final message, :final code) => Failure(message, code: code),
-      Success(:final data) => Success(_mapWithReadState(data)),
-    };
+    switch (result) {
+      case Failure(:final message, :final code):
+        return Failure(message, code: code);
+      case Success(:final data):
+        final items = _mapWithReadState(data);
+        return Success(
+          (
+            items: items,
+            unreadCount: items.where((n) => !n.isRead).length,
+          ),
+        );
+    }
   }
 
   @override
   Future<Result<int>> getUnreadCount() async {
-    final apiCount = await _api.unreadCount();
-    if (apiCount is Success<int>) {
-      return apiCount;
-    }
-    final result = await getNotifications();
-    return switch (result) {
-      Failure(:final message, :final code) => Failure(message, code: code),
-      Success(:final data) => Success(data.where((n) => !n.isRead).length),
-    };
+    return _api.unreadCount();
   }
 
   @override

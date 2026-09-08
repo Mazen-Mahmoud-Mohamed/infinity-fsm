@@ -42,8 +42,6 @@ List<Widget> buildRoleDashboardSections({
   required AppLocalizations l10n,
   required RoleDashboardSummary summary,
   required double sectionGap,
-  required int chartWindowDays,
-  required ValueChanged<int> onChartWindowChanged,
   PermissionChecker? permissions,
   bool showQuickActions = false,
 }) {
@@ -54,8 +52,6 @@ List<Widget> buildRoleDashboardSections({
         l10n: l10n,
         summary: summary,
         sectionGap: sectionGap,
-        chartWindowDays: chartWindowDays,
-        onChartWindowChanged: onChartWindowChanged,
         permissions: permissions,
         showQuickActions: showQuickActions,
       );
@@ -65,8 +61,6 @@ List<Widget> buildRoleDashboardSections({
         l10n: l10n,
         summary: summary,
         sectionGap: sectionGap,
-        chartWindowDays: chartWindowDays,
-        onChartWindowChanged: onChartWindowChanged,
         permissions: permissions,
         showQuickActions: showQuickActions,
       );
@@ -76,8 +70,6 @@ List<Widget> buildRoleDashboardSections({
         l10n: l10n,
         summary: summary,
         sectionGap: sectionGap,
-        chartWindowDays: chartWindowDays,
-        onChartWindowChanged: onChartWindowChanged,
         permissions: permissions,
         showQuickActions: showQuickActions,
       );
@@ -89,8 +81,6 @@ List<Widget> _admin({
   required AppLocalizations l10n,
   required RoleDashboardSummary summary,
   required double sectionGap,
-  required int chartWindowDays,
-  required ValueChanged<int> onChartWindowChanged,
   PermissionChecker? permissions,
   bool showQuickActions = false,
 }) {
@@ -156,13 +146,9 @@ List<Widget> _admin({
         hoursOverTime: summary.charts.overtime,
         sectionGap: sectionGap,
       ),
-    ..._trendChartsSection(
-      context: context,
+    _DashboardTrendCharts(
       l10n: l10n,
       summary: summary,
-      sectionGap: sectionGap,
-      chartWindowDays: chartWindowDays,
-      onChartWindowChanged: onChartWindowChanged,
       asStandaloneSection: true,
     ),
   ];
@@ -288,8 +274,6 @@ List<Widget> _supervisor({
   required AppLocalizations l10n,
   required RoleDashboardSummary summary,
   required double sectionGap,
-  required int chartWindowDays,
-  required ValueChanged<int> onChartWindowChanged,
   PermissionChecker? permissions,
   bool showQuickActions = false,
 }) {
@@ -413,13 +397,9 @@ List<Widget> _supervisor({
     SizedBox(height: sectionGap),
     DashboardSectionGrid(gap: sectionGap, children: cards),
     SizedBox(height: sectionGap),
-    ..._trendChartsSection(
-      context: context,
+    _DashboardTrendCharts(
       l10n: l10n,
       summary: summary,
-      sectionGap: sectionGap,
-      chartWindowDays: chartWindowDays,
-      onChartWindowChanged: onChartWindowChanged,
     ),
     ..._recentNotificationsSection(
       context: context,
@@ -441,8 +421,6 @@ List<Widget> _technician({
   required AppLocalizations l10n,
   required RoleDashboardSummary summary,
   required double sectionGap,
-  required int chartWindowDays,
-  required ValueChanged<int> onChartWindowChanged,
   PermissionChecker? permissions,
   bool showQuickActions = false,
 }) {
@@ -547,13 +525,9 @@ List<Widget> _technician({
     SizedBox(height: sectionGap),
     DashboardSectionGrid(gap: sectionGap, children: cards),
     SizedBox(height: sectionGap),
-    ..._trendChartsSection(
-      context: context,
+    _DashboardTrendCharts(
       l10n: l10n,
       summary: summary,
-      sectionGap: sectionGap,
-      chartWindowDays: chartWindowDays,
-      onChartWindowChanged: onChartWindowChanged,
     ),
     ..._recentNotificationsSection(
       context: context,
@@ -570,81 +544,95 @@ List<Widget> _technician({
   ];
 }
 
-List<Widget> _trendChartsSection({
-  required BuildContext context,
-  required AppLocalizations l10n,
-  required RoleDashboardSummary summary,
-  required double sectionGap,
-  required int chartWindowDays,
-  required ValueChanged<int> onChartWindowChanged,
-  bool asStandaloneSection = false,
-}) {
-  final charts = summary.charts;
-  final children = <Widget>[];
+class _DashboardTrendCharts extends StatefulWidget {
+  const _DashboardTrendCharts({
+    required this.l10n,
+    required this.summary,
+    this.asStandaloneSection = false,
+  });
 
-  final visibleTrends = <Widget>[];
-  void addIfTrend(
-    String title,
-    List<DashboardChartPoint> points, {
-    DashboardChartValueKind valueKind = DashboardChartValueKind.generic,
-  }) {
-    final window = points.length <= chartWindowDays
-        ? points
-        : points.sublist(points.length - chartWindowDays);
-    if (window.length < 2) return;
-    final maxV = window.fold<double>(0, (p, e) => e.value > p ? e.value : p);
-    if (maxV <= 0) return;
-    visibleTrends.add(
-      DashboardTrendChart(
-        title: title,
-        points: points,
-        windowDays: chartWindowDays,
-        height: asStandaloneSection ? 120 : 140,
-        valueKind: valueKind,
+  final AppLocalizations l10n;
+  final RoleDashboardSummary summary;
+  final bool asStandaloneSection;
+
+  @override
+  State<_DashboardTrendCharts> createState() => _DashboardTrendChartsState();
+}
+
+class _DashboardTrendChartsState extends State<_DashboardTrendCharts> {
+  int _chartWindowDays = 30;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = widget.l10n;
+    final charts = widget.summary.charts;
+    final asStandaloneSection = widget.asStandaloneSection;
+    final chartWindowDays = _chartWindowDays;
+
+    final visibleTrends = <Widget>[];
+    void addIfTrend(
+      String title,
+      List<DashboardChartPoint> points, {
+      DashboardChartValueKind valueKind = DashboardChartValueKind.generic,
+    }) {
+      final window = points.length <= chartWindowDays
+          ? points
+          : points.sublist(points.length - chartWindowDays);
+      if (window.length < 2) return;
+      final maxV = window.fold<double>(0, (p, e) => e.value > p ? e.value : p);
+      if (maxV <= 0) return;
+      visibleTrends.add(
+        DashboardTrendChart(
+          title: title,
+          points: points,
+          windowDays: chartWindowDays,
+          height: asStandaloneSection ? 120 : 140,
+          valueKind: valueKind,
+        ),
+      );
+    }
+
+    addIfTrend(l10n.dashboardChartWorkOrders, charts.workOrders);
+    addIfTrend(
+      l10n.dashboardChartOvertime,
+      charts.overtime,
+      valueKind: DashboardChartValueKind.hours,
+    );
+    addIfTrend(l10n.dashboardChartPm, charts.preventiveMaintenance);
+
+    if (visibleTrends.isEmpty) return const SizedBox.shrink();
+
+    final segmentedButton = SegmentedButton<int>(
+      segments: [
+        ButtonSegment(
+          value: 7,
+          label: Text('7', style: DashboardTypography.windowSelector(context)),
+        ),
+        ButtonSegment(
+          value: 30,
+          label: Text('30', style: DashboardTypography.windowSelector(context)),
+        ),
+      ],
+      selected: {chartWindowDays},
+      onSelectionChanged: (value) {
+        setState(() => _chartWindowDays = value.first);
+      },
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        textStyle: WidgetStatePropertyAll(
+          DashboardTypography.windowSelector(context),
+        ),
       ),
     );
-  }
 
-  addIfTrend(l10n.dashboardChartWorkOrders, charts.workOrders);
-  addIfTrend(
-    l10n.dashboardChartOvertime,
-    charts.overtime,
-    valueKind: DashboardChartValueKind.hours,
-  );
-  addIfTrend(l10n.dashboardChartPm, charts.preventiveMaintenance);
+    final trendGrid = DashboardSectionGrid(
+      gap: asStandaloneSection ? AppSpacing.xs : AppSpacing.sm,
+      children: visibleTrends,
+    );
 
-  if (visibleTrends.isEmpty) return const [];
-
-  final segmentedButton = SegmentedButton<int>(
-    segments: [
-      ButtonSegment(
-        value: 7,
-        label: Text('7', style: DashboardTypography.windowSelector(context)),
-      ),
-      ButtonSegment(
-        value: 30,
-        label: Text('30', style: DashboardTypography.windowSelector(context)),
-      ),
-    ],
-    selected: {chartWindowDays},
-    onSelectionChanged: (value) => onChartWindowChanged(value.first),
-    style: ButtonStyle(
-      visualDensity: VisualDensity.compact,
-      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      textStyle: WidgetStatePropertyAll(
-        DashboardTypography.windowSelector(context),
-      ),
-    ),
-  );
-
-  final trendGrid = DashboardSectionGrid(
-    gap: asStandaloneSection ? AppSpacing.xs : AppSpacing.sm,
-    children: visibleTrends,
-  );
-
-  if (asStandaloneSection) {
-    children.add(
-      LayoutBuilder(
+    if (asStandaloneSection) {
+      return LayoutBuilder(
         builder: (context, constraints) {
           final compact =
               AppBreakpoints.isDashboardCompact(constraints.maxWidth);
@@ -670,19 +658,15 @@ List<Widget> _trendChartsSection({
             child: trendGrid,
           );
         },
-      ),
-    );
-  } else {
-    children.add(
-      DashboardSection(
-        title: l10n.dashboardTrends,
-        trailing: segmentedButton,
-        child: trendGrid,
-      ),
+      );
+    }
+
+    return DashboardSection(
+      title: l10n.dashboardTrends,
+      trailing: segmentedButton,
+      child: trendGrid,
     );
   }
-
-  return children;
 }
 
 Widget _notificationsPanel({

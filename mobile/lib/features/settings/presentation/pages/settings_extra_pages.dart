@@ -163,8 +163,13 @@ class SyncSettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final app = context.watch<AppCubit>();
-    final overtime = context.watch<OvertimeSyncCubit>().state;
+    final autoSync = context.select((AppCubit c) => c.state.autoSync);
+    final wifiOnlySync = context.select((AppCubit c) => c.state.wifiOnlySync);
+    final syncIntervalMinutes =
+        context.select((AppCubit c) => c.state.syncIntervalMinutes);
+    final connectivity =
+        context.select((AppCubit c) => c.state.connectivity);
+    final overtime = context.select((OvertimeSyncCubit c) => c.state);
     final pending = overtime.pendingCount;
 
     final body = SettingsPageBody(
@@ -182,36 +187,36 @@ class SyncSettingsPage extends StatelessWidget {
                 label: l10n.settingsSyncStatus,
                 value: connectivityStatusMessage(
                       l10n,
-                      context.watch<AppCubit>().state.connectivity,
+                      connectivity,
                     ) ??
                     l10n.connectivityOnline,
               ),
               SettingsInfoRow(
                 label: l10n.settingsNetworkRequirement,
-                value: app.state.wifiOnlySync
+                value: wifiOnlySync
                     ? l10n.settingsWifiOnlySync
                     : l10n.serverMgmtOnline,
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.settingsAutoSync),
-                value: app.state.autoSync,
+                value: autoSync,
                 onChanged: (v) =>
                     context.read<AppCubit>().setSyncPreferences(autoSync: v),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.settingsWifiOnlySync),
-                value: app.state.wifiOnlySync,
+                value: wifiOnlySync,
                 onChanged: (v) =>
                     context.read<AppCubit>().setSyncPreferences(wifiOnly: v),
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.settingsSyncInterval),
-                subtitle: Text('${app.state.syncIntervalMinutes} min'),
+                subtitle: Text('$syncIntervalMinutes min'),
                 trailing: DropdownButton<int>(
-                  value: app.state.syncIntervalMinutes,
+                  value: syncIntervalMinutes,
                   items: SyncConfigurationService.supportedIntervalMinutes
                       .map(
                         (m) => DropdownMenuItem(
@@ -567,7 +572,10 @@ class AccessibilitySettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final app = context.watch<AppCubit>();
+    final largeText = context.select((AppCubit c) => c.state.largeText);
+    final reduceAnimations =
+        context.select((AppCubit c) => c.state.reduceAnimations);
+    final highContrast = context.select((AppCubit c) => c.state.highContrast);
 
     final body = SettingsPageBody(
       embedded: embedded,
@@ -579,7 +587,7 @@ class AccessibilitySettingsPage extends StatelessWidget {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.settingsLargeText),
-                value: app.state.largeText,
+                value: largeText,
                 onChanged: (v) => context
                     .read<AppCubit>()
                     .setAccessibilityPreferences(largeText: v),
@@ -587,7 +595,7 @@ class AccessibilitySettingsPage extends StatelessWidget {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.settingsReduceAnimations),
-                value: app.state.reduceAnimations,
+                value: reduceAnimations,
                 onChanged: (v) => context
                     .read<AppCubit>()
                     .setAccessibilityPreferences(reduceAnimations: v),
@@ -595,7 +603,7 @@ class AccessibilitySettingsPage extends StatelessWidget {
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: Text(l10n.settingsHighContrast),
-                value: app.state.highContrast,
+                value: highContrast,
                 onChanged: (v) => context
                     .read<AppCubit>()
                     .setAccessibilityPreferences(highContrast: v),

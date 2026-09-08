@@ -399,7 +399,7 @@ class WorkOrdersService {
   }
 
   async getById(user, auth, id) {
-    const record = await this._findActive(id, auth.companyId);
+    const record = await this._findActiveRead(id, auth.companyId);
     this._assertCanView(user, auth, record);
     return this._map(record);
   }
@@ -1132,6 +1132,19 @@ class WorkOrdersService {
       companyId,
       deletedAt: null,
     });
+    if (!record) {
+      throw new NotFoundError('Work order', 'WORK_ORDER_NOT_FOUND');
+    }
+    return record;
+  }
+
+  /** Read-only detail path. Must not be used by mutation flows that call .save(). */
+  async _findActiveRead(id, companyId) {
+    const record = await WorkOrder.findOne({
+      _id: id,
+      companyId,
+      deletedAt: null,
+    }).lean();
     if (!record) {
       throw new NotFoundError('Work order', 'WORK_ORDER_NOT_FOUND');
     }
