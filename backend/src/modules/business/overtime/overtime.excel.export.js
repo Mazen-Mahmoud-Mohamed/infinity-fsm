@@ -758,7 +758,7 @@ function isDurationKpi(kpi) {
 
 function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
   let row = startRow;
-  const cols = 4;
+  const cols = kpiGridColumnCount(kpis.length);
   for (let i = 0; i < kpis.length; i += cols) {
     const slice = kpis.slice(i, i + cols);
     const labelRow = sheet.getRow(row);
@@ -803,6 +803,12 @@ function writeSummaryKpiGrid(sheet, startRow, kpis, lang = EXPORT_LANG.EN) {
     row += 3;
   }
   return row;
+}
+
+function kpiGridColumnCount(count) {
+  if (count > 0 && count % 4 === 0) return 4;
+  if (count > 0 && count % 3 === 0) return 3;
+  return 4;
 }
 
 /**
@@ -1107,20 +1113,14 @@ export async function buildOvertimeExcelWorkbook({
     [
       { label: t.kpiTotalTechnicians, value: employeeSummaries.length },
       {
-        label: t.kpiTotalWorkedHours,
-        value: excelSerialFromMinutes(stats.totalEligibleMinutes) ?? t.dash,
-        numFmt: EXCEL_DURATION_NUM_FMT,
-        isDuration: true,
-      },
-      {
         label: t.kpiTotalApprovedHours,
         value: excelSerialFromMinutes(stats.totalApprovedMinutes) ?? t.dash,
         numFmt: EXCEL_DURATION_NUM_FMT,
         isDuration: true,
       },
       { label: t.kpiTotalSessions, value: limited.length },
-      { label: t.kpiTravelTrips, value: stats.travelCount },
       { label: t.kpiNormalSessions, value: stats.normalCount },
+      { label: t.kpiTravelTrips, value: stats.travelCount },
       { label: t.kpiOvernightTrips, value: stats.overnightTravelCount },
       { label: t.kpiApprovedSessions, value: stats.statusCounts.APPROVED },
       {

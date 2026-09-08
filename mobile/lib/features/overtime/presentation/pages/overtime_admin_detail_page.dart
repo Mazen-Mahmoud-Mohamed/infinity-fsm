@@ -9,7 +9,6 @@ import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
 import 'package:mobile/core/localization/localize_rbac.dart';
 import 'package:mobile/core/widgets/app_cached_network_image.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
@@ -19,6 +18,7 @@ import 'package:mobile/features/overtime/presentation/cubit/overtime_detail_cubi
 import 'package:mobile/features/overtime/presentation/utils/approved_hours_hhmm.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_formatters.dart';
 import 'package:mobile/features/overtime/presentation/utils/overtime_labels.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_detail_skeleton.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_fullscreen_image.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_journey_timeline.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_location_map.dart';
@@ -90,10 +90,14 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
           context.read<OvertimeDetailCubit>().clearFeedback();
         },
         builder: (context, state) {
-          if (state.status == OvertimeDetailStatus.loading ||
-              state.session == null &&
-                  state.status != OvertimeDetailStatus.failure) {
-            return AppLoader(message: l10n.overtimeDetailsLoading);
+          final showInitialLoader =
+              (state.status == OvertimeDetailStatus.loading ||
+                  state.status == OvertimeDetailStatus.initial) &&
+              state.session == null;
+          if (showInitialLoader) {
+            return OvertimeDetailSkeleton(
+              semanticsLabel: l10n.overtimeDetailsLoading,
+            );
           }
 
           if (state.status == OvertimeDetailStatus.failure ||

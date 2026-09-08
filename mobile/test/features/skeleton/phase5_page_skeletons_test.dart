@@ -6,6 +6,7 @@ import 'package:mobile/core/widgets/app_cached_network_image.dart';
 import 'package:mobile/core/widgets/skeleton/skeleton.dart';
 import 'package:mobile/features/global_search/presentation/widgets/global_search_results_skeleton.dart';
 import 'package:mobile/features/organization/presentation/widgets/profile_skeleton.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_detail_skeleton.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_list_skeleton.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_form_skeleton.dart';
 
@@ -146,6 +147,56 @@ void main() {
       );
       await tester.pump();
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('OvertimeDetailSkeleton', () {
+    testWidgets('mobile one scope matching detail sections', (tester) async {
+      SkeletonScope.resetDebugActiveControllerCount();
+      await tester.pumpWidget(
+        wrap(
+          const OvertimeDetailSkeleton(semanticsLabel: 'Loading details...'),
+        ),
+      );
+      await tester.pump();
+      expect(SkeletonScope.debugActiveControllerCount, 1);
+      expect(find.byType(SkeletonPanel), findsAtLeastNWidgets(3));
+      expect(find.byType(SkeletonChip), findsOneWidget);
+      expect(find.byType(SkeletonCircle), findsNWidgets(4));
+      expect(find.byType(AppCachedNetworkImage), findsNothing);
+      expect(find.bySemanticsLabel('Loading details...'), findsOneWidget);
+    });
+
+    testWidgets('desktop split and overview without overflow', (tester) async {
+      SkeletonScope.resetDebugActiveControllerCount();
+      await tester.pumpWidget(
+        wrap(const OvertimeDetailSkeleton(), width: 1100),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(SkeletonScope.debugActiveControllerCount, 1);
+      expect(find.byType(SkeletonPanel), findsAtLeastNWidgets(4));
+    });
+
+    testWidgets('tablet and RTL without overflow', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const OvertimeDetailSkeleton(),
+          width: 720,
+          direction: TextDirection.rtl,
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('reduced motion uses no controller', (tester) async {
+      SkeletonScope.resetDebugActiveControllerCount();
+      await tester.pumpWidget(
+        wrap(const OvertimeDetailSkeleton(), disableAnimations: true),
+      );
+      await tester.pump();
+      expect(SkeletonScope.debugActiveControllerCount, 0);
     });
   });
 }

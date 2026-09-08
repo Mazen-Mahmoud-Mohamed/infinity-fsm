@@ -140,6 +140,43 @@ function findEmployeeHeaderRow(summary, empName) {
   return headerRowNumber;
 }
 
+function collectKpiPairs(sheet, kpiSectionTitle, employeeSectionTitle) {
+  let start = 0;
+  let end = Number.POSITIVE_INFINITY;
+  sheet.eachRow((row, rowNumber) => {
+    if (String(row.getCell(1).value) === kpiSectionTitle) start = rowNumber;
+    if (String(row.getCell(1).value) === employeeSectionTitle) {
+      end = rowNumber;
+    }
+  });
+  const pairs = [];
+  for (let r = start + 1; r < end; r += 3) {
+    const labelRow = sheet.getRow(r);
+    const valueRow = sheet.getRow(r + 1);
+    const occupied = [];
+    for (let c = 1; c <= 4; c += 1) {
+      const label = labelRow.getCell(c).value;
+      if (label == null || String(label).trim() === '') continue;
+      occupied.push(c);
+      pairs.push({
+        label: String(label),
+        cell: valueRow.getCell(c),
+        col: c,
+        labelRow: r,
+      });
+    }
+    if (occupied.length > 0) {
+      const last = occupied[occupied.length - 1];
+      for (let c = 1; c <= last; c += 1) {
+        expect(String(labelRow.getCell(c).value ?? '').trim()).not.toBe('');
+        expect(valueRow.getCell(c).value).not.toBeNull();
+        expect(valueRow.getCell(c).value).not.toBe('');
+      }
+    }
+  }
+  return pairs;
+}
+
 function makeRecord(overrides = {}) {
   return {
     _id: { toString: () => overrides.id || '507f1f77bcf86cd799439011' },
@@ -397,11 +434,12 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(/Overall Report KPIs/);
     expect(joined).toMatch(/Employee Summary/);
     expect(joined).toMatch(/Total Technicians/);
-    expect(joined).toMatch(/Total Calculated \/ Worked Hours/);
-    expect(joined).toMatch(/Total Approved Hours/);
-    expect(joined).toMatch(/Pending \/ Review Sessions/);
-    expect(joined).toMatch(/Rejected Sessions/);
-    expect(joined).toMatch(/Overnight Sessions/);
+    expect(joined).not.toMatch(/Total Calculated \/ Worked Hours/);
+    expect(joined).not.toMatch(/Total Approved Hours/);
+    expect(joined).toMatch(/Total Overtime Work Hours/);
+    expect(joined).toMatch(/Pending Review/);
+    expect(joined).toMatch(/Rejected/);
+    expect(joined).toMatch(/Overnight/);
     expect(joined).toMatch(/Ada Lovelace/);
     expect(joined).toMatch(/ada@example\.com/);
     expect(joined).toMatch(/01234567890/);
@@ -419,7 +457,9 @@ describe('overtime excel workbook columns', () => {
     expect(joined).toMatch(t.sectionKpis);
     expect(joined).toMatch(t.sectionEmployeeBreakdown);
     expect(joined).toMatch(t.kpiTotalTechnicians);
-    expect(joined).toMatch(t.kpiTotalWorkedHours);
+    expect(joined).not.toMatch(t.kpiTotalWorkedHours);
+    expect(joined).not.toContain('إجمالي الساعات المحسوبة / الفعلية');
+    expect(joined).not.toContain('إجمالي الساعات المعتمدة');
     expect(joined).toMatch(t.kpiTotalApprovedHours);
     expect(joined).toMatch(t.kpiPendingSessions);
     expect(joined).toMatch(t.kpiRejectedSessions);
@@ -707,6 +747,74 @@ describe('overtime excel workbook columns', () => {
       });
     });
     expect(foundApproved).toBe(true);
+  });
+
+  test('KPI section matches employee-summary terminology and approved hours', async () => {
+    const t = excelStrings('ar');
+    const workbook = await loadWorkbook({
+      mode: EXPORT_MODE.SUMMARY,
+      language: 'ar',
+    });
+    const summary = workbook.getWorksheet(t.sheetSummary);
+    const joined = sheetText(summary);
+
+    expect(joined).not.toContain('إجمالي الساعات المحسوبة / الفعلية');
+    expect(joined).not.toContain('إجمالي الساعات المعتمدة');
+    expect(joined).not.toContain('جلسات السفر');
+    expect(joined).not.toContain('جلسات المبيت');
+    expect(joined).not.toContain('الجلسات المعتمدة');
+    expect(joined).not.toContain('الجلسات قيد المراجعة');
+    expect(joined).not.toContain('الجلسات المرفوضة');
+
+    expect(t.kpiTotalApprovedHours).toBe(t.empApprovedHours);
+    expect(t.kpiTravelTrips).toBe(t.empTravel);
+    expect(t.kpiOvernightTrips).toBe(t.empOvernight);
+    expect(t.kpiApprovedSessions).toBe(t.empApproved);
+    expect(t.kpiPendingSessions).toBe(t.empPending);
+    expect(t.kpiRejectedSessions).toBe(t.empRejected);
+    expect(t.kpiNormalSessions).toBe(t.empNormal);
+
+    const pairs = collectKpiPairs(
+      summary,
+      t.sectionKpis,
+      t.sectionEmployeeBreakdown
+    );
+    const labels = pairs.map((p) => p.label);
+    expect(labels).not.toContain(t.kpiTotalWorkedHours);
+    expect(labels).toContain('إجمالي ساعات عمل الإضافي');
+    expect(labels).toContain('السفر');
+    expect(labels).toContain('مبيت');
+    expect(labels).toContain('المعتمدة');
+    expect(labels).toContain('قيد المراجعة');
+    expect(labels).toContain('المرفوضة');
+    expect(labels).toContain('الجلسات العادية');
+    expect(labels).toHaveLength(9);
+
+    const hoursKpi = pairs.find((p) => p.label === t.kpiTotalApprovedHours);
+    expect(hoursKpi).toBeTruthy();
+    expectExcelDurationMinutes(hoursKpi.cell, 620);
+
+    const travelKpi = pairs.find((p) => p.label === t.kpiTravelTrips);
+    const overnightKpi = pairs.find((p) => p.label === t.kpiOvernightTrips);
+    const approvedKpi = pairs.find((p) => p.label === t.kpiApprovedSessions);
+    const pendingKpi = pairs.find((p) => p.label === t.kpiPendingSessions);
+    const rejectedKpi = pairs.find((p) => p.label === t.kpiRejectedSessions);
+    const normalKpi = pairs.find((p) => p.label === t.kpiNormalSessions);
+    expect(travelKpi.cell.value).toBe(1);
+    expect(overnightKpi.cell.value).toBe(1);
+    expect(approvedKpi.cell.value).toBe(1);
+    expect(pendingKpi.cell.value).toBe(0);
+    expect(rejectedKpi.cell.value).toBe(0);
+    expect(normalKpi.cell.value).toBe(0);
+
+    const empHeader = findEmployeeHeaderRow(summary, t.empName);
+    const empHeaders = getEmployeeSummaryColumnDefs('ar').map((_, i) =>
+      String(summary.getRow(empHeader).getCell(i + 1).value ?? '')
+    );
+    expect(empHeaders).toEqual(
+      getEmployeeSummaryColumnDefs('ar').map((c) => c.header)
+    );
+    expectExcelDurationMinutes(summary.getRow(empHeader + 1).getCell(4), 620);
   });
 });
 
