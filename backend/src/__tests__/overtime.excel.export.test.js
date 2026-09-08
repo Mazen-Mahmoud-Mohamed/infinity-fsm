@@ -242,6 +242,35 @@ function sheetText(sheet) {
   return text.join(' | ');
 }
 
+function workbookVisibleText(workbook) {
+  return workbook.worksheets
+    .map((sheet) => `${sheet.name} | ${sheetText(sheet)}`)
+    .join(' | ');
+}
+
+function flattenExcelI18nCatalog(lang) {
+  const t = excelStrings(lang);
+  const samples = [
+    t.sheetSession(1),
+    t.openSheet(t.sheetSession(1)),
+    t.overflowNote(3, 12),
+    t.sessionReportTitle(1),
+    t.sessionIdLine('abc'),
+    t.photosCount(2),
+    t.photoN(1),
+    t.openPhoto(1),
+    t.minutes(5),
+    t.hours(3),
+    t.hoursAndMinutes(2, t.hours(2), 5, t.minutes(5)),
+  ];
+  return [
+    ...Object.values(t)
+      .filter((value) => typeof value !== 'function')
+      .map(String),
+    ...samples,
+  ].join('\n');
+}
+
 function headerValues(sheet) {
   const row = sheet.getRow(1);
   const values = [];
@@ -426,8 +455,8 @@ describe('employee summary aggregation', () => {
 describe('overtime excel workbook columns', () => {
   test('English summary has KPIs, employee table, no department/branch, no session sheets', async () => {
     const workbook = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'en' });
-    expect(workbook.getWorksheet('Sessions Index')).toBeUndefined();
-    expect(workbook.getWorksheet('Session 1')).toBeUndefined();
+    expect(workbook.getWorksheet('Trips Index')).toBeUndefined();
+    expect(workbook.getWorksheet('Trip 1')).toBeUndefined();
     const summary = workbook.getWorksheet('Summary');
     expect(summary).toBeTruthy();
     const joined = sheetText(summary);
@@ -470,7 +499,7 @@ describe('overtime excel workbook columns', () => {
 
   test('detailed English index includes identity and duration columns without branch/department', async () => {
     const workbook = await loadWorkbook({ mode: EXPORT_MODE.DETAILED, language: 'en' });
-    const index = workbook.getWorksheet('Sessions Index');
+    const index = workbook.getWorksheet('Trips Index');
     const headers = headerValues(index);
     expect(headers).toEqual(
       expect.arrayContaining([
@@ -554,8 +583,8 @@ describe('overtime excel workbook columns', () => {
       'بريد الموظف',
       'رقم الهاتف',
       'إجمالي ساعات عمل الإضافي',
-      'إجمالي الجلسات',
-      'الجلسات العادية',
+      'إجمالي الرحلات',
+      'الرحلات العادية',
       'السفر',
       'مبيت',
       'المعتمدة',
@@ -600,7 +629,7 @@ describe('overtime excel workbook columns', () => {
     const headers = columns.map((_, i) => String(headerRow.getCell(i + 1).value ?? ''));
     expect(headers).toEqual(columns.map((c) => c.header));
     expect(headers).not.toContain('إجمالي الساعات المحسوبة / الفعلية');
-    expect(headers[5]).toBe('الجلسات العادية');
+    expect(headers[5]).toBe('الرحلات العادية');
     expect(headers[6]).toBe('السفر');
 
     const row1 = summary.getRow(headerRowNumber + 1);
@@ -725,7 +754,7 @@ describe('overtime excel workbook columns', () => {
 
   test('detailed session sheet includes email, overnight, times, and no department/branch', async () => {
     const workbook = await loadWorkbook({ mode: EXPORT_MODE.DETAILED, language: 'en' });
-    const sheet = workbook.getWorksheet('Session 1');
+    const sheet = workbook.getWorksheet('Trip 1');
     expect(sheet).toBeTruthy();
     const joined = sheetText(sheet);
     expect(joined).toMatch(/Email/);
@@ -760,6 +789,8 @@ describe('overtime excel workbook columns', () => {
 
     expect(joined).not.toContain('إجمالي الساعات المحسوبة / الفعلية');
     expect(joined).not.toContain('إجمالي الساعات المعتمدة');
+    expect(joined).not.toContain('جلسة');
+    expect(joined).not.toContain('جلسات');
     expect(joined).not.toContain('جلسات السفر');
     expect(joined).not.toContain('جلسات المبيت');
     expect(joined).not.toContain('الجلسات المعتمدة');
@@ -787,7 +818,8 @@ describe('overtime excel workbook columns', () => {
     expect(labels).toContain('المعتمدة');
     expect(labels).toContain('قيد المراجعة');
     expect(labels).toContain('المرفوضة');
-    expect(labels).toContain('الجلسات العادية');
+    expect(labels).toContain('الرحلات العادية');
+    expect(labels).toContain('إجمالي الرحلات');
     expect(labels).toHaveLength(9);
 
     const hoursKpi = pairs.find((p) => p.label === t.kpiTotalApprovedHours);
@@ -815,6 +847,113 @@ describe('overtime excel workbook columns', () => {
       getEmployeeSummaryColumnDefs('ar').map((c) => c.header)
     );
     expectExcelDurationMinutes(summary.getRow(empHeader + 1).getCell(4), 620);
+  });
+
+  test('Arabic Excel catalog and workbooks use رحلة/رحلات instead of جلسة/جلسات', async () => {
+    const catalog = flattenExcelI18nCatalog('ar');
+    expect(catalog).not.toContain('جلسة');
+    expect(catalog).not.toContain('جلسات');
+    expect(catalog).toContain('رحلة');
+    expect(catalog).toContain('رحلات');
+
+    const t = excelStrings('ar');
+    expect(t.kpiTotalSessions).toBe('إجمالي الرحلات');
+    expect(t.kpiNormalSessions).toBe('الرحلات العادية');
+    expect(t.empSessions).toBe('إجمالي الرحلات');
+    expect(t.empNormal).toBe('الرحلات العادية');
+    expect(t.sheetSessionsIndex).toBe('فهرس الرحلات');
+    expect(t.sheetAdditionalSessions).toBe('رحلات إضافية');
+    expect(t.sheetSession(1)).toBe('رحلة 1');
+    expect(t.sessionId).toBe('معرّف الرحلة');
+    expect(t.sessionsInExport).toBe('الرحلات في التصدير');
+    expect(t.syncActive).toBe('رحلة نشطة');
+
+    const summary = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'ar' });
+    const detailed = await loadWorkbook({
+      mode: EXPORT_MODE.DETAILED,
+      language: 'ar',
+    });
+    const emptyDetailed = await loadWorkbook({
+      mode: EXPORT_MODE.DETAILED,
+      language: 'ar',
+      records: [],
+    });
+    for (const workbook of [summary, detailed, emptyDetailed]) {
+      const text = workbookVisibleText(workbook);
+      expect(text).not.toContain('جلسة');
+      expect(text).not.toContain('جلسات');
+      expect(text).toContain('رحلات');
+    }
+
+    const detailedText = workbookVisibleText(detailed);
+    expect(detailedText).toContain('فهرس الرحلات');
+    expect(detailedText).toContain('معرّف الرحلة');
+    expect(detailedText).toContain(t.sessionReportTitle(1));
+    expect(detailedText).toContain('رحلة 1');
+
+    const emptyText = workbookVisibleText(emptyDetailed);
+    expect(emptyText).toContain(t.noSessions);
+    expect(emptyText).toContain('رحلات');
+
+    const empHeaders = getEmployeeSummaryColumnDefs('ar')
+      .map((c) => c.header)
+      .join(' | ');
+    expect(empHeaders).not.toContain('جلسة');
+    expect(empHeaders).not.toContain('جلسات');
+    expect(empHeaders).toContain('إجمالي الرحلات');
+    expect(empHeaders).toContain('الرحلات العادية');
+
+    const kpiLabels = collectKpiPairs(
+      summary.getWorksheet(t.sheetSummary),
+      t.sectionKpis,
+      t.sectionEmployeeBreakdown
+    ).map((p) => p.label);
+    expect(kpiLabels.join(' ')).not.toContain('جلسة');
+    expect(kpiLabels).toContain('إجمالي الرحلات');
+    expect(kpiLabels).toContain('الرحلات العادية');
+  });
+
+  test('English Excel catalog and workbooks use Trip/Trips instead of Session/Sessions', async () => {
+    const catalog = flattenExcelI18nCatalog('en');
+    expect(catalog).not.toMatch(/\bSessions?\b/i);
+    expect(catalog).toMatch(/\bTrips?\b/i);
+
+    const t = excelStrings('en');
+    expect(t.kpiTotalSessions).toBe('Total Trips');
+    expect(t.kpiNormalSessions).toBe('Normal Trips');
+    expect(t.empSessions).toBe('Total Trips');
+    expect(t.empNormal).toBe('Normal Trips');
+    expect(t.sheetSessionsIndex).toBe('Trips Index');
+    expect(t.sheetAdditionalSessions).toBe('Additional Trips');
+    expect(t.sheetSession(1)).toBe('Trip 1');
+    expect(t.sessionId).toBe('Trip ID');
+    expect(t.sessionsInExport).toBe('Trips in Export');
+    expect(t.syncActive).toBe('Active Trip');
+    expect(t.sessionReportTitle(1)).toBe('Overtime Trip Report — 1');
+    expect(t.sessionIdLine('abc')).toBe('Trip ID: abc');
+
+    const summary = await loadWorkbook({ mode: EXPORT_MODE.SUMMARY, language: 'en' });
+    const detailed = await loadWorkbook({
+      mode: EXPORT_MODE.DETAILED,
+      language: 'en',
+    });
+    const emptyDetailed = await loadWorkbook({
+      mode: EXPORT_MODE.DETAILED,
+      language: 'en',
+      records: [],
+    });
+    for (const workbook of [summary, detailed, emptyDetailed]) {
+      const text = workbookVisibleText(workbook);
+      expect(text).not.toMatch(/\bSessions?\b/i);
+      expect(text).toMatch(/\bTrips?\b/i);
+    }
+
+    const detailedText = workbookVisibleText(detailed);
+    expect(detailedText).toContain('Trips Index');
+    expect(detailedText).toContain('Trip 1');
+    expect(detailedText).toContain('Trip ID');
+    expect(detailedText).toContain('Overtime Trip Report');
+    expect(workbookVisibleText(emptyDetailed)).toContain(t.noSessions);
   });
 });
 
