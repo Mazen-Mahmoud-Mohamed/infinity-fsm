@@ -8,6 +8,7 @@ import 'package:mobile/features/global_search/presentation/widgets/global_search
 import 'package:mobile/features/organization/presentation/widgets/profile_skeleton.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_detail_skeleton.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_list_skeleton.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_tracking_skeleton.dart';
 import 'package:mobile/features/settings/presentation/widgets/settings_form_skeleton.dart';
 
 void main() {
@@ -148,6 +149,18 @@ void main() {
       await tester.pump();
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('card layout stays cards on desktop', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const OvertimeListSkeleton(itemCount: 4, useDesktopTable: false),
+          width: 900,
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(SkeletonTableRow), findsNothing);
+      expect(find.byType(SkeletonListTile), findsNWidgets(4));
+    });
   });
 
   group('OvertimeDetailSkeleton', () {
@@ -194,6 +207,50 @@ void main() {
       SkeletonScope.resetDebugActiveControllerCount();
       await tester.pumpWidget(
         wrap(const OvertimeDetailSkeleton(), disableAnimations: true),
+      );
+      await tester.pump();
+      expect(SkeletonScope.debugActiveControllerCount, 0);
+    });
+  });
+
+  group('OvertimeTrackingSkeleton', () {
+    testWidgets('one scope matching start form', (tester) async {
+      SkeletonScope.resetDebugActiveControllerCount();
+      await tester.pumpWidget(
+        wrap(
+          const OvertimeTrackingSkeleton(
+            semanticsLabel: 'Loading overtime...',
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(SkeletonScope.debugActiveControllerCount, 1);
+      expect(find.byType(SkeletonPanel), findsOneWidget);
+      expect(find.byType(AppCachedNetworkImage), findsNothing);
+      expect(find.bySemanticsLabel('Loading overtime...'), findsOneWidget);
+    });
+
+    testWidgets('desktop tablet and RTL without overflow', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const OvertimeTrackingSkeleton(),
+          width: 1100,
+          direction: TextDirection.rtl,
+        ),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(
+        wrap(const OvertimeTrackingSkeleton(), width: 720),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('reduced motion uses no controller', (tester) async {
+      SkeletonScope.resetDebugActiveControllerCount();
+      await tester.pumpWidget(
+        wrap(const OvertimeTrackingSkeleton(), disableAnimations: true),
       );
       await tester.pump();
       expect(SkeletonScope.debugActiveControllerCount, 0);

@@ -133,23 +133,44 @@ class SelfieCaptureService {
         return bytes;
       }
 
-      final params = _WatermarkParams(
+      return applyCheckpointWatermark(
         bytes: bytes,
-        label: watermarkLabel.trim(),
-        timestampText: (timestamp ?? DateTime.now()).toLocal().toIso8601String(),
+        label: watermarkLabel,
+        timestamp: timestamp,
         latitude: latitude,
         longitude: longitude,
       );
-
-      try {
-        return await compute(_drawWatermark, params);
-      } on Object {
-        return bytes;
-      }
     } on LivePhotoRequiredException {
       rethrow;
     } on Object {
       throw const CameraUnavailableException();
+    }
+  }
+
+  /// Draws checkpoint metadata onto an already-captured live photo.
+  ///
+  /// Never throws — returns [bytes] unchanged if drawing fails.
+  Future<Uint8List> applyCheckpointWatermark({
+    required Uint8List bytes,
+    required String label,
+    DateTime? timestamp,
+    double? latitude,
+    double? longitude,
+  }) async {
+    if (label.trim().isEmpty) {
+      return bytes;
+    }
+    final params = _WatermarkParams(
+      bytes: bytes,
+      label: label.trim(),
+      timestampText: (timestamp ?? DateTime.now()).toLocal().toIso8601String(),
+      latitude: latitude,
+      longitude: longitude,
+    );
+    try {
+      return await compute(_drawWatermark, params);
+    } on Object {
+      return bytes;
     }
   }
 

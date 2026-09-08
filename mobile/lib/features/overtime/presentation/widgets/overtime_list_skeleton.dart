@@ -10,24 +10,29 @@ class OvertimeListSkeleton extends StatelessWidget {
     super.key,
     this.itemCount = 7,
     this.semanticsLabel,
+    this.useDesktopTable = true,
   });
 
   final int itemCount;
   final String? semanticsLabel;
+
+  /// Admin lists use a table on desktop; technician history stays card-based.
+  final bool useDesktopTable;
 
   static const int kMaxItems = 8;
 
   @override
   Widget build(BuildContext context) {
     final count = itemCount.clamp(1, kMaxItems);
-    final isDesktop = AppBreakpoints.isDesktopOf(context);
+    final isDesktopTable =
+        useDesktopTable && AppBreakpoints.isDesktopOf(context);
 
     return Semantics(
       label: semanticsLabel,
       container: true,
       child: ExcludeSemantics(
         child: SkeletonScope(
-          child: isDesktop
+          child: isDesktopTable
               ? ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),

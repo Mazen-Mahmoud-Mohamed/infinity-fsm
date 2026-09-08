@@ -7,7 +7,6 @@ import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/router/route_paths.dart';
-import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/offline_banner.dart';
 import 'package:mobile/core/widgets/technician_main_app_bar.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -30,6 +29,7 @@ import 'package:mobile/features/overtime/presentation/cubit/overtime_sync_cubit.
 import 'package:mobile/features/overtime/domain/services/overtime_cellular_upload_prompt_service.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_cellular_upload_dialog.dart';
 import 'package:mobile/features/overtime/presentation/widgets/overtime_voice_note_section.dart';
+import 'package:mobile/features/overtime/presentation/widgets/overtime_tracking_skeleton.dart';
 import 'package:mobile/features/overtime/presentation/widgets/technician_overtime_running_card.dart';
 
 /// Bottom-nav / `/overtime` entry.
@@ -37,7 +37,14 @@ import 'package:mobile/features/overtime/presentation/widgets/technician_overtim
 /// Admin & Supervisor open [OvertimeAdminPage] (management).
 /// Technicians open personal Start/End tracking.
 class OvertimePage extends StatelessWidget {
-  const OvertimePage({super.key});
+  const OvertimePage({
+    super.key,
+    @visibleForTesting this.debugCubit,
+  });
+
+  /// When set, skips GetIt and does not auto-call [initialize] (widget tests).
+  @visibleForTesting
+  final OvertimeCubit? debugCubit;
 
   static bool opensManagementFor(CurrentUser? user) {
     if (user == null) return false;
@@ -52,8 +59,16 @@ class OvertimePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthCubit>().state.user;
-    if (opensManagementFor(user)) {
+    if (opensManagementFor(user) && debugCubit == null) {
       return const OvertimeAdminPage();
+    }
+
+    final debug = debugCubit;
+    if (debug != null) {
+      return BlocProvider<OvertimeCubit>.value(
+        value: debug,
+        child: const _OvertimeTrackingView(),
+      );
     }
 
     return BlocProvider(
@@ -74,14 +89,18 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
   @override
   void initState() {
     super.initState();
-    getIt<OvertimeCellularUploadPromptService>().register(
-      () => showCellularUploadPrompt(context),
-    );
+    if (getIt.isRegistered<OvertimeCellularUploadPromptService>()) {
+      getIt<OvertimeCellularUploadPromptService>().register(
+        () => showCellularUploadPrompt(context),
+      );
+    }
   }
 
   @override
   void dispose() {
-    getIt<OvertimeCellularUploadPromptService>().unregister();
+    if (getIt.isRegistered<OvertimeCellularUploadPromptService>()) {
+      getIt<OvertimeCellularUploadPromptService>().unregister();
+    }
     super.dispose();
   }
 
@@ -165,10 +184,31 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
           context.read<OvertimeCubit>().clearFeedback();
         },
         builder: (context, state) {
-          if (state.status == OvertimeLoadStatus.loading &&
+          if ((state.status == OvertimeLoadStatus.loading ||
+                  state.status == OvertimeLoadStatus.initial) &&
               state.session == null &&
               !state.isRefreshing) {
-            return AppLoader(message: l10n.overtimeTechnicianLoading);
+            return Column(
+              children: [
+                if (isDesktop)
+                  AppDesktopWorkspacePadding(
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.lg,
+                      AppSpacing.sm,
+                    ),
+                    child: AppDesktopPageHeader(
+                      title: l10n.overtimeTechnicianTitle,
+                    ),
+                  ),
+                Expanded(
+                  child: OvertimeTrackingSkeleton(
+                    semanticsLabel: l10n.overtimeTechnicianLoading,
+                  ),
+                ),
+              ],
+            );
           }
 
           if (state.status == OvertimeLoadStatus.failure &&

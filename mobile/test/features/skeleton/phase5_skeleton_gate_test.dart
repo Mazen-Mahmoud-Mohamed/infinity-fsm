@@ -501,6 +501,22 @@ void main() {
       expect(find.byType(OvertimeListSkeleton), findsOneWidget);
     });
 
+    testWidgets('history refresh keeps existing cards', (tester) async {
+      final cubit = _TestHistoryCubit(
+        OvertimeHistoryState(
+          status: OvertimeHistoryStatus.loading,
+          isRefreshing: true,
+          items: [_session(id: 'local-ot1')],
+        ),
+        overtimeLocal,
+      );
+      addTearDown(cubit.close);
+      await pumpPage(tester, OvertimeHistoryPage(debugCubit: cubit));
+      await tester.pump();
+      expect(find.byType(OvertimeListSkeleton), findsNothing);
+      expect(find.text('Normal Overtime'), findsOneWidget);
+    });
+
     testWidgets('history empty uses existing empty copy', (tester) async {
       final cubit = _TestHistoryCubit(
         const OvertimeHistoryState(status: OvertimeHistoryStatus.success),

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -657,6 +658,9 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
   }
 
   /// Shared GPS + live selfie + telemetry capture used by all checkpoints.
+  ///
+  /// Location permission is settled first (no stacked system dialogs). When
+  /// access is already granted, the GPS fix runs concurrently with the camera.
   Future<_CheckpointCapture?> _captureGpsAndSelfie({
     OvertimeCheckpointStage? stage,
     OvertimeType? type,
@@ -675,35 +679,51 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
       return null;
     }
 
-    final reading = await _gpsService.getCurrentReading();
-    if (!reading.isAccurateEnough) {
-      emit(
-        state.copyWith(
-          status: OvertimeLoadStatus.ready,
-          clearBusyAction: true,
-          message: 'gpsAccuracyTooLow',
-          isError: true,
-        ),
-      );
-      return null;
-    }
+    await _gpsService.ensureLocationAccess();
 
-    var gps = _toGpsSnapshot(reading, trustedUtc: timeCheck.trustedUtc);
-    final geocodeFuture = _addressResolverService.resolveStructured(gps);
-    final telemetryFuture = _checkpointTelemetryService.capture();
+    Object? locationError;
+    GpsReading? locationReading;
+    final locationReady = Completer<void>();
+    unawaited(
+      _gpsService.acquireCurrentReading().then<void>(
+        (value) {
+          locationReading = value;
+          if (!locationReady.isCompleted) {
+            locationReady.complete();
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          locationError = error;
+          if (!locationReady.isCompleted) {
+            locationReady.complete();
+          }
+        },
+      ),
+    );
 
-    late List<int> photo;
+    CheckpointTelemetry telemetry = const CheckpointTelemetry(
+      networkStatus: 'unknown',
+    );
+    final telemetryReady = Completer<void>();
+    unawaited(
+      _checkpointTelemetryService.capture().then<void>(
+        (value) {
+          telemetry = value;
+          if (!telemetryReady.isCompleted) {
+            telemetryReady.complete();
+          }
+        },
+        onError: (Object error, StackTrace stack) {
+          if (!telemetryReady.isCompleted) {
+            telemetryReady.complete();
+          }
+        },
+      ),
+    );
+
+    late Uint8List photo;
     try {
-      photo = await _selfieCaptureService.captureLivePhoto(
-        watermarkLabel: _watermarkLabelFor(stage, type),
-        timestamp: timeCheck.trustedUtc ?? reading.recordedAt,
-        latitude: gps.latitude,
-        longitude: gps.longitude,
-      );
-      photo = await OvertimePhotoCompressor.compressToPolicy(
-        photo,
-        maxPhotoSize: state.maxPhotoSize,
-      );
+      photo = await _selfieCaptureService.captureLivePhoto();
     } on LivePhotoRequiredException {
       emit(
         state.copyWith(
@@ -726,6 +746,48 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
       return null;
     }
 
+    await locationReady.future;
+    final locationFailure = locationError;
+    if (locationFailure != null) {
+      if (locationFailure is LocationException) {
+        throw locationFailure;
+      }
+      throw locationFailure;
+    }
+    final reading = locationReading;
+    if (reading == null) {
+      throw LocationException(
+        LocationFailureReason.unknown,
+        'locationTimeout',
+      );
+    }
+
+    if (!reading.isAccurateEnough) {
+      emit(
+        state.copyWith(
+          status: OvertimeLoadStatus.ready,
+          clearBusyAction: true,
+          message: 'gpsAccuracyTooLow',
+          isError: true,
+        ),
+      );
+      return null;
+    }
+
+    var gps = _toGpsSnapshot(reading, trustedUtc: timeCheck.trustedUtc);
+    final geocodeFuture = _addressResolverService.resolveStructured(gps);
+    photo = await _selfieCaptureService.applyCheckpointWatermark(
+      bytes: photo,
+      label: _watermarkLabelFor(stage, type),
+      timestamp: timeCheck.trustedUtc ?? reading.recordedAt,
+      latitude: gps.latitude,
+      longitude: gps.longitude,
+    );
+    final compressed = await OvertimePhotoCompressor.compressToPolicy(
+      photo,
+      maxPhotoSize: state.maxPhotoSize,
+    );
+
     String? address;
     try {
       final resolved = await geocodeFuture;
@@ -735,14 +797,14 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
       // Keep coordinates; address may resolve later during sync.
     }
 
-    final telemetry = await telemetryFuture;
+    await telemetryReady.future;
     final deviceId =
         _preferencesService.getString(StorageKeys.deviceId) ?? 'unknown-device';
     final notes = state.notesDraft?.trim();
 
     return (
       gps: gps,
-      photo: photo,
+      photo: compressed,
       deviceId: deviceId,
       address: address,
       batteryLevel: telemetry.batteryLevel,

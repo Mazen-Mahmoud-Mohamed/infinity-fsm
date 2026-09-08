@@ -112,6 +112,7 @@ class _OvertimeHistoryViewState extends State<_OvertimeHistoryView> {
                 state.items.isEmpty) {
               return OvertimeListSkeleton(
                 semanticsLabel: l10n.historyLoading,
+                useDesktopTable: false,
               );
             }
 

@@ -47,7 +47,21 @@ class GpsReading {
 }
 
 class GpsService {
-  Future<GpsReading> getCurrentReading() async {
+  /// Location services on and permission already granted (no system prompt).
+  Future<bool> canAcquireWithoutPrompt() async {
+    final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return false;
+    }
+    final permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.always ||
+        permission == LocationPermission.whileInUse;
+  }
+
+  /// Ensures services + permission. May show the location permission dialog.
+  ///
+  /// Does not wait for a GPS fix.
+  Future<void> ensureLocationAccess() async {
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       throw LocationException(
@@ -73,7 +87,11 @@ class GpsService {
         'locationPermissionDeniedForever',
       );
     }
+  }
 
+  /// High-accuracy position. Call [ensureLocationAccess] first to avoid
+  /// overlapping permission dialogs with the camera.
+  Future<GpsReading> acquireCurrentReading() async {
     try {
       final position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
@@ -103,5 +121,10 @@ class GpsService {
         'locationServicesDisabled',
       );
     }
+  }
+
+  Future<GpsReading> getCurrentReading() async {
+    await ensureLocationAccess();
+    return acquireCurrentReading();
   }
 }
