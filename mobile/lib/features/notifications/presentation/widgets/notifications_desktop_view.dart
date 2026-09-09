@@ -5,7 +5,6 @@ import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
-import 'package:mobile/core/localization/localize_audit_event.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
@@ -13,11 +12,15 @@ import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_toolbar.dart';
+import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
+import 'package:mobile/features/notifications/presentation/utils/notification_inbox_visibility.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notification_list_tile.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_skeleton.dart';
+import 'package:mobile/features/settings/domain/services/technician_interface_notification_policy.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 
 /// Desktop notification center with list + detail preview panel.
 class NotificationsDesktopView extends StatefulWidget {
@@ -50,14 +53,34 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
     if (intent.route == RoutePaths.notifications) {
       return;
     }
+    final interfaceState = context.read<TechnicianInterfaceCubit>().state;
+    final allowed =
+        TechnicianInterfaceNotificationPolicy.canNavigateToResolvedRoute(
+      user: context.read<AuthCubit>().state.user,
+      config: interfaceState.isReady ? interfaceState.config : null,
+      route: intent.route,
+    );
+    if (!allowed) {
+      return;
+    }
     context.push(intent.route);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final canPop = Navigator.of(context).canPop();
 
-    return BlocBuilder<NotificationsCubit, NotificationsState>(
+    return BlocBuilder<TechnicianInterfaceCubit, TechnicianInterfaceState>(
+      buildWhen: (previous, current) =>
+          previous.config != current.config ||
+          previous.status != current.status,
+      builder: (context, interfaceState) {
+        final user = context.watch<AuthCubit>().state.user;
+        final tiConfig =
+            interfaceState.isReady ? interfaceState.config : null;
+
+        return BlocBuilder<NotificationsCubit, NotificationsState>(
       buildWhen: (previous, current) =>
           previous.status != current.status ||
           previous.items != current.items ||
@@ -79,7 +102,13 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
         }
 
         final displayItems = state.visibleItems
-            .where(shouldShowUserNotification)
+            .where(
+              (item) => isVisibleInboxNotification(
+                notification: item,
+                user: user,
+                config: tiConfig,
+              ),
+            )
             .toList(growable: false);
         final categories = <NotificationCategory>{
           NotificationCategory.all,
@@ -103,14 +132,26 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
 
         return Column(
           children: [
+            AppDesktopSubPageHeader(
+              title: l10n.notifications,
+              leading: canPop
+                  ? IconButton(
+                      key: const Key('notifications-desktop-back'),
+                      tooltip: MaterialLocalizations.of(context)
+                          .backButtonTooltip,
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () => Navigator.of(context).maybePop(),
+                    )
+                  : null,
+            ),
             AppRefreshBar(visible: state.isRefreshing),
             AppDesktopWorkspacePadding(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AppDesktopPageHeader(
-                    title: l10n.notifications,
-                    trailing: BlocBuilder<NotificationsUnreadCubit,
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: BlocBuilder<NotificationsUnreadCubit,
                         NotificationsUnreadState>(
                       buildWhen: (previous, current) =>
                           previous.count != current.count,
@@ -291,6 +332,8 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
               ),
             ),
           ],
+        );
+      },
         );
       },
     );

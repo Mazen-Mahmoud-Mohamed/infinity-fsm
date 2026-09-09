@@ -25,6 +25,9 @@ import 'package:mobile/features/notifications/data/datasources/notifications_api
 import 'package:mobile/features/notifications/data/datasources/notifications_local_datasource.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
+import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
+import 'package:mobile/features/settings/domain/services/technician_interface_notification_policy.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
@@ -78,6 +81,7 @@ class PushNotificationService {
     required AppUpdateLocalDataSource appUpdateLocal,
     required UpdateCenterCubit Function() updateCenterCubitProvider,
     required NotificationsCubit Function() inboxCubitProvider,
+    required TechnicianInterfaceCubit technicianInterfaceCubit,
     WindowFocusService? windowFocus,
   })  : _api = api,
         _preferences = preferences,
@@ -85,6 +89,7 @@ class PushNotificationService {
         _authCubit = authCubit,
         _unreadCubit = unreadCubit,
         _inboxCubitProvider = inboxCubitProvider,
+        _technicianInterfaceCubit = technicianInterfaceCubit,
         _localReadIds = localReadIds,
         _router = router,
         _apiBaseUrlProvider = apiBaseUrlProvider,
@@ -100,6 +105,7 @@ class PushNotificationService {
   final AuthCubit _authCubit;
   final NotificationsUnreadCubit _unreadCubit;
   final NotificationsCubit Function() _inboxCubitProvider;
+  final TechnicianInterfaceCubit _technicianInterfaceCubit;
   final NotificationsLocalDataSource _localReadIds;
   final GoRouter _router;
   final String Function() _apiBaseUrlProvider;
@@ -347,6 +353,12 @@ class PushNotificationService {
       return;
     }
 
+    // Keep unread refresh authoritative; suppress toast only for TI-hidden features.
+    if (!_shouldShowForegroundToast(data)) {
+      unawaited(_unreadCubit.refresh());
+      return;
+    }
+
     final notification = message.notification;
     final title = notification?.title ??
         message.data['title']?.toString() ??
@@ -423,6 +435,11 @@ class PushNotificationService {
         return;
       }
 
+      if (!_shouldShowForegroundToast(payloadMap)) {
+        unawaited(_unreadCubit.refresh());
+        return;
+      }
+
       final locale = _appCubit.state.localeCode.startsWith('en') ? 'en' : 'ar';
       final title = (locale == 'en'
               ? data['titleEn'] ?? data['title']
@@ -451,6 +468,23 @@ class PushNotificationService {
       }
       unawaited(_unreadCubit.refresh());
     }());
+  }
+
+  /// Foreground/local toast policy for Technician Interface feature gates.
+  ///
+  /// Residual: server unread count is unchanged, so the badge may still
+  /// include items filtered from the technician inbox list.
+  bool _shouldShowForegroundToast(Map<String, dynamic> data) {
+    return TechnicianInterfaceNotificationPolicy.isPayloadVisible(
+      user: _authCubit.state.user,
+      config: _technicianInterfaceConfigOrNull(),
+      data: data,
+    );
+  }
+
+  TechnicianInterfaceConfig? _technicianInterfaceConfigOrNull() {
+    final state = _technicianInterfaceCubit.state;
+    return state.isReady ? state.config : null;
   }
 
   void _ingestInboxFromSocket(
@@ -589,11 +623,23 @@ class PushNotificationService {
     debugPrint('[Push] open ($source) → ${intent.route}');
 
     if (_isAuthenticated) {
+      if (!_canNavigateWithTechnicianInterface(intent.route)) {
+        debugPrint('[Push] TI blocked navigation to ${intent.route}');
+        return;
+      }
       await _executeNavigation(intent);
     } else {
       final ownerId = _ownerIdForPending(data);
       await _pending.persist(intent.copyWith(userId: ownerId));
     }
+  }
+
+  bool _canNavigateWithTechnicianInterface(String route) {
+    return TechnicianInterfaceNotificationPolicy.canNavigateToResolvedRoute(
+      user: _authCubit.state.user,
+      config: _technicianInterfaceConfigOrNull(),
+      route: route,
+    );
   }
 
   String? _ownerIdForPending(Map<String, dynamic> data) {
@@ -615,6 +661,10 @@ class PushNotificationService {
     try {
       final intent = await _pending.takeForUser(_authCubit.state.user?.id);
       if (intent == null) return;
+      if (!_canNavigateWithTechnicianInterface(intent.route)) {
+        debugPrint('[Push] TI blocked pending navigation to ${intent.route}');
+        return;
+      }
       await _executeNavigation(intent);
     } finally {
       _consumingPending = false;

@@ -6,21 +6,27 @@ import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
-import 'package:mobile/core/localization/localize_audit_event.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
+import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
+import 'package:mobile/features/notifications/presentation/utils/notification_inbox_visibility.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_desktop_view.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notification_list_tile.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_skeleton.dart';
+import 'package:mobile/features/settings/domain/services/technician_interface_notification_policy.dart';
+import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
+  const NotificationsPage({super.key, this.cubit});
+
+  /// Optional override for tests; production uses the injected singleton.
+  final NotificationsCubit? cubit;
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
@@ -34,7 +40,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
   @override
   void initState() {
     super.initState();
-    _cubit = getIt<NotificationsCubit>()..load();
+    _cubit = widget.cubit ?? (getIt<NotificationsCubit>()..load());
+    if (widget.cubit != null &&
+        widget.cubit!.state.status == NotificationsStatus.initial) {
+      _cubit.load();
+    }
     _scrollController.addListener(_onScroll);
   }
 
@@ -68,28 +78,42 @@ class _NotificationsPageState extends State<NotificationsPage> {
         appBar: isDesktop
             ? null
             : AppBar(
-          title: Text(l10n.notifications),
-          actions: [
-            BlocBuilder<NotificationsUnreadCubit, NotificationsUnreadState>(
-              buildWhen: (previous, current) =>
-                  previous.count != current.count,
-              builder: (context, unread) {
-                if (unread.count <= 0) return const SizedBox.shrink();
-                return TextButton(
-                  onPressed: () =>
-                      context.read<NotificationsCubit>().markAllAsRead(),
-                  child: Text(l10n.notificationsMarkAllRead),
-                );
-              },
-            ),
-          ],
-        ),
-        body:         AppBreakpoints.isDesktopOf(context)
+                key: const Key('notifications-mobile-app-bar'),
+                title: Text(l10n.notifications),
+                actions: [
+                  BlocBuilder<NotificationsUnreadCubit,
+                      NotificationsUnreadState>(
+                    buildWhen: (previous, current) =>
+                        previous.count != current.count,
+                    builder: (context, unread) {
+                      if (unread.count <= 0) {
+                        return const SizedBox.shrink();
+                      }
+                      return TextButton(
+                        onPressed: () => context
+                            .read<NotificationsCubit>()
+                            .markAllAsRead(),
+                        child: Text(l10n.notificationsMarkAllRead),
+                      );
+                    },
+                  ),
+                ],
+              ),
+        body: AppBreakpoints.isDesktopOf(context)
             ? NotificationsDesktopView(
                 searchController: _searchController,
                 scrollController: _scrollController,
               )
-            :             BlocBuilder<NotificationsCubit, NotificationsState>(
+            : BlocBuilder<TechnicianInterfaceCubit, TechnicianInterfaceState>(
+                buildWhen: (previous, current) =>
+                    previous.config != current.config ||
+                    previous.status != current.status,
+                builder: (context, interfaceState) {
+                  final user = context.watch<AuthCubit>().state.user;
+                  final tiConfig = interfaceState.isReady
+                      ? interfaceState.config
+                      : null;
+                  return BlocBuilder<NotificationsCubit, NotificationsState>(
           buildWhen: (previous, current) =>
               previous.status != current.status ||
               previous.items != current.items ||
@@ -136,7 +160,13 @@ class _NotificationsPageState extends State<NotificationsPage> {
               );
             } else {
               final displayItems = state.visibleItems
-                  .where(shouldShowUserNotification)
+                  .where(
+                    (item) => isVisibleInboxNotification(
+                      notification: item,
+                      user: user,
+                      config: tiConfig,
+                    ),
+                  )
                   .toList(growable: false);
               final categories = <NotificationCategory>{
                 NotificationCategory.all,
@@ -361,7 +391,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
               child: body,
             );
           },
-        ),
+        );
+                },
+              ),
       ),
     );
   }
@@ -376,6 +408,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
       ...item.data,
     });
     if (intent.route == RoutePaths.notifications) {
+      return;
+    }
+    final interfaceState = context.read<TechnicianInterfaceCubit>().state;
+    final allowed =
+        TechnicianInterfaceNotificationPolicy.canNavigateToResolvedRoute(
+      user: context.read<AuthCubit>().state.user,
+      config: interfaceState.isReady ? interfaceState.config : null,
+      route: intent.route,
+    );
+    if (!allowed) {
       return;
     }
     context.push(intent.route);

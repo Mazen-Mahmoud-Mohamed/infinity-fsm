@@ -1434,6 +1434,7 @@ Future<void> configureDependencies() async {
       updateCenterCubitProvider: () => getIt<UpdateCenterCubit>(),
       windowFocus: getIt<WindowFocusService>(),
       inboxCubitProvider: () => getIt<NotificationsCubit>(),
+      technicianInterfaceCubit: getIt<TechnicianInterfaceCubit>(),
     ),
   );
 }
