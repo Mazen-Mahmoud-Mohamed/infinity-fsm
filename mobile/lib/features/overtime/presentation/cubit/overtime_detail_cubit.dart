@@ -1,10 +1,12 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:mobile/core/cache/session_query_cache.dart';
 import 'package:mobile/core/utils/result.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/usecases/approve_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_overtime_by_id_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/reject_overtime_usecase.dart';
+import 'package:mobile/features/overtime/presentation/cubit/overtime_admin_cubit.dart';
 
 enum OvertimeDetailStatus { initial, loading, success, failure }
 
@@ -17,6 +19,7 @@ class OvertimeDetailState extends Equatable {
     this.reviewAction,
     this.message,
     this.isError = false,
+    this.reviewedSession,
   });
 
   final OvertimeDetailStatus status;
@@ -24,6 +27,9 @@ class OvertimeDetailState extends Equatable {
   final ReviewAction? reviewAction;
   final String? message;
   final bool isError;
+
+  /// Last successful accept/reject result, used when popping back to the list.
+  final OvertimeSession? reviewedSession;
 
   bool get isBusy => reviewAction != null;
   bool get isApproving => reviewAction == ReviewAction.approve;
@@ -38,6 +44,7 @@ class OvertimeDetailState extends Equatable {
     String? message,
     bool? isError,
     bool clearMessage = false,
+    OvertimeSession? reviewedSession,
   }) {
     return OvertimeDetailState(
       status: status ?? this.status,
@@ -46,6 +53,7 @@ class OvertimeDetailState extends Equatable {
           clearReviewAction ? null : (reviewAction ?? this.reviewAction),
       message: clearMessage ? null : (message ?? this.message),
       isError: isError ?? this.isError,
+      reviewedSession: reviewedSession ?? this.reviewedSession,
     );
   }
 
@@ -56,6 +64,7 @@ class OvertimeDetailState extends Equatable {
         reviewAction,
         message,
         isError,
+        reviewedSession,
       ];
 }
 
@@ -65,14 +74,20 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
     required ApproveOvertimeUseCase approve,
     required RejectOvertimeUseCase reject,
     required this.sessionId,
+    SessionQueryCache? sessionQueryCache,
+    OvertimeAdminCubit? adminList,
   })  : _getById = getById,
         _approve = approve,
         _reject = reject,
+        _sessionQueryCache = sessionQueryCache,
+        _adminList = adminList,
         super(const OvertimeDetailState());
 
   final GetOvertimeByIdUseCase _getById;
   final ApproveOvertimeUseCase _approve;
   final RejectOvertimeUseCase _reject;
+  final SessionQueryCache? _sessionQueryCache;
+  final OvertimeAdminCubit? _adminList;
   final String sessionId;
 
   Future<void> load() async {
@@ -148,11 +163,13 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
     );
     switch (result) {
       case Success(data: final session):
+        _syncList(session);
         emit(
           OvertimeDetailState(
             status: OvertimeDetailStatus.success,
             session: session,
             message: 'overtimeApprovedMessage',
+            reviewedSession: session,
           ),
         );
       case Failure(message: final message):
@@ -187,11 +204,13 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
     );
     switch (result) {
       case Success(data: final session):
+        _syncList(session);
         emit(
           OvertimeDetailState(
             status: OvertimeDetailStatus.success,
             session: session,
             message: 'overtimeRejectedMessage',
+            reviewedSession: session,
           ),
         );
       case Failure(message: final message):
@@ -209,6 +228,18 @@ class OvertimeDetailCubit extends Cubit<OvertimeDetailState> {
   void clearFeedback() {
     if (state.message != null) {
       emit(state.copyWith(clearMessage: true, isError: false));
+    }
+  }
+
+  void _syncList(OvertimeSession session) {
+    final list = _adminList;
+    if (list != null && !list.isClosed) {
+      list.applyUpdated(session);
+      return;
+    }
+    final cache = _sessionQueryCache;
+    if (cache != null) {
+      OvertimeAdminCubit.syncReviewedSession(cache, session);
     }
   }
 }

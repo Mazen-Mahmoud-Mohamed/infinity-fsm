@@ -79,6 +79,14 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
     super.dispose();
   }
 
+  Future<void> _openDetail(OvertimeSession session) async {
+    final updated = await context.push<OvertimeSession>(
+      RoutePaths.overtimeAdminDetail(session.id),
+    );
+    if (!mounted || updated == null) return;
+    context.read<OvertimeAdminCubit>().applyUpdated(updated);
+  }
+
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
@@ -487,6 +495,7 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
                     scrollController: _scrollController,
                     loadingMore:
                         state.status == OvertimeAdminStatus.loadingMore,
+                    onOpen: _openDetail,
                   )
                 : AppResponsiveCardList(
                     controller: _scrollController,
@@ -500,9 +509,7 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
                         session: session,
                         dateFormat: dateFormat,
                         l10n: l10n,
-                        onTap: () => context.push(
-                          RoutePaths.overtimeAdminDetail(session.id),
-                        ),
+                        onTap: () => _openDetail(session),
                       );
                     },
                   ),

@@ -67,15 +67,36 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
     super.dispose();
   }
 
+  void _popDetailIfIdle(BuildContext context) {
+    if (!context.mounted) return;
+    final cubit = context.read<OvertimeDetailCubit>();
+    if (cubit.state.isBusy) return;
+    Navigator.of(context).pop(cubit.state.reviewedSession);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final dateFormat = AppFormatters.mediumDateTime(context);
     final permissions =
         context.watch<AuthCubit>().state.user?.permissionChecker;
+    final isBusy = context.watch<OvertimeDetailCubit>().state.isBusy;
 
-    return Scaffold(
-      appBar: AppBar(title: Text(l10n.overtimeDetails)),
+    return PopScope(
+      canPop: !isBusy,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _popDetailIfIdle(context);
+      },
+      child: Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.overtimeDetails),
+        leading: IconButton(
+          key: const Key('overtime-admin-detail-back'),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: isBusy ? null : () => _popDetailIfIdle(context),
+        ),
+      ),
       body: BlocConsumer<OvertimeDetailCubit, OvertimeDetailState>(
         listenWhen: (previous, current) =>
             previous.message != current.message && current.message != null,
@@ -385,6 +406,7 @@ class _OvertimeDetailViewState extends State<_OvertimeDetailView> {
           );
         },
       ),
+    ),
     );
   }
 

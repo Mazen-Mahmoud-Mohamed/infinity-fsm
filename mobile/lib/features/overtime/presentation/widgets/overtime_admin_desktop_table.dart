@@ -19,12 +19,14 @@ class OvertimeAdminDesktopTable extends StatelessWidget {
     required this.dateFormat,
     required this.scrollController,
     this.loadingMore = false,
+    this.onOpen,
   });
 
   final List<OvertimeSession> sessions;
   final DateFormat dateFormat;
   final ScrollController scrollController;
   final bool loadingMore;
+  final Future<void> Function(OvertimeSession session)? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -84,9 +86,13 @@ class OvertimeAdminDesktopTable extends StatelessWidget {
           rows: [
             for (final session in sessions)
               DataRow(
-                onSelectChanged: (_) => context.push(
-                  RoutePaths.overtimeAdminDetail(session.id),
-                ),
+                onSelectChanged: (_) {
+                  if (onOpen != null) {
+                    onOpen!(session);
+                    return;
+                  }
+                  context.push(RoutePaths.overtimeAdminDetail(session.id));
+                },
                 cells: [
                   DataCell(
                     AppDesktopTableCell(

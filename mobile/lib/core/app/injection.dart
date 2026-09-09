@@ -483,6 +483,7 @@ Future<void> configureDependencies() async {
       approve: getIt<ApproveOvertimeUseCase>(),
       reject: getIt<RejectOvertimeUseCase>(),
       sessionId: sessionId,
+      sessionQueryCache: getIt<SessionQueryCache>(),
     ),
   );
 

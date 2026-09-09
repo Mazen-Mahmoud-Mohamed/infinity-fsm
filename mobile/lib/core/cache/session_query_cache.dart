@@ -33,6 +33,26 @@ class SessionQueryCache {
     _entries.removeWhere((key, _) => key.startsWith(prefix));
   }
 
+  /// Updates cached values whose keys start with [prefix] and match [T].
+  void updatePrefix<T>(String prefix, T Function(T value) mapper) {
+    final keys = _entries.keys.where((key) => key.startsWith(prefix)).toList();
+    for (final key in keys) {
+      final entry = _entries[key];
+      if (entry == null) continue;
+      if (DateTime.now().isAfter(entry.expiresAt)) {
+        _entries.remove(key);
+        continue;
+      }
+      final value = entry.value;
+      if (value is! T) continue;
+      final mapped = mapper(value as T);
+      _entries[key] = _CacheEntry(
+        value: mapped as Object,
+        expiresAt: entry.expiresAt,
+      );
+    }
+  }
+
   void clear() => _entries.clear();
 }
 
