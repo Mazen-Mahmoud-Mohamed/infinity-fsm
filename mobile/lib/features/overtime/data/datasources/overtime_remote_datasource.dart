@@ -138,6 +138,15 @@ class OvertimeRemoteDataSource {
     );
   }
 
+  Future<OvertimeSessionModel> cancel(String sessionId) async {
+    final response = await _client.post<Map<String, dynamic>>(
+      ApiConstants.overtimeCancel(sessionId),
+    );
+    return OvertimeSessionModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>,
+    );
+  }
+
   Future<OvertimeSessionModel> recordArrivedAtWorkSite({
     required String sessionId,
     required GpsSnapshot gps,

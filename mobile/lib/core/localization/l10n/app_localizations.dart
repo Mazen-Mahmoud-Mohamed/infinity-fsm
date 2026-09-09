@@ -5354,6 +5354,42 @@ abstract class AppLocalizations {
   /// **'Overtime ended. Eligible overtime calculated automatically.'**
   String get overtimeEnded;
 
+  /// No description provided for @overtimeCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Overtime'**
+  String get overtimeCancel;
+
+  /// No description provided for @overtimeCancelConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel Overtime?'**
+  String get overtimeCancelConfirmTitle;
+
+  /// No description provided for @overtimeCancelConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to cancel this overtime?'**
+  String get overtimeCancelConfirmMessage;
+
+  /// No description provided for @overtimeCancelConfirmYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes, Cancel'**
+  String get overtimeCancelConfirmYes;
+
+  /// No description provided for @overtimeCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime cancelled.'**
+  String get overtimeCancelled;
+
+  /// No description provided for @overtimeCancelledMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Overtime cancelled.'**
+  String get overtimeCancelledMessage;
+
   /// No description provided for @normalOvertimeStarted.
   ///
   /// In en, this message translates to:

@@ -765,6 +765,64 @@ class OvertimeService {
     return this._map(await this._loadWithTechnician(record._id, user.companyId));
   }
 
+  /**
+   * Technician cancel of a RUNNING overtime session.
+   * Status becomes CANCELLED — session is no longer active and cannot continue.
+   * Idempotent when already CANCELLED.
+   */
+  async cancel(user, auth, id) {
+    if (!auth.permissions.includes(PERMISSIONS.OVERTIME_CANCEL)) {
+      throw new ForbiddenError('You do not have permission to cancel overtime');
+    }
+
+    const record = await OvertimeRecord.findOne({
+      _id: id,
+      companyId: user.companyId,
+    });
+
+    if (!record) {
+      throw new NotFoundError('Overtime session');
+    }
+
+    if (record.userId.toString() !== user._id.toString()) {
+      throw new ForbiddenError('You can only cancel your own overtime session');
+    }
+
+    if (record.status === 'CANCELLED') {
+      return this._map(
+        await this._loadWithTechnician(record._id, user.companyId)
+      );
+    }
+
+    if (record.status !== 'RUNNING') {
+      throw new ConflictError(
+        `Cannot cancel a session that is already ${record.status.toLowerCase()}`
+      );
+    }
+
+    record.status = 'CANCELLED';
+    record.cancelledAt = new Date();
+    record.cancelledBy = user._id;
+    await record.save();
+
+    await auditService.log({
+      companyId: user.companyId,
+      actorId: user._id,
+      actorRole: user.roles[0],
+      action: 'overtime.cancelled',
+      module: 'overtime',
+      resourceType: 'overtime_record',
+      resourceId: record._id,
+      metadata: {
+        workflowVersion: record.workflowVersion || WORKFLOW_V1,
+      },
+    });
+
+    // No lifecycle notification — cancellation must not emit arrived/finished/ended.
+
+    return this._map(await this._loadWithTechnician(record._id, user.companyId));
+  }
+
   async listSessions(user, auth, {
     page = 1,
     limit = 20,
@@ -1471,6 +1529,8 @@ class OvertimeService {
       rejectedBy: this._mapUserSummary(doc.rejectedBy),
       rejectedAt: doc.rejectedAt?.toISOString() || null,
       rejectionReason: doc.rejectionReason || null,
+      cancelledAt: doc.cancelledAt?.toISOString() || null,
+      cancelledBy: this._mapUserSummary(doc.cancelledBy),
       createdAt: doc.createdAt?.toISOString() || null,
       updatedAt: doc.updatedAt?.toISOString() || null,
       liveElapsedSeconds:

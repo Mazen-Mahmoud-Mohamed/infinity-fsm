@@ -20,6 +20,7 @@ import 'package:mobile/features/overtime/data/datasources/overtime_local_datasou
 import 'package:mobile/features/overtime/domain/entities/overtime_checkpoint.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_session.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
+import 'package:mobile/features/overtime/domain/usecases/cancel_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/end_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_running_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/record_overtime_checkpoint_usecase.dart';
@@ -106,6 +107,7 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
     required GetRunningOvertimeUseCase getRunningOvertimeUseCase,
     required StartOvertimeUseCase startOvertimeUseCase,
     required EndOvertimeUseCase endOvertimeUseCase,
+    required CancelOvertimeUseCase cancelOvertimeUseCase,
     required RecordOvertimeCheckpointUseCase recordCheckpointUseCase,
     required GpsService gpsService,
     required SelfieCaptureService selfieCaptureService,
@@ -125,6 +127,7 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
   }) : _getRunningOvertimeUseCase = getRunningOvertimeUseCase,
        _startOvertimeUseCase = startOvertimeUseCase,
        _endOvertimeUseCase = endOvertimeUseCase,
+       _cancelOvertimeUseCase = cancelOvertimeUseCase,
        _recordCheckpointUseCase = recordCheckpointUseCase,
        _gpsService = gpsService,
        _selfieCaptureService = selfieCaptureService,
@@ -150,6 +153,7 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
   final GetRunningOvertimeUseCase _getRunningOvertimeUseCase;
   final StartOvertimeUseCase _startOvertimeUseCase;
   final EndOvertimeUseCase _endOvertimeUseCase;
+  final CancelOvertimeUseCase _cancelOvertimeUseCase;
   final RecordOvertimeCheckpointUseCase _recordCheckpointUseCase;
   final GpsService _gpsService;
   final SelfieCaptureService _selfieCaptureService;
@@ -654,6 +658,59 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
           isError: true,
         ),
       );
+    }
+  }
+
+  Future<void> cancelSession() async {
+    final session = state.session;
+    if (session == null || !session.isRunning || state.isBusy) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: OvertimeLoadStatus.actionInProgress,
+        busyAction: OvertimeBusyAction.cancel,
+        clearMessage: true,
+      ),
+    );
+
+    final result = await _cancelOvertimeUseCase(sessionId: session.id);
+
+    switch (result) {
+      case Success():
+        _stopTicker();
+        _sessionQueryCache.set(
+          _runningCacheKey,
+          const _CachedRunningOvertime(null),
+        );
+        emit(
+          state.copyWith(
+            status: OvertimeLoadStatus.ready,
+            clearBusyAction: true,
+            clearSession: true,
+            clearCompleted: true,
+            elapsedSeconds: 0,
+            message: 'overtimeCancelled',
+            isError: false,
+            isOffline: false,
+            clearNotesDraft: true,
+            clearVoiceDraft: true,
+            offerContinueSession: false,
+          ),
+        );
+        unawaited(_overtimeSyncCubit.refreshPendingCount());
+      case Failure(message: final message, code: final code):
+        emit(
+          state.copyWith(
+            status: OvertimeLoadStatus.ready,
+            clearBusyAction: true,
+            message: _isConnectivityCode(code) ? null : message,
+            clearMessage: _isConnectivityCode(code),
+            isError: !_isConnectivityCode(code),
+            isOffline: _isConnectivityCode(code),
+          ),
+        );
     }
   }
 

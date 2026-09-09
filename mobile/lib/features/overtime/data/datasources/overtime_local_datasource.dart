@@ -331,6 +331,39 @@ class OvertimeLocalDataSource {
     );
   }
 
+  /// Drop every pending action tied to [sessionId] (including local-* aliases).
+  Future<void> removeQueueForSession(String sessionId) async {
+    final mapped = readLocalIdMap();
+    final queue = readQueue();
+    final keep = <PendingOvertimeActionModel>[];
+    for (final action in queue) {
+      final actionSessionId = action.sessionId;
+      var matches = actionSessionId == sessionId;
+      if (!matches &&
+          action.type == PendingOvertimeActionType.start &&
+          'local-${action.clientRequestId}' == sessionId) {
+        matches = true;
+      }
+      if (!matches &&
+          actionSessionId != null &&
+          mapped[actionSessionId] == sessionId) {
+        matches = true;
+      }
+      if (!matches &&
+          mapped[sessionId] != null &&
+          mapped[sessionId] == actionSessionId) {
+        matches = true;
+      }
+      if (matches) {
+        await _preferences.remove(OvertimeCacheKeys.pendingPhotoKey(action.id));
+        await _preferences.remove(OvertimeCacheKeys.pendingVoiceKey(action.id));
+      } else {
+        keep.add(action);
+      }
+    }
+    await saveQueue(keep);
+  }
+
   Future<void> updateQueueItem(PendingOvertimeActionModel action) async {
     final queue = readQueue()
         .map((item) => item.id == action.id ? action : item)

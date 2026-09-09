@@ -32,6 +32,11 @@ export const endSession = asyncHandler(async (req, res) => {
   sendSuccess(res, data);
 });
 
+export const cancelSession = asyncHandler(async (req, res) => {
+  const data = await overtimeService.cancel(req.user, req.auth, req.params.id);
+  sendSuccess(res, data);
+});
+
 export const recordArrivedAtWorkSite = asyncHandler(async (req, res) => {
   const { photo, voiceNote } = pickMultipartFiles(req);
   const data = await overtimeService.recordCheckpoint(

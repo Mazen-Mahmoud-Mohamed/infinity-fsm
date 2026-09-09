@@ -107,6 +107,13 @@ router.post(
   overtimeController.endSession
 );
 
+router.post(
+  '/:id/cancel',
+  requirePermission(PERMISSIONS.OVERTIME_CANCEL),
+  validate(overtimeIdValidator),
+  overtimeController.cancelSession
+);
+
 router.patch(
   '/:id/gps-address',
   requireAnyPermission(

@@ -323,8 +323,14 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
                   isBusy: state.isBusy,
                   busyAction: state.busyAction,
                   pendingActions: syncState.pendingActions,
+                  canCancel: context.select(
+                    (AuthCubit c) =>
+                        c.state.user?.permissionChecker.canCancelOvertime() ==
+                        true,
+                  ),
                   onAdvance: () =>
                       context.read<OvertimeCubit>().completeNextCheckpoint(),
+                  onCancel: () => context.read<OvertimeCubit>().cancelSession(),
                 ),
                 end: const SizedBox.shrink(),
               )
@@ -333,8 +339,14 @@ class _OvertimeTrackingViewState extends State<_OvertimeTrackingView> {
                 isBusy: state.isBusy,
                 busyAction: state.busyAction,
                 pendingActions: syncState.pendingActions,
+                canCancel: context.select(
+                  (AuthCubit c) =>
+                      c.state.user?.permissionChecker.canCancelOvertime() ==
+                      true,
+                ),
                 onAdvance: () =>
                     context.read<OvertimeCubit>().completeNextCheckpoint(),
+                onCancel: () => context.read<OvertimeCubit>().cancelSession(),
               )
       else
         AppBreakpoints.isDesktopOf(context)

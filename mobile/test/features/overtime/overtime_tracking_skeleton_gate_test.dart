@@ -36,6 +36,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_technician_sum
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
+import 'package:mobile/features/overtime/domain/usecases/cancel_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/end_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_running_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/record_overtime_checkpoint_usecase.dart';
@@ -140,6 +141,9 @@ class _FakeSyncCubit extends Fake implements OvertimeSyncCubit {
 
   @override
   bool get isClosed => false;
+
+  @override
+  Future<void> refreshPendingCount() async {}
 }
 
 class _TestOvertimeCubit extends OvertimeCubit {
@@ -150,6 +154,7 @@ class _TestOvertimeCubit extends OvertimeCubit {
           getRunningOvertimeUseCase: GetRunningOvertimeUseCase(_FakeOtRepo()),
           startOvertimeUseCase: StartOvertimeUseCase(_FakeOtRepo()),
           endOvertimeUseCase: EndOvertimeUseCase(_FakeOtRepo()),
+          cancelOvertimeUseCase: CancelOvertimeUseCase(_FakeOtRepo()),
           recordCheckpointUseCase:
               RecordOvertimeCheckpointUseCase(_FakeOtRepo()),
           gpsService: GpsService(),
@@ -205,7 +210,10 @@ void main() {
           lastName: 'Tech',
           fullName: 'Field Tech',
           roles: ['TECHNICIAN'],
-          permissions: [Permissions.overtimeCreate],
+          permissions: [
+            Permissions.overtimeCreate,
+            Permissions.overtimeCancel,
+          ],
         ),
       );
     unreadCubit = NotificationsUnreadCubit(

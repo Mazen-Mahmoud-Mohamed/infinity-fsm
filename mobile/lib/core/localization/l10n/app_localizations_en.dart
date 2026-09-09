@@ -2794,6 +2794,25 @@ class AppLocalizationsEn extends AppLocalizations {
       'Overtime ended. Eligible overtime calculated automatically.';
 
   @override
+  String get overtimeCancel => 'Cancel Overtime';
+
+  @override
+  String get overtimeCancelConfirmTitle => 'Cancel Overtime?';
+
+  @override
+  String get overtimeCancelConfirmMessage =>
+      'Are you sure you want to cancel this overtime?';
+
+  @override
+  String get overtimeCancelConfirmYes => 'Yes, Cancel';
+
+  @override
+  String get overtimeCancelled => 'Overtime cancelled.';
+
+  @override
+  String get overtimeCancelledMessage => 'Overtime cancelled.';
+
+  @override
   String get normalOvertimeStarted => 'Normal overtime started.';
 
   @override

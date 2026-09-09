@@ -795,6 +795,64 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     }
   }
 
+  @override
+  Future<Result<OvertimeSession>> cancelSession({
+    required String sessionId,
+  }) async {
+    final running = _local.readRunningSession();
+    final treatAsLocal = sessionId.startsWith('local-') ||
+        (running != null && running.id.startsWith('local-') &&
+            (running.id == sessionId ||
+                _local.hasPendingActionsForSession(sessionId)));
+
+    if (treatAsLocal) {
+      final targetId =
+          sessionId.startsWith('local-') ? sessionId : (running?.id ?? sessionId);
+      await _local.removeQueueForSession(targetId);
+      if (running != null && running.id != targetId) {
+        await _local.removeQueueForSession(running.id);
+      }
+      await _local.saveRunningSession(null);
+      if (running != null) {
+        return Success(
+          _copySession(running, status: OvertimeStatus.cancelled),
+        );
+      }
+      return Success(
+        OvertimeSessionModel(
+          id: targetId,
+          companyId: 'local',
+          userId: 'local',
+          type: OvertimeType.normal,
+          status: OvertimeStatus.cancelled,
+          startAt: DateTime.now().toUtc(),
+          startGps: GpsSnapshot(
+            latitude: 0,
+            longitude: 0,
+            accuracy: 0,
+            recordedAt: DateTime.now().toUtc(),
+          ),
+          startDeviceId: 'local',
+        ),
+      );
+    }
+
+    final shouldUpload = await _shouldAttemptRemoteUpload();
+    if (!shouldUpload) {
+      return const Failure('errorGeneric', code: 'OFFLINE');
+    }
+
+    try {
+      final session = await _remote.cancel(sessionId);
+      final model = _asModel(session);
+      await _local.removeQueueForSession(sessionId);
+      await _local.saveRunningSession(null);
+      return Success(model);
+    } on Object catch (error) {
+      return NetworkErrorMapper.map<OvertimeSession>(error);
+    }
+  }
+
   /// Resolve the local running session without inventing a new start time.
   OvertimeSessionModel? _resolveRunningSession(String sessionId) {
     final running = _local.readRunningSession();

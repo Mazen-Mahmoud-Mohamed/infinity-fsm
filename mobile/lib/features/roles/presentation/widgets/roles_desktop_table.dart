@@ -35,6 +35,7 @@ class RolesDesktopTable extends StatelessWidget {
       child: AppDesktopDataTable(
         controller: scrollController,
         loadingMore: loadingMore,
+        expandVertically: true,
         columns: [
           DataColumn(label: Text(l10n.rolesList)),
           DataColumn(label: Text(l10n.labelType)),

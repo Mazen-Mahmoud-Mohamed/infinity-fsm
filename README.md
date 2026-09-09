@@ -12,7 +12,7 @@ Enterprise Field Service Management for workforce operations — work orders, ov
 
 **INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform developed for **Total-Com Solutions** and maintenance companies with field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android**, **tablets**, and **Windows**.
 
-**Current production client release:** **v1.0.23** (build **24**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
+**Current production client release:** **v1.1.0** (build **25**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
 
 On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop experience** — sidebar navigation, global top bar, desktop page layouts, data tables, and fixed bottom action footers. Mobile and tablet layouts remain **responsive first-class flows**; they are not stretched desktop layouts.
 
@@ -72,7 +72,7 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 | **Client** | Flutter · Material 3 · Clean Architecture · Cubit · Repository Pattern |
 | **API** | Node.js · Express · MongoDB · JWT · Socket.IO · Firebase Admin (FCM) |
 | **API version** | `/api/v1` |
-| **Current client** | **v1.0.23+24** · channel **stable** · GitHub Releases primary |
+| **Current client** | **v1.1.0+25** · channel **stable** · GitHub Releases primary |
 
 The Windows window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android packaging is unchanged.
 
@@ -106,6 +106,7 @@ Features below exist under `mobile/lib/features/*` and `backend/src/modules/*`.
 ### ⏱️ Overtime Management
 
 - Journey stages: **START → ARRIVED → FINISHED WORK → END**
+- **Cancel Overtime** — technician can cancel a mistaken **RUNNING** session (confirmation required; becomes `CANCELLED`; does not continue through later stages)
 - Photos, voice notes, notes, GPS / OpenStreetMap
 - Offline pending queue with **independent stage** sync
 - Admin / Supervisor review: Approve · Partial Approve · Reject
@@ -924,7 +925,7 @@ flutter test
 flutter analyze
 ```
 
-**Latest full Flutter suite:** **662 / 662** tests passed (local verification).
+**Latest full Flutter suite:** **669 / 669** tests passed (local verification).
 
 > Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate. Release CI and the Flutter test suite are the authoritative validation gates for client changes.
 
@@ -936,8 +937,8 @@ flutter analyze
 
 | Field | Value |
 |-------|--------|
-| **Version** | **1.0.23** |
-| **Build** | **24** (`1.0.23+24` in `mobile/pubspec.yaml`) |
+| **Version** | **1.1.0** |
+| **Build** | **25** (`1.1.0+25` in `mobile/pubspec.yaml`) |
 | **Channel** | **stable** |
 | **Distribution** | GitHub Release assets (APK + Windows installer + `release-manifest.json`) |
 
@@ -973,9 +974,9 @@ Empty or boilerplate-only release notes fail the publish job. See [docs/releases
 ```
 
 ```bash
-# Example — after pubspec is already 1.0.23+24 on main:
-git tag v1.0.23
-git push origin v1.0.23
+# Example — after pubspec is already 1.1.0+25 on main:
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
 Do **not** create a tag whose semver does not match `mobile/pubspec.yaml` — the workflow will fail resolve-version.
@@ -1152,7 +1153,12 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ## 25. Recent Updates
 
-### v1.0.23 (current)
+### v1.1.0 (current)
+
+- **Cancel Overtime** — technicians with `overtime:cancel` can cancel a **RUNNING** session after confirmation (`RUNNING` → `CANCELLED`); clears timer/active state; does not emit arrived/finished/ended notifications
+- **Users / Roles desktop layout** — restored desktop table vertical position after skeleton loading (expand vertically + top-aligned switcher; Roles list chrome aligned with Users)
+
+### v1.0.23
 
 - **Technician Interface → notifications** — for operational (technician) users, Work Order and Overtime notifications respect TI `workOrders` / `overtime` flags in the inbox, foreground/local toasts, and deep-link navigation; `app_update` remains always allowed; Admin/Supervisor behavior unchanged; Inventory/Assets/PM are not TI-gated
 - **Windows Notifications Back** — desktop Notifications pushed page exposes Back via `AppDesktopSubPageHeader` / `maybePop`; mobile AppBar behavior preserved

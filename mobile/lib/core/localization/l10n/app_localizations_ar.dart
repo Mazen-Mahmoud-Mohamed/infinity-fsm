@@ -2791,6 +2791,25 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهى العمل الإضافي. تم احتساب العمل الإضافي المؤهل تلقائياً.';
 
   @override
+  String get overtimeCancel => 'إلغاء العمل الإضافي';
+
+  @override
+  String get overtimeCancelConfirmTitle => 'إلغاء العمل الإضافي؟';
+
+  @override
+  String get overtimeCancelConfirmMessage =>
+      'هل أنت متأكد أنك تريد إلغاء هذا العمل الإضافي؟';
+
+  @override
+  String get overtimeCancelConfirmYes => 'نعم، إلغاء';
+
+  @override
+  String get overtimeCancelled => 'تم إلغاء العمل الإضافي.';
+
+  @override
+  String get overtimeCancelledMessage => 'تم إلغاء العمل الإضافي.';
+
+  @override
   String get normalOvertimeStarted => 'بدأ العمل الإضافي العادي.';
 
   @override

@@ -189,6 +189,12 @@ const overtimeRecordSchema = new Schema(
       default: null,
       maxlength: 2000,
     },
+    cancelledAt: { type: Date, default: null },
+    cancelledBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
     clientRequestId: { type: String, required: true },
   },
   {

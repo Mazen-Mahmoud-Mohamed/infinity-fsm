@@ -38,6 +38,7 @@ class UsersDesktopTable extends StatelessWidget {
       child: AppDesktopDataTable(
         controller: scrollController,
         loadingMore: loadingMore,
+        expandVertically: true,
         columns: [
           DataColumn(label: Text(l10n.usersList)),
           DataColumn(label: Text(l10n.email)),

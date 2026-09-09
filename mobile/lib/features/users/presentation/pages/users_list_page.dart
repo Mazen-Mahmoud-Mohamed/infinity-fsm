@@ -300,6 +300,15 @@ class _UsersListPageState extends State<UsersListPage> {
                     duration: const Duration(milliseconds: 180),
                     switchInCurve: Curves.easeOut,
                     switchOutCurve: Curves.easeIn,
+                    layoutBuilder: (currentChild, previousChildren) {
+                      return Stack(
+                        alignment: Alignment.topCenter,
+                        children: <Widget>[
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
                     child: body,
                   );
                 },

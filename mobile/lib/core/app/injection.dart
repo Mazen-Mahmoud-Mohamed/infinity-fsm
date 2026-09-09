@@ -60,6 +60,7 @@ import 'package:mobile/features/overtime/domain/repositories/overtime_repository
 import 'package:mobile/features/overtime/domain/services/overtime_cellular_upload_prompt_service.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
 import 'package:mobile/features/overtime/domain/usecases/approve_overtime_usecase.dart';
+import 'package:mobile/features/overtime/domain/usecases/cancel_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/end_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_overtime_by_id_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_running_overtime_usecase.dart';
@@ -399,6 +400,9 @@ Future<void> configureDependencies() async {
     () => EndOvertimeUseCase(getIt<OvertimeRepository>()),
   );
   getIt.registerLazySingleton(
+    () => CancelOvertimeUseCase(getIt<OvertimeRepository>()),
+  );
+  getIt.registerLazySingleton(
     () => RecordOvertimeCheckpointUseCase(getIt<OvertimeRepository>()),
   );
   getIt.registerLazySingleton(
@@ -443,6 +447,7 @@ Future<void> configureDependencies() async {
       getRunningOvertimeUseCase: getIt<GetRunningOvertimeUseCase>(),
       startOvertimeUseCase: getIt<StartOvertimeUseCase>(),
       endOvertimeUseCase: getIt<EndOvertimeUseCase>(),
+      cancelOvertimeUseCase: getIt<CancelOvertimeUseCase>(),
       recordCheckpointUseCase: getIt<RecordOvertimeCheckpointUseCase>(),
       gpsService: getIt<GpsService>(),
       selfieCaptureService: getIt<SelfieCaptureService>(),

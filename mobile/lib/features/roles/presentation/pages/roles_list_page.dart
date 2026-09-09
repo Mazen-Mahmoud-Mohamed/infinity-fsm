@@ -12,8 +12,7 @@ import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_empty_state.dart';
-import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
-import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
+import 'package:mobile/core/widgets/desktop/app_desktop_page_layout.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_toolbar.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/roles/domain/entities/role_entities.dart';
@@ -108,46 +107,38 @@ class _RolesListPageState extends State<RolesListPage> {
         body: Column(
           children: [
             if (isDesktop)
-              AppDesktopWorkspacePadding(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    AppDesktopPageHeader(
-                      title: l10n.rolesList,
-                      trailing: canCreate
-                          ? FilledButton.icon(
-                              onPressed: openCreate,
-                              icon: const Icon(Icons.add),
-                              label: Text(l10n.rolesCreate),
-                            )
-                          : null,
+              AppDesktopListPageHeader(
+                title: l10n.rolesList,
+                trailing: canCreate
+                    ? FilledButton.icon(
+                        onPressed: openCreate,
+                        icon: const Icon(Icons.add),
+                        label: Text(l10n.rolesCreate),
+                      )
+                    : null,
+                toolbar: AppDesktopToolbar(
+                  search: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: l10n.rolesSearchHint,
+                      prefixIcon: const Icon(Icons.search),
+                      isDense: true,
+                      suffixIcon: _searchController.text.isEmpty
+                          ? null
+                          : IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                _cubit.loadFirstPage(search: '');
+                                setState(() {});
+                              },
+                            ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
-                    AppDesktopToolbar(
-                      search: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: l10n.rolesSearchHint,
-                          prefixIcon: const Icon(Icons.search),
-                          isDense: true,
-                          suffixIcon: _searchController.text.isEmpty
-                              ? null
-                              : IconButton(
-                                  icon: const Icon(Icons.clear),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    _cubit.loadFirstPage(search: '');
-                                    setState(() {});
-                                  },
-                                ),
-                        ),
-                        textInputAction: TextInputAction.search,
-                        onChanged: (_) => setState(() {}),
-                        onSubmitted: (value) =>
-                            _cubit.loadFirstPage(search: value),
-                      ),
-                    ),
-                  ],
+                    textInputAction: TextInputAction.search,
+                    onChanged: (_) => setState(() {}),
+                    onSubmitted: (value) =>
+                        _cubit.loadFirstPage(search: value),
+                  ),
                 ),
               )
             else
@@ -275,6 +266,15 @@ class _RolesListPageState extends State<RolesListPage> {
                     duration: const Duration(milliseconds: 180),
                     switchInCurve: Curves.easeOut,
                     switchOutCurve: Curves.easeIn,
+                    layoutBuilder: (currentChild, previousChildren) {
+                      return Stack(
+                        alignment: Alignment.topCenter,
+                        children: <Widget>[
+                          ...previousChildren,
+                          if (currentChild != null) currentChild,
+                        ],
+                      );
+                    },
                     child: body,
                   );
                 },

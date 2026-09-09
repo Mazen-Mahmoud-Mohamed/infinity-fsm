@@ -13,6 +13,7 @@ enum OvertimeBusyAction {
   arrivedAtWorkSite,
   finishedWork,
   end,
+  cancel,
 }
 
 class OvertimeState extends Equatable {
@@ -89,6 +90,7 @@ class OvertimeState extends Equatable {
   bool get isRecordingFinishedWork =>
       busyAction == OvertimeBusyAction.finishedWork;
   bool get isEnding => busyAction == OvertimeBusyAction.end;
+  bool get isCancelling => busyAction == OvertimeBusyAction.cancel;
 
   OvertimeCheckpointStage? get nextCheckpoint =>
       session?.effectiveNextCheckpoint;

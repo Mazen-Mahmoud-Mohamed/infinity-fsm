@@ -70,6 +70,8 @@ String localizeAppMessage(
       return l10n.errorUploadFailed;
     case 'overtimeEnded':
       return l10n.overtimeEnded;
+    case 'overtimeCancelled':
+      return l10n.overtimeCancelled;
     case 'normalOvertimeStarted':
       return l10n.normalOvertimeStarted;
     case 'travelOvertimeStarted':

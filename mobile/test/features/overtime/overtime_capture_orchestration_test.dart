@@ -23,6 +23,7 @@ import 'package:mobile/features/overtime/domain/entities/overtime_status.dart';
 import 'package:mobile/features/overtime/domain/entities/overtime_type.dart';
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
+import 'package:mobile/features/overtime/domain/usecases/cancel_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/end_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/get_running_overtime_usecase.dart';
 import 'package:mobile/features/overtime/domain/usecases/record_overtime_checkpoint_usecase.dart';
@@ -292,6 +293,7 @@ class _HarnessCubit extends OvertimeCubit {
     required super.getRunningOvertimeUseCase,
     required super.startOvertimeUseCase,
     required super.endOvertimeUseCase,
+    required super.cancelOvertimeUseCase,
     required super.recordCheckpointUseCase,
     required super.gpsService,
     required super.selfieCaptureService,
@@ -333,6 +335,7 @@ Future<
     getRunningOvertimeUseCase: GetRunningOvertimeUseCase(repo),
     startOvertimeUseCase: start,
     endOvertimeUseCase: EndOvertimeUseCase(repo),
+    cancelOvertimeUseCase: CancelOvertimeUseCase(repo),
     recordCheckpointUseCase: checkpoint,
     gpsService: gps,
     selfieCaptureService: selfie,

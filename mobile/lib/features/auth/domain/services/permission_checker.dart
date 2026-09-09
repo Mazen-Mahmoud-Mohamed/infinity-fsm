@@ -25,6 +25,10 @@ class PermissionChecker {
     return hasPermission(Permissions.overtimeReject);
   }
 
+  bool canCancelOvertime() {
+    return hasPermission(Permissions.overtimeCancel);
+  }
+
   bool canManageUsers() {
     return hasPermission(Permissions.organizationManageUsers);
   }

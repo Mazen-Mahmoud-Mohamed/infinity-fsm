@@ -55,6 +55,11 @@ abstract class OvertimeRepository {
     String? networkStatus,
   });
 
+  /// Cancel a RUNNING overtime session (technician).
+  Future<Result<OvertimeSession>> cancelSession({
+    required String sessionId,
+  });
+
   Future<Result<OvertimeSessionPage>> listAdminSessions({
     int page = 1,
     int limit = 20,

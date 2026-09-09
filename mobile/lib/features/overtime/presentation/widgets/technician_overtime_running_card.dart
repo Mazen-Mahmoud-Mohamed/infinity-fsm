@@ -20,6 +20,8 @@ class TechnicianOvertimeRunningCard extends StatelessWidget {
     required this.isBusy,
     required this.busyAction,
     required this.onAdvance,
+    this.onCancel,
+    this.canCancel = false,
     this.pendingActions = const [],
   });
 
@@ -27,6 +29,8 @@ class TechnicianOvertimeRunningCard extends StatelessWidget {
   final bool isBusy;
   final OvertimeBusyAction? busyAction;
   final VoidCallback onAdvance;
+  final VoidCallback? onCancel;
+  final bool canCancel;
   final List<PendingOvertimeAction> pendingActions;
 
   @override
@@ -38,6 +42,8 @@ class TechnicianOvertimeRunningCard extends StatelessWidget {
       isBusy: isBusy,
       busyAction: busyAction,
       onAdvance: onAdvance,
+      onCancel: onCancel,
+      canCancel: canCancel,
       pendingActions: pendingActions,
       elapsedSeconds: 0,
       voiceMaxDurationSeconds: context.select(
@@ -71,6 +77,8 @@ class TechnicianOvertimeRunningContent extends StatelessWidget {
     required this.voiceRecordingQuality,
     required this.onNotesChanged,
     required this.onVoiceDraftChanged,
+    this.onCancel,
+    this.canCancel = false,
     this.pendingActions = const [],
     this.voiceDraft,
     this.liveTimer,
@@ -81,6 +89,8 @@ class TechnicianOvertimeRunningContent extends StatelessWidget {
   final bool isBusy;
   final OvertimeBusyAction? busyAction;
   final VoidCallback onAdvance;
+  final VoidCallback? onCancel;
+  final bool canCancel;
   final int elapsedSeconds;
   final int voiceMaxDurationSeconds;
   final String voiceRecordingQuality;
@@ -92,6 +102,37 @@ class TechnicianOvertimeRunningContent extends StatelessWidget {
   /// When set, only this subtree rebuilds on the 1 Hz elapsed tick.
   final Widget? liveTimer;
 
+  Future<void> _confirmCancel(BuildContext context) async {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(l10n.overtimeCancelConfirmTitle),
+          content: Text(l10n.overtimeCancelConfirmMessage),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(l10n.no),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(l10n.overtimeCancelConfirmYes),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed == true) {
+      onCancel?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -101,7 +142,9 @@ class TechnicianOvertimeRunningContent extends StatelessWidget {
         busyAction == OvertimeBusyAction.arrivedAtWorkSite ||
         busyAction == OvertimeBusyAction.finishedWork ||
         busyAction == OvertimeBusyAction.end;
+    final isCancelling = busyAction == OvertimeBusyAction.cancel;
     final currentStageTitle = _currentStageTitle(l10n, nextStage);
+    final showCancel = canCancel && onCancel != null && session.isRunning;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,6 +229,30 @@ class TechnicianOvertimeRunningContent extends StatelessWidget {
             textStyle: theme.textTheme.titleMedium,
           ),
         ),
+        if (showCancel) ...[
+          const SizedBox(height: AppSpacing.sm),
+          FilledButton.icon(
+            key: const Key('overtime-cancel-button'),
+            onPressed: isBusy ? null : () => _confirmCancel(context),
+            icon: isCancelling
+                ? SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: theme.colorScheme.onError,
+                    ),
+                  )
+                : const Icon(Icons.cancel_outlined),
+            label: Text(l10n.overtimeCancel),
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              textStyle: theme.textTheme.titleMedium,
+            ),
+          ),
+        ],
       ],
     );
   }
