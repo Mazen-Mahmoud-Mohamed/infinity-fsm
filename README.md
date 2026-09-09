@@ -758,49 +758,13 @@ Verified behavior only:
 
 This section is a **high-level** view of the current INFINITY FSM architecture. The diagram shows major system boundaries and primary flows only — not classes, files, or endpoints. Deeper notes: [§15 Project Structure](#15-project-structure) and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
-```mermaid
-flowchart TB
-  subgraph FL["Flutter Client - Android and Windows"]
-    direction TB
-    FL1["UI → Cubits → Use Cases → Repositories / Dio"]
-    FL2["GoRouter · Local Cache / Secure Storage"]
-    FL3["PushNotificationService"]
-    FL4["Technician Interface Policy<br/>Work Orders / Overtime / Profile visibility"]
-  end
-
-  subgraph BE["Express Backend - Node.js /api/v1"]
-    direction TB
-    BE1["API → Auth + RBAC → Business Modules"]
-    BE2["Work Orders · Overtime · Inventory · Assets · PM · Reports<br/>Users / Roles · Settings · Notifications · Profile · Dashboard · Releases"]
-    BE3["Notification Service"]
-  end
-
-  DB[(MongoDB / Mongoose)]
-  CL[(Cloudinary)]
-
-  subgraph NI["Notification Infrastructure"]
-    direction LR
-    SO[Socket.IO]
-    FC["Firebase Admin SDK → FCM"]
-  end
-
-  subgraph CD["CI/CD and Deployment"]
-    direction LR
-    GA[GitHub Actions]
-    GR[GitHub Releases]
-    RD[Render]
-    GA --> GR --> RD
-  end
-
-  FL -->|"HTTPS / JSON"| BE
-  BE -->|"read / write"| DB
-  BE --> CL
-  BE3 --> SO
-  SO --> FL3
-  BE3 --> FC
-  FC -->|"Android"| FL3
-  RD -.-> BE
-```
+<p align="center">
+  <img
+    src="docs/assets/infinity-fsm-architecture.svg"
+    alt="INFINITY FSM high-level architecture"
+    width="100%"
+  />
+</p>
 
 **Flutter client:** Material 3 UI drives Cubits (`flutter_bloc`), which call use cases/entities and repositories over Dio. GoRouter handles navigation. SessionQueryCache, SharedPreferences, and secure storage support local/session persistence. `PushNotificationService` owns the in-app inbox path, local OS notifications, deep links, and Technician Interface filtering for operational users.
 
