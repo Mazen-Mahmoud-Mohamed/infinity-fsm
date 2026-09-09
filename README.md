@@ -759,91 +759,81 @@ Verified behavior only:
 This section is a **high-level** view of the current INFINITY FSM architecture: how the Flutter client, Express API, MongoDB, realtime/push channels, media storage, and release pipeline relate. It is not a class diagram or file inventory — see [§15 Project Structure](#15-project-structure) and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for deeper design notes.
 
 ```mermaid
-flowchart TB
-  subgraph Client["Flutter client - Android and Windows"]
-    subgraph Presentation["Presentation"]
-      UI["Material 3 pages and widgets"]
-      DesktopShell["Desktop shell sidebar and top bar"]
-    end
-    subgraph StateMgmt["State management"]
-      Cubits["Cubits via flutter_bloc"]
-    end
-    subgraph DomainLayer["Domain"]
-      UseCases["Use cases and entities"]
-      TIPolicy["Technician Interface nav and notification policy"]
-    end
-    subgraph DataLayer["Data"]
-      Repos["Repositories"]
-      DioDS["Dio API data sources"]
-      LocalStore["Secure storage SharedPreferences SessionQueryCache"]
-    end
-    PushClient["PushNotificationService"]
-    Router["GoRouter"]
+flowchart LR
+  subgraph FL["Flutter Client - Android and Windows"]
+    direction TB
+    UI["Material 3 UI"]
+    SM["Cubits / flutter_bloc"]
+    DOM["Use Cases + Entities"]
+    TI["Technician Interface Policy"]
+    REPO["Repositories + Dio"]
+    LOC["SessionQueryCache + SharedPreferences + Secure Storage"]
+    NCLI["PushNotificationService"]
+    RT["GoRouter"]
+    UI --> SM
+    SM --> DOM
+    DOM --> REPO
+    REPO --> LOC
+    SM --> TI
+    TI -->|"nav visibility"| RT
+    TI -->|"notification visibility"| NCLI
+    RT --> UI
+    NCLI -->|"inbox / local / deep links"| RT
   end
 
-  subgraph Backend["Node.js Express API /api/v1"]
-    subgraph AuthZ["Auth and authorization"]
-      JWT["JWT access and refresh"]
-      RBAC["RBAC roles and permissions"]
-    end
-    subgraph Modules["Domain modules"]
-      ModCore["Auth Dashboard Users Settings Releases"]
-      ModBiz["Work Orders Overtime Inventory Assets PM Reports"]
-      ModNotif["Notifications service and hooks"]
-    end
-    Controllers["Routes validators controllers services"]
+  subgraph BE["Node.js Express API /api/v1"]
+    direction TB
+    API["API Layer"]
+    AUTH["JWT Auth + RBAC"]
+    MOD["Business Modules"]
+    NS["Notification Service"]
+    API --> AUTH
+    API --> MOD
+    API --> NS
   end
 
-  subgraph Realtime["Realtime"]
-    SocketIO["Socket.IO notification:new"]
+  subgraph DS["Database and Media"]
+    direction TB
+    DB["MongoDB / Mongoose"]
+    MED["Cloudinary"]
   end
 
-  subgraph DataStores["Data and media"]
-    MongoDB["MongoDB via Mongoose"]
-    Cloudinary["Cloudinary media uploads"]
+  subgraph RP["Realtime and Android Push"]
+    direction TB
+    SO["Socket.IO"]
+    FA["Firebase Admin SDK"]
+    FM["Firebase Cloud Messaging"]
   end
 
-  subgraph PushExt["Push - Android"]
-    FCM["Firebase Cloud Messaging"]
-    FCMAdmin["Firebase Admin SDK"]
+  subgraph CD["CI/CD and Deployment"]
+    direction TB
+    GA["GitHub Actions"]
+    GR["GitHub Releases / Manifest"]
+    RD["Render"]
   end
 
-  subgraph ReleaseCD["Release and deploy"]
-    GHA["GitHub Actions release.yml"]
-    GHRel["GitHub Releases and manifest"]
-    Render["Render-hosted API"]
-  end
-
-  UI --> Cubits
-  DesktopShell --> Cubits
-  Cubits --> UseCases
-  UseCases --> Repos
-  Repos --> DioDS
-  Repos --> LocalStore
-  Cubits --> TIPolicy
-  PushClient --> TIPolicy
-  Router --> UI
-  PushClient --> Router
-
-  DioDS -->|"REST HTTPS"| Controllers
-  Controllers --> AuthZ
-  Controllers --> Modules
-  Modules --> MongoDB
-  Modules --> Cloudinary
-  ModNotif --> SocketIO
-  ModNotif --> FCMAdmin
-  FCMAdmin --> FCM
-  SocketIO -->|"authenticated user rooms"| PushClient
-  FCM -->|"Android"| PushClient
-
-  GHA --> GHRel
-  GHRel -->|"releases latest and webhook"| ModCore
-  Render --> Controllers
+  REPO -->|"REST HTTPS"| API
+  MOD --> DB
+  MOD --> MED
+  REPO -.->|"media URLs"| MED
+  NS -->|"notification:new"| SO
+  SO --> NCLI
+  NS --> FA
+  FA --> FM
+  FM -->|"Android"| NCLI
+  GA --> GR
+  GA --> RD
+  RD --> API
+  GR -->|"latest + webhook"| MOD
 ```
 
-**Product modules** on this path (verified in `mobile/lib/features/*` and `backend/src/modules/*`): Authentication, Dashboard, Work Orders, Overtime, Notifications, Inventory, Assets, Preventive Maintenance, Service Reports, User Management, Dynamic Roles & Permissions, Settings (including Technician Interface), Profile, and Update Center. **Attendance is not an active product module.**
+**Client layers:** Presentation → Cubits → use cases/entities → repositories/Dio, with GoRouter, local cache/secure storage, and `PushNotificationService` (in-app inbox, local notifications, deep links, Technician Interface filtering).
 
-**Typical control flow:** UI → Cubit → use case / repository → Dio → Express service → MongoDB (and Cloudinary for media). **Notifications:** business hooks → persist `AppNotification` → Socket.IO and/or FCM → `PushNotificationService` → local toast and/or inbox Cubit → deep-link via GoRouter, with Technician Interface filtering for operational users.
+**Technician Interface Policy** controls technician access/visibility for **Work Orders**, **Overtime**, and **Profile** (navigation + matching notification visibility). It does not restrict Admin/Supervisor.
+
+**Business modules** (backend + Flutter features): Authentication, Dashboard, Work Orders, Overtime, Inventory, Assets, Preventive Maintenance, Reports, User Management, Roles & Permissions, Settings, Profile, Update Center / Releases. **Attendance is not an active product module.**
+
+**Typical flows:** REST request path UI → Cubits → use cases → Dio → `/api/v1` → MongoDB (media via Cloudinary). Notifications: Notification Service → Socket.IO and/or Firebase Admin → FCM → `PushNotificationService`. Releases: GitHub Actions → GitHub Releases/manifest and Render-hosted API.
 
 ---
 
