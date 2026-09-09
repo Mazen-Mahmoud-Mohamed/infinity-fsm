@@ -561,4 +561,28 @@ void main() {
       await remounted.close();
     },
   );
+
+  test('cancelled filter requests CANCELLED and clears for operational All',
+      () async {
+    final setup = _admin(
+      pages: {
+        1: [_session('ot-c', status: OvertimeStatus.cancelled)],
+      },
+    );
+
+    await setup.cubit.setFilter(OvertimeStatus.cancelled);
+    expect(setup.cubit.state.filterStatus, OvertimeStatus.cancelled);
+    expect(setup.cubit.state.items.single.status, OvertimeStatus.cancelled);
+    expect(setup.repo.calls.last.status, OvertimeStatus.cancelled);
+
+    await setup.cubit.setFilter(OvertimeStatus.approved);
+    expect(setup.cubit.state.filterStatus, OvertimeStatus.approved);
+    expect(setup.repo.calls.last.status, OvertimeStatus.approved);
+
+    await setup.cubit.setFilter(null);
+    expect(setup.cubit.state.filterStatus, isNull);
+    expect(setup.repo.calls.last.status, isNull);
+
+    await setup.cubit.close();
+  });
 }

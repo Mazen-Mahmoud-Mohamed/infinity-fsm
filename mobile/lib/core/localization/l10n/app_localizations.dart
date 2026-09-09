@@ -5357,19 +5357,19 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeCancel.
   ///
   /// In en, this message translates to:
-  /// **'Cancel Overtime'**
+  /// **'Cancel Work'**
   String get overtimeCancel;
 
   /// No description provided for @overtimeCancelConfirmTitle.
   ///
   /// In en, this message translates to:
-  /// **'Cancel Overtime?'**
+  /// **'Cancel Work?'**
   String get overtimeCancelConfirmTitle;
 
   /// No description provided for @overtimeCancelConfirmMessage.
   ///
   /// In en, this message translates to:
-  /// **'Are you sure you want to cancel this overtime?'**
+  /// **'Are you sure you want to cancel this work?'**
   String get overtimeCancelConfirmMessage;
 
   /// No description provided for @overtimeCancelConfirmYes.
@@ -5381,13 +5381,13 @@ abstract class AppLocalizations {
   /// No description provided for @overtimeCancelled.
   ///
   /// In en, this message translates to:
-  /// **'Overtime cancelled.'**
+  /// **'Work cancelled.'**
   String get overtimeCancelled;
 
   /// No description provided for @overtimeCancelledMessage.
   ///
   /// In en, this message translates to:
-  /// **'Overtime cancelled.'**
+  /// **'Work cancelled.'**
   String get overtimeCancelledMessage;
 
   /// No description provided for @normalOvertimeStarted.

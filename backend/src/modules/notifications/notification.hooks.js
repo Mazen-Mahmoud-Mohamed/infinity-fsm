@@ -174,6 +174,17 @@ export function buildOvertimeCopy(overtime, actor, event) {
           ? `${name} ended the overtime journey.`
           : 'The overtime journey was ended.',
       };
+    case 'cancelled':
+      return {
+        titleAr: 'إلغاء العمل',
+        titleEn: 'Work Cancelled',
+        bodyAr: name
+          ? `ألغى ${name} العمل.`
+          : 'ألغى الفني العمل.',
+        bodyEn: name
+          ? `${name} cancelled the overtime work.`
+          : 'The technician cancelled the overtime work.',
+      };
     default:
       return {
         titleAr: 'تحديث العمل الإضافي',

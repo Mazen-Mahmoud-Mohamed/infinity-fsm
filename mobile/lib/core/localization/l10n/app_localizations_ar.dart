@@ -2791,23 +2791,23 @@ class AppLocalizationsAr extends AppLocalizations {
       'انتهى العمل الإضافي. تم احتساب العمل الإضافي المؤهل تلقائياً.';
 
   @override
-  String get overtimeCancel => 'إلغاء العمل الإضافي';
+  String get overtimeCancel => 'إلغاء العمل';
 
   @override
-  String get overtimeCancelConfirmTitle => 'إلغاء العمل الإضافي؟';
+  String get overtimeCancelConfirmTitle => 'إلغاء العمل؟';
 
   @override
   String get overtimeCancelConfirmMessage =>
-      'هل أنت متأكد أنك تريد إلغاء هذا العمل الإضافي؟';
+      'هل أنت متأكد أنك تريد إلغاء هذا العمل؟';
 
   @override
   String get overtimeCancelConfirmYes => 'نعم، إلغاء';
 
   @override
-  String get overtimeCancelled => 'تم إلغاء العمل الإضافي.';
+  String get overtimeCancelled => 'تم إلغاء العمل.';
 
   @override
-  String get overtimeCancelledMessage => 'تم إلغاء العمل الإضافي.';
+  String get overtimeCancelledMessage => 'تم إلغاء العمل.';
 
   @override
   String get normalOvertimeStarted => 'بدأ العمل الإضافي العادي.';
@@ -3598,7 +3598,7 @@ class AppLocalizationsAr extends AppLocalizations {
   String get overtimeStatusRejected => 'مرفوض';
 
   @override
-  String get overtimeStatusCancelled => 'ملغى';
+  String get overtimeStatusCancelled => 'ملغي';
 
   @override
   String get overtimeStartLocation => 'موقع البداية';

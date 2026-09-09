@@ -108,21 +108,54 @@ class TechnicianOvertimeRunningContent extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) {
+        final buttonStyle = OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(48),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.md,
+            vertical: AppSpacing.sm,
+          ),
+          textStyle: theme.textTheme.titleMedium,
+        );
         return AlertDialog(
           title: Text(l10n.overtimeCancelConfirmTitle),
           content: Text(l10n.overtimeCancelConfirmMessage),
+          actionsAlignment: MainAxisAlignment.center,
+          actionsPadding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg,
+            0,
+            AppSpacing.lg,
+            AppSpacing.lg,
+          ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(false),
-              child: Text(l10n.no),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: theme.colorScheme.error,
-                foregroundColor: theme.colorScheme.onError,
-              ),
-              onPressed: () => Navigator.of(dialogContext).pop(true),
-              child: Text(l10n.overtimeCancelConfirmYes),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    key: const Key('overtime-cancel-dialog-no'),
+                    style: buttonStyle,
+                    onPressed: () => Navigator.of(dialogContext).pop(false),
+                    child: Text(l10n.no),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: FilledButton(
+                    key: const Key('overtime-cancel-dialog-yes'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
+                      minimumSize: const Size.fromHeight(48),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm,
+                      ),
+                      textStyle: theme.textTheme.titleMedium,
+                    ),
+                    onPressed: () => Navigator.of(dialogContext).pop(true),
+                    child: Text(l10n.overtimeCancelConfirmYes),
+                  ),
+                ),
+              ],
             ),
           ],
         );

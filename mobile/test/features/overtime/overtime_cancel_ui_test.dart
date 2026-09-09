@@ -44,9 +44,11 @@ OvertimeSession _running() {
 Future<void> _pump(
   WidgetTester tester, {
   required Widget child,
+  Locale locale = const Locale('en'),
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      locale: locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -65,7 +67,9 @@ Future<void> _pump(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('shows red Cancel Overtime and opens confirmation', (tester) async {
+  testWidgets('shows cancel action and confirmation with visible No/Yes', (
+    tester,
+  ) async {
     var cancelCalls = 0;
     final l10n = lookupAppLocalizations(const Locale('en'));
     final session = _running();
@@ -98,9 +102,11 @@ void main() {
 
     expect(find.text(l10n.overtimeCancelConfirmTitle), findsOneWidget);
     expect(find.text(l10n.overtimeCancelConfirmMessage), findsOneWidget);
+    expect(find.byKey(const Key('overtime-cancel-dialog-no')), findsOneWidget);
+    expect(find.byKey(const Key('overtime-cancel-dialog-yes')), findsOneWidget);
     expect(cancelCalls, 0);
 
-    await tester.tap(find.text(l10n.no));
+    await tester.tap(find.byKey(const Key('overtime-cancel-dialog-no')));
     await tester.pumpAndSettle();
     expect(cancelCalls, 0);
     expect(find.text(l10n.overtimeCancelConfirmTitle), findsNothing);
@@ -109,9 +115,55 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('overtime-cancel-button')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(l10n.overtimeCancelConfirmYes));
+    await tester.tap(find.byKey(const Key('overtime-cancel-dialog-yes')));
     await tester.pumpAndSettle();
     expect(cancelCalls, 1);
+  });
+
+  testWidgets('Arabic cancel button is إلغاء العمل without الإضافي', (
+    tester,
+  ) async {
+    final session = _running();
+
+    await _pump(
+      tester,
+      locale: const Locale('ar'),
+      child: TechnicianOvertimeRunningContent(
+        session: session,
+        nextStage: session.effectiveNextCheckpoint,
+        isBusy: false,
+        busyAction: null,
+        canCancel: true,
+        onAdvance: () {},
+        onCancel: () {},
+        elapsedSeconds: 10,
+        voiceMaxDurationSeconds: 300,
+        voiceRecordingQuality: 'medium',
+        onNotesChanged: (_) {},
+        onVoiceDraftChanged: (_) {},
+      ),
+    );
+
+    expect(find.text('إلغاء العمل'), findsOneWidget);
+    expect(find.textContaining('الإضافي'), findsNothing);
+
+    await tester.ensureVisible(find.byKey(const Key('overtime-cancel-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('overtime-cancel-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('إلغاء العمل؟'), findsOneWidget);
+    expect(
+      find.text('هل أنت متأكد أنك تريد إلغاء هذا العمل؟'),
+      findsOneWidget,
+    );
+    expect(find.text('لا'), findsOneWidget);
+    expect(find.text('نعم، إلغاء'), findsOneWidget);
+
+    final noSize = tester.getSize(
+      find.byKey(const Key('overtime-cancel-dialog-no')),
+    );
+    expect(noSize.height, greaterThanOrEqualTo(48));
   });
 
   testWidgets('disables cancel while busy and hides without permission', (

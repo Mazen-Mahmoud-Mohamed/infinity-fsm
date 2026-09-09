@@ -90,4 +90,30 @@ describe('notifyOvertimeEvent actor exclusion', () => {
     await new Promise((r) => setTimeout(r, 20));
     expect(mockNotifyUsers).not.toHaveBeenCalled();
   });
+
+  it('uses OVERTIME_CANCELLED type and overtime dedupe key for cancelled events', async () => {
+    mockFindManagement.mockResolvedValue(['admin1']);
+
+    await notifyOvertimeEvent({
+      companyId: 'c1',
+      overtime: { _id: 'ot-cancel' },
+      actor: { _id: 'tech1', firstName: 'Field' },
+      event: 'cancelled',
+    });
+
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(mockNotifyUsers).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'OVERTIME_CANCELLED',
+        module: 'overtime',
+        entityType: 'overtime',
+        entityId: 'ot-cancel',
+        dedupeKey: 'ot:ot-cancel:cancelled',
+        titleAr: 'إلغاء العمل',
+        bodyAr: expect.stringContaining('ألغى'),
+        recipientUserIds: ['admin1'],
+      })
+    );
+  });
 });

@@ -67,4 +67,12 @@ describe('notification.hooks copy builders', () => {
     expect(copy.bodyAr).toContain('أحمد محمد');
     expect(copy.bodyAr).toContain('موقع العمل');
   });
+
+  it('builds cancellation copy for managers', () => {
+    const copy = buildOvertimeCopy(overtime, actor, 'cancelled');
+    expect(copy.titleAr).toBe('إلغاء العمل');
+    expect(copy.titleEn).toBe('Work Cancelled');
+    expect(copy.bodyAr).toContain('ألغى أحمد محمد العمل');
+    expect(copy.bodyEn).toContain('cancelled the overtime work');
+  });
 });

@@ -818,7 +818,13 @@ class OvertimeService {
       },
     });
 
-    // No lifecycle notification — cancellation must not emit arrived/finished/ended.
+    notifyOvertimeEvent({
+      io: getSocketIo(),
+      companyId: user.companyId,
+      overtime: record,
+      actor: user,
+      event: 'cancelled',
+    });
 
     return this._map(await this._loadWithTechnician(record._id, user.companyId));
   }
@@ -835,6 +841,9 @@ class OvertimeService {
     const statusFilter = mapStatusFilter(status);
     if (statusFilter) {
       filter.status = statusFilter;
+    } else {
+      // Operational "All" excludes cancelled history (use CANCELLED filter).
+      filter.status = { $ne: 'CANCELLED' };
     }
 
     if (search && String(search).trim()) {

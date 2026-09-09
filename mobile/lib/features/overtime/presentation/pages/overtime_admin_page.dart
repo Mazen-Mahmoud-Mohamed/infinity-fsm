@@ -210,6 +210,15 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
                                         .read<OvertimeAdminCubit>()
                                         .setFilter(OvertimeStatus.rejected),
                                   ),
+                                  const SizedBox(width: AppSpacing.sm),
+                                  _FilterChip(
+                                    label: l10n.overtimeStatusCancelled,
+                                    selected: state.filterStatus ==
+                                        OvertimeStatus.cancelled,
+                                    onSelected: () => context
+                                        .read<OvertimeAdminCubit>()
+                                        .setFilter(OvertimeStatus.cancelled),
+                                  ),
                                 ],
                               ),
                             ),
@@ -412,6 +421,15 @@ class _OvertimeAdminViewState extends State<_OvertimeAdminView> {
                       onSelected: () => context
                           .read<OvertimeAdminCubit>()
                           .setFilter(OvertimeStatus.rejected),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    _FilterChip(
+                      label: l10n.overtimeStatusCancelled,
+                      selected:
+                          state.filterStatus == OvertimeStatus.cancelled,
+                      onSelected: () => context
+                          .read<OvertimeAdminCubit>()
+                          .setFilter(OvertimeStatus.cancelled),
                     ),
                   ],
                 ),
