@@ -317,17 +317,18 @@ void main() {
       );
       expect(
         redirectOperationalRoute(
-          location: RoutePaths.settings,
-          config: config,
-        ),
-        RoutePaths.workOrders,
-      );
-      expect(
-        redirectOperationalRoute(
           location: RoutePaths.reports,
           config: config,
         ),
         RoutePaths.workOrders,
+      );
+      // Settings hub remains reachable via TechnicianMainAppBar (not shell rail).
+      expect(
+        redirectOperationalRoute(
+          location: RoutePaths.settings,
+          config: config,
+        ),
+        isNull,
       );
     });
 
@@ -336,6 +337,20 @@ void main() {
         TechnicianInterfaceNavigation.isRouteEnabled(
           config,
           RoutePaths.notifications,
+        ),
+        isTrue,
+      );
+      expect(
+        TechnicianInterfaceNavigation.isRouteEnabled(
+          config,
+          RoutePaths.settings,
+        ),
+        isTrue,
+      );
+      expect(
+        TechnicianInterfaceNavigation.isRouteEnabled(
+          config,
+          RoutePaths.settingsLanguage,
         ),
         isTrue,
       );
@@ -362,10 +377,34 @@ void main() {
       );
       expect(
         redirectOperationalRoute(
+          location: RoutePaths.settings,
+          config: config,
+        ),
+        isNull,
+      );
+      expect(
+        redirectOperationalRoute(
           location: RoutePaths.settingsUpdates,
           config: config,
         ),
         isNull,
+      );
+    });
+
+    test('technician Settings app-bar route opens without redirect', () {
+      expect(
+        TechnicianInterfaceNavigation.isRouteEnabled(
+          config,
+          RoutePaths.settings,
+        ),
+        isTrue,
+      );
+      expect(
+        TechnicianInterfaceNavigation.visibleRailBranches(
+          operational: true,
+          config: config,
+        ),
+        isNot(contains(TechnicianInterfaceNavigation.branchSettings)),
       );
     });
 

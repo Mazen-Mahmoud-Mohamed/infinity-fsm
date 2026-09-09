@@ -12,7 +12,7 @@ Enterprise Field Service Management for workforce operations — work orders, ov
 
 **INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform developed for **Total-Com Solutions** and maintenance companies with field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android**, **tablets**, and **Windows**.
 
-**Current production client release:** **v1.2.1** (build **27**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
+**Current production client release:** **v1.2.2** (build **28**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
 
 On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop experience** — sidebar navigation, global top bar, desktop page layouts, data tables, and fixed bottom action footers. Mobile and tablet layouts remain **responsive first-class flows**; they are not stretched desktop layouts.
 
@@ -72,7 +72,7 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 | **Client** | Flutter · Material 3 · Clean Architecture · Cubit · Repository Pattern |
 | **API** | Node.js · Express · MongoDB · JWT · Socket.IO · Firebase Admin (FCM) |
 | **API version** | `/api/v1` |
-| **Current client** | **v1.2.1+27** · channel **stable** · GitHub Releases primary |
+| **Current client** | **v1.2.2+28** · channel **stable** · GitHub Releases primary |
 
 The Windows window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android packaging is unchanged.
 
@@ -937,8 +937,8 @@ flutter analyze
 
 | Field | Value |
 |-------|--------|
-| **Version** | **1.2.1** |
-| **Build** | **27** (`1.2.1+27` in `mobile/pubspec.yaml`) |
+| **Version** | **1.2.2** |
+| **Build** | **28** (`1.2.2+28` in `mobile/pubspec.yaml`) |
 | **Channel** | **stable** |
 | **Distribution** | GitHub Release assets (APK + Windows installer + `release-manifest.json`) |
 
@@ -974,9 +974,9 @@ Empty or boilerplate-only release notes fail the publish job. See [docs/releases
 ```
 
 ```bash
-# Example — after pubspec is already 1.2.1+27 on main:
-git tag v1.2.1
-git push origin v1.2.1
+# Example — after pubspec is already 1.2.2+28 on main:
+git tag v1.2.2
+git push origin v1.2.2
 ```
 
 Do **not** create a tag whose semver does not match `mobile/pubspec.yaml` — the workflow will fail resolve-version.
@@ -1153,7 +1153,11 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ## 25. Recent Updates
 
-### v1.2.1 (current)
+### v1.2.2 (current)
+
+- **Technician Settings** — restore opening the Settings hub from the technician app bar (`/settings`); management Settings shell branch remains hidden for technicians; landscape authorization fix unchanged
+
+### v1.2.1
 
 - **Technician landscape navigation** — orientation no longer exposes management destinations (Inventory, Assets, PM, etc.); phone, rail, and sidebar use the same Technician Interface authorization; unauthorized routes and deep links redirect to the technician home
 

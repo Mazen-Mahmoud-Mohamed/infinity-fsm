@@ -113,8 +113,10 @@ class TechnicianInterfaceNavigation {
 
   /// Whether an operational (technician) user may access [location].
   ///
-  /// Management shell destinations are denied. Personal allowlist covers
-  /// notifications, app-update settings, and change-password from Profile.
+  /// Management shell destinations (inventory, assets, PM, users, roles,
+  /// reports, dashboard) are denied. Personal settings remain allowed — the
+  /// technician Settings control lives in [TechnicianMainAppBar], not the
+  /// management shell branch.
   static bool isRouteEnabled(
     TechnicianInterfaceConfig config,
     String location,
@@ -125,7 +127,8 @@ class TechnicianInterfaceNavigation {
     if (location.startsWith(RoutePaths.notifications)) {
       return true;
     }
-    if (location.startsWith(RoutePaths.settingsUpdates)) {
+    if (location.startsWith(RoutePaths.settings) ||
+        location.startsWith('/settings')) {
       return true;
     }
     if (location.startsWith(RoutePaths.usersChangePassword)) {
