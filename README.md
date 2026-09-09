@@ -12,7 +12,7 @@ Enterprise Field Service Management for workforce operations — work orders, ov
 
 **INFINITY** (Infinity FSM) is a production-oriented Field Service Management platform developed for **Total-Com Solutions** and maintenance companies with field teams. One Flutter client and one Node.js API cover technician capture, supervisor review, and admin configuration — in **English (LTR)** and **Arabic (RTL)** on **Android**, **tablets**, and **Windows**.
 
-**Current production client release:** **v1.0.12** (build **13**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
+**Current production client release:** **v1.0.23** (build **24**, channel **stable**). Version/build live in `mobile/pubspec.yaml` and are published through the GitHub Actions release pipeline.
 
 On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop experience** — sidebar navigation, global top bar, desktop page layouts, data tables, and fixed bottom action footers. Mobile and tablet layouts remain **responsive first-class flows**; they are not stretched desktop layouts.
 
@@ -34,21 +34,22 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 11. [Localization](#11-localization)
 12. [Security](#12-security)
 13. [Technology Stack](#13-technology-stack)
-14. [Project Structure](#14-project-structure)
-15. [Development Setup](#15-development-setup)
-16. [Testing](#16-testing)
-17. [Build & Release](#17-build--release)
-18. [Environment Variables](#18-environment-variables)
-19. [Firebase Integration](#19-firebase-integration)
-20. [Deployment](#20-deployment)
-21. [API Overview](#21-api-overview)
-22. [Performance Notes](#22-performance-notes)
-23. [Important Implementation Notes](#23-important-implementation-notes)
-24. [Recent Updates](#24-recent-updates)
-25. [Troubleshooting](#25-troubleshooting)
-26. [Documentation](#26-documentation)
-27. [License](#27-license)
-28. [Author](#28-author)
+14. [Architecture](#architecture)
+15. [Project Structure](#15-project-structure)
+16. [Development Setup](#16-development-setup)
+17. [Testing](#17-testing)
+18. [Build & Release](#18-build--release)
+19. [Environment Variables](#19-environment-variables)
+20. [Firebase Integration](#20-firebase-integration)
+21. [Deployment](#21-deployment)
+22. [API Overview](#22-api-overview)
+23. [Performance Notes](#23-performance-notes)
+24. [Important Implementation Notes](#24-important-implementation-notes)
+25. [Recent Updates](#25-recent-updates)
+26. [Troubleshooting](#26-troubleshooting)
+27. [Documentation](#27-documentation)
+28. [License](#28-license)
+29. [Author](#29-author)
 
 ---
 
@@ -71,7 +72,7 @@ On viewports **≥ 900 px**, the client activates a **dedicated Windows desktop 
 | **Client** | Flutter · Material 3 · Clean Architecture · Cubit · Repository Pattern |
 | **API** | Node.js · Express · MongoDB · JWT · Socket.IO · Firebase Admin (FCM) |
 | **API version** | `/api/v1` |
-| **Current client** | **v1.0.12+13** · channel **stable** · GitHub Releases primary |
+| **Current client** | **v1.0.23+24** · channel **stable** · GitHub Releases primary |
 
 The Windows window title and product metadata display as **INFINITY**. The Flutter package name remains `mobile` so Android packaging is unchanged.
 
@@ -188,6 +189,7 @@ Backend validation and normalization live in `work-orders.service.js` / `work-or
 ### 🔔 Notifications
 
 - **In-app notification center** (`/notifications`) with unread count and mark-as-read
+- **Windows / desktop Back** — pushed Notifications page uses desktop sub-page chrome with Back (`maybePop`) so users can return to the previous screen; mobile keeps the standard AppBar back behavior
 - **Firebase Cloud Messaging (Android)** for device push delivery
 - **Socket.IO** realtime delivery (`notification:new`) while connected
 - **Local OS notifications** (Android foreground + Windows toast while app is running)
@@ -199,6 +201,7 @@ Backend validation and normalization live in `work-orders.service.js` / `work-or
 - Pending navigation queue until auth/router bootstrap completes
 - Mark-as-read when a notification is opened
 - Idempotent navigation (duplicate tap protection)
+- **Technician Interface filtering** — for operational (technician) users, Work Order / Overtime notifications respect company TI flags in the inbox, foreground/local toasts, and deep links (see [§5](#5-technician-interface-control))
 - **App-update notifications** when a GitHub Release is published (see [§8](#8-update-center--auto-update))
 
 See [§7 Notifications](#7-notifications) for platform behavior (Android FCM, Windows Socket.IO, deep links).
@@ -269,7 +272,7 @@ Activated at **`AppBreakpoints.tabletMax` (900 px+)** on Windows (and wide deskt
 | **Work Order create/edit** | Desktop form layout with fixed bottom **Close** / **Save** |
 | **Overtime Management** | Table with technician search, status filters, **Export Excel** in fixed bottom footer |
 | **Users / Roles** | Desktop tables for list management |
-| **Notifications** | Desktop list view |
+| **Notifications** | Desktop list + detail preview; **Back** via `AppDesktopSubPageHeader` when the route can pop |
 | **Dashboard, Inventory, Assets, PM, Reports, Settings, Profile** | Desktop-aware page layouts and spacing |
 
 Mobile/tablet code paths are unchanged for modules that branch on `AppBreakpoints.isDesktopOf(context)`.
@@ -300,7 +303,7 @@ The technician app is intentionally **simplified** for field execution. Technici
 | Work Orders | **أوامر العمل** | `workOrders` |
 | Profile | **أنا** | `profile` |
 
-Only enabled sections appear in technician bottom navigation / rail. Disabled sections are removed from normal navigation; existing route guards redirect deep links according to authorization rules (notification deep links still target entity routes when permitted).
+Only enabled sections appear in technician bottom navigation / rail. Disabled sections are removed from normal navigation; route guards redirect deep links according to Technician Interface and authorization rules. **Notification deep links** for Work Orders and Overtime are also blocked on the client when the matching Technician Interface flag is disabled (see [§5](#5-technician-interface-control) and [§7](#7-notifications)).
 
 ### Work Order detail — technician vs admin
 
@@ -334,15 +337,28 @@ Company-scoped setting key: `technician_interface`.
 
 | Control | When enabled | When disabled |
 |---------|--------------|---------------|
-| **Overtime** | Visible in technician nav | Hidden; deep links redirected |
-| **Work Orders** | Visible | Hidden; deep links redirected |
-| **Profile** | Visible | Hidden; deep links redirected |
+| **Overtime** | Visible in technician nav | Hidden; nav deep links redirected; **Overtime notifications** hidden from technician inbox, foreground/local toasts suppressed, and notification deep links blocked |
+| **Work Orders** | Visible | Hidden; nav deep links redirected; **Work Order notifications** hidden from technician inbox, foreground/local toasts suppressed, and notification deep links blocked |
+| **Profile** | Visible | Hidden; nav deep links redirected |
 
 Defaults are all **enabled**.
+
+**Notification visibility (technicians only):** Client-side policy (`TechnicianInterfaceNotificationPolicy`) applies when `CurrentUser.usesOperationalHome` is true. Admin and Supervisor users (executive dashboard) are **not** gated. Mapping:
+
+| Notification kind | Controlled by |
+|-------------------|---------------|
+| Work Order (`work_order` / work-orders category) | `workOrders` |
+| Overtime (`overtime`) | `overtime` |
+| App update (`app_update`) | Always allowed (not gated by Profile) |
+| General / other modules (e.g. inventory, assets, PM) | Always allowed — **not** Technician Interface toggles |
+
+Hidden notifications remain persisted on the server; re-enabling a section makes them visible again in the inbox list. Fail-open: if Technician Interface config is not ready yet, notifications are shown until config loads.
 
 **All-disabled state:** technicians are sent to a dedicated **no sections** screen asking them to contact an administrator (`/technician-no-sections`).
 
 Config is readable by authenticated users for navigation; only admins with settings manage may update it.
+
+Inventory, Assets, and Preventive Maintenance are **not** controlled by Technician Interface toggles.
 
 ### Offline persistence (technician app)
 
@@ -492,13 +508,27 @@ Additional behaviors (implemented):
 - **Idempotent navigation** (duplicate tap / dual callback protection)
 - **Windows focus** — toast click brings the INFINITY window to foreground and navigates
 
-Client: `PushNotificationService` + `notification_navigation.dart`.
+Client: `PushNotificationService` + `notification_navigation.dart` + `TechnicianInterfaceNotificationPolicy` (operational-user visibility / deep-link guards).
+
+### Technician Interface and notifications
+
+For users with **operational home** (technicians), the client applies company Technician Interface flags to notification UX **without changing backend persistence**:
+
+| Layer | Behavior when feature disabled |
+|-------|--------------------------------|
+| **Inbox** | Matching Work Order / Overtime items filtered from the visible list (mobile + desktop share one policy helper) |
+| **Foreground / local toast** | Suppressed; unread refresh still runs |
+| **Deep link / tap** | Navigation to the disabled feature route is blocked; user stays on the current safe screen |
+| **App update** | Always allowed |
+| **Admin / Supervisor** | Unchanged — policy does not apply |
+
+Server unread counts are not rewritten for this filter; the badge may still reflect hidden items until they are read or the count is refreshed after mark-as-read flows.
 
 ### Android push prerequisites
 
 - Firebase project configured for Android package **`com.example.mobile`**
-- Production Android APKs receive Firebase client config via **CI secret injection** (see [§19 Firebase Integration](#19-firebase-integration)); local developers may place `google-services.json` under `mobile/android/app/` (**gitignored**)
-- Backend Firebase Admin credentials via environment (see [§18 Environment Variables](#18-environment-variables) / [§19](#19-firebase-integration))
+- Production Android APKs receive Firebase client config via **CI secret injection** (see [§20 Firebase Integration](#20-firebase-integration)); local developers may place `google-services.json` under `mobile/android/app/` (**gitignored**)
+- Backend Firebase Admin credentials via environment (see [§19 Environment Variables](#19-environment-variables) / [§20](#20-firebase-integration))
 - `FCM_ENABLED=true` on the API
 - Android 13+ notification permission granted by the user
 - Channels created at push init: `infinity_default` and `infinity_updates` (HIGH importance for update pushes)
@@ -724,7 +754,100 @@ Verified behavior only:
 
 ---
 
-## 14. Project Structure
+## Architecture
+
+This section is a **high-level** view of the current INFINITY FSM architecture: how the Flutter client, Express API, MongoDB, realtime/push channels, media storage, and release pipeline relate. It is not a class diagram or file inventory — see [§15 Project Structure](#15-project-structure) and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for deeper design notes.
+
+```mermaid
+flowchart TB
+  subgraph Client["Flutter client - Android and Windows"]
+    subgraph Presentation["Presentation"]
+      UI["Material 3 pages and widgets"]
+      DesktopShell["Desktop shell sidebar and top bar"]
+    end
+    subgraph StateMgmt["State management"]
+      Cubits["Cubits via flutter_bloc"]
+    end
+    subgraph DomainLayer["Domain"]
+      UseCases["Use cases and entities"]
+      TIPolicy["Technician Interface nav and notification policy"]
+    end
+    subgraph DataLayer["Data"]
+      Repos["Repositories"]
+      DioDS["Dio API data sources"]
+      LocalStore["Secure storage SharedPreferences SessionQueryCache"]
+    end
+    PushClient["PushNotificationService"]
+    Router["GoRouter"]
+  end
+
+  subgraph Backend["Node.js Express API /api/v1"]
+    subgraph AuthZ["Auth and authorization"]
+      JWT["JWT access and refresh"]
+      RBAC["RBAC roles and permissions"]
+    end
+    subgraph Modules["Domain modules"]
+      ModCore["Auth Dashboard Users Settings Releases"]
+      ModBiz["Work Orders Overtime Inventory Assets PM Reports"]
+      ModNotif["Notifications service and hooks"]
+    end
+    Controllers["Routes validators controllers services"]
+  end
+
+  subgraph Realtime["Realtime"]
+    SocketIO["Socket.IO notification:new"]
+  end
+
+  subgraph DataStores["Data and media"]
+    MongoDB["MongoDB via Mongoose"]
+    Cloudinary["Cloudinary media uploads"]
+  end
+
+  subgraph PushExt["Push - Android"]
+    FCM["Firebase Cloud Messaging"]
+    FCMAdmin["Firebase Admin SDK"]
+  end
+
+  subgraph ReleaseCD["Release and deploy"]
+    GHA["GitHub Actions release.yml"]
+    GHRel["GitHub Releases and manifest"]
+    Render["Render-hosted API"]
+  end
+
+  UI --> Cubits
+  DesktopShell --> Cubits
+  Cubits --> UseCases
+  UseCases --> Repos
+  Repos --> DioDS
+  Repos --> LocalStore
+  Cubits --> TIPolicy
+  PushClient --> TIPolicy
+  Router --> UI
+  PushClient --> Router
+
+  DioDS -->|"REST HTTPS"| Controllers
+  Controllers --> AuthZ
+  Controllers --> Modules
+  Modules --> MongoDB
+  Modules --> Cloudinary
+  ModNotif --> SocketIO
+  ModNotif --> FCMAdmin
+  FCMAdmin --> FCM
+  SocketIO -->|"authenticated user rooms"| PushClient
+  FCM -->|"Android"| PushClient
+
+  GHA --> GHRel
+  GHRel -->|"releases latest and webhook"| ModCore
+  Render --> Controllers
+```
+
+**Product modules** on this path (verified in `mobile/lib/features/*` and `backend/src/modules/*`): Authentication, Dashboard, Work Orders, Overtime, Notifications, Inventory, Assets, Preventive Maintenance, Service Reports, User Management, Dynamic Roles & Permissions, Settings (including Technician Interface), Profile, and Update Center. **Attendance is not an active product module.**
+
+**Typical control flow:** UI → Cubit → use case / repository → Dio → Express service → MongoDB (and Cloudinary for media). **Notifications:** business hooks → persist `AppNotification` → Socket.IO and/or FCM → `PushNotificationService` → local toast and/or inbox Cubit → deep-link via GoRouter, with Technician Interface filtering for operational users.
+
+---
+
+## 15. Project Structure
 
 ```
 infinity-fsm/
@@ -764,13 +887,13 @@ infinity-fsm/
 ├── LICENSE
 └── README.md
 ```
-**Architecture (Flutter):** Presentation (pages/widgets + Cubits) → Domain (entities, use cases, repository interfaces) → Data (models, datasources, repositories). Feature folders under `mobile/lib/features/*`.
+**Architecture (Flutter):** Presentation (pages/widgets + Cubits) → Domain (entities, use cases, repository interfaces) → Data (models, datasources, repositories). Feature folders under `mobile/lib/features/*`. See [Architecture](#architecture) for the system diagram.
 
 **Architecture (Backend):** Routes → Validators → Controllers → Services → Mongoose models. Modules under `backend/src/modules/*`.
 
 ---
 
-## 15. Development Setup
+## 16. Development Setup
 
 ### Requirements
 
@@ -781,7 +904,7 @@ infinity-fsm/
 - Cloudinary account for production media uploads
 - Windows desktop: Visual Studio **Desktop development with C++** workload
 - Android push: Firebase project; production APKs get client config via CI secrets (local optional `google-services.json`, gitignored)
-- Backend push: Firebase Admin service-account credentials via environment (see §18–§19)
+- Backend push: Firebase Admin service-account credentials via environment (see §19–§20)
 
 ### Backend
 
@@ -829,7 +952,7 @@ Default / production API base is configured in `mobile/lib/core/config/env_confi
 
 ---
 
-## 16. Testing
+## 17. Testing
 
 ### Backend (Jest)
 
@@ -858,9 +981,10 @@ Under `mobile/test/`, including:
 - Dashboard widgets (RTL, charts, workforce overview)
 - Overtime offline lifecycle, sync scheduler, reconciliation, forensics
 - Connectivity service
-- Settings / localization / Technician Interface navigation
+- Settings / localization / Technician Interface navigation **and notification visibility policy**
 - **App Update** — Update Center cubit, artifact verification, stale cleanup, Auto Update locks
 - Push notification navigation / pending intent mapping
+- Notifications Technician Interface visibility (inbox / desktop Back)
 - Work orders, desktop shell / Work Orders / Overtime table tests
 
 ```bash
@@ -869,20 +993,20 @@ flutter test
 flutter analyze
 ```
 
-**Latest full Flutter suite:** **353 / 353** tests passed (local verification).
+**Latest full Flutter suite:** **662 / 662** tests passed (local verification).
 
 > Do not treat analyzer “issue count” as error count — most findings are info/style; compile errors are separate. Release CI and the Flutter test suite are the authoritative validation gates for client changes.
 
 ---
 
-## 17. Build & Release
+## 18. Build & Release
 
 ### Current production client
 
 | Field | Value |
 |-------|--------|
-| **Version** | **1.0.12** |
-| **Build** | **13** (`1.0.12+13` in `mobile/pubspec.yaml`) |
+| **Version** | **1.0.23** |
+| **Build** | **24** (`1.0.23+24` in `mobile/pubspec.yaml`) |
 | **Channel** | **stable** |
 | **Distribution** | GitHub Release assets (APK + Windows installer + `release-manifest.json`) |
 
@@ -918,9 +1042,9 @@ Empty or boilerplate-only release notes fail the publish job. See [docs/releases
 ```
 
 ```bash
-# Example — after pubspec is already 1.0.12+13 on main:
-git tag v1.0.12
-git push origin v1.0.12
+# Example — after pubspec is already 1.0.23+24 on main:
+git tag v1.0.23
+git push origin v1.0.23
 ```
 
 Do **not** create a tag whose semver does not match `mobile/pubspec.yaml` — the workflow will fail resolve-version.
@@ -947,7 +1071,7 @@ Do not commit signing keystores, API secrets, `.env`, `google-services.json`, or
 
 ---
 
-## 18. Environment Variables
+## 19. Environment Variables
 
 Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 
@@ -994,7 +1118,7 @@ Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 
 ---
 
-## 19. Firebase Integration
+## 20. Firebase Integration
 
 | Component | Configuration |
 |-----------|---------------|
@@ -1017,7 +1141,7 @@ Copy `backend/.env.example` → `backend/.env`. **Never commit real secrets.**
 
 ---
 
-## 20. Deployment
+## 21. Deployment
 
 | Component | Current state |
 |-----------|---------------|
@@ -1036,7 +1160,7 @@ Bind the API to `PORT` (`0.0.0.0` on Render). Keep secrets in the host environme
 
 ---
 
-## 21. API Overview
+## 22. API Overview
 
 Primary mount: **`/api/v1`**
 
@@ -1062,7 +1186,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 22. Performance Notes
+## 23. Performance Notes
 
 - Avoid global caching of **real-time** overtime running state
 - Dashboard uses **controlled, short-lived** deduplication (in-flight + ~5s fresh reuse) — not a long-lived stale cache
@@ -1072,7 +1196,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 23. Important Implementation Notes
+## 24. Important Implementation Notes
 
 | Topic | Guarantee |
 |-------|-----------|
@@ -1081,8 +1205,8 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 | Technician UI | Hides technical metadata where designed; admin retains detailed review data |
 | Rejection reason | Visible to technician in history when present |
 | Offline | Overtime actions persisted and retried; reconciliation when server already confirmed a stage |
-| Technician Interface | Company-scoped; Admin/Supervisor navigation unrestricted; **offline cache per company** |
-| Notifications | Persist → Socket.IO → FCM (Android); push failures do not fail business operations |
+| Technician Interface | Company-scoped; Admin/Supervisor navigation unrestricted; **offline cache per company**; **notification inbox/toast/deep-link filtering** for operational users (`workOrders` / `overtime` only) |
+| Notifications | Persist → Socket.IO → FCM (Android); push failures do not fail business operations; TI filters presentation for technicians without deleting persisted rows |
 | App updates | Manifest verify (SHA-256 + size); Android uses system installer (**no silent install**) |
 | Work Order location | Address (`locationLabel`) + optional URL (`locationUrl`); open-location only for valid `http(s)` |
 | Release webhook | Exact tag/payload resolution; HMAC over raw body; dedupe `app-update:v{version}:{build}` |
@@ -1095,9 +1219,14 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 24. Recent Updates
+## 25. Recent Updates
 
-### v1.0.12 (current)
+### v1.0.23 (current)
+
+- **Technician Interface → notifications** — for operational (technician) users, Work Order and Overtime notifications respect TI `workOrders` / `overtime` flags in the inbox, foreground/local toasts, and deep-link navigation; `app_update` remains always allowed; Admin/Supervisor behavior unchanged; Inventory/Assets/PM are not TI-gated
+- **Windows Notifications Back** — desktop Notifications pushed page exposes Back via `AppDesktopSubPageHeader` / `maybePop`; mobile AppBar behavior preserved
+
+### v1.0.12
 
 - **Work Order location** — separate plain-text address (`locationLabel`) and optional map/location URL (`locationUrl`); Location action only when a valid HTTP/HTTPS link exists; legacy URL-in-label records handled safely on edit
 - **Release notes automation** — GitHub Releases publish short user-facing notes from the previous tag; optional override via `docs/releases/vX.Y.Z.md`; same notes stored in `release-manifest.json` for Update Center
@@ -1130,7 +1259,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 25. Troubleshooting
+## 26. Troubleshooting
 
 | Symptom | Likely cause / check |
 |---------|----------------------|
@@ -1149,7 +1278,7 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 26. Documentation
+## 27. Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -1169,13 +1298,13 @@ Realtime notification events are emitted on Socket.IO (`notification:new`) to au
 
 ---
 
-## 27. License
+## 28. License
 
 Released under the [MIT License](./LICENSE).
 
 ---
 
-## 28. Author
+## 29. Author
 
 **Mazen Mahmoud** — Total-Com Solutions
 
