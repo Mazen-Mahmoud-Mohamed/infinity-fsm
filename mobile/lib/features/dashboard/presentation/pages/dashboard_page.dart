@@ -293,16 +293,6 @@ class MainNavigationShell extends StatelessWidget {
   static const int _branchRoles = 9;
   static const int _branchSettings = 10;
 
-  /// Management phone bottom bar: Dashboard → WO → OT → Profile.
-  static const List<int> _managementPhoneBranches = [
-    _branchDashboard,
-    _branchWorkOrders,
-    _branchOvertime,
-    _branchProfile,
-  ];
-
-  /// Technician phone bottom bar order reference: WO → OT → Profile.
-  /// Filtered at runtime via [TechnicianInterfaceNavigation.filteredPhoneBranches].
   /// Desktop extended rail width (+28 vs previous 220). Tablet [minWidth] unchanged.
   static const double _desktopExtendedRailWidth = 248;
 
@@ -488,34 +478,14 @@ class MainNavigationShell extends StatelessWidget {
       );
     }
 
-    final phoneBranches = operational
-        ? TechnicianInterfaceNavigation.filteredPhoneBranches(interfaceConfig)
-        : _managementPhoneBranches;
-    final railBranches = operational
-        ? [
-            ...TechnicianInterfaceNavigation.filteredPhoneBranches(
-              interfaceConfig,
-            ),
-            _branchInventory,
-            _branchAssets,
-            _branchPm,
-            _branchUsers,
-            _branchRoles,
-            _branchSettings,
-          ]
-        : const [
-            _branchDashboard,
-            _branchWorkOrders,
-            _branchOvertime,
-            _branchProfile,
-            _branchInventory,
-            _branchAssets,
-            _branchPm,
-            _branchReports,
-            _branchUsers,
-            _branchRoles,
-            _branchSettings,
-          ];
+    final phoneBranches = TechnicianInterfaceNavigation.visiblePhoneBranches(
+      operational: operational,
+      config: interfaceConfig,
+    );
+    final railBranches = TechnicianInterfaceNavigation.visibleRailBranches(
+      operational: operational,
+      config: interfaceConfig,
+    );
     final homeBranch = operational
         ? (TechnicianInterfaceNavigation.firstEnabledBranch(interfaceConfig) ??
             _branchWorkOrders)
