@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="950" viewBox="0 0 1600 950" role="img" aria-labelledby="title desc">
+  <title id="title">INFINITY FSM high-level architecture</title>
+  <desc id="desc">Flutter client to Express API to MongoDB and Cloudinary, plus notifications and CI/CD.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#94A3B8"/>
+    </marker>
+    <style type="text/css"><![CDATA[
+      .bg { fill: #0B1220; }
+      .panel { fill: #111827; stroke: #334155; stroke-width: 1.5; }
+      .panel-soft { fill: #0F172A; stroke: #334155; stroke-width: 1.25; }
+      .box { fill: #1E293B; stroke: #475569; stroke-width: 1; }
+      .box-accent { fill: #1E3A5F; stroke: #3B82F6; stroke-width: 1.25; }
+      .box-muted { fill: #162032; stroke: #334155; stroke-width: 1; }
+      .title { fill: #F8FAFC; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 22px; font-weight: 700; }
+      .subtitle { fill: #94A3B8; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 13px; font-weight: 500; }
+      .section { fill: #CBD5E1; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+      .label { fill: #E2E8F0; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 14px; font-weight: 600; }
+      .detail { fill: #94A3B8; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 12px; font-weight: 500; }
+      .small { fill: #94A3B8; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 500; }
+      .arrow-label { fill: #94A3B8; font-family: Segoe UI, Helvetica, Arial, sans-serif; font-size: 11px; font-weight: 600; }
+      .line { stroke: #94A3B8; stroke-width: 1.75; fill: none; marker-end: url(#arrow); }
+      .vline { stroke: #64748B; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    ]]></style>
+  </defs>
+
+  <rect class="bg" width="1600" height="950" rx="12"/>
+
+  <!-- Flutter Client -->
+  <rect class="panel" x="40" y="40" width="420" height="520" rx="16"/>
+  <text class="title" x="60" y="78">Flutter Client</text>
+  <text class="subtitle" x="60" y="100">Android + Windows</text>
+
+  <rect class="box" x="60" y="124" width="240" height="52" rx="10"/>
+  <text class="section" x="76" y="146">PRESENTATION</text>
+  <text class="label" x="76" y="166">Material 3 UI</text>
+
+  <line class="vline" x1="180" y1="176" x2="180" y2="204"/>
+
+  <rect class="box" x="60" y="204" width="240" height="52" rx="10"/>
+  <text class="section" x="76" y="226">STATE</text>
+  <text class="label" x="76" y="246">Cubits / flutter_bloc</text>
+
+  <line class="vline" x1="180" y1="256" x2="180" y2="284"/>
+
+  <rect class="box" x="60" y="284" width="240" height="52" rx="10"/>
+  <text class="section" x="76" y="306">DOMAIN</text>
+  <text class="label" x="76" y="326">Use Cases + Entities</text>
+
+  <line class="vline" x1="180" y1="336" x2="180" y2="364"/>
+
+  <rect class="box" x="60" y="364" width="240" height="52" rx="10"/>
+  <text class="section" x="76" y="386">DATA</text>
+  <text class="label" x="76" y="406">Repositories + Dio</text>
+
+  <rect class="box-muted" x="320" y="124" width="120" height="52" rx="10"/>
+  <text class="label" x="340" y="155">GoRouter</text>
+
+  <rect class="box-muted" x="60" y="440" width="380" height="44" rx="10"/>
+  <text class="label" x="76" y="458">Local Cache and Secure Storage</text>
+  <text class="small" x="76" y="474">SessionQueryCache | SharedPreferences | Secure Storage</text>
+
+  <rect class="box-muted" x="60" y="494" width="185" height="52" rx="10"/>
+  <text class="label" x="72" y="514">PushNotificationService</text>
+  <text class="small" x="72" y="532">Inbox | Local | Deep Links</text>
+
+  <rect class="box-muted" x="255" y="494" width="185" height="52" rx="10"/>
+  <text class="label" x="267" y="512">Technician Interface</text>
+  <text class="small" x="267" y="528">Policy: WO | OT | Profile</text>
+
+  <!-- Client to Backend -->
+  <line class="line" x1="460" y1="300" x2="530" y2="300"/>
+  <text class="arrow-label" x="470" y="288">HTTPS / JSON</text>
+
+  <!-- Backend -->
+  <rect class="panel" x="540" y="40" width="560" height="520" rx="16"/>
+  <text class="title" x="560" y="78">Node.js / Express API</text>
+  <text class="subtitle" x="560" y="100">/api/v1</text>
+
+  <rect class="box-accent" x="560" y="124" width="240" height="56" rx="10"/>
+  <text class="section" x="576" y="146">API LAYER</text>
+  <text class="label" x="576" y="166">REST endpoints</text>
+
+  <rect class="box-accent" x="820" y="124" width="260" height="56" rx="10"/>
+  <text class="section" x="836" y="146">AUTH and RBAC</text>
+  <text class="label" x="836" y="166">JWT + Role permissions</text>
+
+  <rect class="panel-soft" x="560" y="204" width="520" height="330" rx="12"/>
+  <text class="section" x="576" y="230">BUSINESS MODULES</text>
+  <text class="label" x="576" y="268">Work Orders</text>
+  <text class="label" x="576" y="296">Overtime</text>
+  <text class="label" x="576" y="324">Inventory</text>
+  <text class="label" x="576" y="352">Assets</text>
+  <text class="label" x="576" y="380">Preventive Maintenance</text>
+  <text class="label" x="576" y="408">Reports</text>
+  <text class="label" x="820" y="268">Users / Roles</text>
+  <text class="label" x="820" y="296">Settings</text>
+  <text class="label" x="820" y="324">Profile</text>
+  <text class="label" x="820" y="352">Notifications</text>
+  <text class="label" x="820" y="380">Dashboard</text>
+  <text class="label" x="820" y="408">Update Center / Releases</text>
+  <text class="small" x="576" y="500">Modules grouped for clarity — not one box per service</text>
+
+  <!-- Backend to Data -->
+  <line class="line" x1="1100" y1="220" x2="1180" y2="220"/>
+  <line class="line" x1="1100" y1="360" x2="1180" y2="360"/>
+
+  <!-- Data and Media -->
+  <rect class="panel" x="1190" y="40" width="370" height="320" rx="16"/>
+  <text class="title" x="1210" y="78">Data and Media</text>
+
+  <rect class="box" x="1210" y="110" width="330" height="100" rx="12"/>
+  <text class="label" x="1230" y="150">MongoDB</text>
+  <text class="detail" x="1230" y="174">Mongoose</text>
+
+  <rect class="box" x="1210" y="230" width="330" height="100" rx="12"/>
+  <text class="label" x="1230" y="270">Cloudinary</text>
+  <text class="detail" x="1230" y="294">Media / Images</text>
+
+  <!-- Notifications -->
+  <rect class="panel" x="40" y="600" width="1060" height="310" rx="16"/>
+  <text class="title" x="60" y="640">Notifications</text>
+  <text class="subtitle" x="60" y="662">Realtime and push delivery</text>
+
+  <rect class="box-accent" x="60" y="720" width="200" height="130" rx="12"/>
+  <text class="label" x="78" y="778">Notification Service</text>
+  <text class="small" x="78" y="798">Backend</text>
+
+  <!-- Upper path: Socket.IO -->
+  <line class="line" x1="260" y1="755" x2="340" y2="755"/>
+  <rect class="box" x="350" y="725" width="160" height="60" rx="10"/>
+  <text class="label" x="380" y="760">Socket.IO</text>
+  <line class="line" x1="510" y1="755" x2="580" y2="755"/>
+  <rect class="box" x="590" y="725" width="300" height="60" rx="10"/>
+  <text class="label" x="608" y="750">Flutter PushNotificationService</text>
+  <text class="small" x="608" y="770">Client realtime path</text>
+
+  <!-- Lower path: FCM (no crossing) -->
+  <line class="line" x1="260" y1="820" x2="340" y2="820"/>
+  <rect class="box" x="350" y="790" width="200" height="60" rx="10"/>
+  <text class="label" x="368" y="825">Firebase Admin SDK</text>
+  <line class="line" x1="550" y1="820" x2="620" y2="820"/>
+  <rect class="box" x="630" y="790" width="100" height="60" rx="10"/>
+  <text class="label" x="655" y="825">FCM</text>
+  <line class="line" x1="730" y1="820" x2="800" y2="820"/>
+  <rect class="box" x="810" y="790" width="140" height="60" rx="10"/>
+  <text class="label" x="845" y="825">Android</text>
+
+  <!-- CI/CD -->
+  <rect class="panel" x="1190" y="400" width="370" height="510" rx="16"/>
+  <text class="title" x="1210" y="440">CI/CD and Deployment</text>
+
+  <rect class="box" x="1230" y="480" width="290" height="56" rx="10"/>
+  <text class="label" x="1250" y="514">GitHub Actions</text>
+
+  <line class="vline" x1="1375" y1="536" x2="1375" y2="575"/>
+
+  <rect class="box" x="1230" y="575" width="290" height="56" rx="10"/>
+  <text class="label" x="1250" y="609">GitHub Releases / Manifest</text>
+
+  <line class="vline" x1="1375" y1="631" x2="1375" y2="670"/>
+
+  <rect class="box" x="1230" y="670" width="290" height="56" rx="10"/>
+  <text class="label" x="1250" y="704">Render</text>
+
+  <line class="vline" x1="1375" y1="726" x2="1375" y2="765"/>
+
+  <rect class="box-accent" x="1230" y="765" width="290" height="56" rx="10"/>
+  <text class="label" x="1250" y="799">Production API</text>
+
+  <text class="small" x="1230" y="860">Independent of business data flow</text>
+</svg>
