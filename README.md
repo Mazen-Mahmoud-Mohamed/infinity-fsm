@@ -756,84 +756,61 @@ Verified behavior only:
 
 ## Architecture
 
-This section is a **high-level** view of the current INFINITY FSM architecture: how the Flutter client, Express API, MongoDB, realtime/push channels, media storage, and release pipeline relate. It is not a class diagram or file inventory — see [§15 Project Structure](#15-project-structure) and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) for deeper design notes.
+This section is a **high-level** view of the current INFINITY FSM architecture. The diagram shows major system boundaries and primary flows only — not classes, files, or endpoints. Deeper notes: [§15 Project Structure](#15-project-structure) and [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ```mermaid
-flowchart LR
+flowchart TB
   subgraph FL["Flutter Client - Android and Windows"]
     direction TB
-    UI["Material 3 UI"]
-    SM["Cubits / flutter_bloc"]
-    DOM["Use Cases + Entities"]
-    TI["Technician Interface Policy"]
-    REPO["Repositories + Dio"]
-    LOC["SessionQueryCache + SharedPreferences + Secure Storage"]
-    NCLI["PushNotificationService"]
-    RT["GoRouter"]
-    UI --> SM
-    SM --> DOM
-    DOM --> REPO
-    REPO --> LOC
-    SM --> TI
-    TI -->|"nav visibility"| RT
-    TI -->|"notification visibility"| NCLI
-    RT --> UI
-    NCLI -->|"inbox / local / deep links"| RT
+    FL1["UI → Cubits → Use Cases → Repositories / Dio"]
+    FL2["GoRouter · Local Cache / Secure Storage"]
+    FL3["PushNotificationService"]
+    FL4["Technician Interface Policy<br/>Work Orders / Overtime / Profile visibility"]
   end
 
-  subgraph BE["Node.js Express API /api/v1"]
+  subgraph BE["Express Backend - Node.js /api/v1"]
     direction TB
-    API["API Layer"]
-    AUTH["JWT Auth + RBAC"]
-    MOD["Business Modules"]
-    NS["Notification Service"]
-    API --> AUTH
-    API --> MOD
-    API --> NS
+    BE1["API → Auth + RBAC → Business Modules"]
+    BE2["Work Orders · Overtime · Inventory · Assets · PM · Reports<br/>Users / Roles · Settings · Notifications · Profile · Dashboard · Releases"]
+    BE3["Notification Service"]
   end
 
-  subgraph DS["Database and Media"]
-    direction TB
-    DB["MongoDB / Mongoose"]
-    MED["Cloudinary"]
-  end
+  DB[(MongoDB / Mongoose)]
+  CL[(Cloudinary)]
 
-  subgraph RP["Realtime and Android Push"]
-    direction TB
-    SO["Socket.IO"]
-    FA["Firebase Admin SDK"]
-    FM["Firebase Cloud Messaging"]
+  subgraph NI["Notification Infrastructure"]
+    direction LR
+    SO[Socket.IO]
+    FC["Firebase Admin SDK → FCM"]
   end
 
   subgraph CD["CI/CD and Deployment"]
-    direction TB
-    GA["GitHub Actions"]
-    GR["GitHub Releases / Manifest"]
-    RD["Render"]
+    direction LR
+    GA[GitHub Actions]
+    GR[GitHub Releases]
+    RD[Render]
+    GA --> GR --> RD
   end
 
-  REPO -->|"REST HTTPS"| API
-  MOD --> DB
-  MOD --> MED
-  REPO -.->|"media URLs"| MED
-  NS -->|"notification:new"| SO
-  SO --> NCLI
-  NS --> FA
-  FA --> FM
-  FM -->|"Android"| NCLI
-  GA --> GR
-  GA --> RD
-  RD --> API
-  GR -->|"latest + webhook"| MOD
+  FL -->|"HTTPS / JSON"| BE
+  BE -->|"read / write"| DB
+  BE --> CL
+  BE3 --> SO
+  SO --> FL3
+  BE3 --> FC
+  FC -->|"Android"| FL3
+  RD -.-> BE
 ```
 
-**Client layers:** Presentation → Cubits → use cases/entities → repositories/Dio, with GoRouter, local cache/secure storage, and `PushNotificationService` (in-app inbox, local notifications, deep links, Technician Interface filtering).
+**Flutter client:** Material 3 UI drives Cubits (`flutter_bloc`), which call use cases/entities and repositories over Dio. GoRouter handles navigation. SessionQueryCache, SharedPreferences, and secure storage support local/session persistence. `PushNotificationService` owns the in-app inbox path, local OS notifications, deep links, and Technician Interface filtering for operational users.
 
-**Technician Interface Policy** controls technician access/visibility for **Work Orders**, **Overtime**, and **Profile** (navigation + matching notification visibility). It does not restrict Admin/Supervisor.
+**Technician Interface Policy** (company settings): controls technician visibility for **Work Orders**, **Overtime**, and **Profile** in navigation and for matching notifications (inbox / foreground toast / deep links). Admin and Supervisor users are not restricted by this policy. Inventory, Assets, and Preventive Maintenance are not TI-gated. **Attendance is not an active product module.**
 
-**Business modules** (backend + Flutter features): Authentication, Dashboard, Work Orders, Overtime, Inventory, Assets, Preventive Maintenance, Reports, User Management, Roles & Permissions, Settings, Profile, Update Center / Releases. **Attendance is not an active product module.**
+**Express backend:** Routes under `/api/v1` apply JWT authentication and RBAC, then execute business modules (work orders, overtime, inventory, assets, PM, reports, users/roles, settings, notifications, profile/organization, dashboard, releases). Persistence is MongoDB via Mongoose. Media uploads go to Cloudinary.
 
-**Typical flows:** REST request path UI → Cubits → use cases → Dio → `/api/v1` → MongoDB (media via Cloudinary). Notifications: Notification Service → Socket.IO and/or Firebase Admin → FCM → `PushNotificationService`. Releases: GitHub Actions → GitHub Releases/manifest and Render-hosted API.
+**Notifications:** Business events persist notifications, then the Notification Service delivers via Socket.IO (`notification:new` to authenticated user rooms) and, on Android, Firebase Admin → FCM. The Flutter client receives realtime/push into `PushNotificationService`.
+
+**CI/CD:** GitHub Actions builds client artifacts and publishes GitHub Releases (including the release manifest). The production API runs on Render and discovers releases / webhook notifies through the Releases module.
 
 ---
 
