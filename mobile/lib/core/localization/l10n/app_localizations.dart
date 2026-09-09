@@ -266,6 +266,12 @@ abstract class AppLocalizations {
   /// **'Loading notifications...'**
   String get notificationsLoading;
 
+  /// No description provided for @notificationsLoadingMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading more notifications...'**
+  String get notificationsLoadingMore;
+
   /// No description provided for @notificationsLoadFailed.
   ///
   /// In en, this message translates to:
@@ -289,6 +295,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No notifications match your search.'**
   String get notificationsSearchEmpty;
+
+  /// No description provided for @notificationsSearchLoadedOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Search only covers notifications already loaded. More notifications are available.'**
+  String get notificationsSearchLoadedOnly;
+
+  /// No description provided for @notificationsSearchLoadMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Load more'**
+  String get notificationsSearchLoadMore;
 
   /// No description provided for @notificationsMarkAllRead.
   ///

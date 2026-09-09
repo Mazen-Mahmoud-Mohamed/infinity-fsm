@@ -6,11 +6,24 @@ class NotificationNavigationIntent {
     required this.route,
     this.notificationId,
     this.idempotencyKey,
+    this.userId,
   });
 
   final String route;
   final String? notificationId;
   final String? idempotencyKey;
+
+  /// Authenticated user (or FCM `recipientUserId`) this deep link belongs to.
+  final String? userId;
+
+  NotificationNavigationIntent copyWith({String? userId}) {
+    return NotificationNavigationIntent(
+      route: route,
+      notificationId: notificationId,
+      idempotencyKey: idempotencyKey,
+      userId: userId ?? this.userId,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'route': route,
@@ -18,16 +31,19 @@ class NotificationNavigationIntent {
           'notificationId': notificationId,
         if (idempotencyKey != null && idempotencyKey!.isNotEmpty)
           'idempotencyKey': idempotencyKey,
+        if (userId != null && userId!.isNotEmpty) 'userId': userId,
       };
 
   static NotificationNavigationIntent? fromJson(Map<String, dynamic>? json) {
     if (json == null) return null;
     final route = json['route']?.toString() ?? '';
     if (route.isEmpty) return null;
+    final userId = json['userId']?.toString().trim() ?? '';
     return NotificationNavigationIntent(
       route: route,
       notificationId: json['notificationId']?.toString(),
       idempotencyKey: json['idempotencyKey']?.toString(),
+      userId: userId.isEmpty ? null : userId,
     );
   }
 }
@@ -93,6 +109,38 @@ NotificationNavigationIntent resolveNotificationNavigation(
     notificationId: notificationId.isEmpty ? null : notificationId,
     idempotencyKey: idempotencyKey.isEmpty ? null : idempotencyKey,
   );
+}
+
+/// Maps a Socket.IO `notification:new` payload into the navigation map used
+/// for local toasts and pending-intent ownership.
+///
+/// `recipientUserId` is taken only from the top-level server field. Nested
+/// `data.recipientUserId` is ignored so it cannot hijack pending navigation.
+Map<String, dynamic> socketPayloadForNavigation(Map<String, dynamic> data) {
+  final nested = data['data'] is Map
+      ? Map<String, dynamic>.from(data['data'] as Map)
+      : <String, dynamic>{};
+  nested.remove('recipientUserId');
+  final recipient = data['recipientUserId']?.toString().trim() ?? '';
+  return <String, dynamic>{
+    'notificationId': data['id']?.toString() ?? '',
+    'type': data['entityType'] ?? data['type'] ?? data['module'] ?? '',
+    'entityId': data['entityId']?.toString() ?? '',
+    'workOrderId': nested['workOrderId']?.toString() ??
+        data['workOrderId']?.toString() ??
+        '',
+    'overtimeId': nested['overtimeId']?.toString() ??
+        data['overtimeId']?.toString() ??
+        '',
+    'event': nested['event']?.toString() ?? data['type']?.toString() ?? '',
+    'version': nested['version']?.toString() ?? data['version']?.toString() ?? '',
+    'build': nested['build']?.toString() ?? data['build']?.toString() ?? '',
+    'channel':
+        nested['channel']?.toString() ?? data['channel']?.toString() ?? '',
+    'route': nested['route']?.toString() ?? data['route']?.toString() ?? '',
+    ...nested,
+    if (recipient.isNotEmpty) 'recipientUserId': recipient,
+  };
 }
 
 bool _isWorkOrderType(String type) {

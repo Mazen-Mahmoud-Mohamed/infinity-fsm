@@ -6,8 +6,11 @@ class GetNotificationsUseCase {
 
   final NotificationsRepository _repository;
 
-  Future<Result<NotificationsPageResult>> call() =>
-      _repository.getNotifications();
+  Future<Result<NotificationsPageResult>> call({
+    int page = 1,
+    int limit = 50,
+  }) =>
+      _repository.getNotifications(page: page, limit: limit);
 }
 
 class GetNotificationsUnreadCountUseCase {

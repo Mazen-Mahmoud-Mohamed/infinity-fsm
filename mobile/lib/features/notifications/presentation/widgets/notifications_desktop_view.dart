@@ -15,6 +15,7 @@ import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_toolbar.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notification_list_tile.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_skeleton.dart';
 
@@ -23,9 +24,11 @@ class NotificationsDesktopView extends StatefulWidget {
   const NotificationsDesktopView({
     super.key,
     required this.searchController,
+    this.scrollController,
   });
 
   final TextEditingController searchController;
+  final ScrollController? scrollController;
 
   @override
   State<NotificationsDesktopView> createState() =>
@@ -61,7 +64,10 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
           previous.category != current.category ||
           previous.searchQuery != current.searchQuery ||
           previous.isRefreshing != current.isRefreshing ||
-          previous.message != current.message,
+          previous.isLoadingMore != current.isLoadingMore ||
+          previous.hasMore != current.hasMore ||
+          previous.message != current.message ||
+          previous.showSearchLoadMore != current.showSearchLoadMore,
       builder: (context, state) {
         if ((state.status == NotificationsStatus.loading ||
                 state.status == NotificationsStatus.initial) &&
@@ -104,14 +110,22 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
                 children: [
                   AppDesktopPageHeader(
                     title: l10n.notifications,
-                    trailing: state.hasUnread
-                        ? TextButton(
-                            onPressed: () => context
-                                .read<NotificationsCubit>()
-                                .markAllAsRead(),
-                            child: Text(l10n.notificationsMarkAllRead),
-                          )
-                        : null,
+                    trailing: BlocBuilder<NotificationsUnreadCubit,
+                        NotificationsUnreadState>(
+                      buildWhen: (previous, current) =>
+                          previous.count != current.count,
+                      builder: (context, unread) {
+                        if (unread.count <= 0) {
+                          return const SizedBox.shrink();
+                        }
+                        return TextButton(
+                          onPressed: () => context
+                              .read<NotificationsCubit>()
+                              .markAllAsRead(),
+                          child: Text(l10n.notificationsMarkAllRead),
+                        );
+                      },
+                    ),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   AppDesktopToolbar(
@@ -176,11 +190,16 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
                             SizedBox(
                               height: MediaQuery.sizeOf(context).height * 0.4,
                               child: Center(
-                                child: Text(
-                                  state.items.isEmpty
-                                      ? l10n.notificationsEmpty
-                                      : l10n.notificationsSearchEmpty,
-                                ),
+                                child: state.items.isEmpty
+                                    ? Text(l10n.notificationsEmpty)
+                                    : state.showSearchLoadMore
+                                        ? NotificationsSearchLoadMorePanel(
+                                            isLoadingMore: state.isLoadingMore,
+                                            onLoadMore: () => context
+                                                .read<NotificationsCubit>()
+                                                .loadMore(),
+                                          )
+                                        : Text(l10n.notificationsSearchEmpty),
                               ),
                             ),
                           ],
@@ -199,7 +218,9 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
                                 flex: 2,
                                 child: AppDesktopSurface(
                                   child: ListView.separated(
-                                    itemCount: displayItems.length,
+                                    controller: widget.scrollController,
+                                    itemCount: displayItems.length +
+                                        (state.isLoadingMore ? 1 : 0),
                                     separatorBuilder: (_, __) => Divider(
                                       height: 1,
                                       color: Theme.of(context)
@@ -208,6 +229,21 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
                                           .withValues(alpha: 0.4),
                                     ),
                                     itemBuilder: (context, index) {
+                                      if (index >= displayItems.length) {
+                                        return const NotificationsLoadMoreIndicator();
+                                      }
+                                      if (index == displayItems.length - 1 &&
+                                          state.hasMore &&
+                                          !state.isLoadingMore) {
+                                        WidgetsBinding.instance
+                                            .addPostFrameCallback((_) {
+                                          if (context.mounted) {
+                                            context
+                                                .read<NotificationsCubit>()
+                                                .loadMore();
+                                          }
+                                        });
+                                      }
                                       final item = displayItems[index];
                                       final isSelected =
                                           item.id == selected?.id;

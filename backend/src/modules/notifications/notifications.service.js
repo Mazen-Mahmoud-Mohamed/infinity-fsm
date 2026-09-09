@@ -30,7 +30,7 @@ export async function notifyUsers({
   dedupeKey,
   io = null,
 }) {
-  const recipients = [
+  let recipients = [
     ...new Set(
       (recipientUserIds || [])
         .map((id) => id?.toString?.() ?? String(id || ''))
@@ -40,6 +40,13 @@ export async function notifyUsers({
 
   if (!recipients.length || !dedupeKey) {
     return { created: [], skipped: true };
+  }
+
+  if (companyId) {
+    recipients = await filterRecipientsToCompany(companyId, recipients);
+    if (!recipients.length) {
+      return { created: [], skipped: true };
+    }
   }
 
   const notificationData = {
@@ -163,9 +170,14 @@ async function deliverCreatedNotifications(created, io) {
     ),
   ];
 
+  const companyId = created.find((doc) => doc.companyId)?.companyId;
+
   let tokens = [];
   try {
-    tokens = await listActiveTokensForUsers(userIds);
+    tokens = await listActiveTokensForUsers(
+      userIds,
+      companyId ? { companyId: String(companyId) } : {}
+    );
   } catch (error) {
     logger.error({ err: error }, 'FCM token lookup failed');
     return;
@@ -198,9 +210,12 @@ async function deliverCreatedNotifications(created, io) {
 function emitSocketNotification(doc, io) {
   try {
     if (!io) return;
+    const recipientUserId = doc.recipientUserId?.toString?.() ?? String(doc.recipientUserId || '');
+    if (!recipientUserId) return;
     const payload = mapNotification(doc, 'ar');
-    io.to(`user:${doc.recipientUserId.toString()}`).emit('notification:new', {
+    io.to(`user:${recipientUserId}`).emit('notification:new', {
       ...payload,
+      recipientUserId,
       titleAr: doc.titleAr,
       titleEn: doc.titleEn,
       bodyAr: doc.bodyAr,
@@ -350,6 +365,35 @@ export async function markAllAsRead(user, auth) {
 }
 
 /**
+ * Company-scoped notifications only go to users who actually belong to that
+ * company. Caller-provided recipient IDs are not trusted blindly.
+ * Global/system notifications (no companyId) skip this filter.
+ */
+async function filterRecipientsToCompany(companyId, recipientUserIds) {
+  if (!recipientUserIds.length) return [];
+  try {
+    const users = await User.find({
+      _id: { $in: recipientUserIds },
+      companyId,
+      isActive: true,
+      deletedAt: null,
+    })
+      .select('_id')
+      .lean();
+    const allowed = new Set(
+      users.map((user) => user._id?.toString?.() ?? String(user._id || ''))
+    );
+    return recipientUserIds.filter((id) => allowed.has(id));
+  } catch (error) {
+    logger.error(
+      { err: error },
+      'Failed to verify notification recipient company membership'
+    );
+    return [];
+  }
+}
+
+/**
  * Company admins + supervisors who should see management events.
  */
 export async function findManagementRecipientIds(
@@ -400,4 +444,4 @@ export default {
   findManagementRecipientIds,
 };
 
-export { mapWithConcurrency };
+export { FCM_DELIVERY_CONCURRENCY, mapWithConcurrency };

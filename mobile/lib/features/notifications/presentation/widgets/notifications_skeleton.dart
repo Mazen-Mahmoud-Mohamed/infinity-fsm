@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
+import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/widgets/skeleton/skeleton.dart';
 
 /// First-load placeholder for Notifications (mobile list + desktop split).
@@ -141,6 +142,82 @@ class _DesktopNotificationsSkeleton extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class NotificationsSearchLoadMorePanel extends StatelessWidget {
+  const NotificationsSearchLoadMorePanel({
+    super.key,
+    required this.isLoadingMore,
+    required this.onLoadMore,
+  });
+
+  final bool isLoadingMore;
+  final VoidCallback onLoadMore;
+
+  static const loadMoreButtonKey = Key('notifications-search-load-more');
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            l10n.notificationsSearchLoadedOnly,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          if (isLoadingMore)
+            const NotificationsLoadMoreIndicator()
+          else
+            FilledButton(
+              key: loadMoreButtonKey,
+              onPressed: onLoadMore,
+              child: Text(l10n.notificationsSearchLoadMore),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class NotificationsLoadMoreIndicator extends StatelessWidget {
+  const NotificationsLoadMoreIndicator({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.sm),
+          Text(
+            l10n.notificationsLoadingMore,
+            style: theme.textTheme.labelLarge?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],

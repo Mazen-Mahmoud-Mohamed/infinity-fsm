@@ -93,6 +93,9 @@ class AppLocalizationsAr extends AppLocalizations {
   String get notificationsLoading => 'جاري تحميل الإشعارات...';
 
   @override
+  String get notificationsLoadingMore => 'جاري تحميل المزيد من الإشعارات...';
+
+  @override
   String get notificationsLoadFailed => 'تعذر تحميل الإشعارات.';
 
   @override
@@ -103,6 +106,13 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get notificationsSearchEmpty => 'لا توجد إشعارات مطابقة لبحثك.';
+
+  @override
+  String get notificationsSearchLoadedOnly =>
+      'البحث يشمل الإشعارات المحمّلة فقط. توجد إشعارات إضافية.';
+
+  @override
+  String get notificationsSearchLoadMore => 'تحميل المزيد';
 
   @override
   String get notificationsMarkAllRead => 'تعيين الكل كمقروء';

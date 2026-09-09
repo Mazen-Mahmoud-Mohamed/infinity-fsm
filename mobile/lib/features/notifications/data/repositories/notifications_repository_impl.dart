@@ -22,11 +22,21 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   final NotificationsApiDataSource _api;
 
   @override
-  Future<Result<NotificationsPageResult>> getNotifications() async {
-    final apiResult = await _api.listNotifications();
+  Future<Result<NotificationsPageResult>> getNotifications({
+    int page = 1,
+    int limit = 50,
+  }) async {
+    final apiResult = await _api.listNotifications(page: page, limit: limit);
     switch (apiResult) {
       case Success(:final data):
-        return Success((items: data.items, unreadCount: data.unreadCount));
+        return Success(
+          (
+            items: data.items,
+            unreadCount: data.unreadCount,
+            page: data.page,
+            hasMore: data.hasMore,
+          ),
+        );
       case Failure():
         break;
     }
@@ -41,6 +51,8 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
           (
             items: items,
             unreadCount: items.where((n) => !n.isRead).length,
+            page: 1,
+            hasMore: false,
           ),
         );
     }
@@ -59,17 +71,19 @@ class NotificationsRepositoryImpl implements NotificationsRepository {
   @override
   Future<Result<void>> markAsRead(String id) async {
     final apiResult = await _api.markAsRead(id);
-    await _local.markAsRead(id);
     if (apiResult is Failure) {
-      // Local mark still applied for legacy feed items.
-      return const Success(null);
+      return apiResult;
     }
+    await _local.markAsRead(id);
     return apiResult;
   }
 
   @override
   Future<Result<void>> markAllAsRead(Iterable<String> ids) async {
-    await _api.markAllAsRead();
+    final apiResult = await _api.markAllAsRead();
+    if (apiResult is Failure) {
+      return apiResult;
+    }
     await _local.markAllAsRead(ids);
     return const Success(null);
   }

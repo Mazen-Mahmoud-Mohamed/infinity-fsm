@@ -322,7 +322,7 @@ export async function notifyOvertimeEvent({
   bodyEn,
 }) {
   const recipients = await findManagementRecipientIds(companyId, {
-    excludeUserId: null,
+    excludeUserId: actor?._id || null,
   });
   if (!recipients.length) return;
 

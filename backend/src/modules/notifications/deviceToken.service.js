@@ -109,14 +109,19 @@ export async function deactivateAllDeviceTokens(user, auth) {
   return { deactivated: result.modifiedCount };
 }
 
-export async function listActiveTokensForUsers(userIds) {
+export async function listActiveTokensForUsers(userIds, { companyId } = {}) {
   const ids = (userIds || []).filter(Boolean);
   if (!ids.length) return [];
 
-  return DevicePushToken.find({
+  const query = {
     userId: { $in: ids },
     active: true,
-  })
+  };
+  if (companyId) {
+    query.companyId = companyId;
+  }
+
+  return DevicePushToken.find(query)
     .select('token platform locale userId')
     .lean();
 }

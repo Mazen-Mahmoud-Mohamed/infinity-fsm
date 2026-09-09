@@ -47,6 +47,7 @@ jest.unstable_mockModule('../modules/core/organization/models/user.model.js', ()
 const {
   notifyUsers,
   findManagementRecipientIds,
+  FCM_DELIVERY_CONCURRENCY,
 } = await import('../modules/notifications/notifications.service.js');
 const { mapWithConcurrency } = await import(
   '../shared/utils/concurrency.util.js'
@@ -55,6 +56,7 @@ const { mapWithConcurrency } = await import(
 function makeCreatedDoc(overrides = {}) {
   const doc = {
     _id: { toString: () => overrides.id || 'n1' },
+    companyId: overrides.companyId || 'c1',
     recipientUserId: {
       toString: () => overrides.recipientUserId || 'u1',
     },
@@ -86,6 +88,13 @@ describe('notifications push delivery', () => {
     mockListTokens.mockReset();
     mockUserFind.mockReset();
     mockFindExisting.mockResolvedValue([]);
+    mockUserFind.mockImplementation((filter) => {
+      const ids = filter?._id?.$in;
+      if (Array.isArray(ids)) {
+        return ids.map((id) => ({ _id: { toString: () => String(id) } }));
+      }
+      return [];
+    });
     mockListTokens.mockResolvedValue([
       { token: 'token-android-1', platform: 'android', locale: 'ar', userId: 'u1' },
       { token: 'token-android-2', platform: 'android', locale: 'ar', userId: 'u1' },
@@ -135,7 +144,7 @@ describe('notifications push delivery', () => {
     expect(mockInsertMany.mock.calls[0][1]).toEqual({ ordered: false });
 
     await new Promise((r) => setTimeout(r, 40));
-    expect(mockListTokens).toHaveBeenCalledWith(['u1']);
+    expect(mockListTokens).toHaveBeenCalledWith(['u1'], { companyId: 'c1' });
     expect(mockSend).toHaveBeenCalled();
     const args = mockSend.mock.calls[0][0];
     expect(args.tokens).toHaveLength(2);
@@ -169,7 +178,7 @@ describe('notifications push delivery', () => {
     expect(result.created).toHaveLength(2);
     expect(mockInsertMany.mock.calls[0][0]).toHaveLength(2);
     await new Promise((r) => setTimeout(r, 40));
-    expect(mockListTokens).toHaveBeenCalledWith(['u1', 'u2']);
+    expect(mockListTokens).toHaveBeenCalledWith(['u1', 'u2'], { companyId: 'c1' });
     expect(mockSend.mock.calls.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -340,8 +349,150 @@ describe('notifications push delivery', () => {
       expect.objectContaining({
         titleAr: 'أمر شغل جديد',
         titleEn: 'New Work Order',
+        recipientUserId: expect.stringMatching(/^u[12]$/),
       })
     );
+  });
+
+  it('same-company recipients receive notifications', async () => {
+    mockInsertMany.mockResolvedValue([
+      makeCreatedDoc({ id: 'n1', recipientUserId: 'u1' }),
+      makeCreatedDoc({ id: 'n2', recipientUserId: 'u2' }),
+    ]);
+
+    const result = await notifyUsers({
+      companyId: 'c1',
+      recipientUserIds: ['u1', 'u2'],
+      type: 'WORK_ORDER_ASSIGNED',
+      module: 'work_orders',
+      titleAr: 't',
+      titleEn: 't',
+      bodyAr: 'b',
+      bodyEn: 'b',
+      dedupeKey: 'wo:same-co',
+    });
+
+    expect(result.created).toHaveLength(2);
+    expect(mockInsertMany.mock.calls[0][0].map((d) => d.recipientUserId)).toEqual(
+      ['u1', 'u2']
+    );
+  });
+
+  it('excludes cross-company recipients silently', async () => {
+    mockUserFind.mockImplementation((filter) => {
+      const ids = filter?._id?.$in || [];
+      return ids
+        .filter((id) => String(id) === 'u1')
+        .map((id) => ({ _id: { toString: () => String(id) } }));
+    });
+    mockInsertMany.mockResolvedValue([
+      makeCreatedDoc({ id: 'n1', recipientUserId: 'u1' }),
+    ]);
+
+    const result = await notifyUsers({
+      companyId: 'c1',
+      recipientUserIds: ['u1', 'outsider'],
+      type: 'WORK_ORDER_ASSIGNED',
+      module: 'work_orders',
+      titleAr: 't',
+      titleEn: 't',
+      bodyAr: 'b',
+      bodyEn: 'b',
+      dedupeKey: 'wo:cross-co',
+    });
+
+    expect(result.created).toHaveLength(1);
+    expect(mockInsertMany.mock.calls[0][0]).toHaveLength(1);
+    expect(mockInsertMany.mock.calls[0][0][0].recipientUserId).toBe('u1');
+  });
+
+  it('does not look up FCM tokens for another company', async () => {
+    mockInsertMany.mockResolvedValue([makeCreatedDoc({ companyId: 'c1' })]);
+
+    await notifyUsers({
+      companyId: 'c1',
+      recipientUserIds: ['u1'],
+      type: 'WORK_ORDER_ASSIGNED',
+      module: 'work_orders',
+      titleAr: 't',
+      titleEn: 't',
+      bodyAr: 'b',
+      bodyEn: 'b',
+      dedupeKey: 'wo:token-scope',
+    });
+
+    await new Promise((r) => setTimeout(r, 40));
+    expect(mockListTokens).toHaveBeenCalledWith(['u1'], { companyId: 'c1' });
+    expect(mockListTokens).not.toHaveBeenCalledWith(['u1']);
+  });
+
+  it('inactive company members are excluded before insert', async () => {
+    mockUserFind.mockImplementation(() => []);
+    const result = await notifyUsers({
+      companyId: 'c1',
+      recipientUserIds: ['inactive-1'],
+      type: 'WORK_ORDER_ASSIGNED',
+      module: 'work_orders',
+      titleAr: 't',
+      titleEn: 't',
+      bodyAr: 'b',
+      bodyEn: 'b',
+      dedupeKey: 'wo:inactive',
+    });
+
+    expect(result).toEqual({ created: [], skipped: true });
+    expect(mockInsertMany).not.toHaveBeenCalled();
+  });
+
+  it('global notifications without companyId skip membership filter', async () => {
+    mockInsertMany.mockResolvedValue([
+      makeCreatedDoc({ id: 'g1', companyId: undefined, recipientUserId: 'u1' }),
+    ]);
+
+    const result = await notifyUsers({
+      recipientUserIds: ['u1'],
+      type: 'SYSTEM',
+      module: 'system',
+      titleAr: 't',
+      titleEn: 't',
+      bodyAr: 'b',
+      bodyEn: 'b',
+      dedupeKey: 'sys:global',
+    });
+
+    expect(result.created).toHaveLength(1);
+    expect(mockUserFind).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 40));
+    expect(mockListTokens).toHaveBeenCalledWith(['u1'], {});
+  });
+
+  it('socket payload recipientUserId comes from the persisted recipient, not client data', async () => {
+    mockInsertMany.mockResolvedValue([
+      makeCreatedDoc({ id: 'n1', recipientUserId: 'u1' }),
+    ]);
+    const roomEmit = jest.fn();
+    const io = {
+      to: jest.fn(() => ({ emit: roomEmit })),
+    };
+
+    await notifyUsers({
+      companyId: 'c1',
+      recipientUserIds: ['u1'],
+      type: 'WORK_ORDER_ASSIGNED',
+      module: 'work_orders',
+      titleAr: 't',
+      titleEn: 't',
+      bodyAr: 'b',
+      bodyEn: 'b',
+      dedupeKey: 'wo:socket-recipient',
+      data: { recipientUserId: 'attacker' },
+      io,
+    });
+
+    await new Promise((r) => setTimeout(r, 40));
+    expect(io.to).toHaveBeenCalledWith('user:u1');
+    expect(io.to).not.toHaveBeenCalledWith('user:attacker');
+    expect(roomEmit.mock.calls[0][1].recipientUserId).toBe('u1');
   });
 
   it('findManagementRecipientIds scopes by company and roles', async () => {
@@ -373,5 +524,6 @@ describe('notifications push delivery', () => {
     });
 
     expect(maxInflight).toBeLessThanOrEqual(2);
+    expect(FCM_DELIVERY_CONCURRENCY).toBe(8);
   });
 });

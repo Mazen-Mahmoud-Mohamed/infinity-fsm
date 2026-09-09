@@ -5,10 +5,15 @@ import 'package:mobile/features/notifications/domain/entities/app_notification.d
 typedef NotificationsPageResult = ({
   List<AppNotification> items,
   int? unreadCount,
+  int page,
+  bool hasMore,
 });
 
 abstract class NotificationsRepository {
-  Future<Result<NotificationsPageResult>> getNotifications();
+  Future<Result<NotificationsPageResult>> getNotifications({
+    int page = 1,
+    int limit = 50,
+  });
 
   Future<Result<int>> getUnreadCount();
 

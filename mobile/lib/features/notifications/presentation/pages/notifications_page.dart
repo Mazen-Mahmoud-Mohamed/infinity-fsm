@@ -14,6 +14,7 @@ import 'package:mobile/core/widgets/app_refresh_bar.dart';
 import 'package:mobile/core/widgets/app_scroll_padding.dart';
 import 'package:mobile/features/notifications/domain/entities/app_notification.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
+import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_desktop_view.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notification_list_tile.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_skeleton.dart';
@@ -28,18 +29,30 @@ class NotificationsPage extends StatefulWidget {
 class _NotificationsPageState extends State<NotificationsPage> {
   late final NotificationsCubit _cubit;
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _cubit = getIt<NotificationsCubit>()..load();
+    _scrollController.addListener(_onScroll);
   }
 
   @override
   void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
     _searchController.dispose();
-    _cubit.close();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      _cubit.loadMore();
+    }
   }
 
   @override
@@ -57,11 +70,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
             : AppBar(
           title: Text(l10n.notifications),
           actions: [
-            BlocBuilder<NotificationsCubit, NotificationsState>(
+            BlocBuilder<NotificationsUnreadCubit, NotificationsUnreadState>(
               buildWhen: (previous, current) =>
-                  previous.unreadCount != current.unreadCount,
-              builder: (context, state) {
-                if (!state.hasUnread) return const SizedBox.shrink();
+                  previous.count != current.count,
+              builder: (context, unread) {
+                if (unread.count <= 0) return const SizedBox.shrink();
                 return TextButton(
                   onPressed: () =>
                       context.read<NotificationsCubit>().markAllAsRead(),
@@ -71,16 +84,22 @@ class _NotificationsPageState extends State<NotificationsPage> {
             ),
           ],
         ),
-        body: AppBreakpoints.isDesktopOf(context)
-            ? NotificationsDesktopView(searchController: _searchController)
-            : BlocBuilder<NotificationsCubit, NotificationsState>(
+        body:         AppBreakpoints.isDesktopOf(context)
+            ? NotificationsDesktopView(
+                searchController: _searchController,
+                scrollController: _scrollController,
+              )
+            :             BlocBuilder<NotificationsCubit, NotificationsState>(
           buildWhen: (previous, current) =>
               previous.status != current.status ||
               previous.items != current.items ||
               previous.category != current.category ||
               previous.searchQuery != current.searchQuery ||
               previous.isRefreshing != current.isRefreshing ||
-              previous.message != current.message,
+              previous.isLoadingMore != current.isLoadingMore ||
+              previous.hasMore != current.hasMore ||
+              previous.message != current.message ||
+              previous.showSearchLoadMore != current.showSearchLoadMore,
           builder: (context, state) {
             final Widget body;
             if ((state.status == NotificationsStatus.loading ||
@@ -136,6 +155,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                         onRefresh: () =>
                             context.read<NotificationsCubit>().load(),
                         child: CustomScrollView(
+                          controller: _scrollController,
                           physics: const AlwaysScrollableScrollPhysics(),
                           slivers: [
                             SliverToBoxAdapter(
@@ -206,22 +226,34 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                         ],
                                       ),
                                     ),
-                                    if (state.unreadCount > 0) ...[
-                                      const SizedBox(height: AppSpacing.sm),
-                                      Text(
-                                        l10n.notificationsUnreadCount(
-                                          state.unreadCount,
-                                        ),
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelLarge
-                                            ?.copyWith(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
+                                    BlocBuilder<NotificationsUnreadCubit,
+                                        NotificationsUnreadState>(
+                                      buildWhen: (previous, current) =>
+                                          previous.count != current.count,
+                                      builder: (context, unread) {
+                                        if (unread.count <= 0) {
+                                          return const SizedBox.shrink();
+                                        }
+                                        return Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: AppSpacing.sm,
+                                          ),
+                                          child: Text(
+                                            l10n.notificationsUnreadCount(
+                                              unread.count,
                                             ),
-                                      ),
-                                    ],
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .labelLarge
+                                                ?.copyWith(
+                                                  color: Theme.of(context)
+                                                      .colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                        );
+                                      },
+                                    ),
                                   ],
                                 ),
                               ),
@@ -242,6 +274,16 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                       ),
                                   textAlign: TextAlign.center,
                                 ),
+                              ),
+                            )
+                          else if (state.showSearchLoadMore)
+                            SliverFillRemaining(
+                              hasScrollBody: false,
+                              child: NotificationsSearchLoadMorePanel(
+                                isLoadingMore: state.isLoadingMore,
+                                onLoadMore: () => context
+                                    .read<NotificationsCubit>()
+                                    .loadMore(),
                               ),
                             )
                           else if (displayItems.isEmpty)
@@ -270,10 +312,26 @@ class _NotificationsPageState extends State<NotificationsPage> {
                                 chrome: AppBottomChrome.system,
                               ),
                               sliver: SliverList.separated(
-                                itemCount: displayItems.length,
+                                itemCount: displayItems.length +
+                                    (state.isLoadingMore ? 1 : 0),
                                 separatorBuilder: (_, index) =>
                                     const SizedBox(height: AppSpacing.sm),
                                 itemBuilder: (context, index) {
+                                  if (index >= displayItems.length) {
+                                    return const NotificationsLoadMoreIndicator();
+                                  }
+                                  if (index == displayItems.length - 1 &&
+                                      state.hasMore &&
+                                      !state.isLoadingMore) {
+                                    WidgetsBinding.instance
+                                        .addPostFrameCallback((_) {
+                                      if (mounted) {
+                                        context
+                                            .read<NotificationsCubit>()
+                                            .loadMore();
+                                      }
+                                    });
+                                  }
                                   final item = displayItems[index];
                                   return NotificationListTile(
                                     notification: item,

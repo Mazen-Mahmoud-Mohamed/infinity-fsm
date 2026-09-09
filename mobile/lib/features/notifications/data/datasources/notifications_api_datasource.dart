@@ -9,8 +9,14 @@ class NotificationsApiDataSource {
 
   final DioClient _dioClient;
 
-  Future<Result<({List<AppNotification> items, int unreadCount})>>
-      listNotifications({int page = 1, int limit = 50}) async {
+  Future<
+      Result<
+          ({
+            List<AppNotification> items,
+            int unreadCount,
+            int page,
+            bool hasMore,
+          })>> listNotifications({int page = 1, int limit = 50}) async {
     try {
       final response = await _dioClient.get<Map<String, dynamic>>(
         '/notifications',
@@ -25,7 +31,23 @@ class NotificationsApiDataSource {
           .toList(growable: false);
       final unread = (meta['unreadCount'] as num?)?.toInt() ??
           items.where((n) => !n.isRead).length;
-      return Success((items: items, unreadCount: unread));
+      final pagination = meta['pagination'];
+      final paginationMap = pagination is Map
+          ? Map<String, dynamic>.from(pagination)
+          : const <String, dynamic>{};
+      final resolvedPage = (paginationMap['page'] as num?)?.toInt() ?? page;
+      final totalPages = (paginationMap['totalPages'] as num?)?.toInt();
+      final hasMore = totalPages != null
+          ? resolvedPage < totalPages
+          : items.length >= limit;
+      return Success(
+        (
+          items: items,
+          unreadCount: unread,
+          page: resolvedPage,
+          hasMore: hasMore,
+        ),
+      );
     } on Object catch (error) {
       return NetworkErrorMapper.map(error);
     }

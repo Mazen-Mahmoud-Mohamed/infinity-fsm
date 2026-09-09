@@ -93,6 +93,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notificationsLoading => 'Loading notifications...';
 
   @override
+  String get notificationsLoadingMore => 'Loading more notifications...';
+
+  @override
   String get notificationsLoadFailed => 'Unable to load notifications.';
 
   @override
@@ -103,6 +106,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsSearchEmpty => 'No notifications match your search.';
+
+  @override
+  String get notificationsSearchLoadedOnly =>
+      'Search only covers notifications already loaded. More notifications are available.';
+
+  @override
+  String get notificationsSearchLoadMore => 'Load more';
 
   @override
   String get notificationsMarkAllRead => 'Mark all as read';

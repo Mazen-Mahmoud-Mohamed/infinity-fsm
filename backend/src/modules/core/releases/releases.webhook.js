@@ -6,7 +6,10 @@ import logger from '../../../shared/utils/logger.util.js';
 import releasesService from './releases.service.js';
 
 /** Bound parallel company fanouts during release notifications. */
-const RELEASE_COMPANY_FANOUT_CONCURRENCY = 3;
+export const RELEASE_COMPANY_FANOUT_CONCURRENCY = 3;
+
+/** Max active users processed per company per notifyUsers call. */
+export const RELEASE_RECIPIENT_CHUNK_SIZE = 200;
 
 function readWebhookSecret() {
   return (process.env.GITHUB_RELEASE_WEBHOOK_SECRET || '').trim();
@@ -53,45 +56,53 @@ export function buildAppUpdateDedupeKey(version, build) {
 }
 
 /**
- * Active users grouped by company — covers Android FCM token holders and
- * Windows Socket.IO recipients without requiring a Windows push token.
- *
- * Returns Map(companyId string → userId string[]). Only `_id` + `companyId`
- * are loaded; grouping happens in MongoDB so Node does not hold full User docs.
+ * Distinct company IDs that have at least one active user.
+ * Does not materialize every user id in memory.
  */
-export async function listActiveRecipientsByCompany() {
-  const rows = await User.aggregate([
-    {
-      $match: {
-        isActive: true,
-        deletedAt: null,
-        companyId: { $ne: null },
-      },
-    },
-    { $project: { _id: 1, companyId: 1 } },
-    {
-      $group: {
-        _id: '$companyId',
-        userIds: { $addToSet: '$_id' },
-      },
-    },
-  ]);
+export async function listActiveCompanyIds() {
+  const raw = await User.distinct('companyId', {
+    isActive: true,
+    deletedAt: null,
+    companyId: { $ne: null },
+  });
 
-  /** @type {Map<string, string[]>} */
-  const byCompany = new Map();
-  for (const row of rows) {
-    const companyId = row._id?.toString?.() ?? String(row._id || '');
-    if (!companyId) continue;
-    const userIds = [];
-    for (const id of row.userIds || []) {
-      const userId = id?.toString?.() ?? String(id || '');
-      if (userId) userIds.push(userId);
-    }
-    if (userIds.length) {
-      byCompany.set(companyId, userIds);
-    }
+  const ids = [];
+  const seen = new Set();
+  for (const value of raw || []) {
+    const companyId = value?.toString?.() ?? String(value || '');
+    if (!companyId || seen.has(companyId)) continue;
+    seen.add(companyId);
+    ids.push(companyId);
   }
-  return byCompany;
+  return ids;
+}
+
+/**
+ * One bounded page of active user ids for a company, ordered by `_id`.
+ */
+export async function fetchActiveRecipientPage({
+  companyId,
+  afterId = null,
+  limit = RELEASE_RECIPIENT_CHUNK_SIZE,
+}) {
+  const filter = {
+    companyId,
+    isActive: true,
+    deletedAt: null,
+  };
+  if (afterId) {
+    filter._id = { $gt: afterId };
+  }
+
+  const rows = await User.find(filter)
+    .select('_id')
+    .sort({ _id: 1 })
+    .limit(limit)
+    .lean();
+
+  return rows
+    .map((row) => row._id)
+    .filter((id) => id != null);
 }
 
 function buildNotificationCopy(version) {
@@ -118,41 +129,74 @@ export async function notifyAppUpdateRelease({ manifest, io }) {
   const channel = String(manifest.channel || 'stable');
   const dedupeKey = buildAppUpdateDedupeKey(version, build);
   const copy = buildNotificationCopy(version);
-  const recipientsByCompany = await listActiveRecipientsByCompany();
-  const companies = [...recipientsByCompany.entries()];
+  const companyIds = await listActiveCompanyIds();
 
   let notified = 0;
   await mapWithConcurrency(
-    companies,
+    companyIds,
     RELEASE_COMPANY_FANOUT_CONCURRENCY,
-    async ([companyId, userIds]) => {
-      const result = await notifyUsers({
-        companyId,
-        recipientUserIds: userIds,
-        type: 'app_update',
-        module: 'app_update',
-        entityType: 'app_update',
-        entityId: null,
-        titleEn: copy.titleEn,
-        titleAr: copy.titleAr,
-        bodyEn: copy.bodyEn,
-        bodyAr: copy.bodyAr,
-        dedupeKey,
-        data: {
-          type: 'app_update',
-          entityType: 'app_update',
-          module: 'app_update',
-          category: 'app_update',
-          route: '/settings/updates',
-          version,
-          build: String(build),
-          channel,
-          androidAvailable: Boolean(manifest.android?.available),
-          windowsAvailable: Boolean(manifest.windows?.available),
-        },
-        io,
-      });
-      notified += result.created?.length ?? 0;
+    async (companyId) => {
+      let afterId = null;
+      for (;;) {
+        let chunk;
+        try {
+          chunk = await fetchActiveRecipientPage({
+            companyId,
+            afterId,
+            limit: RELEASE_RECIPIENT_CHUNK_SIZE,
+          });
+        } catch (error) {
+          logger.error(
+            { err: error, companyId },
+            'Failed to load release notification recipient chunk'
+          );
+          break;
+        }
+
+        if (!chunk.length) break;
+
+        const recipientUserIds = chunk.map(
+          (id) => id?.toString?.() ?? String(id || '')
+        );
+        afterId = chunk[chunk.length - 1];
+
+        try {
+          const result = await notifyUsers({
+            companyId,
+            recipientUserIds,
+            type: 'app_update',
+            module: 'app_update',
+            entityType: 'app_update',
+            entityId: null,
+            titleEn: copy.titleEn,
+            titleAr: copy.titleAr,
+            bodyEn: copy.bodyEn,
+            bodyAr: copy.bodyAr,
+            dedupeKey,
+            data: {
+              type: 'app_update',
+              entityType: 'app_update',
+              module: 'app_update',
+              category: 'app_update',
+              route: '/settings/updates',
+              version,
+              build: String(build),
+              channel,
+              androidAvailable: Boolean(manifest.android?.available),
+              windowsAvailable: Boolean(manifest.windows?.available),
+            },
+            io,
+          });
+          notified += result.created?.length ?? 0;
+        } catch (error) {
+          logger.error(
+            { err: error, companyId },
+            'Release notification chunk failed; continuing with remaining chunks'
+          );
+        }
+
+        if (chunk.length < RELEASE_RECIPIENT_CHUNK_SIZE) break;
+      }
     }
   );
 

@@ -1354,7 +1354,7 @@ Future<void> configureDependencies() async {
       repository: getIt<NotificationsRepository>(),
     ),
   );
-  getIt.registerFactory<NotificationsCubit>(
+  getIt.registerLazySingleton<NotificationsCubit>(
     () => NotificationsCubit(
       getNotifications: getIt<GetNotificationsUseCase>(),
       markNotificationRead: getIt<MarkNotificationReadUseCase>(),
@@ -1425,12 +1425,14 @@ Future<void> configureDependencies() async {
       appCubit: getIt<AppCubit>(),
       authCubit: getIt<AuthCubit>(),
       unreadCubit: getIt<NotificationsUnreadCubit>(),
+      localReadIds: getIt<NotificationsLocalDataSource>(),
       router: getIt<GoRouter>(),
       apiBaseUrlProvider: () => getIt<EnvConfig>().apiBaseUrl,
       accessTokenProvider: () => getIt<TokenManager>().getAccessToken(),
       appUpdateLocal: getIt<AppUpdateLocalDataSource>(),
       updateCenterCubitProvider: () => getIt<UpdateCenterCubit>(),
       windowFocus: getIt<WindowFocusService>(),
+      inboxCubitProvider: () => getIt<NotificationsCubit>(),
     ),
   );
 }

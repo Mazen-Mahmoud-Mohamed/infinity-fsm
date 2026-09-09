@@ -10,7 +10,10 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
 import 'package:mobile/core/push/android_notification_channels.dart';
 import 'package:mobile/core/push/firebase_options.dart';
+import 'package:mobile/core/push/local_notification_id.dart';
+import 'package:mobile/core/push/notification_idempotency_gate.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
+import 'package:mobile/core/push/pending_notification_store.dart';
 import 'package:mobile/core/services/window_focus_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
@@ -19,6 +22,8 @@ import 'package:mobile/features/app_update/domain/utils/app_update_notification_
 import 'package:mobile/features/app_update/presentation/cubit/update_center_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_api_datasource.dart';
+import 'package:mobile/features/notifications/data/datasources/notifications_local_datasource.dart';
+import 'package:mobile/features/notifications/presentation/cubit/notifications_cubit.dart';
 import 'package:mobile/features/notifications/presentation/cubit/notifications_unread_cubit.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -66,46 +71,55 @@ class PushNotificationService {
     required AppCubit appCubit,
     required AuthCubit authCubit,
     required NotificationsUnreadCubit unreadCubit,
+    required NotificationsLocalDataSource localReadIds,
     required GoRouter router,
     required String Function() apiBaseUrlProvider,
     required Future<String?> Function() accessTokenProvider,
     required AppUpdateLocalDataSource appUpdateLocal,
     required UpdateCenterCubit Function() updateCenterCubitProvider,
+    required NotificationsCubit Function() inboxCubitProvider,
     WindowFocusService? windowFocus,
   })  : _api = api,
         _preferences = preferences,
         _appCubit = appCubit,
         _authCubit = authCubit,
         _unreadCubit = unreadCubit,
+        _inboxCubitProvider = inboxCubitProvider,
+        _localReadIds = localReadIds,
         _router = router,
         _apiBaseUrlProvider = apiBaseUrlProvider,
         _accessTokenProvider = accessTokenProvider,
         _appUpdateLocal = appUpdateLocal,
         _updateCenterCubitProvider = updateCenterCubitProvider,
-        _windowFocus = windowFocus ?? WindowFocusService();
+        _windowFocus = windowFocus ?? WindowFocusService(),
+        _pending = PendingNotificationStore(preferences);
 
   final NotificationsApiDataSource _api;
   final PreferencesService _preferences;
   final AppCubit _appCubit;
   final AuthCubit _authCubit;
   final NotificationsUnreadCubit _unreadCubit;
+  final NotificationsCubit Function() _inboxCubitProvider;
+  final NotificationsLocalDataSource _localReadIds;
   final GoRouter _router;
   final String Function() _apiBaseUrlProvider;
   final Future<String?> Function() _accessTokenProvider;
   final AppUpdateLocalDataSource _appUpdateLocal;
   final UpdateCenterCubit Function() _updateCenterCubitProvider;
   final WindowFocusService _windowFocus;
+  final PendingNotificationStore _pending;
 
   final FlutterLocalNotificationsPlugin _local =
       FlutterLocalNotificationsPlugin();
 
   io.Socket? _socket;
   String? _currentToken;
+  String? _boundUserId;
   bool _initialized = false;
   bool _permissionAsked = false;
   bool _fcmListenersAttached = false;
   bool _consumingPending = false;
-  String? _lastHandledIdempotencyKey;
+  final _idempotency = NotificationIdempotencyGate();
   StreamSubscription<RemoteMessage>? _onMessageSub;
   StreamSubscription<RemoteMessage>? _onOpenedSub;
   StreamSubscription<String>? _onTokenRefreshSub;
@@ -218,6 +232,14 @@ class PushNotificationService {
   /// Called after successful authentication.
   Future<void> onAuthenticated() async {
     await initialize();
+    final userId = _authCubit.state.user?.id;
+    if (userId != _boundUserId) {
+      _boundUserId = userId;
+    }
+    await _localReadIds.bindUser(userId);
+    try {
+      _inboxCubitProvider().bindAuthenticatedUser(userId);
+    } on Object catch (_) {}
     await _requestPermissionOnce();
     await _registerFcmTokenIfAndroid();
     await _connectSocket();
@@ -234,7 +256,13 @@ class PushNotificationService {
       await _api.deactivateDeviceToken(token);
     }
     _currentToken = null;
-    // Keep pending navigation so a tap while logged out survives re-login.
+    _boundUserId = null;
+    _idempotency.clear();
+    await _localReadIds.clearSession();
+    await _pending.clear();
+    try {
+      _inboxCubitProvider().reset();
+    } on Object catch (_) {}
   }
 
   /// Applies the Settings push master switch without tearing down auth sockets.
@@ -381,9 +409,15 @@ class PushNotificationService {
       return;
     }
 
-    final payloadMap = _socketPayloadForNavigation(data);
+    final payloadMap = socketPayloadForNavigation(data);
+    final capturedUserId = _authCubit.state.user?.id;
     unawaited(() async {
       final appUpdateHandled = await _handleIncomingAppUpdateEvent(payloadMap);
+      if (capturedUserId != null &&
+          capturedUserId.isNotEmpty &&
+          capturedUserId == _boundUserId) {
+        _ingestInboxFromSocket(data, capturedUserId: capturedUserId);
+      }
       if (appUpdateHandled.suppressLocalToast) {
         unawaited(_unreadCubit.refresh());
         return;
@@ -417,6 +451,23 @@ class PushNotificationService {
       }
       unawaited(_unreadCubit.refresh());
     }());
+  }
+
+  void _ingestInboxFromSocket(
+    Map<String, dynamic> data, {
+    required String? capturedUserId,
+  }) {
+    try {
+      final cubit = _inboxCubitProvider();
+      if (cubit.isClosed) return;
+      cubit.ingestRealtimePayload(
+        data,
+        localeCode: _appCubit.state.localeCode,
+        authenticatedUserId: capturedUserId,
+      );
+    } on Object catch (error) {
+      debugPrint('[Push] inbox ingest failed: $error');
+    }
   }
 
   /// Marks an app_update event as notified and decides whether local UI toast
@@ -469,30 +520,6 @@ class PushNotificationService {
     return type.contains('app_update') || type == 'update';
   }
 
-  Map<String, dynamic> _socketPayloadForNavigation(Map<String, dynamic> data) {
-    final nested = data['data'] is Map
-        ? Map<String, dynamic>.from(data['data'] as Map)
-        : <String, dynamic>{};
-    return <String, dynamic>{
-      'notificationId': data['id']?.toString() ?? '',
-      'type': data['entityType'] ?? data['type'] ?? data['module'] ?? '',
-      'entityId': data['entityId']?.toString() ?? '',
-      'workOrderId': nested['workOrderId']?.toString() ??
-          data['workOrderId']?.toString() ??
-          '',
-      'overtimeId': nested['overtimeId']?.toString() ??
-          data['overtimeId']?.toString() ??
-          '',
-      'event': nested['event']?.toString() ?? data['type']?.toString() ?? '',
-      'version': nested['version']?.toString() ?? data['version']?.toString() ?? '',
-      'build': nested['build']?.toString() ?? data['build']?.toString() ?? '',
-      'channel':
-          nested['channel']?.toString() ?? data['channel']?.toString() ?? '',
-      'route': nested['route']?.toString() ?? data['route']?.toString() ?? '',
-      ...nested,
-    };
-  }
-
   Future<void> _showLocalNotification({
     required String title,
     required String body,
@@ -503,6 +530,11 @@ class PushNotificationService {
     }
 
     const channel = AndroidNotificationChannels.defaultChannel;
+    final data = _decodePayload(payload) ?? const <String, dynamic>{};
+    final notificationId = (data['notificationId'] ?? data['id'] ?? '')
+        .toString()
+        .trim();
+    final tag = notificationId.isEmpty ? null : notificationId;
     final details = NotificationDetails(
       android: AndroidNotificationDetails(
         channel.id,
@@ -511,12 +543,16 @@ class PushNotificationService {
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
         icon: '@mipmap/ic_launcher',
+        tag: tag,
       ),
       windows: const WindowsNotificationDetails(),
     );
 
     await _local.show(
-      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      id: localNotificationIdFor(
+        notificationId: notificationId,
+        fallbackSeed: payload ?? '$title|$body',
+      ),
       title: title,
       body: body,
       notificationDetails: details,
@@ -555,8 +591,19 @@ class PushNotificationService {
     if (_isAuthenticated) {
       await _executeNavigation(intent);
     } else {
-      await _persistPending(intent);
+      final ownerId = _ownerIdForPending(data);
+      await _pending.persist(intent.copyWith(userId: ownerId));
     }
+  }
+
+  String? _ownerIdForPending(Map<String, dynamic> data) {
+    final authenticated = _authCubit.state.user?.id.trim();
+    if (authenticated != null && authenticated.isNotEmpty) {
+      return authenticated;
+    }
+    final recipient = data['recipientUserId']?.toString().trim() ?? '';
+    if (recipient.isNotEmpty) return recipient;
+    return null;
   }
 
   bool get _isAuthenticated =>
@@ -566,9 +613,8 @@ class PushNotificationService {
     if (!_isAuthenticated || _consumingPending) return;
     _consumingPending = true;
     try {
-      final intent = _readPending();
+      final intent = await _pending.takeForUser(_authCubit.state.user?.id);
       if (intent == null) return;
-      await _clearPending();
       await _executeNavigation(intent);
     } finally {
       _consumingPending = false;
@@ -577,25 +623,19 @@ class PushNotificationService {
 
   Future<void> _executeNavigation(NotificationNavigationIntent intent) async {
     final key = intent.idempotencyKey;
-    if (key != null && key.isNotEmpty && key == _lastHandledIdempotencyKey) {
-      await _clearPending();
+    if (_idempotency.shouldSkip(key, userId: _authCubit.state.user?.id)) {
+      await _pending.clear();
       return;
     }
-    if (key != null && key.isNotEmpty) {
-      _lastHandledIdempotencyKey = key;
-    }
 
-    await _clearPending();
+    await _pending.clear();
     await _windowFocus.focusApp();
 
     try {
       _router.push(intent.route);
     } on Object catch (error) {
       debugPrint('[Push] navigate failed: $error');
-      // Allow a later retry for the same intent if push failed.
-      if (key != null && key == _lastHandledIdempotencyKey) {
-        _lastHandledIdempotencyKey = null;
-      }
+      _idempotency.forgetLastKey();
       return;
     }
 
@@ -612,31 +652,6 @@ class PushNotificationService {
       return;
     }
     unawaited(_unreadCubit.refresh());
-  }
-
-  Future<void> _persistPending(NotificationNavigationIntent intent) async {
-    await _preferences.setString(
-      StorageKeys.pendingNotificationNav,
-      jsonEncode(intent.toJson()),
-    );
-  }
-
-  NotificationNavigationIntent? _readPending() {
-    final raw = _preferences.getString(StorageKeys.pendingNotificationNav);
-    if (raw == null || raw.isEmpty) return null;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is Map) {
-        return NotificationNavigationIntent.fromJson(
-          Map<String, dynamic>.from(decoded),
-        );
-      }
-    } on Object catch (_) {}
-    return null;
-  }
-
-  Future<void> _clearPending() async {
-    await _preferences.remove(StorageKeys.pendingNotificationNav);
   }
 
   Future<void> _tearDownFcmListeners() async {

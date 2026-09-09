@@ -42,6 +42,7 @@ class NotificationsUnreadCubit extends Cubit<NotificationsUnreadState> {
         super(const NotificationsUnreadState());
 
   final GetNotificationsUnreadCountUseCase _getUnreadCount;
+  // ignore: unused_field
   final NotificationsRepository _repository;
   final Duration _refreshDebounce;
 
@@ -111,11 +112,10 @@ class NotificationsUnreadCubit extends Cubit<NotificationsUnreadState> {
     emit(NotificationsUnreadState(count: next < 0 ? 0 : next));
   }
 
-  /// Seeds the badge from an already-loaded dashboard summary (no extra HTTP).
-  void applyFromDashboardSummary(RoleDashboardSummary summary) {
-    final activity = _extractActivity(summary);
-    final count = _repository.unreadCountFromActivity(activity);
-    emit(NotificationsUnreadState(count: count));
+  /// Dashboard live activity is not the inbox. This method must never overwrite
+  /// the authoritative unread API count.
+  void applyFromDashboardSummary(RoleDashboardSummary _) {
+    // Live activity length must never become the badge.
   }
 
   void clear() {
@@ -131,34 +131,5 @@ class NotificationsUnreadCubit extends Cubit<NotificationsUnreadState> {
       scheduled.complete();
     }
     return super.close();
-  }
-
-  List<DashboardLiveActivityItem> _extractActivity(
-    RoleDashboardSummary summary,
-  ) {
-    if (summary.liveActivity.isNotEmpty) {
-      return List<DashboardLiveActivityItem>.unmodifiable(summary.liveActivity);
-    }
-    if (summary.teamActivity.isNotEmpty) {
-      return List<DashboardLiveActivityItem>.unmodifiable(summary.teamActivity);
-    }
-    return summary.notifications
-        .map(
-          (item) {
-            final parts = item.body.split('·');
-            final module = parts.isEmpty ? 'general' : parts.first.trim();
-            final actor = parts.length < 2
-                ? null
-                : parts.sublist(1).join('·').trim();
-            return DashboardLiveActivityItem(
-              id: item.id,
-              action: item.title,
-              module: module,
-              actorName: (actor == null || actor.isEmpty) ? null : actor,
-              createdAt: item.createdAt,
-            );
-          },
-        )
-        .toList(growable: false);
   }
 }

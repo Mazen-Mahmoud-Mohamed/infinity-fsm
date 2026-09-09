@@ -20,8 +20,14 @@ class _TrackingApi extends Fake implements NotificationsApiDataSource {
   var listCalls = 0;
 
   @override
-  Future<Result<({List<AppNotification> items, int unreadCount})>>
-      listNotifications({
+  Future<
+      Result<
+          ({
+            List<AppNotification> items,
+            int unreadCount,
+            int page,
+            bool hasMore,
+          })>> listNotifications({
     int page = 1,
     int limit = 50,
   }) async {
@@ -135,7 +141,7 @@ class _SuccessListApi extends Fake implements NotificationsApiDataSource {
   var unreadCalls = 0;
 
   @override
-  Future<Result<({List<AppNotification> items, int unreadCount})>>
+  Future<Result<({List<AppNotification> items, int unreadCount, int page, bool hasMore})>>
       listNotifications({
     int page = 1,
     int limit = 50,
@@ -154,6 +160,8 @@ class _SuccessListApi extends Fake implements NotificationsApiDataSource {
           ),
         ],
         unreadCount: 9,
+        page: page,
+        hasMore: false,
       ),
     );
   }
