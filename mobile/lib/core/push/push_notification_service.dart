@@ -14,6 +14,7 @@ import 'package:mobile/core/push/local_notification_id.dart';
 import 'package:mobile/core/push/notification_idempotency_gate.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/push/pending_notification_store.dart';
+import 'package:mobile/core/push/windows_notification_identity.dart';
 import 'package:mobile/core/services/window_focus_service.dart';
 import 'package:mobile/core/storage/preferences_service.dart';
 import 'package:mobile/core/utils/result.dart';
@@ -122,6 +123,7 @@ class PushNotificationService {
   String? _currentToken;
   String? _boundUserId;
   bool _initialized = false;
+  bool _localPluginReady = false;
   bool _permissionAsked = false;
   bool _fcmListenersAttached = false;
   bool _consumingPending = false;
@@ -134,8 +136,18 @@ class PushNotificationService {
     if (_initialized) return;
     _initialized = true;
 
-    await _initLocalNotifications();
-    await _captureLaunchNotificationIntents();
+    try {
+      await _initLocalNotifications();
+    } on Object catch (error) {
+      _localPluginReady = false;
+      debugPrint('[Push] local notification init failed (non-fatal): $error');
+    }
+
+    try {
+      await _captureLaunchNotificationIntents();
+    } on Object catch (error) {
+      debugPrint('[Push] launch intent capture failed (non-fatal): $error');
+    }
 
     if (!kIsWeb && Platform.isAndroid && DefaultFirebaseOptions.isConfigured) {
       try {
@@ -163,23 +175,45 @@ class PushNotificationService {
   Future<void> _initLocalNotifications() async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     const windowsInit = WindowsInitializationSettings(
-      appName: 'INFINITY',
-      appUserModelId: 'com.totalcom.infinity',
-      guid: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+      appName: kWindowsNotificationAppName,
+      appUserModelId: kWindowsNotificationAumid,
+      guid: kWindowsNotificationGuid,
     );
     const initSettings = InitializationSettings(
       android: androidInit,
       windows: windowsInit,
     );
 
-    await _local.initialize(
+    if (!kIsWeb && Platform.isWindows) {
+      debugPrint(
+        '[Push] Windows local notifications initializing '
+        'aumid=$kWindowsNotificationAumid guid=$kWindowsNotificationGuid',
+      );
+    }
+
+    final initialized = await _local.initialize(
       settings: initSettings,
       onDidReceiveNotificationResponse: (response) {
         unawaited(_onLocalNotificationTapped(response));
       },
     );
+    _localPluginReady = initialized == true;
 
-    if (!kIsWeb && Platform.isAndroid) {
+    if (!kIsWeb && Platform.isWindows) {
+      debugPrint(
+        '[Push] Windows local notifications initialized='
+        '$_localPluginReady aumid=$kWindowsNotificationAumid',
+      );
+      if (!_localPluginReady) {
+        debugPrint(
+          '[Push] Windows toast init returned false — notification '
+          'platform unavailable or activator registration failed. '
+          'App continues without local toasts.',
+        );
+      }
+    }
+
+    if (!kIsWeb && Platform.isAndroid && _localPluginReady) {
       final androidPlugin = _local
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>();
@@ -194,6 +228,7 @@ class PushNotificationService {
 
   /// Local-plugin launch details (foreground local / Windows toast cold cases).
   Future<void> _captureLaunchNotificationIntents() async {
+    if (!_localPluginReady) return;
     try {
       final details = await _local.getNotificationAppLaunchDetails();
       if (details?.didNotificationLaunchApp != true) return;
@@ -559,6 +594,7 @@ class PushNotificationService {
     required String body,
     String? payload,
   }) async {
+    if (!_localPluginReady) return;
     if (!_appCubit.state.notificationPushEnabled) {
       return;
     }
@@ -582,16 +618,20 @@ class PushNotificationService {
       windows: const WindowsNotificationDetails(),
     );
 
-    await _local.show(
-      id: localNotificationIdFor(
-        notificationId: notificationId,
-        fallbackSeed: payload ?? '$title|$body',
-      ),
-      title: title,
-      body: body,
-      notificationDetails: details,
-      payload: payload,
-    );
+    try {
+      await _local.show(
+        id: localNotificationIdFor(
+          notificationId: notificationId,
+          fallbackSeed: payload ?? '$title|$body',
+        ),
+        title: title,
+        body: body,
+        notificationDetails: details,
+        payload: payload,
+      );
+    } on Object catch (error) {
+      debugPrint('[Push] local notification show failed (non-fatal): $error');
+    }
   }
 
   Future<void> _onLocalNotificationTapped(

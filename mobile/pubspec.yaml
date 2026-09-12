@@ -1,7 +1,7 @@
 name: mobile
 description: INFINITY — Total-Com Solutions Field Service Management
 publish_to: 'none'
-version: 1.2.2+28
+version: 1.2.3+29
 
 environment:
   sdk: ^3.12.2
@@ -57,6 +57,14 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
+
+# Vendored pin of flutter_local_notifications_windows 3.1.1 with FFI-safe
+# init(): WinRT failures return false instead of aborting across the FFI
+# boundary (MaikuB/flutter_local_notifications#2813). Identity/AUMID/GUID
+# registration remains in the Windows runner + installer.
+dependency_overrides:
+  flutter_local_notifications_windows:
+    path: third_party/flutter_local_notifications_windows
 
 flutter:
   uses-material-design: true

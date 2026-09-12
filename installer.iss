@@ -30,9 +30,15 @@
 #define MyAppPublisher "Mazen Mahmoud"
 #define MyAppURL "https://github.com/Mazen-Mahmoud-Mohamed/infinity-fsm"
 #define MyAppExeName "mobile.exe"
+; Must match mobile/lib/core/push/windows_notification_identity.dart and
+; mobile/windows/runner/windows_toast_registration.cpp
+#define MyAppUserModelId "Com.TotalCom.Infinity"
+; Toast activator CLSID (same GUID as AppId without braces).
+#define MyToastClsid "{{04A35421-E8D4-4192-9AD2-ABC142836211}"
 
 [Setup]
-AppId={{04A35421-E8D4-4192-9AD2-ABC142836211}
+; AppId GUID == toast activator CLSID (see kWindowsNotificationGuid).
+AppId={#MyToastClsid}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 AppPublisher={#MyAppPublisher}
@@ -49,6 +55,8 @@ OutputBaseFilename={#OutputBaseFilename}
 SetupIconFile={#SetupIconFile}
 SolidCompression=yes
 WizardStyle=modern dynamic
+; Toast COM/AUMID keys are HKCU. The runner also refreshes them on every
+; launch for the interactive user (covers elevated installer edge cases).
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -62,8 +70,16 @@ Source: "{#WindowsReleaseDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignorev
 Source: "{#WindowsReleaseDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; AppUserModelID: "{#MyAppUserModelId}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon; AppUserModelID: "{#MyAppUserModelId}"
+
+; Unpackaged Win32 toast identity (per-user HKCU).
+; LocalServer32 must point at the installed Release executable, never a Debug path.
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\CLSID\{#MyToastClsid}"; ValueType: string; ValueData: "{#MyAppName}"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\CLSID\{#MyToastClsid}\LocalServer32"; ValueType: string; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#MyAppUserModelId}"; ValueType: string; ValueName: "DisplayName"; ValueData: "{#MyAppName}"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#MyAppUserModelId}"; ValueType: string; ValueName: "CustomActivator"; ValueData: "{#MyToastClsid}"
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

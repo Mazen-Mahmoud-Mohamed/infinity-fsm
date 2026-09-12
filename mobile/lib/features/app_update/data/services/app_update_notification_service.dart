@@ -78,30 +78,36 @@ class AppUpdateNotificationService {
     final notificationId = _notificationIdBase + dedupeKey.hashCode.abs() % 100;
 
     const channel = AndroidNotificationChannels.updates;
-    await _local.show(
-      id: notificationId,
-      title: title,
-      body: body,
-      notificationDetails: NotificationDetails(
-        android: AndroidNotificationDetails(
-          channel.id,
-          channel.name,
-          channelDescription: channel.description,
-          importance: Importance.high,
-          priority: Priority.high,
-          tag: dedupeKey,
-          actions: [
-            AndroidNotificationAction(
-              'update',
-              updateActionLabel,
-              showsUserInterface: true,
-            ),
-          ],
+    try {
+      await _local.show(
+        id: notificationId,
+        title: title,
+        body: body,
+        notificationDetails: NotificationDetails(
+          android: AndroidNotificationDetails(
+            channel.id,
+            channel.name,
+            channelDescription: channel.description,
+            importance: Importance.high,
+            priority: Priority.high,
+            tag: dedupeKey,
+            actions: [
+              AndroidNotificationAction(
+                'update',
+                updateActionLabel,
+                showsUserInterface: true,
+              ),
+            ],
+          ),
+          windows: const WindowsNotificationDetails(),
         ),
-        windows: const WindowsNotificationDetails(),
-      ),
-      payload: payload,
-    );
+        payload: payload,
+      );
+    } on Object catch (error) {
+      debugPrint(
+        '[AppUpdateNotification] show failed (non-fatal): $error',
+      );
+    }
   }
 
   Future<void> focusAppWindow() => _windowFocus.focusApp();
