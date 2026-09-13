@@ -144,13 +144,16 @@ void UpdateRegistry(
     ));
   }
 
-  if (iconPath.has_value()) {
+  if (iconPath.has_value() && !iconPath.value().empty()) {
     const auto v = iconPath.value();
     const std::wstring wIcon = utf8_to_wstring(v);
     winrt::check_win32(RegSetValueExW(
       appInfoKey.get(), L"IconUri", 0, REG_SZ, reinterpret_cast<const BYTE*>(wIcon.c_str()),
       static_cast<DWORD>((wIcon.size() + 1) * sizeof(wchar_t))
     ));
+  } else {
+    // Remove stale empty/invalid IconUri from prior builds (blank Taskbar icon).
+    RegDeleteValueW(appInfoKey.get(), L"IconUri");
   }
 
   // combine guid to class id

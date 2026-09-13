@@ -174,12 +174,12 @@ class PushNotificationService {
 
   Future<void> _initLocalNotifications() async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const windowsInit = WindowsInitializationSettings(
+    final windowsInit = WindowsInitializationSettings(
       appName: kWindowsNotificationAppName,
-      appUserModelId: kWindowsNotificationAumid,
+      appUserModelId: windowsNotificationAumidForCurrentBuild(),
       guid: kWindowsNotificationGuid,
     );
-    const initSettings = InitializationSettings(
+    final initSettings = InitializationSettings(
       android: androidInit,
       windows: windowsInit,
     );
@@ -187,7 +187,8 @@ class PushNotificationService {
     if (!kIsWeb && Platform.isWindows) {
       debugPrint(
         '[Push] Windows local notifications initializing '
-        'aumid=$kWindowsNotificationAumid guid=$kWindowsNotificationGuid',
+        'aumid=${windowsNotificationAumidForCurrentBuild()} '
+        'guid=$kWindowsNotificationGuid',
       );
     }
 
@@ -202,7 +203,7 @@ class PushNotificationService {
     if (!kIsWeb && Platform.isWindows) {
       debugPrint(
         '[Push] Windows local notifications initialized='
-        '$_localPluginReady aumid=$kWindowsNotificationAumid',
+        '$_localPluginReady aumid=${windowsNotificationAumidForCurrentBuild()}',
       );
       if (!_localPluginReady) {
         debugPrint(

@@ -80,6 +80,8 @@ Root: HKCU; Subkey: "Software\Classes\CLSID\{#MyToastClsid}"; ValueType: string;
 Root: HKCU; Subkey: "Software\Classes\CLSID\{#MyToastClsid}\LocalServer32"; ValueType: string; ValueData: """{app}\{#MyAppExeName}"""; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#MyAppUserModelId}"; ValueType: string; ValueName: "DisplayName"; ValueData: "{#MyAppName}"; Flags: uninsdeletekey
 Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#MyAppUserModelId}"; ValueType: string; ValueName: "CustomActivator"; ValueData: "{#MyToastClsid}"
+; Never leave an empty IconUri (blank Taskbar icon). Delete any stale value.
+Root: HKCU; Subkey: "Software\Classes\AppUserModelId\{#MyAppUserModelId}"; ValueType: none; ValueName: "IconUri"; Flags: deletevalue uninsdeletevalue
 
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent

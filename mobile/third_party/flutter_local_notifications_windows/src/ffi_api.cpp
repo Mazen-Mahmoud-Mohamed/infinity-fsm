@@ -80,8 +80,12 @@ bool init(
   }
 
   try {
-    string icon;
-    if (iconPath != nullptr) icon = string(iconPath);
+    // Only treat a non-empty path as an icon. An empty string must not become
+    // optional("") — that writes a blank IconUri and blanks the Taskbar icon.
+    std::optional<string> icon;
+    if (iconPath != nullptr && iconPath[0] != '\0') {
+      icon = string(iconPath);
+    }
     const auto didRegister = plugin->registerApp(aumId, appName, guid, icon, callback);
     if (!didRegister) {
       OutputDebugStringA(

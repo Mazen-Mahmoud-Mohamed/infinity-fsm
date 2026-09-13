@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/core/push/windows_notification_identity.dart';
 
@@ -8,15 +9,27 @@ void main() {
       expect(kWindowsNotificationAppName.trim(), isNotEmpty);
     });
 
-    test('AUMID follows Company.Product form without spaces', () {
+    test('production AUMID follows Company.Product form without spaces', () {
       expect(kWindowsNotificationAumid, 'Com.TotalCom.Infinity');
       expect(kWindowsNotificationAumid.contains(' '), isFalse);
       expect(kWindowsNotificationAumid.length, lessThanOrEqualTo(129));
       expect(kWindowsNotificationAumid, contains('.'));
     });
 
+    test('development AUMID is distinct from production', () {
+      expect(
+        kWindowsNotificationAumidDevelopment,
+        'Com.TotalCom.Infinity.Development',
+      );
+      expect(
+        kWindowsNotificationAumidDevelopment,
+        isNot(equals(kWindowsNotificationAumid)),
+      );
+      expect(kWindowsNotificationAumidDevelopment.contains(' '), isFalse);
+    });
+
     test('toast activator GUID matches xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', () {
-      final guid = kWindowsNotificationGuid;
+      const guid = kWindowsNotificationGuid;
       expect(guid.length, 36);
       expect(guid[8], '-');
       expect(guid[13], '-');
@@ -42,6 +55,23 @@ void main() {
         kWindowsNotificationGuid.toLowerCase(),
         '04a35421-e8d4-4192-9ad2-abc142836211',
       );
+    });
+
+    test('current-build AUMID helper returns a known Infinity AUMID', () {
+      final aumid = windowsNotificationAumidForCurrentBuild();
+      expect(
+        aumid,
+        anyOf(
+          kWindowsNotificationAumid,
+          kWindowsNotificationAumidDevelopment,
+        ),
+      );
+      // Unit tests run in debug mode; on Windows that must be Development.
+      if (!kIsWeb &&
+          defaultTargetPlatform == TargetPlatform.windows &&
+          kDebugMode) {
+        expect(aumid, kWindowsNotificationAumidDevelopment);
+      }
     });
   });
 }

@@ -14,6 +14,10 @@ void main() {
       expect(kWindowsNotificationAppName, 'INFINITY');
       expect(kWindowsNotificationAumid, 'Com.TotalCom.Infinity');
       expect(
+        kWindowsNotificationAumidDevelopment,
+        'Com.TotalCom.Infinity.Development',
+      );
+      expect(
         kWindowsNotificationGuid,
         '04a35421-e8d4-4192-9ad2-abc142836211',
       );
