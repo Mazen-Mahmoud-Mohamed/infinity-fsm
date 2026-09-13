@@ -168,6 +168,8 @@ import 'package:mobile/features/dashboard/data/repositories/dashboard_repository
 import 'package:mobile/features/dashboard/domain/repositories/dashboard_repository.dart';
 import 'package:mobile/features/dashboard/domain/usecases/get_dashboard_summary_usecase.dart';
 import 'package:mobile/features/dashboard/presentation/cubit/executive_dashboard_cubit.dart';
+import 'package:mobile/core/push/notification_deep_link_coordinator.dart';
+import 'package:mobile/core/push/pending_notification_store.dart';
 import 'package:mobile/core/push/push_notification_service.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_api_datasource.dart';
 import 'package:mobile/features/notifications/data/datasources/notifications_local_datasource.dart';
@@ -1424,6 +1426,18 @@ Future<void> configureDependencies() async {
 
   getIt.registerLazySingleton<WindowFocusService>(WindowFocusService.new);
 
+  getIt.registerLazySingleton<PendingNotificationStore>(
+    () => PendingNotificationStore(getIt<PreferencesService>()),
+  );
+
+  getIt.registerLazySingleton<NotificationDeepLinkCoordinator>(
+    () => NotificationDeepLinkCoordinator(
+      router: getIt<GoRouter>(),
+      pending: getIt<PendingNotificationStore>(),
+      windowFocus: getIt<WindowFocusService>(),
+    ),
+  );
+
   getIt.registerLazySingleton<PushNotificationService>(
     () => PushNotificationService(
       api: getIt<NotificationsApiDataSource>(),
@@ -1432,7 +1446,7 @@ Future<void> configureDependencies() async {
       authCubit: getIt<AuthCubit>(),
       unreadCubit: getIt<NotificationsUnreadCubit>(),
       localReadIds: getIt<NotificationsLocalDataSource>(),
-      router: getIt<GoRouter>(),
+      deepLinks: getIt<NotificationDeepLinkCoordinator>(),
       apiBaseUrlProvider: () => getIt<EnvConfig>().apiBaseUrl,
       accessTokenProvider: () => getIt<TokenManager>().getAccessToken(),
       appUpdateLocal: getIt<AppUpdateLocalDataSource>(),
@@ -1440,6 +1454,7 @@ Future<void> configureDependencies() async {
       windowFocus: getIt<WindowFocusService>(),
       inboxCubitProvider: () => getIt<NotificationsCubit>(),
       technicianInterfaceCubit: getIt<TechnicianInterfaceCubit>(),
+      pending: getIt<PendingNotificationStore>(),
     ),
   );
 }

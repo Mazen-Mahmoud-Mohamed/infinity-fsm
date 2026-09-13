@@ -6,12 +6,11 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:go_router/go_router.dart';
 import 'package:mobile/core/constants/storage_keys.dart';
 import 'package:mobile/core/push/android_notification_channels.dart';
 import 'package:mobile/core/push/firebase_options.dart';
 import 'package:mobile/core/push/local_notification_id.dart';
-import 'package:mobile/core/push/notification_idempotency_gate.dart';
+import 'package:mobile/core/push/notification_deep_link_coordinator.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/push/pending_notification_store.dart';
 import 'package:mobile/core/push/windows_notification_identity.dart';
@@ -76,13 +75,14 @@ class PushNotificationService {
     required AuthCubit authCubit,
     required NotificationsUnreadCubit unreadCubit,
     required NotificationsLocalDataSource localReadIds,
-    required GoRouter router,
+    required NotificationDeepLinkCoordinator deepLinks,
     required String Function() apiBaseUrlProvider,
     required Future<String?> Function() accessTokenProvider,
     required AppUpdateLocalDataSource appUpdateLocal,
     required UpdateCenterCubit Function() updateCenterCubitProvider,
     required NotificationsCubit Function() inboxCubitProvider,
     required TechnicianInterfaceCubit technicianInterfaceCubit,
+    PendingNotificationStore? pending,
     WindowFocusService? windowFocus,
   })  : _api = api,
         _preferences = preferences,
@@ -92,13 +92,13 @@ class PushNotificationService {
         _inboxCubitProvider = inboxCubitProvider,
         _technicianInterfaceCubit = technicianInterfaceCubit,
         _localReadIds = localReadIds,
-        _router = router,
+        _deepLinks = deepLinks,
         _apiBaseUrlProvider = apiBaseUrlProvider,
         _accessTokenProvider = accessTokenProvider,
         _appUpdateLocal = appUpdateLocal,
         _updateCenterCubitProvider = updateCenterCubitProvider,
         _windowFocus = windowFocus ?? WindowFocusService(),
-        _pending = PendingNotificationStore(preferences);
+        _pending = pending ?? PendingNotificationStore(preferences);
 
   final NotificationsApiDataSource _api;
   final PreferencesService _preferences;
@@ -108,7 +108,7 @@ class PushNotificationService {
   final NotificationsCubit Function() _inboxCubitProvider;
   final TechnicianInterfaceCubit _technicianInterfaceCubit;
   final NotificationsLocalDataSource _localReadIds;
-  final GoRouter _router;
+  final NotificationDeepLinkCoordinator _deepLinks;
   final String Function() _apiBaseUrlProvider;
   final Future<String?> Function() _accessTokenProvider;
   final AppUpdateLocalDataSource _appUpdateLocal;
@@ -126,8 +126,6 @@ class PushNotificationService {
   bool _localPluginReady = false;
   bool _permissionAsked = false;
   bool _fcmListenersAttached = false;
-  bool _consumingPending = false;
-  final _idempotency = NotificationIdempotencyGate();
   StreamSubscription<RemoteMessage>? _onMessageSub;
   StreamSubscription<RemoteMessage>? _onOpenedSub;
   StreamSubscription<String>? _onTokenRefreshSub;
@@ -285,8 +283,7 @@ class PushNotificationService {
     await _requestPermissionOnce();
     await _registerFcmTokenIfAndroid();
     await _connectSocket();
-    // Router + auth redirects settle before consuming pending deep link.
-    await Future<void>.delayed(const Duration(milliseconds: 450));
+    // Event-driven: wait for MainNavigationShell readiness, not a fixed delay.
     await consumePendingNavigation();
   }
 
@@ -299,7 +296,7 @@ class PushNotificationService {
     }
     _currentToken = null;
     _boundUserId = null;
-    _idempotency.clear();
+    _deepLinks.clearSession();
     await _localReadIds.clearSession();
     await _pending.clear();
     try {
@@ -663,24 +660,23 @@ class PushNotificationService {
     final intent = resolveNotificationNavigation(data);
     debugPrint('[Push] open ($source) → ${intent.route}');
 
-    if (_isAuthenticated) {
-      if (!_canNavigateWithTechnicianInterface(intent.route)) {
-        debugPrint('[Push] TI blocked navigation to ${intent.route}');
-        return;
-      }
-      await _executeNavigation(intent);
-    } else {
-      final ownerId = _ownerIdForPending(data);
-      await _pending.persist(intent.copyWith(userId: ownerId));
-    }
-  }
+    final ownerId = _ownerIdForPending(data);
+    final owned = intent.copyWith(userId: ownerId);
 
-  bool _canNavigateWithTechnicianInterface(String route) {
-    return TechnicianInterfaceNotificationPolicy.canNavigateToResolvedRoute(
-      user: _authCubit.state.user,
-      config: _technicianInterfaceConfigOrNull(),
-      route: route,
-    );
+    if (_isAuthenticated) {
+      await _deepLinks.open(
+        intent: owned,
+        user: _authCubit.state.user,
+        config: _technicianInterfaceConfigOrNull(),
+        source: source,
+      );
+      final notificationId = owned.notificationId;
+      if (notificationId != null && notificationId.isNotEmpty) {
+        unawaited(_markReadAndRefresh(notificationId));
+      }
+    } else {
+      await _pending.persist(owned);
+    }
   }
 
   String? _ownerIdForPending(Map<String, dynamic> data) {
@@ -697,43 +693,12 @@ class PushNotificationService {
       _authCubit.state.status == AuthStatus.authenticated;
 
   Future<void> consumePendingNavigation() async {
-    if (!_isAuthenticated || _consumingPending) return;
-    _consumingPending = true;
-    try {
-      final intent = await _pending.takeForUser(_authCubit.state.user?.id);
-      if (intent == null) return;
-      if (!_canNavigateWithTechnicianInterface(intent.route)) {
-        debugPrint('[Push] TI blocked pending navigation to ${intent.route}');
-        return;
-      }
-      await _executeNavigation(intent);
-    } finally {
-      _consumingPending = false;
-    }
-  }
-
-  Future<void> _executeNavigation(NotificationNavigationIntent intent) async {
-    final key = intent.idempotencyKey;
-    if (_idempotency.shouldSkip(key, userId: _authCubit.state.user?.id)) {
-      await _pending.clear();
-      return;
-    }
-
-    await _pending.clear();
-    await _windowFocus.focusApp();
-
-    try {
-      _router.push(intent.route);
-    } on Object catch (error) {
-      debugPrint('[Push] navigate failed: $error');
-      _idempotency.forgetLastKey();
-      return;
-    }
-
-    final notificationId = intent.notificationId;
-    if (notificationId != null && notificationId.isNotEmpty) {
-      unawaited(_markReadAndRefresh(notificationId));
-    }
+    if (!_isAuthenticated) return;
+    await _deepLinks.flushAfterAuthentication(
+      userId: _authCubit.state.user?.id,
+      user: _authCubit.state.user,
+      config: _technicianInterfaceConfigOrNull(),
+    );
   }
 
   Future<void> _markReadAndRefresh(String notificationId) async {

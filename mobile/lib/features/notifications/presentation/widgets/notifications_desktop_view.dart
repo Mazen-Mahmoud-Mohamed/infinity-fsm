@@ -1,10 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
+import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/app_formatters.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/push/notification_deep_link_coordinator.dart';
 import 'package:mobile/core/push/notification_navigation.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_page_frame.dart';
@@ -19,7 +22,6 @@ import 'package:mobile/features/notifications/presentation/cubit/notifications_u
 import 'package:mobile/features/notifications/presentation/utils/notification_inbox_visibility.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notification_list_tile.dart';
 import 'package:mobile/features/notifications/presentation/widgets/notifications_skeleton.dart';
-import 'package:mobile/features/settings/domain/services/technician_interface_notification_policy.dart';
 import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 
 /// Desktop notification center with list + detail preview panel.
@@ -53,17 +55,17 @@ class _NotificationsDesktopViewState extends State<NotificationsDesktopView> {
     if (intent.route == RoutePaths.notifications) {
       return;
     }
+    final user = context.read<AuthCubit>().state.user;
     final interfaceState = context.read<TechnicianInterfaceCubit>().state;
-    final allowed =
-        TechnicianInterfaceNotificationPolicy.canNavigateToResolvedRoute(
-      user: context.read<AuthCubit>().state.user,
-      config: interfaceState.isReady ? interfaceState.config : null,
-      route: intent.route,
+    final config = interfaceState.isReady ? interfaceState.config : null;
+    unawaited(
+      getIt<NotificationDeepLinkCoordinator>().open(
+        intent: intent.copyWith(userId: user?.id),
+        user: user,
+        config: config,
+        source: 'inbox_desktop_open',
+      ),
     );
-    if (!allowed) {
-      return;
-    }
-    context.push(intent.route);
   }
 
   @override

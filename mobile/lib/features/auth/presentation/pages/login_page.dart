@@ -7,6 +7,7 @@ import 'package:mobile/core/constants/app_radius.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/push/notification_deep_link_coordinator.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/branding/infinity_brand.dart';
 import 'package:mobile/features/auth/data/datasources/auth_local_datasource.dart';
@@ -16,6 +17,7 @@ import 'package:mobile/features/auth/presentation/cubit/login_cubit.dart';
 import 'package:mobile/features/auth/presentation/cubit/login_state.dart';
 import 'package:mobile/features/auth/presentation/widgets/login_form.dart';
 import 'package:mobile/features/settings/domain/services/technician_home_navigation.dart';
+import 'package:mobile/features/settings/domain/services/technician_interface_notification_policy.dart';
 import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 
 class LoginPage extends StatelessWidget {
@@ -51,19 +53,43 @@ class _LoginView extends StatelessWidget {
       listener: (context, state) async {
         if (state is LoginSuccess) {
           context.read<AuthCubit>().setAuthenticated(state.user);
+          final tiCubit = getIt<TechnicianInterfaceCubit>();
           if (state.user.usesOperationalHome) {
-            await getIt<TechnicianInterfaceCubit>().load(
+            await tiCubit.load(
               force: true,
               companyId: state.user.companyId,
             );
             if (!context.mounted) return;
-            context.go(
-              resolveTechnicianHomeRoute(
-                getIt<TechnicianInterfaceCubit>().state.config,
-              ),
-            );
-          } else {
-            context.go(RoutePaths.dashboard);
+          }
+          final tiConfig =
+              tiCubit.state.isReady ? tiCubit.state.config : null;
+          final home = state.user.usesOperationalHome
+              ? resolveTechnicianHomeRoute(tiCubit.state.config)
+              : RoutePaths.dashboard;
+          final deepLinks = getIt<NotificationDeepLinkCoordinator>();
+          final deepLink = await deepLinks.consumeColdStartRoute(
+            userId: state.user.id,
+            user: state.user,
+            config: tiConfig,
+          );
+          if (!context.mounted) {
+            deepLinks.markBootstrapNavigationSettled();
+            return;
+          }
+          try {
+            if (deepLink != null &&
+                TechnicianInterfaceNotificationPolicy
+                    .canNavigateToResolvedRoute(
+                  user: state.user,
+                  config: tiConfig,
+                  route: deepLink,
+                )) {
+              context.go(deepLink);
+            } else {
+              context.go(home);
+            }
+          } finally {
+            deepLinks.markBootstrapNavigationSettled();
           }
         } else if (state is LoginFailure) {
           ScaffoldMessenger.of(context)

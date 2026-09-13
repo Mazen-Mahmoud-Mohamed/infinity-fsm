@@ -6,6 +6,7 @@ import 'package:mobile/core/constants/app_breakpoints.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
 import 'package:mobile/core/localization/localize_app_message.dart';
+import 'package:mobile/core/push/notification_deep_link_coordinator.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/app_refresh_bar.dart';
@@ -275,11 +276,16 @@ class _DashboardScrollBody extends StatelessWidget {
 /// Phones use a bottom [NavigationBar] (first four branches for management,
 /// three operational branches for technicians).
 /// Tablet/desktop use a [NavigationRail] for primary modules.
-class MainNavigationShell extends StatelessWidget {
+class MainNavigationShell extends StatefulWidget {
   const MainNavigationShell({super.key, required this.navigationShell});
 
   final StatefulNavigationShell navigationShell;
 
+  @override
+  State<MainNavigationShell> createState() => _MainNavigationShellState();
+}
+
+class _MainNavigationShellState extends State<MainNavigationShell> {
   /// Shell branch indexes (must match [createAppRouter] branch order).
   static const int _branchDashboard = 0;
   static const int _branchWorkOrders = 1;
@@ -296,11 +302,27 @@ class MainNavigationShell extends StatelessWidget {
   /// Desktop extended rail width (+28 vs previous 220). Tablet [minWidth] unchanged.
   static const double _desktopExtendedRailWidth = 248;
 
+  bool? _lastPublishedShellReady;
+
   void _goBranch(int branchIndex) {
-    navigationShell.goBranch(
+    widget.navigationShell.goBranch(
       branchIndex,
-      initialLocation: branchIndex == navigationShell.currentIndex,
+      initialLocation: branchIndex == widget.navigationShell.currentIndex,
     );
+  }
+
+  void _publishShellReadiness({required bool ready}) {
+    if (_lastPublishedShellReady == ready) return;
+    _lastPublishedShellReady = ready;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final coordinator = getIt<NotificationDeepLinkCoordinator>();
+      if (ready) {
+        coordinator.notifyShellReady();
+      } else {
+        coordinator.notifyShellNotReady();
+      }
+    });
   }
 
   /// Builds a rail destination. Extra horizontal padding / icon–label gap
@@ -473,10 +495,13 @@ class MainNavigationShell extends StatelessWidget {
     if (operational &&
         interfaceState.status == TechnicianInterfaceLoadStatus.loading &&
         !interfaceState.isReady) {
+      _publishShellReadiness(ready: false);
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
+
+    _publishShellReadiness(ready: true);
 
     final phoneBranches = TechnicianInterfaceNavigation.visiblePhoneBranches(
       operational: operational,
@@ -490,7 +515,7 @@ class MainNavigationShell extends StatelessWidget {
         ? (TechnicianInterfaceNavigation.firstEnabledBranch(interfaceConfig) ??
             _branchWorkOrders)
         : _branchDashboard;
-    final currentBranch = navigationShell.currentIndex;
+    final currentBranch = widget.navigationShell.currentIndex;
 
     final shellBody = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -503,7 +528,7 @@ class MainNavigationShell extends StatelessWidget {
           },
         ),
         const UpdateAvailableBanner(),
-        Expanded(child: navigationShell),
+        Expanded(child: widget.navigationShell),
       ],
     );
 

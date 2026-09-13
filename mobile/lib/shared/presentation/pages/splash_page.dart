@@ -4,11 +4,13 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile/core/app/injection.dart';
 import 'package:mobile/core/constants/app_spacing.dart';
 import 'package:mobile/core/localization/l10n/app_localizations.dart';
+import 'package:mobile/core/push/notification_deep_link_coordinator.dart';
 import 'package:mobile/core/router/route_paths.dart';
 import 'package:mobile/core/widgets/app_loader.dart';
 import 'package:mobile/core/widgets/branding/infinity_brand.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/domain/services/technician_home_navigation.dart';
+import 'package:mobile/features/settings/domain/services/technician_interface_notification_policy.dart';
 import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
 import 'package:mobile/shared/presentation/cubit/app_cubit.dart';
 
@@ -56,20 +58,53 @@ class _SplashPageState extends State<SplashPage> {
       }
 
       if (!mounted) {
+        getIt<NotificationDeepLinkCoordinator>()
+            .markBootstrapNavigationSettled();
         return;
       }
 
-      if (user != null && user.usesOperationalHome) {
-        context.go(
-          resolveTechnicianHomeRoute(
-            getIt<TechnicianInterfaceCubit>().state.config,
-          ),
-        );
-      } else {
-        context.go(RoutePaths.dashboard);
+      final tiState = getIt<TechnicianInterfaceCubit>().state;
+      final tiConfig = tiState.isReady ? tiState.config : null;
+      final home = (user != null && user.usesOperationalHome)
+          ? resolveTechnicianHomeRoute(
+              getIt<TechnicianInterfaceCubit>().state.config,
+            )
+          : RoutePaths.dashboard;
+
+      // Cold-start deep link: go directly to the destination (shell-safe).
+      // Do not go(home) then delay/push(detail).
+      final deepLink = await getIt<NotificationDeepLinkCoordinator>()
+          .consumeColdStartRoute(
+        userId: user?.id,
+        user: user,
+        config: tiConfig,
+      );
+
+      if (!mounted) {
+        getIt<NotificationDeepLinkCoordinator>()
+            .markBootstrapNavigationSettled();
+        return;
+      }
+
+      try {
+        if (deepLink != null &&
+            TechnicianInterfaceNotificationPolicy.canNavigateToResolvedRoute(
+              user: user,
+              config: tiConfig,
+              route: deepLink,
+            )) {
+          context.go(deepLink);
+        } else {
+          context.go(home);
+        }
+      } finally {
+        getIt<NotificationDeepLinkCoordinator>()
+            .markBootstrapNavigationSettled();
       }
     } else {
       context.go(RoutePaths.login);
+      getIt<NotificationDeepLinkCoordinator>()
+          .markBootstrapNavigationSettled();
     }
   }
 
