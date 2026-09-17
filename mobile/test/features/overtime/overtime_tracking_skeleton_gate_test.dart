@@ -49,6 +49,8 @@ import 'package:mobile/features/overtime/presentation/widgets/overtime_tracking_
 import 'package:mobile/features/overtime/presentation/widgets/technician_overtime_running_card.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
+import 'package:mobile/features/settings/domain/services/holiday_calendar_cache.dart';
+import 'package:mobile/features/settings/data/datasources/holiday_local_datasource.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -122,7 +124,11 @@ class _FakeConnectivity extends Fake implements ConnectivityService {
       const [ConnectivityResult.wifi];
 }
 
-class _FakeSettingsRepo extends Fake implements SettingsRepository {}
+class _FakeSettingsRepo extends Fake implements SettingsRepository {
+  @override
+  Future<Result<CompanyHolidays>> listHolidays({String? from, String? to}) async =>
+      const Success(CompanyHolidays(dates: []));
+}
 
 class _FakeMediaConfig extends GetOvertimeMediaConfigUseCase {
   _FakeMediaConfig() : super(_FakeSettingsRepo());
@@ -150,6 +156,7 @@ class _TestOvertimeCubit extends OvertimeCubit {
   _TestOvertimeCubit({
     required OvertimeState initial,
     required PreferencesService preferences,
+    required AuthCubit authCubit,
   }) : super(
           getRunningOvertimeUseCase: GetRunningOvertimeUseCase(_FakeOtRepo()),
           startOvertimeUseCase: StartOvertimeUseCase(_FakeOtRepo()),
@@ -174,6 +181,12 @@ class _TestOvertimeCubit extends OvertimeCubit {
             sessionQueryCache: SessionQueryCache(),
           ),
           loggerService: LoggerService(),
+          authCubit: authCubit,
+          syncCompanyHolidays: SyncCompanyHolidaysUseCase(
+            repository: _FakeSettingsRepo(),
+            localDataSource: HolidayLocalDataSource(preferences),
+            calendarCache: HolidayCalendarCache(),
+          ),
         ) {
     emit(initial);
   }
@@ -275,6 +288,7 @@ void main() {
     final cubit = _TestOvertimeCubit(
       initial: const OvertimeState(status: OvertimeLoadStatus.loading),
       preferences: prefs,
+      authCubit: authCubit,
     );
     addTearDown(cubit.close);
 
@@ -290,6 +304,7 @@ void main() {
     final cubit = _TestOvertimeCubit(
       initial: const OvertimeState(),
       preferences: prefs,
+      authCubit: authCubit,
     );
     addTearDown(cubit.close);
     await pumpTracking(tester, cubit, size: const Size(720, 1400));
@@ -304,6 +319,7 @@ void main() {
         isRefreshing: true,
       ),
       preferences: prefs,
+      authCubit: authCubit,
     );
     addTearDown(cubit.close);
     await pumpTracking(tester, cubit);
@@ -322,6 +338,7 @@ void main() {
         isRefreshing: true,
       ),
       preferences: prefs,
+      authCubit: authCubit,
     );
     addTearDown(cubit.close);
     await pumpTracking(tester, cubit, size: const Size(1100, 900));
@@ -338,6 +355,7 @@ void main() {
         busyAction: OvertimeBusyAction.startNormal,
       ),
       preferences: prefs,
+      authCubit: authCubit,
     );
     addTearDown(cubit.close);
     await pumpTracking(tester, cubit);
@@ -352,6 +370,7 @@ void main() {
     final cubit = _TestOvertimeCubit(
       initial: const OvertimeState(status: OvertimeLoadStatus.loading),
       preferences: prefs,
+      authCubit: authCubit,
     );
     addTearDown(cubit.close);
     await pumpTracking(tester, cubit, size: const Size(1100, 900));
@@ -363,6 +382,7 @@ void main() {
     final cubit = _TestOvertimeCubit(
       initial: const OvertimeState(status: OvertimeLoadStatus.loading),
       preferences: prefs,
+      authCubit: authCubit,
     );
     addTearDown(cubit.close);
     await pumpTracking(

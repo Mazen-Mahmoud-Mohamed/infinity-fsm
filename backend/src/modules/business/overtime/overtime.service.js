@@ -7,7 +7,12 @@ import {
 import {
   assertReasonableSessionLength,
   calculateOvertimeDurations,
+  getZonedParts,
+  toYmdKey,
+  withCustomHolidayDates,
 } from './overtime.calculation.js';
+import { OFFICIAL_WORKING_HOURS } from './working-hours.policy.js';
+import holidayService from '../../core/settings/holiday.service.js';
 import config from '../../../config/index.js';
 import PERMISSIONS from '../../../shared/constants/permissions.constants.js';
 import AppError, {
@@ -690,7 +695,11 @@ class OvertimeService {
     });
 
     // Duration still uses Stage 1 (start) → Stage 4 (end) only.
-    const calculated = calculateOvertimeDurations(startedAt, endedAt);
+    const calculated = await this._calculateDurationsForCompany(
+      user.companyId,
+      startedAt,
+      endedAt
+    );
 
     record.status = 'PENDING_REVIEW';
     if (usedClientStart) {
@@ -1015,6 +1024,41 @@ class OvertimeService {
       language: exportLanguage,
     };
 
+    const holidayFrom =
+      startDate && /^\d{4}-\d{2}-\d{2}$/.test(String(startDate).trim())
+        ? String(startDate).trim()
+        : null;
+    const holidayTo =
+      endDate && /^\d{4}-\d{2}-\d{2}$/.test(String(endDate).trim())
+        ? String(endDate).trim()
+        : null;
+
+    // Expand holiday window from record span when filters omit date bounds.
+    let fromKey = holidayFrom;
+    let toKey = holidayTo;
+    if (!fromKey || !toKey) {
+      for (const record of records) {
+        if (record.startAt) {
+          const key = toYmdKey(getZonedParts(new Date(record.startAt), OFFICIAL_WORKING_HOURS.timeZone));
+          if (!fromKey || key < fromKey) fromKey = key;
+        }
+        if (record.endAt) {
+          const key = toYmdKey(getZonedParts(new Date(record.endAt), OFFICIAL_WORKING_HOURS.timeZone));
+          if (!toKey || key > toKey) toKey = key;
+        }
+      }
+    }
+
+    const holidayDates = await holidayService.getDateKeysForCompany(
+      auth.companyId,
+      fromKey,
+      toKey
+    );
+    const workingHours = withCustomHolidayDates(
+      holidayDates,
+      OFFICIAL_WORKING_HOURS
+    );
+
     const buffer = await buildOvertimeExcelWorkbook({
       records,
       generatedBy,
@@ -1025,6 +1069,7 @@ class OvertimeService {
       mode: exportMode,
       language: exportLanguage,
       filters: filterMeta,
+      workingHours,
     });
 
     const fileName = buildOvertimeExportFileName({
@@ -1333,6 +1378,29 @@ class OvertimeService {
       .populate('userId', 'firstName lastName email roles')
       .populate('approvedBy', 'firstName lastName email')
       .populate('rejectedBy', 'firstName lastName email');
+  }
+
+  /**
+   * Load company holiday keys covering [startAt, endAt] and build hours policy.
+   * One DB query for the session range — not per calendar day.
+   */
+  async _workingHoursForCompany(companyId, startAt, endAt) {
+    const tz = OFFICIAL_WORKING_HOURS.timeZone;
+    const startParts = getZonedParts(startAt, tz);
+    const endParts = getZonedParts(endAt, tz);
+    const from = toYmdKey(startParts);
+    const to = toYmdKey(endParts);
+    const holidayDates = await holidayService.getDateKeysForCompany(
+      companyId,
+      from,
+      to
+    );
+    return withCustomHolidayDates(holidayDates, OFFICIAL_WORKING_HOURS);
+  }
+
+  async _calculateDurationsForCompany(companyId, startAt, endAt) {
+    const hours = await this._workingHoursForCompany(companyId, startAt, endAt);
+    return calculateOvertimeDurations(startAt, endAt, hours);
   }
 
   _assertCanViewAll(auth) {

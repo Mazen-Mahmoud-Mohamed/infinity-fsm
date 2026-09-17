@@ -13,6 +13,7 @@ import 'package:mobile/core/widgets/desktop/app_desktop_page_header.dart';
 import 'package:mobile/core/widgets/desktop/app_desktop_surface.dart';
 import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
+import 'package:mobile/features/settings/presentation/pages/holidays_settings_page.dart';
 import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
 import 'package:mobile/features/settings/presentation/pages/overtime_settings_page.dart';
 import 'package:mobile/features/settings/presentation/pages/settings_extra_pages.dart';
@@ -39,6 +40,7 @@ enum _SettingsEmbedTarget {
   danger,
   updates,
   overtime,
+  holidays,
   technicianInterface,
 }
 
@@ -85,6 +87,8 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
         authUser?.permissionChecker.canViewSettings() == true;
     final canManageSettings =
         authUser?.permissionChecker.canManageSettings() == true;
+    final canManageHolidays =
+        authUser?.permissionChecker.canManageHolidays() == true;
     final isAdmin = authUser?.roles.any((r) => r.toUpperCase() == 'ADMIN') ==
             true ||
         canManageSettings;
@@ -229,6 +233,14 @@ class _SettingsHubPageState extends State<SettingsHubPage> {
               onTap: () => context.push(RoutePaths.settingsOvertime),
               embedTarget: _SettingsEmbedTarget.overtime,
             ),
+            if (canManageHolidays || canViewSettings || canManageSettings)
+              _SettingsItem(
+                icon: Icons.event_available_outlined,
+                title: l10n.settingsHolidaysTitle,
+                keywords: ['holiday', 'holidays', 'calendar', 'vacation'],
+                onTap: () => context.push(RoutePaths.settingsHolidays),
+                embedTarget: _SettingsEmbedTarget.holidays,
+              ),
             if (canManageSettings)
               _SettingsItem(
                 icon: Icons.engineering_outlined,
@@ -612,6 +624,8 @@ class _SettingsEmbeddedContent extends StatelessWidget {
         const OrganizationSettingsPage(embedded: true),
       _SettingsEmbedTarget.overtime =>
         const OvertimeSettingsPage(embedded: true),
+      _SettingsEmbedTarget.holidays =>
+        const HolidaysSettingsPage(embedded: true),
       _SettingsEmbedTarget.technicianInterface =>
         const TechnicianInterfaceSettingsPage(embedded: true),
       _SettingsEmbedTarget.system => const SystemSettingsPage(embedded: true),

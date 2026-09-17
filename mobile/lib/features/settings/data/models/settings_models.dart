@@ -212,3 +212,52 @@ class TechnicianInterfaceConfigModel extends TechnicianInterfaceConfig {
         'profile': profile,
       };
 }
+
+class CompanyHolidayModel extends CompanyHoliday {
+  const CompanyHolidayModel({
+    required super.id,
+    required super.date,
+    super.name,
+  });
+
+  factory CompanyHolidayModel.fromJson(Map<String, dynamic> json) {
+    return CompanyHolidayModel(
+      id: json['id']?.toString() ?? '',
+      date: json['date']?.toString() ?? '',
+      name: json['name']?.toString(),
+    );
+  }
+}
+
+class CompanyHolidaysModel extends CompanyHolidays {
+  const CompanyHolidaysModel({
+    required super.dates,
+    super.holidays = const [],
+  });
+
+  factory CompanyHolidaysModel.fromJson(Map<String, dynamic> json) {
+    final holidaysRaw = json['holidays'];
+    final holidays = <CompanyHoliday>[];
+    if (holidaysRaw is List) {
+      for (final item in holidaysRaw) {
+        if (item is Map) {
+          holidays.add(
+            CompanyHolidayModel.fromJson(
+              Map<String, dynamic>.from(item),
+            ),
+          );
+        }
+      }
+    }
+
+    final datesRaw = json['dates'];
+    final dates = datesRaw is List
+        ? datesRaw
+            .map((e) => e.toString().trim())
+            .where((e) => e.isNotEmpty)
+            .toList(growable: false)
+        : holidays.map((h) => h.date).toList(growable: false);
+
+    return CompanyHolidaysModel(dates: dates, holidays: holidays);
+  }
+}

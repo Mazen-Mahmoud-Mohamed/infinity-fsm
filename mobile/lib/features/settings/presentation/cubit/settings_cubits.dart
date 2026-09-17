@@ -426,3 +426,242 @@ class OvertimeSettingsCubit extends Cubit<OvertimeSettingsState> {
   Future<Result<OvertimeSettings>> restoreDefaults() =>
       _save(OvertimeConfigurationPreset.defaultSettingsUpdate());
 }
+
+enum HolidaysSettingsStatus { initial, loading, saving, success, failure }
+
+class HolidaysSettingsState extends Equatable {
+  const HolidaysSettingsState({
+    this.status = HolidaysSettingsStatus.initial,
+    this.persistedDates = const {},
+    this.selectedDates = const {},
+    this.rangeFrom,
+    this.rangeTo,
+    this.visibleMonth,
+    this.message,
+    this.isRefreshing = false,
+  });
+
+  final HolidaysSettingsStatus status;
+  final Set<String> persistedDates;
+  final Set<String> selectedDates;
+  final String? rangeFrom;
+  final String? rangeTo;
+  final DateTime? visibleMonth;
+  final String? message;
+  final bool isRefreshing;
+
+  bool get isDirty {
+    if (persistedDates.length != selectedDates.length) return true;
+    return !persistedDates.containsAll(selectedDates);
+  }
+
+  HolidaysSettingsState copyWith({
+    HolidaysSettingsStatus? status,
+    Set<String>? persistedDates,
+    Set<String>? selectedDates,
+    String? rangeFrom,
+    String? rangeTo,
+    DateTime? visibleMonth,
+    String? message,
+    bool? isRefreshing,
+  }) {
+    return HolidaysSettingsState(
+      status: status ?? this.status,
+      persistedDates: persistedDates ?? this.persistedDates,
+      selectedDates: selectedDates ?? this.selectedDates,
+      rangeFrom: rangeFrom ?? this.rangeFrom,
+      rangeTo: rangeTo ?? this.rangeTo,
+      visibleMonth: visibleMonth ?? this.visibleMonth,
+      message: message,
+      isRefreshing: isRefreshing ?? this.isRefreshing,
+    );
+  }
+
+  @override
+  List<Object?> get props => [
+        status,
+        persistedDates,
+        selectedDates,
+        rangeFrom,
+        rangeTo,
+        visibleMonth,
+        message,
+        isRefreshing,
+      ];
+}
+
+class HolidaysSettingsCubit extends Cubit<HolidaysSettingsState> {
+  HolidaysSettingsCubit({
+    required ListCompanyHolidaysUseCase listHolidays,
+    required ReplaceCompanyHolidaysUseCase replaceHolidays,
+    required SyncCompanyHolidaysUseCase syncHolidays,
+    required SessionQueryCache sessionQueryCache,
+    required String companyId,
+  })  : _listHolidays = listHolidays,
+        _replaceHolidays = replaceHolidays,
+        _syncHolidays = syncHolidays,
+        _sessionQueryCache = sessionQueryCache,
+        _companyId = companyId,
+        super(HolidaysSettingsState(visibleMonth: _monthStart(DateTime.now())));
+
+  static const String _cacheKey = 'settings:holidays';
+
+  final ListCompanyHolidaysUseCase _listHolidays;
+  final ReplaceCompanyHolidaysUseCase _replaceHolidays;
+  final SyncCompanyHolidaysUseCase _syncHolidays;
+  final SessionQueryCache _sessionQueryCache;
+  final String _companyId;
+
+  static DateTime _monthStart(DateTime d) => DateTime(d.year, d.month);
+
+  static String _ymd(DateTime d) =>
+      '${d.year.toString().padLeft(4, '0')}-'
+      '${d.month.toString().padLeft(2, '0')}-'
+      '${d.day.toString().padLeft(2, '0')}';
+
+  static (String from, String to) defaultRange([DateTime? now]) {
+    final n = now ?? DateTime.now();
+    final from = DateTime(n.year - 1, 1, 1);
+    final to = DateTime(n.year + 2, 12, 31);
+    return (_ymd(from), _ymd(to));
+  }
+
+  Future<void> load() async {
+    final range = defaultRange();
+    final cached = _sessionQueryCache.get<CompanyHolidays>(_cacheKey);
+    final localDates = _companyId.isEmpty
+        ? const <String>[]
+        : _syncHolidays.hydrateFromLocal(_companyId);
+    final seedDates = cached?.dates ?? localDates;
+    final hasData = seedDates.isNotEmpty || state.persistedDates.isNotEmpty;
+
+    if (hasData) {
+      final seed = seedDates.toSet();
+      emit(
+        state.copyWith(
+          status: HolidaysSettingsStatus.success,
+          persistedDates: seed,
+          selectedDates: Set<String>.from(seed),
+          rangeFrom: range.$1,
+          rangeTo: range.$2,
+          isRefreshing: true,
+        ),
+      );
+    } else {
+      emit(
+        state.copyWith(
+          status: HolidaysSettingsStatus.loading,
+          rangeFrom: range.$1,
+          rangeTo: range.$2,
+          isRefreshing: false,
+        ),
+      );
+    }
+
+    final result = await _listHolidays(from: range.$1, to: range.$2);
+    switch (result) {
+      case Success(data: final data):
+        _sessionQueryCache.set(_cacheKey, data);
+        await _syncHolidays.persistLocal(_companyId, data.dates);
+        final dates = data.dates.toSet();
+        if (!isClosed) {
+          emit(
+            state.copyWith(
+              status: HolidaysSettingsStatus.success,
+              persistedDates: dates,
+              selectedDates: Set<String>.from(dates),
+              rangeFrom: range.$1,
+              rangeTo: range.$2,
+              isRefreshing: false,
+              message: null,
+            ),
+          );
+        }
+      case Failure(message: final message):
+        if (!isClosed) {
+          emit(
+            state.copyWith(
+              status: state.persistedDates.isEmpty
+                  ? HolidaysSettingsStatus.failure
+                  : HolidaysSettingsStatus.success,
+              isRefreshing: false,
+              message: message,
+            ),
+          );
+        }
+    }
+  }
+
+  void showPreviousMonth() {
+    final current = state.visibleMonth ?? _monthStart(DateTime.now());
+    emit(
+      state.copyWith(
+        visibleMonth: DateTime(current.year, current.month - 1),
+      ),
+    );
+  }
+
+  void showNextMonth() {
+    final current = state.visibleMonth ?? _monthStart(DateTime.now());
+    emit(
+      state.copyWith(
+        visibleMonth: DateTime(current.year, current.month + 1),
+      ),
+    );
+  }
+
+  void toggleDate(DateTime day) {
+    final key = _ymd(day);
+    final next = Set<String>.from(state.selectedDates);
+    if (next.contains(key)) {
+      next.remove(key);
+    } else {
+      next.add(key);
+    }
+    emit(state.copyWith(selectedDates: next, message: null));
+  }
+
+  Future<Result<CompanyHolidays>> save() async {
+    final from = state.rangeFrom ?? defaultRange().$1;
+    final to = state.rangeTo ?? defaultRange().$2;
+    final dates = state.selectedDates.toList()..sort();
+
+    emit(
+      state.copyWith(
+        status: HolidaysSettingsStatus.saving,
+        message: null,
+      ),
+    );
+
+    final result = await _replaceHolidays(
+      CompanyHolidaysReplace(from: from, to: to, dates: dates),
+    );
+
+    switch (result) {
+      case Success(data: final data):
+        _sessionQueryCache.set(_cacheKey, data);
+        await _syncHolidays.persistLocal(_companyId, data.dates);
+        final saved = data.dates.toSet();
+        if (!isClosed) {
+          emit(
+            state.copyWith(
+              status: HolidaysSettingsStatus.success,
+              persistedDates: saved,
+              selectedDates: Set<String>.from(saved),
+              message: null,
+            ),
+          );
+        }
+      case Failure(message: final message):
+        if (!isClosed) {
+          emit(
+            state.copyWith(
+              status: HolidaysSettingsStatus.failure,
+              message: message,
+            ),
+          );
+        }
+    }
+    return result;
+  }
+}

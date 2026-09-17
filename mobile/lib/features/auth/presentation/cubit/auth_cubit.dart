@@ -10,6 +10,7 @@ import 'package:mobile/features/auth/domain/usecases/get_current_user_usecase.da
 import 'package:mobile/features/auth/domain/usecases/logout_all_devices_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/logout_usecase.dart';
 import 'package:mobile/features/auth/domain/usecases/restore_session_usecase.dart';
+import 'package:mobile/features/settings/domain/services/holiday_calendar_cache.dart';
 
 enum AuthStatus {
   unknown,
@@ -57,16 +58,19 @@ class AuthCubit extends Cubit<AuthState> {
     required LogoutAllDevicesUseCase logoutAllDevicesUseCase,
     required AuthSessionService authSessionService,
     required SessionQueryCache sessionQueryCache,
+    HolidayCalendarCache? holidayCalendarCache,
   })  : _restoreSessionUseCase = restoreSessionUseCase,
         _getCurrentUserUseCase = getCurrentUserUseCase,
         _logoutUseCase = logoutUseCase,
         _logoutAllDevicesUseCase = logoutAllDevicesUseCase,
         _authSessionService = authSessionService,
         _sessionQueryCache = sessionQueryCache,
+        _holidayCalendarCache = holidayCalendarCache,
         super(const AuthState()) {
     _sessionSubscription =
         _authSessionService.onSessionExpired.listen((_) {
       _sessionQueryCache.clear();
+      _holidayCalendarCache?.clear();
       emit(
         const AuthState(
           status: AuthStatus.unauthenticated,
@@ -82,6 +86,7 @@ class AuthCubit extends Cubit<AuthState> {
   final LogoutAllDevicesUseCase _logoutAllDevicesUseCase;
   final AuthSessionService _authSessionService;
   final SessionQueryCache _sessionQueryCache;
+  final HolidayCalendarCache? _holidayCalendarCache;
   StreamSubscription<void>? _sessionSubscription;
 
   Future<void> restoreSession() async {
@@ -150,6 +155,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logout() async {
     final result = await _logoutUseCase();
     _sessionQueryCache.clear();
+    _holidayCalendarCache?.clear();
 
     switch (result) {
       case Success():
@@ -171,6 +177,7 @@ class AuthCubit extends Cubit<AuthState> {
   Future<void> logoutAllDevices() async {
     final result = await _logoutAllDevicesUseCase();
     _sessionQueryCache.clear();
+    _holidayCalendarCache?.clear();
 
     switch (result) {
       case Success():

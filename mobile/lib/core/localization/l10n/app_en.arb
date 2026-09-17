@@ -716,6 +716,23 @@
   "settingsTechnicianNoSectionsTitle": "No sections available",
   "settingsTechnicianNoSectionsBody": "No application sections are currently enabled for your account. Please contact your administrator.",
   "settingsOvertimeTitle": "Overtime Settings",
+  "settingsHolidaysTitle": "Official Holidays",
+  "settingsHolidaysSubtitle": "Select company official holidays on the Gregorian calendar. These days count as non-working for overtime, in addition to Friday.",
+  "settingsHolidaysPreviousMonth": "Previous month",
+  "settingsHolidaysNextMonth": "Next month",
+  "settingsHolidaysSelectedCount": "{count} selected",
+  "@settingsHolidaysSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "settingsHolidaysWeekdaySat": "Sat",
+  "settingsHolidaysWeekdaySun": "Sun",
+  "settingsHolidaysWeekdayMon": "Mon",
+  "settingsHolidaysWeekdayTue": "Tue",
+  "settingsHolidaysWeekdayWed": "Wed",
+  "settingsHolidaysWeekdayThu": "Thu",
+  "settingsHolidaysWeekdayFri": "Fri",
   "settingsOvertimeVoiceNotesTitle": "Voice Notes",
   "settingsOvertimeVoiceNotesSubtitle": "Configure optional voice notes for overtime journey stages.",
   "settingsOvertimeVoiceMaxDurationTitle": "Maximum Voice Recording Duration",

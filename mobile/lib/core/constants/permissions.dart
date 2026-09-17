@@ -61,6 +61,7 @@ class Permissions {
 
   static const String settingsView = 'settings:view';
   static const String settingsManage = 'settings:manage';
+  static const String settingsManageHolidays = 'settings:manage_holidays';
 
   static const String dashboardView = 'dashboard:view';
 }

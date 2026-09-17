@@ -1917,6 +1917,45 @@ class AppLocalizationsAr extends AppLocalizations {
   String get settingsOvertimeTitle => 'إعدادات العمل الإضافي';
 
   @override
+  String get settingsHolidaysTitle => 'الإجازات الرسمية';
+
+  @override
+  String get settingsHolidaysSubtitle =>
+      'حدد الإجازات الرسمية للشركة على التقويم الميلادي. تُحتسب هذه الأيام غير عمل للعمل الإضافي، بالإضافة إلى يوم الجمعة.';
+
+  @override
+  String get settingsHolidaysPreviousMonth => 'الشهر السابق';
+
+  @override
+  String get settingsHolidaysNextMonth => 'الشهر التالي';
+
+  @override
+  String settingsHolidaysSelectedCount(int count) {
+    return '$count محدد';
+  }
+
+  @override
+  String get settingsHolidaysWeekdaySat => 'س';
+
+  @override
+  String get settingsHolidaysWeekdaySun => 'ح';
+
+  @override
+  String get settingsHolidaysWeekdayMon => 'ن';
+
+  @override
+  String get settingsHolidaysWeekdayTue => 'ث';
+
+  @override
+  String get settingsHolidaysWeekdayWed => 'ر';
+
+  @override
+  String get settingsHolidaysWeekdayThu => 'خ';
+
+  @override
+  String get settingsHolidaysWeekdayFri => 'ج';
+
+  @override
   String get settingsOvertimeVoiceNotesTitle => 'الملاحظات الصوتية';
 
   @override

@@ -311,3 +311,47 @@ class TechnicianInterfaceConfigUpdate extends Equatable {
   @override
   List<Object?> get props => [overtime, workOrders, profile];
 }
+
+/// Company official holiday calendar (Gregorian YYYY-MM-DD keys).
+class CompanyHolidays extends Equatable {
+  const CompanyHolidays({
+    required this.dates,
+    this.holidays = const [],
+  });
+
+  final List<String> dates;
+  final List<CompanyHoliday> holidays;
+
+  @override
+  List<Object?> get props => [dates, holidays];
+}
+
+class CompanyHoliday extends Equatable {
+  const CompanyHoliday({
+    required this.id,
+    required this.date,
+    this.name,
+  });
+
+  final String id;
+  final String date;
+  final String? name;
+
+  @override
+  List<Object?> get props => [id, date, name];
+}
+
+class CompanyHolidaysReplace extends Equatable {
+  const CompanyHolidaysReplace({
+    required this.from,
+    required this.to,
+    required this.dates,
+  });
+
+  final String from;
+  final String to;
+  final List<String> dates;
+
+  @override
+  List<Object?> get props => [from, to, dates];
+}

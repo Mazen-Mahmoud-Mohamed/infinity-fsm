@@ -1,4 +1,5 @@
-import { body } from 'express-validator';
+import { body, param, query } from 'express-validator';
+import { isValidYmdDate } from './holiday.date.js';
 
 
 
@@ -196,3 +197,31 @@ export const updateTechnicianInterfaceSettingsValidator = [
 
 ];
 
+
+const ymdCheck = (value) => {
+  if (!isValidYmdDate(String(value || '').trim())) {
+    throw new Error('must be a valid Gregorian YYYY-MM-DD date');
+  }
+  return true;
+};
+
+export const listHolidaysValidator = [
+  query('from').optional().isString().custom(ymdCheck),
+  query('to').optional().isString().custom(ymdCheck),
+];
+
+export const createHolidayValidator = [
+  body('date').isString().custom(ymdCheck),
+  body('name').optional({ nullable: true }).isString().trim().isLength({ max: 200 }),
+];
+
+export const replaceHolidaysValidator = [
+  body('from').isString().custom(ymdCheck),
+  body('to').isString().custom(ymdCheck),
+  body('dates').isArray().withMessage('dates must be an array'),
+  body('dates.*').isString().custom(ymdCheck),
+];
+
+export const deleteHolidayValidator = [
+  param('date').isString().custom(ymdCheck),
+];

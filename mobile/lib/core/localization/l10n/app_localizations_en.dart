@@ -1917,6 +1917,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsOvertimeTitle => 'Overtime Settings';
 
   @override
+  String get settingsHolidaysTitle => 'Official Holidays';
+
+  @override
+  String get settingsHolidaysSubtitle =>
+      'Select company official holidays on the Gregorian calendar. These days count as non-working for overtime, in addition to Friday.';
+
+  @override
+  String get settingsHolidaysPreviousMonth => 'Previous month';
+
+  @override
+  String get settingsHolidaysNextMonth => 'Next month';
+
+  @override
+  String settingsHolidaysSelectedCount(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get settingsHolidaysWeekdaySat => 'Sat';
+
+  @override
+  String get settingsHolidaysWeekdaySun => 'Sun';
+
+  @override
+  String get settingsHolidaysWeekdayMon => 'Mon';
+
+  @override
+  String get settingsHolidaysWeekdayTue => 'Tue';
+
+  @override
+  String get settingsHolidaysWeekdayWed => 'Wed';
+
+  @override
+  String get settingsHolidaysWeekdayThu => 'Thu';
+
+  @override
+  String get settingsHolidaysWeekdayFri => 'Fri';
+
+  @override
   String get settingsOvertimeVoiceNotesTitle => 'Voice Notes';
 
   @override

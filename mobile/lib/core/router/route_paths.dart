@@ -56,6 +56,7 @@ class RoutePaths {
   static const String settings = '/settings';
   static const String settingsCompany = '/settings/company';
   static const String settingsOvertime = '/settings/overtime';
+  static const String settingsHolidays = '/settings/holidays';
   static const String settingsSystem = '/settings/system';
   static const String settingsLanguage = '/settings/language';
   static const String settingsTheme = '/settings/theme';

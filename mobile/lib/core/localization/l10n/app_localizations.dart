@@ -3800,6 +3800,78 @@ abstract class AppLocalizations {
   /// **'Overtime Settings'**
   String get settingsOvertimeTitle;
 
+  /// No description provided for @settingsHolidaysTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Official Holidays'**
+  String get settingsHolidaysTitle;
+
+  /// No description provided for @settingsHolidaysSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Select company official holidays on the Gregorian calendar. These days count as non-working for overtime, in addition to Friday.'**
+  String get settingsHolidaysSubtitle;
+
+  /// No description provided for @settingsHolidaysPreviousMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous month'**
+  String get settingsHolidaysPreviousMonth;
+
+  /// No description provided for @settingsHolidaysNextMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Next month'**
+  String get settingsHolidaysNextMonth;
+
+  /// No description provided for @settingsHolidaysSelectedCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String settingsHolidaysSelectedCount(int count);
+
+  /// No description provided for @settingsHolidaysWeekdaySat.
+  ///
+  /// In en, this message translates to:
+  /// **'Sat'**
+  String get settingsHolidaysWeekdaySat;
+
+  /// No description provided for @settingsHolidaysWeekdaySun.
+  ///
+  /// In en, this message translates to:
+  /// **'Sun'**
+  String get settingsHolidaysWeekdaySun;
+
+  /// No description provided for @settingsHolidaysWeekdayMon.
+  ///
+  /// In en, this message translates to:
+  /// **'Mon'**
+  String get settingsHolidaysWeekdayMon;
+
+  /// No description provided for @settingsHolidaysWeekdayTue.
+  ///
+  /// In en, this message translates to:
+  /// **'Tue'**
+  String get settingsHolidaysWeekdayTue;
+
+  /// No description provided for @settingsHolidaysWeekdayWed.
+  ///
+  /// In en, this message translates to:
+  /// **'Wed'**
+  String get settingsHolidaysWeekdayWed;
+
+  /// No description provided for @settingsHolidaysWeekdayThu.
+  ///
+  /// In en, this message translates to:
+  /// **'Thu'**
+  String get settingsHolidaysWeekdayThu;
+
+  /// No description provided for @settingsHolidaysWeekdayFri.
+  ///
+  /// In en, this message translates to:
+  /// **'Fri'**
+  String get settingsHolidaysWeekdayFri;
+
   /// No description provided for @settingsOvertimeVoiceNotesTitle.
   ///
   /// In en, this message translates to:

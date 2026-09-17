@@ -20,6 +20,7 @@ import 'package:mobile/features/overtime/domain/entities/pending_overtime_action
 import 'package:mobile/features/overtime/domain/repositories/overtime_repository.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_calculator.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
+import 'package:mobile/features/settings/domain/services/holiday_calendar_cache.dart';
 
 class OvertimeRepositoryImpl implements OvertimeRepository {
   OvertimeRepositoryImpl({
@@ -29,12 +30,14 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
     required AddressResolverService addressResolver,
     required GpsAddressSyncService gpsAddressSync,
     required OvertimeUploadPolicyService uploadPolicy,
+    HolidayCalendarCache? holidayCalendarCache,
   }) : _remote = remote,
        _local = local,
        _connectivity = connectivity,
        _addressResolver = addressResolver,
        _gpsAddressSync = gpsAddressSync,
-       _uploadPolicy = uploadPolicy;
+       _uploadPolicy = uploadPolicy,
+       _holidayCalendarCache = holidayCalendarCache;
 
   final OvertimeRemoteDataSource _remote;
   final OvertimeLocalDataSource _local;
@@ -42,6 +45,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   final AddressResolverService _addressResolver;
   final GpsAddressSyncService _gpsAddressSync;
   final OvertimeUploadPolicyService _uploadPolicy;
+  final HolidayCalendarCache? _holidayCalendarCache;
 
   Future<bool> _shouldAttemptRemoteUpload({bool force = false}) =>
       _uploadPolicy.shouldAttemptImmediateUpload(force: force);
@@ -58,9 +62,27 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
   /// Shared OT split (must match backend `calculateOvertimeDurations`).
   static OvertimeDurationResult calculateDurations(
     DateTime startAt,
+    DateTime endAt, {
+    Set<String>? customHolidayDates,
+  }) {
+    return OvertimeCalculator.calculate(
+      startAt,
+      endAt,
+      customHolidayDates: customHolidayDates,
+    );
+  }
+
+  OvertimeDurationResult _calculateDurations(
+    DateTime startAt,
     DateTime endAt,
   ) {
-    return OvertimeCalculator.calculate(startAt, endAt);
+    final holidays = _holidayCalendarCache?.dates;
+    return calculateDurations(
+      startAt,
+      endAt,
+      customHolidayDates:
+          holidays == null || holidays.isEmpty ? null : holidays,
+    );
   }
 
   GpsSnapshot _gpsWithRecordedAt(GpsSnapshot gps, DateTime recordedAt) {
@@ -944,7 +966,7 @@ class OvertimeRepositoryImpl implements OvertimeRepository {
         ? endAt
         : startAt.add(const Duration(seconds: 1));
     final durationSeconds = durationSecondsBetween(startAt, safeEndAt);
-    final durations = calculateDurations(startAt, safeEndAt);
+    final durations = _calculateDurations(startAt, safeEndAt);
 
     final resolvedClientRequestId =
         (clientRequestId != null && clientRequestId.trim().isNotEmpty)

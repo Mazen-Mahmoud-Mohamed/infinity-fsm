@@ -200,6 +200,10 @@ class PermissionChecker {
     return hasPermission(Permissions.settingsManage);
   }
 
+  bool canManageHolidays() {
+    return hasPermission(Permissions.settingsManageHolidays);
+  }
+
   bool canViewDashboard() {
     return hasPermission(Permissions.dashboardView);
   }

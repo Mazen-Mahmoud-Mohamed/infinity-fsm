@@ -8,6 +8,7 @@ import {
 import {
   eligibleOvertimeMinutesByCalendarDay,
   isOfficialWorkingDay,
+  OFFICIAL_WORKING_HOURS,
 } from './overtime.calculation.js';
 import {
   EXPORT_LANG,
@@ -211,21 +212,31 @@ function parseYmdKey(key) {
 }
 
 /**
- * Official non-working calendar days (Africa/Cairo policy) that contributed
- * eligible overtime on this session's start/end range.
+ * Official non-working calendar days (Africa/Cairo policy + company holidays)
+ * that contributed eligible overtime on this session's start/end range.
  * Status is not applied here — callers must restrict to APPROVED sessions
  * with approved overtime minutes before counting employee-summary days.
+ *
+ * @param {object} record
+ * @param {object} [workingHours] hours policy optionally including customHolidayDates
  */
-export function countedVacationDayKeysForRecord(record) {
+export function countedVacationDayKeysForRecord(
+  record,
+  workingHours = OFFICIAL_WORKING_HOURS
+) {
   const startAt = record?.startAt;
   const endAt = record?.endAt;
   if (!startAt || !endAt) return [];
-  const byDay = eligibleOvertimeMinutesByCalendarDay(startAt, endAt);
+  const byDay = eligibleOvertimeMinutesByCalendarDay(
+    startAt,
+    endAt,
+    workingHours
+  );
   const keys = [];
   for (const [key, minutes] of Object.entries(byDay)) {
     if (!Number.isFinite(Number(minutes)) || Number(minutes) <= 0) continue;
     const ymd = parseYmdKey(key);
-    if (ymd && !isOfficialWorkingDay(ymd)) keys.push(key);
+    if (ymd && !isOfficialWorkingDay(ymd, workingHours)) keys.push(key);
   }
   return keys;
 }
@@ -519,8 +530,13 @@ function computeStats(records) {
 
 /**
  * Aggregate each overtime record exactly once into its technician summary.
+ * @param {object[]} [records]
+ * @param {object} [workingHours]
  */
-export function computeEmployeeSummaries(records = []) {
+export function computeEmployeeSummaries(
+  records = [],
+  workingHours = OFFICIAL_WORKING_HOURS
+) {
   const employees = new Map();
 
   for (const record of records || []) {
@@ -580,7 +596,10 @@ export function computeEmployeeSummaries(records = []) {
         summary.totalNormalApprovedMinutes += approvedMinutes;
       }
       if (approvedMinutes > 0) {
-        for (const dayKey of countedVacationDayKeysForRecord(record)) {
+        for (const dayKey of countedVacationDayKeysForRecord(
+          record,
+          workingHours
+        )) {
           summary.vacationDayKeys.add(dayKey);
         }
       }
@@ -961,6 +980,7 @@ export async function buildOvertimeExcelWorkbook({
   appVersion = pkg.version || '1.0.0',
   mode = EXPORT_MODE.DETAILED,
   language = EXPORT_LANG.EN,
+  workingHours = OFFICIAL_WORKING_HOURS,
 } = {}) {
   const lang = normalizeExportLanguage(language);
   const t = excelStrings(lang);
@@ -973,7 +993,7 @@ export async function buildOvertimeExcelWorkbook({
 
   const limited = records.slice(0, MAX_EXPORT_ROWS);
   const stats = computeStats(limited);
-  const employeeSummaries = computeEmployeeSummaries(limited);
+  const employeeSummaries = computeEmployeeSummaries(limited, workingHours);
   const filterLines = buildFilterLines(filters, lang);
   const exportMode =
     String(mode || '').toLowerCase() === EXPORT_MODE.SUMMARY

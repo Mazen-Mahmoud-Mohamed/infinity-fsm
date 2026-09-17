@@ -80,10 +80,57 @@ export function getZonedWeekdayShort(ymd, timeZone) {
 /**
  * Whether the calendar day has official working hours.
  * Friday is never a working day.
+ * Optional company custom holidays (YYYY-MM-DD Set) are also non-working.
+ *
+ * Non-working days contribute ZERO working overlap, so ALL session time on that
+ * calendar day is overtime-eligible (same semantics as Friday — up to 24h).
+ *
+ * @param {{ year: number, month: number, day: number }} ymd
+ * @param {typeof OFFICIAL_WORKING_HOURS & { customHolidayDates?: Set<string> }} [hours]
  */
 export function isOfficialWorkingDay(ymd, hours = OFFICIAL_WORKING_HOURS) {
+  const key = formatDateKeyYmd(ymd);
+  if (hours.customHolidayDates instanceof Set && hours.customHolidayDates.has(key)) {
+    return false;
+  }
   const weekday = getZonedWeekdayShort(ymd, hours.timeZone);
   return !hours.nonWorkingWeekdays.includes(weekday);
+}
+
+/**
+ * Friday OR company custom holiday — full non-working calendar day.
+ * Never double-counts (Friday + holiday is still one non-working day).
+ *
+ * @param {{ year: number, month: number, day: number }} ymd
+ * @param {typeof OFFICIAL_WORKING_HOURS & { customHolidayDates?: Set<string> }} [hours]
+ */
+export function isNonWorkingCalendarDay(ymd, hours = OFFICIAL_WORKING_HOURS) {
+  return !isOfficialWorkingDay(ymd, hours);
+}
+
+/**
+ * Attach a Set of company holiday YYYY-MM-DD keys to the working-hours policy.
+ * Custom holidays are additional non-working days with identical semantics to
+ * Friday: no 09:00–17:00 window; entire session overlap that day is eligible OT.
+ *
+ * @param {Iterable<string>|Set<string>|null|undefined} dateKeys
+ * @param {typeof OFFICIAL_WORKING_HOURS} [hours]
+ */
+export function withCustomHolidayDates(dateKeys, hours = OFFICIAL_WORKING_HOURS) {
+  const customHolidayDates =
+    dateKeys instanceof Set ? dateKeys : new Set(dateKeys || []);
+  return {
+    ...hours,
+    customHolidayDates,
+  };
+}
+
+/**
+ * @param {{ year: number, month: number, day: number }} ymd
+ * @returns {string}
+ */
+export function toYmdKey(ymd) {
+  return formatDateKeyYmd(ymd);
 }
 
 /**
@@ -267,7 +314,7 @@ function isValidSessionRange(startAt, endAt) {
  * Eligible overtime minutes for each calendar day the session spans, using the
  * same rules as calculateOvertimeDurations:
  *   eligible = session time outside official hours on working days
- *   Friday (non-working) = all session time that day is eligible
+ *   Friday OR custom holiday (non-working) = all session time that day is eligible
  *
  * Does not proportionally split a session total across wall-clock overlap.
  *
@@ -403,7 +450,10 @@ export function allocateOvertimeTrendMinutesByCalendarDay(
 /**
  * Overlap of [sessionStart, sessionEnd) with official hours for one calendar day
  * in the company timezone. Returns exact milliseconds.
- * Non-working days (Friday) contribute 0 working minutes.
+ *
+ * Non-working days (Friday OR company custom holidays) contribute 0 working
+ * minutes, so the session's entire overlap on that calendar day is eligible OT
+ * via eligible = total − working.
  *
  * @param {Date} sessionStart
  * @param {Date} sessionEnd

@@ -156,4 +156,31 @@ class SettingsRemoteDataSource {
       response.data?['data'] as Map<String, dynamic>? ?? const {},
     );
   }
+
+  Future<CompanyHolidays> listHolidays({String? from, String? to}) async {
+    final response = await _client.get<Map<String, dynamic>>(
+      ApiConstants.settingsHolidays,
+      queryParameters: {
+        if (from != null && from.isNotEmpty) 'from': from,
+        if (to != null && to.isNotEmpty) 'to': to,
+      },
+    );
+    return CompanyHolidaysModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
+  Future<CompanyHolidays> replaceHolidays(CompanyHolidaysReplace input) async {
+    final response = await _client.put<Map<String, dynamic>>(
+      ApiConstants.settingsHolidays,
+      data: {
+        'from': input.from,
+        'to': input.to,
+        'dates': input.dates,
+      },
+    );
+    return CompanyHolidaysModel.fromJson(
+      response.data?['data'] as Map<String, dynamic>? ?? const {},
+    );
+  }
 }

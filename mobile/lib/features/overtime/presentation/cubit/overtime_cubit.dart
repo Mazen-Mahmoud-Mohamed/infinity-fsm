@@ -33,6 +33,7 @@ import 'package:mobile/features/overtime/data/models/pending_overtime_action_mod
 import 'package:mobile/features/overtime/domain/constants/overtime_media_config.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_photo_compressor.dart';
 import 'package:mobile/features/overtime/domain/services/overtime_upload_policy_service.dart';
+import 'package:mobile/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:mobile/features/settings/domain/entities/settings_entities.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 
@@ -123,6 +124,8 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
     required GetOvertimeMediaConfigUseCase getMediaConfigUseCase,
     required OvertimeUploadPolicyService uploadPolicyService,
     required LoggerService loggerService,
+    required AuthCubit authCubit,
+    required SyncCompanyHolidaysUseCase syncCompanyHolidays,
     OvertimeSessionReminderService? reminderService,
   }) : _getRunningOvertimeUseCase = getRunningOvertimeUseCase,
        _startOvertimeUseCase = startOvertimeUseCase,
@@ -143,6 +146,8 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
        _getMediaConfigUseCase = getMediaConfigUseCase,
        _uploadPolicyService = uploadPolicyService,
        _logger = loggerService,
+       _authCubit = authCubit,
+       _syncCompanyHolidays = syncCompanyHolidays,
        _reminderService = reminderService,
        super(const OvertimeState());
 
@@ -169,6 +174,8 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
   final GetOvertimeMediaConfigUseCase _getMediaConfigUseCase;
   final OvertimeUploadPolicyService _uploadPolicyService;
   final LoggerService _logger;
+  final AuthCubit _authCubit;
+  final SyncCompanyHolidaysUseCase _syncCompanyHolidays;
   final OvertimeSessionReminderService? _reminderService;
 
   Timer? _tickTimer;
@@ -261,6 +268,7 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
 
     unawaited(_deviceTimeGuard.syncSecurityEvents());
     unawaited(_refreshMediaConfig());
+    unawaited(_refreshHolidays());
     await _fetchRunning();
     if (!isClosed) {
       emit(state.copyWith(isRefreshing: false));
@@ -270,6 +278,12 @@ class OvertimeCubit extends Cubit<OvertimeState> with WidgetsBindingObserver {
   Future<void> refresh() => initialize();
 
   Future<void> refreshMediaConfig() => _refreshMediaConfig();
+
+  Future<void> _refreshHolidays() async {
+    final companyId = _authCubit.state.user?.companyId ?? '';
+    if (companyId.isEmpty) return;
+    await _syncCompanyHolidays(companyId: companyId);
+  }
 
   Future<void> _refreshMediaConfig() async {
     final cached = _sessionQueryCache.get<OvertimeMediaConfigEntity>(

@@ -5,7 +5,8 @@ import 'package:mobile/features/settings/domain/entities/settings_entities.dart'
 import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
 
 class SettingsRepositoryImpl implements SettingsRepository {
-  SettingsRepositoryImpl({required this._remote});
+  SettingsRepositoryImpl({required SettingsRemoteDataSource remote})
+      : _remote = remote;
 
   final SettingsRemoteDataSource _remote;
 
@@ -107,6 +108,29 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<Result<TechnicianInterfaceConfig>> getTechnicianInterfaceConfig() async {
     try {
       return Success(await _remote.getTechnicianInterfaceConfig());
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
+
+  @override
+  Future<Result<CompanyHolidays>> listHolidays({
+    String? from,
+    String? to,
+  }) async {
+    try {
+      return Success(await _remote.listHolidays(from: from, to: to));
+    } on Object catch (e) {
+      return NetworkErrorMapper.map(e);
+    }
+  }
+
+  @override
+  Future<Result<CompanyHolidays>> replaceHolidays(
+    CompanyHolidaysReplace input,
+  ) async {
+    try {
+      return Success(await _remote.replaceHolidays(input));
     } on Object catch (e) {
       return NetworkErrorMapper.map(e);
     }

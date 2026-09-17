@@ -14,9 +14,12 @@ import { ValidationError } from '../../../shared/errors/AppError.js';
 import {
   allocateOvertimeTrendMinutesByCalendarDay,
   getZonedParts,
+  toYmdKey,
+  withCustomHolidayDates,
   zonedLocalToUtc,
 } from '../../business/overtime/overtime.calculation.js';
 import { OFFICIAL_WORKING_HOURS } from '../../business/overtime/working-hours.policy.js';
+import holidayService from '../settings/holiday.service.js';
 
 const COMPANY_TZ = OFFICIAL_WORKING_HOURS.timeZone;
 
@@ -141,8 +144,16 @@ function overtimeRecordApprovedKpiMinutes(record) {
 /**
  * Build daily overtime trend buckets using official overtime rules per
  * calendar day (Africa/Cairo), not wall-clock proportional splitting.
+ * Pass company `workingHours` (with customHolidayDates) so multi-day
+ * allocation treats custom holidays like Friday (full-day OT share).
+ *
+ * @param {object[]} records
+ * @param {typeof OFFICIAL_WORKING_HOURS} [workingHours]
  */
-function buildOvertimeTrendDayMap(records) {
+function buildOvertimeTrendDayMap(
+  records,
+  workingHours = OFFICIAL_WORKING_HOURS
+) {
   /** @type {Record<string, number>} */
   const otMap = {};
 
@@ -165,7 +176,8 @@ function buildOvertimeTrendDayMap(records) {
     const dayBuckets = allocateOvertimeTrendMinutesByCalendarDay(
       startAt,
       endAt,
-      totalMinutes
+      totalMinutes,
+      workingHours
     );
 
     for (const [key, minutes] of Object.entries(dayBuckets)) {
@@ -337,8 +349,12 @@ function resolveTrendWindow(from, to) {
 /**
  * Merge Mongo same-day groups with Node-allocated multi-day sessions.
  * @param {{ sameDay?: Array<{ _id: string, minutes: number }>, multiDay?: object[] } | null | undefined} facetRow
+ * @param {typeof OFFICIAL_WORKING_HOURS} [workingHours]
  */
-function mergeOvertimeTrendFacetToDayMap(facetRow) {
+function mergeOvertimeTrendFacetToDayMap(
+  facetRow,
+  workingHours = OFFICIAL_WORKING_HOURS
+) {
   /** @type {Record<string, number>} */
   const otMap = {};
   const sameDay = facetRow?.sameDay || [];
@@ -349,7 +365,10 @@ function mergeOvertimeTrendFacetToDayMap(facetRow) {
     otMap[key] = (otMap[key] || 0) + minutes;
   }
 
-  const multiMap = buildOvertimeTrendDayMap(facetRow?.multiDay || []);
+  const multiMap = buildOvertimeTrendDayMap(
+    facetRow?.multiDay || [],
+    workingHours
+  );
   for (const [key, minutes] of Object.entries(multiMap)) {
     otMap[key] = (otMap[key] || 0) + minutes;
   }
@@ -1205,6 +1224,18 @@ class DashboardService {
     const startAtUpper =
       to.getTime() <= trendTo.getTime() ? to : trendTo;
 
+    const holidayFrom = toYmdKey(getZonedParts(trendFrom, COMPANY_TZ));
+    const holidayTo = toYmdKey(getZonedParts(trendTo, COMPANY_TZ));
+    const holidayDates = await holidayService.getDateKeysForCompany(
+      companyId,
+      holidayFrom,
+      holidayTo
+    );
+    const workingHours = withCustomHolidayDates(
+      holidayDates,
+      OFFICIAL_WORKING_HOURS
+    );
+
     /** @type {Record<string, unknown>} */
     const match = {
       companyId,
@@ -1267,7 +1298,7 @@ class DashboardService {
       },
     ]);
 
-    return mergeOvertimeTrendFacetToDayMap(facetRow);
+    return mergeOvertimeTrendFacetToDayMap(facetRow, workingHours);
   }
 
   /**

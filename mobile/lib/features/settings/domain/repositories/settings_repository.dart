@@ -30,4 +30,8 @@ abstract class SettingsRepository {
   );
 
   Future<Result<TechnicianInterfaceConfig>> getTechnicianInterfaceConfig();
+
+  Future<Result<CompanyHolidays>> listHolidays({String? from, String? to});
+
+  Future<Result<CompanyHolidays>> replaceHolidays(CompanyHolidaysReplace input);
 }

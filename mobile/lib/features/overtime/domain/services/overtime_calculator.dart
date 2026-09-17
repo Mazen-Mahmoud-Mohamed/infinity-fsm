@@ -17,6 +17,7 @@ class OfficialWorkingHours {
     required this.startMinute,
     required this.endHour,
     required this.endMinute,
+    this.customHolidayDates = const <String>{},
   });
 
   /// Company IANA timezone (Cairo, Egypt).
@@ -26,6 +27,9 @@ class OfficialWorkingHours {
   final int startMinute;
   final int endHour;
   final int endMinute;
+
+  /// Gregorian YYYY-MM-DD Cairo calendar keys for company official holidays.
+  final Set<String> customHolidayDates;
 
   int get startMinutesOfDay => startHour * 60 + startMinute;
 
@@ -39,9 +43,44 @@ class OfficialWorkingHours {
     endMinute: 0,
   );
 
+  OfficialWorkingHours withCustomHolidayDates(Iterable<String> dates) {
+    return OfficialWorkingHours(
+      startHour: startHour,
+      startMinute: startMinute,
+      endHour: endHour,
+      endMinute: endMinute,
+      customHolidayDates: Set<String>.unmodifiable(
+        dates.map((d) => d.trim()).where((d) => d.isNotEmpty),
+      ),
+    );
+  }
+
   /// Friday has no official working hours (Cairo calendar weekday).
-  static bool isOfficialWorkingDay(DateTime day) =>
-      day.weekday != DateTime.friday;
+  /// Custom company holidays are an additional non-working condition —
+  /// identical semantics to Friday: no 09:00–17:00 window; all session
+  /// overlap on that calendar day is overtime-eligible (up to 24h).
+  static bool isOfficialWorkingDay(
+    DateTime day, {
+    Set<String>? customHolidayDates,
+  }) {
+    if (day.weekday == DateTime.friday) return false;
+    final holidays = customHolidayDates;
+    if (holidays != null && holidays.isNotEmpty) {
+      final key =
+          '${day.year.toString().padLeft(4, '0')}-'
+          '${day.month.toString().padLeft(2, '0')}-'
+          '${day.day.toString().padLeft(2, '0')}';
+      if (holidays.contains(key)) return false;
+    }
+    return true;
+  }
+
+  /// Friday OR custom holiday — full non-working calendar day.
+  static bool isNonWorkingCalendarDay(
+    DateTime day, {
+    Set<String>? customHolidayDates,
+  }) =>
+      !isOfficialWorkingDay(day, customHolidayDates: customHolidayDates);
 }
 
 /// Result of [OvertimeCalculator.calculate].
@@ -80,7 +119,11 @@ class OvertimeCalculator {
     DateTime startAt,
     DateTime endAt, {
     OfficialWorkingHours hours = OfficialWorkingHours.current,
+    Set<String>? customHolidayDates,
   }) {
+    final effectiveHours = customHolidayDates == null
+        ? hours
+        : hours.withCustomHolidayDates(customHolidayDates);
     if (!endAt.isAfter(startAt)) {
       return const OvertimeDurationResult(
         totalDurationMinutes: 0,
@@ -101,7 +144,13 @@ class OvertimeCalculator {
     final lastDay = tz.TZDateTime(location, end.year, end.month, end.day);
 
     while (!cursor.isAfter(lastDay)) {
-      workingMs += _workingOverlapMsForDay(start, end, cursor, hours, location);
+      workingMs += _workingOverlapMsForDay(
+        start,
+        end,
+        cursor,
+        effectiveHours,
+        location,
+      );
       cursor = tz.TZDateTime(
         location,
         cursor.year,
@@ -128,7 +177,12 @@ class OvertimeCalculator {
     OfficialWorkingHours hours,
     tz.Location location,
   ) {
-    if (!OfficialWorkingHours.isOfficialWorkingDay(day)) {
+    if (!OfficialWorkingHours.isOfficialWorkingDay(
+      day,
+      customHolidayDates: hours.customHolidayDates,
+    )) {
+      // Friday / custom holiday: no official window → 0 working ms so the
+      // entire day segment is overtime-eligible (eligible = total − working).
       return 0;
     }
 

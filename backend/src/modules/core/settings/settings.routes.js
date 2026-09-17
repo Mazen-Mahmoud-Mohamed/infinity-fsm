@@ -9,6 +9,10 @@ import {
   updateOrganizationSettingsValidator,
   updateOvertimeSettingsValidator,
   updateTechnicianInterfaceSettingsValidator,
+  listHolidaysValidator,
+  createHolidayValidator,
+  replaceHolidaysValidator,
+  deleteHolidayValidator,
 } from './settings.validator.js';
 
 const router = Router();
@@ -80,6 +84,34 @@ router.put(
 router.get(
   '/technician-interface/config',
   settingsController.getTechnicianInterfaceConfig
+);
+
+// Official holidays — authenticated company read; manage requires permission.
+router.get(
+  '/holidays',
+  validate(listHolidaysValidator),
+  settingsController.listHolidays
+);
+
+router.put(
+  '/holidays',
+  requirePermission(PERMISSIONS.SETTINGS_MANAGE_HOLIDAYS),
+  validate(replaceHolidaysValidator),
+  settingsController.replaceHolidays
+);
+
+router.post(
+  '/holidays',
+  requirePermission(PERMISSIONS.SETTINGS_MANAGE_HOLIDAYS),
+  validate(createHolidayValidator),
+  settingsController.createHoliday
+);
+
+router.delete(
+  '/holidays/:date',
+  requirePermission(PERMISSIONS.SETTINGS_MANAGE_HOLIDAYS),
+  validate(deleteHolidayValidator),
+  settingsController.deleteHoliday
 );
 
 export default router;

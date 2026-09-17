@@ -716,6 +716,23 @@
   "settingsTechnicianNoSectionsTitle": "لا توجد أقسام متاحة حاليًا",
   "settingsTechnicianNoSectionsBody": "لا توجد أقسام مفعّلة حاليًا لحسابك. يرجى التواصل مع المسؤول.",
   "settingsOvertimeTitle": "إعدادات العمل الإضافي",
+  "settingsHolidaysTitle": "الإجازات الرسمية",
+  "settingsHolidaysSubtitle": "حدد الإجازات الرسمية للشركة على التقويم الميلادي. تُحتسب هذه الأيام غير عمل للعمل الإضافي، بالإضافة إلى يوم الجمعة.",
+  "settingsHolidaysPreviousMonth": "الشهر السابق",
+  "settingsHolidaysNextMonth": "الشهر التالي",
+  "settingsHolidaysSelectedCount": "{count} محدد",
+  "@settingsHolidaysSelectedCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "settingsHolidaysWeekdaySat": "س",
+  "settingsHolidaysWeekdaySun": "ح",
+  "settingsHolidaysWeekdayMon": "ن",
+  "settingsHolidaysWeekdayTue": "ث",
+  "settingsHolidaysWeekdayWed": "ر",
+  "settingsHolidaysWeekdayThu": "خ",
+  "settingsHolidaysWeekdayFri": "ج",
   "settingsOvertimeVoiceNotesTitle": "الملاحظات الصوتية",
   "settingsOvertimeVoiceNotesSubtitle": "تهيئة الملاحظات الصوتية الاختيارية لمراحل رحلة العمل الإضافي.",
   "settingsOvertimeVoiceMaxDurationTitle": "الحد الأقصى لمدة التسجيل الصوتي",

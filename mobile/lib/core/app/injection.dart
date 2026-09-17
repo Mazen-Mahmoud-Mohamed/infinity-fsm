@@ -155,9 +155,11 @@ import 'package:mobile/features/roles/domain/repositories/roles_repository.dart'
 import 'package:mobile/features/roles/domain/usecases/roles_usecases.dart';
 import 'package:mobile/features/roles/presentation/cubit/roles_cubits.dart';
 import 'package:mobile/features/settings/data/datasources/settings_remote_datasource.dart';
+import 'package:mobile/features/settings/data/datasources/holiday_local_datasource.dart';
 import 'package:mobile/features/settings/data/datasources/technician_interface_local_datasource.dart';
 import 'package:mobile/features/settings/data/repositories/settings_repository_impl.dart';
 import 'package:mobile/features/settings/domain/repositories/settings_repository.dart';
+import 'package:mobile/features/settings/domain/services/holiday_calendar_cache.dart';
 import 'package:mobile/features/settings/domain/usecases/settings_usecases.dart';
 import 'package:mobile/features/settings/presentation/cubit/settings_cubits.dart';
 import 'package:mobile/features/settings/presentation/cubit/technician_interface_cubits.dart';
@@ -232,6 +234,9 @@ Future<void> configureDependencies() async {
 
   if (!getIt.isRegistered<SessionQueryCache>()) {
     getIt.registerLazySingleton<SessionQueryCache>(SessionQueryCache.new);
+  }
+  if (!getIt.isRegistered<HolidayCalendarCache>()) {
+    getIt.registerLazySingleton<HolidayCalendarCache>(HolidayCalendarCache.new);
   }
 
   final authSessionService = AuthSessionService();
@@ -322,6 +327,7 @@ Future<void> configureDependencies() async {
       logoutAllDevicesUseCase: getIt<LogoutAllDevicesUseCase>(),
       authSessionService: getIt<AuthSessionService>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
+      holidayCalendarCache: getIt<HolidayCalendarCache>(),
     ),
   );
 
@@ -367,6 +373,31 @@ Future<void> configureDependencies() async {
     () => OvertimeLocalDataSource(getIt<PreferencesService>()),
   );
 
+  getIt.registerLazySingleton<HolidayLocalDataSource>(
+    () => HolidayLocalDataSource(getIt<PreferencesService>()),
+  );
+  getIt.registerLazySingleton<SettingsRemoteDataSource>(
+    () => SettingsRemoteDataSource(getIt<DioClient>()),
+  );
+  getIt.registerLazySingleton<SettingsRepository>(
+    () => SettingsRepositoryImpl(
+      remote: getIt<SettingsRemoteDataSource>(),
+    ),
+  );
+  getIt.registerLazySingleton(
+    () => ListCompanyHolidaysUseCase(getIt<SettingsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => ReplaceCompanyHolidaysUseCase(getIt<SettingsRepository>()),
+  );
+  getIt.registerLazySingleton(
+    () => SyncCompanyHolidaysUseCase(
+      repository: getIt<SettingsRepository>(),
+      localDataSource: getIt<HolidayLocalDataSource>(),
+      calendarCache: getIt<HolidayCalendarCache>(),
+    ),
+  );
+
   OvertimeOfflineTrace.bindLogger(getIt<LoggerService>());
 
   getIt.registerLazySingleton<OvertimeCellularUploadPromptService>(
@@ -389,6 +420,7 @@ Future<void> configureDependencies() async {
       addressResolver: getIt<AddressResolverService>(),
       gpsAddressSync: getIt<GpsAddressSyncService>(),
       uploadPolicy: getIt<OvertimeUploadPolicyService>(),
+      holidayCalendarCache: getIt<HolidayCalendarCache>(),
     ),
   );
 
@@ -465,6 +497,8 @@ Future<void> configureDependencies() async {
       getMediaConfigUseCase: getIt<GetOvertimeMediaConfigUseCase>(),
       uploadPolicyService: getIt<OvertimeUploadPolicyService>(),
       loggerService: getIt<LoggerService>(),
+      authCubit: getIt<AuthCubit>(),
+      syncCompanyHolidays: getIt<SyncCompanyHolidaysUseCase>(),
       reminderService: getIt<OvertimeSessionReminderService>(),
     ),
   );
@@ -1179,14 +1213,6 @@ Future<void> configureDependencies() async {
     ),
   );
 
-  getIt.registerLazySingleton<SettingsRemoteDataSource>(
-    () => SettingsRemoteDataSource(getIt<DioClient>()),
-  );
-  getIt.registerLazySingleton<SettingsRepository>(
-    () => SettingsRepositoryImpl(
-      remote: getIt<SettingsRemoteDataSource>(),
-    ),
-  );
   getIt.registerLazySingleton(
     () => GetOrganizationSettingsUseCase(getIt<SettingsRepository>()),
   );
@@ -1246,6 +1272,15 @@ Future<void> configureDependencies() async {
       getSettings: getIt<GetOvertimeSettingsUseCase>(),
       updateSettings: getIt<UpdateOvertimeSettingsUseCase>(),
       sessionQueryCache: getIt<SessionQueryCache>(),
+    ),
+  );
+  getIt.registerFactory<HolidaysSettingsCubit>(
+    () => HolidaysSettingsCubit(
+      listHolidays: getIt<ListCompanyHolidaysUseCase>(),
+      replaceHolidays: getIt<ReplaceCompanyHolidaysUseCase>(),
+      syncHolidays: getIt<SyncCompanyHolidaysUseCase>(),
+      sessionQueryCache: getIt<SessionQueryCache>(),
+      companyId: getIt<AuthCubit>().state.user?.companyId ?? '',
     ),
   );
   getIt.registerFactory<TechnicianInterfaceSettingsCubit>(

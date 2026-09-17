@@ -32,4 +32,7 @@ class StorageKeys {
   /// Prefix for per-company technician interface visibility cache.
   static const String technicianInterfaceConfigPrefix =
       'technician_interface_config';
+
+  /// Prefix for per-company official holiday YYYY-MM-DD keys cache.
+  static const String holidayDatesPrefix = 'company_holiday_dates';
 }

@@ -80,6 +80,7 @@ class ApiConstants {
       '/settings/technician-interface';
   static const String settingsTechnicianInterfaceConfig =
       '/settings/technician-interface/config';
+  static const String settingsHolidays = '/settings/holidays';
 
   static const String dashboardSummary = '/dashboard/summary';
 

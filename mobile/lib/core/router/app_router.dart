@@ -44,6 +44,7 @@ import 'package:mobile/features/reports_center/presentation/pages/reports_center
 import 'package:mobile/features/service_reports/presentation/pages/service_reports_list_page.dart';
 import 'package:mobile/features/settings/presentation/pages/account_settings_pages.dart';
 import 'package:mobile/features/settings/presentation/pages/organization_settings_page.dart';
+import 'package:mobile/features/settings/presentation/pages/holidays_settings_page.dart';
 import 'package:mobile/features/settings/presentation/pages/overtime_settings_page.dart';
 import 'package:mobile/features/settings/presentation/pages/server_management_page.dart';
 import 'package:mobile/features/settings/presentation/pages/settings_extra_pages.dart';
@@ -467,6 +468,11 @@ GoRouter createAppRouter({
                     path: 'overtime',
                     builder: (context, state) =>
                         const OvertimeSettingsPage(),
+                  ),
+                  GoRoute(
+                    path: 'holidays',
+                    builder: (context, state) =>
+                        const HolidaysSettingsPage(),
                   ),
                   GoRoute(
                     path: 'technician-interface',
